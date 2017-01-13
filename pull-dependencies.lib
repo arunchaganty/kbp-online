@@ -55,3 +55,48 @@ function gitClone() {
   fi
 }
 
+#
+# Colored terminal output (these functions behave like `echo`).
+#
+color_red='\033[31;1m'
+function red() {
+  echo -e "${color_red}$@${color_clear}"
+}
+color_green='\033[32;1m'
+function green() {
+  echo -e "${color_green}$@${color_clear}" 
+}
+color_yellow='\033[33;1m'
+function yellow() {
+  echo -e "${color_yellow}$@${color_clear}" 
+}
+color_blue='\033[34;1m'
+function blue() { 
+  echo -e "${color_blue}$@${color_clear}" 
+}
+color_magenta='\033[35;1m'
+function magenta() { 
+  echo -e "${color_magenta}$@${color_clear}" 
+}
+color_cyan='\033[36;1m'
+function cyan() { 
+  echo -e "${color_cyan}$@${color_clear}" 
+}
+color_clear='\033[0m' # No Color
+
+#
+# A standard color scheme for various message types.
+#
+function msg() {
+  cyan "$@"
+}
+function warn() {
+  yellow "$@"
+}
+function err() {
+  red "$@"
+}
+function dbg() {
+  magenta "$@"
+}
+
