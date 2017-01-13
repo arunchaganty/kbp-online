@@ -4,6 +4,9 @@
 Read LDC's output format
 """
 
+import numpy as np
+import pandas as pd
+
 class Provenance(object):
     def __init__(self, doc_id, start, end):
         self.doc_id = doc_id
@@ -85,6 +88,23 @@ class EvaluationEntry(object):
         relation_label = parts[6]
         eq_class = parts[7]
         return cls(id_, query_id, relation, relation_provenances, slot_value, slot_provenances, slot_value_label, relation_label, eq_class)
+
+    def to_list(self):
+        return [
+            self.query_id,
+            self.relation,
+            self.slot_value,
+            self.slot_value_label,
+            self.relation_label,
+            self.eq_class,]
+
+    @classmethod
+    def to_pandas(cls, entries):
+        """
+        Convert a set of entries to pandas.
+        """
+        X = np.array([entry.to_list() for entry in entries])
+        return pd.DataFrame(X, index=[entry.id for entry in entries], columns="query_id relation slot_value slot_value_label relation_label eq_class".split())
 
 def test_evaluation_entry():
     line = "CS15_ENG_0016_0_001	CS15_ENG_0016:gpe:births_in_country	ENG_NW_001278_20130214_F00011JDX:1448-1584	Agriculture	ENG_NW_001278_20130214_F00011JDX:1505-1515	W	W	0"
