@@ -1,0 +1,57 @@
+#!/bin/bash
+# vim:ft=sh 
+# Library to handle dependencies.
+
+function ensure_dir() {
+  if [ ! -e $1 ]; then
+    mkdir -p $1;
+  fi;
+}
+
+# Download file into lib (if not downloaded already).
+function download() {
+  destDir=$1
+  url=$2
+  ensure_dir $destDir;
+  if [ ! -e "${destDir}/$(basename $url)" ]; then
+    wget -c "${url}" -O "${destDir}/$(basename $url)" || exit 1;
+  fi;
+}
+
+function debPackage() {
+  name=$1;
+  if `dpkg-query -p ${name} &> /dev/null`; then
+    echo "$name already installed."
+  else
+    echo "Installing package $name."
+    sudo apt-get install ${name} || exit 1
+  fi;
+}
+
+function pipPackage() {
+  name=$1;
+  if `pip list | grep ${name} &> /dev/null`; then
+    echo "$name already installed."
+  else
+    echo "Installing package $name."
+    pip install --user ${name} || exit 1
+  fi;
+}
+
+function gitClone() {
+  url=$1;
+  if [ -z $2 ]; then
+    git_dir=`basename $url .git`;
+  else
+    git_dir=$2; 
+  fi;
+  echo "Cloning $url into $git_dir";
+  if [ ! -e "${git_dir}" ]; then
+    git clone $url
+  else 
+    cd $git_dir;
+    git pull;
+    cd ..;
+  fi
+}
+
