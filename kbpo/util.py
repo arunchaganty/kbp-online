@@ -4,8 +4,8 @@
 Read LDC's output format
 """
 
+from collections import defaultdict
 import numpy as np
-import pandas as pd
 
 class Provenance(object):
     def __init__(self, doc_id, start, end):
@@ -98,14 +98,6 @@ class EvaluationEntry(object):
             self.relation_label,
             self.eq_class,]
 
-    @classmethod
-    def to_pandas(cls, entries):
-        """
-        Convert a set of entries to pandas.
-        """
-        X = np.array([entry.to_list() for entry in entries])
-        return pd.DataFrame(X, index=[entry.id for entry in entries], columns="query_id relation slot_value slot_value_label relation_label eq_class".split())
-
 def test_evaluation_entry():
     line = "CS15_ENG_0016_0_001	CS15_ENG_0016:gpe:births_in_country	ENG_NW_001278_20130214_F00011JDX:1448-1584	Agriculture	ENG_NW_001278_20130214_F00011JDX:1505-1515	W	W	0"
     entry = EvaluationEntry.from_line(line)
@@ -154,3 +146,10 @@ def test_output_entry():
     assert entry.slot_type == "PER"
     assert entry.slot_provenances == [Provenance("NYT_ENG_20130513.0090", 2476,2500)]
     assert entry.confidence == 0.9
+
+def invert_dict(dct):
+    """Inverts a dictionary from A -> B into one from B -> [A]"""
+    ret = defaultdict(list)
+    for k, v in dct.items():
+        ret[v].append(k)
+    return ret
