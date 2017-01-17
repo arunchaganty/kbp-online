@@ -1,9 +1,8 @@
 #!/bin/bash
 . pull-dependencies.lib
 
+ensure_dir 'data';
 # Download from the NLP server.
-cd data;
 msg "Getting TAC-KBP data. Requires access to Stanford NLP servers.";
-rsync -r jamie.stanford.edu:/scr/nlp/data/tac-kbp/official-data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31/;
-rsync -r jamie.stanford.edu:/scr/nlp/data/tac-kbp/official-data/LDC2015E100_TAC_KBP_2015_English_Cold_Start_Evaluation_Assessment_Results_V3.0/;
-cd -;
+rsync -avz jamie.stanford.edu:/scr/nlp/data/tac-kbp/official-data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31 data;
+rsync -avz jamie.stanford.edu:/scr/nlp/data/tac-kbp/official-data/LDC2015E100_TAC_KBP_2015_English_Cold_Start_Evaluation_Assessment_Results_V3.0 data;

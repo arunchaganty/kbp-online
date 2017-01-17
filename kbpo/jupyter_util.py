@@ -15,9 +15,11 @@ def to_table(data, cols=None):
     for row in data:
         html += "<tr>"
         for col in row:
-            html += "<td>{}</td>".format(col)
+            if isinstance(col, float):
+                html += "<td>{:.2f}</td>".format(col)
+            else:
+                html += "<td>{}</td>".format(col)
         html += "</tr>"
 
     html += "</table>"
     return display(HTML(html))
-
