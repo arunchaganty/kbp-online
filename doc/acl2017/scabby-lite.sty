@@ -1,0 +1,163 @@
+% scabby.sty - 
+%   All the little things you've always wanted.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{scabby-lite}
+\typeout{Scabby: A bunch of little macros (without standard short form defintions)}
+
+%\RequirePackage{natbib}
+%\RequirePackage{hyperref}
+%\RequirePackage{url}
+%%\RequirePackage{nameref}
+\RequirePackage{etoolbox}
+\RequirePackage{soul}
+%\RequirePackage{mathtools}
+%\RequirePackage{amsmath}
+%\RequirePackage{amsthm}
+%\RequirePackage{amssymb}
+%\RequirePackage{latexsym}
+%%\let\proof\relax
+%%\let\endproof\relax
+%
+%\RequirePackage{algorithm}
+%\RequirePackage{algorithmic}
+%
+%\RequirePackage{graphicx}
+%\RequirePackage{xcolor}
+%\RequirePackage{xkeyval}
+
+\newtoggle{definetheorems}
+\toggletrue{definetheorems}
+\DeclareOption{nodefinetheorems}{\togglefalse{definetheorems}}
+\ProcessOptions{}
+
+\providecommand{\Email}[1]{ \hfill \textsc{\small #1}}
+
+\providecommand{\forcecommand}[3][0]{
+  \providecommand{#2}{}
+  \renewcommand{#2}[#1]{#3}
+}
+
+
+% Sectioning
+% Section macros
+\forcecommand[3]{\itemref}{\hyperref[#2:#3]{#1~\ref{#2:#3}}}
+\forcecommand[1]{\sectionref}{\itemref{Section}{sec}{#1}}
+\forcecommand[1]{\appendixref}{\itemref{Appendix}{app}{#1}}
+\forcecommand[1]{\algorithmref}{\itemref{Algorithm}{algo}{#1}}
+\forcecommand[1]{\figureref}{\itemref{Figure}{fig}{#1}}
+\forcecommand[1]{\tableref}{\itemref{Table}{tbl}{#1}}
+\forcecommand[1]{\equationref}{\hyperref[eqn:#1]{Equation~\ref{eqn:#1}}}
+
+% Text
+\forcecommand[1]{\todo}{{\tiny \hl{\textsc{TODO:} #1}}}
+\forcecommand[1]{\comment}{ % Comments of equations
+  \text{\phantom{(#1)}} \tag{#1}
+}
+\forcecommand{\quirk}{{\tiny \hl{\textsc{Quirk}}}}
+
+% Editing notes
+\forcecommand[2]{\editnote}{\ensuremath{\underline{\textrm{#1}}_{\textrm{#2}}}}
+\forcecommand[1]{\editupnote}{\ensuremath{^{[\hl{\textrm{#1}}]}}}
+\forcecommand{\vague}{\editupnote{vague}}
+\forcecommand{\verify}{\editupnote{verify}}
+\forcecommand{\reword}{\editupnote{reword}}
+\forcecommand{\define}{\editupnote{define}}
+\forcecommand{\expand}{\editupnote{expand}}
+\forcecommand{\needcite}{\editupnote{citation needed}}
+\forcecommand[1]{\findcite}{\editupnote{find: #1}}
+
+%% Operators
+%\providecommand{\union}{\cup}
+%\providecommand{\intersect}{\cap}
+%\providecommand{\Union}{\bigcup}
+%\providecommand{\Intersect}{\bigcap}
+%\providecommand{\eqdef}{\triangleq}
+%
+%\providecommand{\contains}{\ni}
+%
+%% Probability/Statistics
+%\forcecommand{\E}   {\operatorname{\mathbb{E}}}
+%\forcecommand{\I}   {\operatorname{\mathbb{I}}}
+%\forcecommand{\Pr}  {\operatorname{\mathbb{P}}}
+%\forcecommand{\Var} {\operatorname{Var}}
+%\forcecommand{\Cov} {\operatorname{Cov}}
+%\forcecommand{\given} {\mid}
+%
+%% Constants/etc.
+%\forcecommand{\Re} {\mathbb{R}}
+%\forcecommand{\Nn} {\mathbb{N}}
+%\forcecommand{\Cm} {\mathbb{C}}
+%\forcecommand{\Qm} {\mathbb{Q}}
+%\forcecommand{\Sm} {\mathbb{S}}
+%%\forcecommand{\half} {\frac{1}{2}}
+%
+%% Calculus
+%\forcecommand{\del}{\partial}
+%\forcecommand{\ud}{\, \mathrm{d}}
+%\forcecommand[2]{\diff} {\frac{\partial{} #1}{\, \partial{} #2}}
+%\forcecommand[2]{\difff} {\frac{\partial{}^2}{\, \partial{} #1\, \partial{} #2}}
+%\forcecommand[2]{\diffn} {\frac{\partial{}^{#2}}{\, \partial{} {#1}^{#2}}}
+%\forcecommand{\grad}{\nabla}
+%
+%% Optimization
+%\forcecommand{\mL} {\mathcal{L}}
+%\forcecommand{\maximize} {\operatorname{maximize}}
+%\forcecommand{\minimize} {\operatorname{minimize}}
+%\forcecommand{\argmax} {\operatorname{\arg\,max}}
+%\forcecommand{\argmin} {\operatorname{\arg\,min}}
+%\forcecommand{\subjecto} {\operatorname{subject\ to}}
+%\forcecommand{\Supp} {\operatorname{Supp}}
+%\forcecommand{\lone} {\ensuremath{\ell_1}}
+%\forcecommand{\ltwo} {\ensuremath{\ell_2}}
+%
+%% Linear Algebra
+%\forcecommand{\hprod} {\circ} % Hadamard
+%\forcecommand{\inv}{^{-1}}
+%\forcecommand{\tinv}{^{-\top}}
+%\forcecommand{\pinv} {^{\dagger}}
+%\forcecommand{\pinvt} {^{\dagger{} \top}}
+%\forcecommand[2]{\innerp}{\left\langle{} #1, #2 \right\rangle{}}
+%\forcecommand{\triu}{\operatorname{triu}}
+%\forcecommand{\trace}{\operatorname{tr}}
+%\forcecommand{\Tr}{\operatorname{tr}}
+%\forcecommand[1]{\tp}{^{\otimes#1}}
+%\forcecommand{\KL}{\operatorname{KL}}
+%\forcecommand[1]{\cspan}{\langle{} #1 \rangle{}}
+%\providecommand{\rank} {\operatorname{rank}}
+%
+%% Convex Geometry
+%\forcecommand{\conv} {\operatorname{conv}}
+%\forcecommand{\dist} {\operatorname{dist}}
+%\forcecommand{\cone} {\operatorname{cone}}
+%\forcecommand{\psd} {\textrm{PSD}}
+%
+%% Algebra
+%\forcecommand{\Ker} {\operatorname{Ker}}
+%\forcecommand{\Col} {\operatorname{Col}}
+%\forcecommand{\Mat} {\operatorname{Mat}}
+%
+%% Misc
+%\forcecommand{\sgn} {\operatorname{sgn}}
+%\forcecommand[1]{\oft}   {^{(#1)}}
+%\forcecommand[2]{\oftt}   {^{(#1) #2}}
+%\forcecommand[1]{\oneby} {\frac{1}{#1}}
+%\forcecommand[1]{\bytwo} {\frac{#1}{2}}
+%
+%\forcecommand{\mM} {\mathcal{M}}
+%\forcecommand[1]{\tuple} {\langle{} #1 \rangle{}}
+%
+%\forcecommand[1]{\vec} {\mathbf{#1}}
+%\providecommand{\ones} {\vec{1}}
+%\providecommand{\zeros} {\vec{0}}
+%
+%\forcecommand{\Range} {\operatorname{Range}}
+%\forcecommand{\Domain} {\operatorname{Dom}}
+%
+%\forcecommand[2]{\LINEIF}{%
+%    \STATE\algorithmicif\ {#1}\ \algorithmicthen\ {#2} \algorithmicend\ \algorithmicif%
+%}
+%\forcecommand[3]{\LINEIFELSE}{%
+%\STATE\algorithmicif\ {#1}\ \algorithmicthen\ {#2} \algorithmicelse\ {#3} \algorithmicend\ \algorithmicif%
+%}
+%

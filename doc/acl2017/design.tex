@@ -1,0 +1,111 @@
+\section{A new methodology}
+% (2 pages)
+
+\paragraph{Can we trust crowdworkers to produce accurate responses?}
+% Description of task.
+
+Measurement of inter-turker agreement.
+
+Controls:
+* The LDC invests significant effort in identifying challenging queries. There are a number of criteria involved in the selection of these queries:
+  * cross-document presence.
+  * "cross-lingual clusters"
+  * nominal mentions for relations.
+  * topic selection via events.
+* Key questions: how to guide annotators to "rare" but important events?
+  * how to create 2-hop queries?
+  * null queries?
+  * identifying duplicate fills
+
+* Variants in asking turkers:
+  * specialize turkers for a single relation (faster, more accurate).
+  * ordering multiple questions to ensure the questions are reasonable.
+      + Does (X) represent a company (like e.g. Google...)?
+      + Does (Y) represent a NER?
+      + (other restrictions based on annotation guideline)?
+      + Does this sentence justify X to be the employer of Y? 
+* Examples:
+  + Example: "[Wahid], also known as [Gus Dur]"
+  + $per:alternate_names$
+    - 1: Does "Gus Dur" refer to a person's name?
+    - 2: Does "Wahid" refer to a person's name?
+    - if 1,2; 3: "Do you think "Gus Dur" could be used to refer "Wahid"?
+    - constraints:
+      + computational: the substring offset must be unique.
+      + computational: differences solely in punctuation. 
+      + "Generally, a given (first) name alone is not a correct alternate name unless the person is unambiguously known that way (e.g., ‘the Donald’ for Donald Trump, or ‘Oprah’ for Oprah Winfrey, but not ‘John’ for ‘John Smith’)."
+        (computationally -- if name is only the first name)
+        - If I said 'John', would you likely think 'John' would refer to 'John Smith'?
+        - If I said 'Oprah', would you likely think I was referring to 'Oprah Winfrey'?
+  + $per:date_of_birth$
+    + "the Jan. 1 anniversary of Williams' death, and on his Sept. 17 birthday."
+    + Is 'Hank Williams' a person?
+    + Was Hank Williams born on Sept. 17th?
+    + Is Sept. 17th actually 09-17? (partly computational?)
+  + per:age
+    + Was "Today is a day of tragedy for democracy," Megawati, 49, told 
+    her supporters before the demonstration in Jakarta.
+    + Is Megawati Sukarnoputri a person? 
+    + Was Megawati Sukarnoputri 49 years old at the time of this article, or at the time of his/her death?
+    + "Michael Jackson died June 25 2009 at the age of 50."
+    + Is Michael Jackson a person?
+    + Was Michael Jackson 50 years old at the time of this article, or at the time of his/her death?
+  + $per:countries_of_residence$
+    + "Finland's Nurmi won his nine golds in the 1920's."
+    + Computational: is Finland a country?
+    + Is "Nurmi" a person?
+    + Did Nurmi necessarily live in Finland for some duration of time, given this sentence? -- Yes
+    + "Surveillance cameras show a Chinese man, later identified as Jon Wong, leaving the White House".
+    + Did Jon Wong necessarily live in China for some duration of time, given this sentence? -- No
+    + "said Qalibaf, who succeeded President Mahmoud Ahmadinejad as mayor after losing in Iran's 2005 presidential 
+race." 
+    + Is Qalibaf a person?
+    + Did Qalibaf live in Iran? vs How likely is it that Qalifbaf lived in Iran?
+    + "Israeli Defense Minister and Labour party chairman Ehud 
+    Barak on Wednesday demanded..."
+    + Does/did Ehud Barak live in Israel?
+  + per:title
+    + "Wearing a white veil and surrounded by her girlfriends, [the former Playboy bunny] looked to.."
+    + Does the title 'Playboy bunny' include the name of the [the former Playboy bunny]'s employer?
+    + "Gonzales, an architect of contentious US 'war on terror' legal tactics."
+    + Is Gonzales working as/employed as an architect?
+
+\paragraph{Ensuring statistical validity on precision without breaking the bank.}
+
+Options:
+
+1A) evaluate each team independently to a confidence interval of +/- n\%.
+1B) do 1A and then aggregate responses from different teams, indefinitely.
+1C) do 1B but stop.
+
+Goals:
+- as the number of systems increase, so should our digits of precision. However, we would rather that additional digits of precision not be added indefinitely, when such digits are not likely to be actually beneficial.
+Power analysis suggests we need 10,000 for 2 digits of precision. Of course, 
+% 
+
+\paragraph{Overcoming pooling bias without arbitrary scores.}
+
+Doing a complete evaluation on a particular random set of documents.
+Q. How much variation is there across documents? -- what is the right axis to vary over? 
+
+\paragraph{Final protocol}
+
+
+
+Set up is as follows:
+
+* Every month, a new collection of $n$ documents is released online for users to evaluate their systems on.
+* As the user uploads their system's $m$ predictions online, we will sample a fraction of these to predict the precision of their output.
+* At the end of the month, the combination of every system's output is used to predict recall, allowing us to evaluate users based on F1.
+* All evaluated output is released that month, augmenting the dataset of labeled instances.
+
+Natural incentives:
+* For systems to rank better overall, they must identify relations that other systems do not.
+
+Economics:
+  * Rate is about \$12/hr, which comes out to 0.3c/second.
+  * To estimate precision within 1\% with 95\% probability, we need about $4*10^2 < 4 * 10^4 * p (1-p) < 10^4$ evaluated samples.
+  * At face value, each example is answerable in 4--5 seconds, which is 1.5c. In total, that means \$150 per evaluation.
+  * Amortized; let us say systems have an 80\% overlap in the slots produced (we need empirical backing here). Then, we can say each new evaluation costs about \$30. -- needs to be empirically verified.
+  * However, we are budgeting \$20/evaluation. That means, trading off accuracy.
+  * If instead, we go for a precision of about 2\%, we can achieve this under \$15.

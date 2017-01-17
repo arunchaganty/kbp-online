@@ -1,0 +1,40 @@
+\section{Introduction}
+\label{sec:intro}
+
+% (1 page w/ figure)
+% Goal: remind the reader what information extraction is, what its relation to knowledge base population is and why it is important. Hook question.
+Harnessing the wealth of information present in unstructured text online is a long standing goal for the natural language processing community.
+In particular, one approach to doing so has been to construct a \textit{knowledge base} storing information in a relational schema, integrating the output of several information extraction tasks, including entity detection and linking, relation extraction and event extraction.
+Knowledge bases such as Yago, Freebase and Wikidata have shown immense value for question answering, search relevance, and have potential in reasoning systems\needcite.
+Significant effort and resources have been invested in improving the performance of knowledge base population (KBP) systems, but have our systems actually gotten better and if so, by how much?
+
+% Goal: Setup analysis by describing TAC-KBP. Describe first problem and how we solve it.
+We begin by studying submissions to the knowledge base population track of annual TAC-KBP competition organized by NIST.\@
+% TODO: argue the merits of the TAC-KBP challenge and its evaluation.
+The competition has invited X submissions over Y years, and has on new unseen data.
+Unfortunately, scores of top performing teams have varied significantly, but remain under 30\% F1.
+In contrast, human evaluators provided access to simple text search for 10 minutes per query are able to identify more relations and have 50\% F1.
+A number of confounding factors affect performance, including the performance of other systems, making comparisons difficult.
+We propose a method for score standarization (\refsec{analysis}) to compare scores across years and find that \todo{there is no statistically significant improvement in the last several years}.
+
+% Goal: Setup second problem and how we solve it.
+Another side effect of the evaluation methodology is the incomplete evaluation of relations -- it is indeed infeasible to evaluate every possible relation instance -- cite costs.
+A significant risk posed is that real improvements on the system may not be measurable and can in fact hurt development scores. By "leaving out" evaluations on extractions by certain teams, we find this to indeed be the case (section 4).
+
+% Goal: Describe solution.
+In the light of this, what do we hope to do?
+We believe that the dataset methodology is simply not effective for information extraction. 
+These flaws have also been observed in the information retrieval community. 
+However, in our case, the assessment of the output of an IE system can be quite objective and hence is amenable to crowd-sourced evaluation.
+Identifying all relations on a corpus is laborious, and several prior approaches introduce biases of their own -- TACRED.
+Consequently, we propose a new online evaluation platform that uses crowdsourcing to evaluate results. 
+It is still infeasible to evaluate every line of output, a subsset of rows can be evalauted to within 2 digits of precision.
+Find high correlation with human crowdworkers (section 5)
+
+We combine evaluations on output of different systems. There are several desing decisions to make int rerms of which rows of output to evaluate -- we compare several strategies based on thier stastical power (section 6) and propose one that tradesoff cost of new evaluations and precision, making a high water mark, low watermark gueartnee to sbumitting teams -- our approach will increase significant digits of precision as the number of submissions increase.
+
+Outline figure
+
+% Goal: defer reader questions to discussion section
+The introduction of a new evaluation methodology is sure to raise hard questions. We defer a discussion of these to Section 7, drawing upon data from our analysis to argue for a change in methodology and support the online methodology that we propose..\cite{chaganty2016perspectives}
+
