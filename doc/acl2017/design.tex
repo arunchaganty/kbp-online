@@ -83,6 +83,35 @@ Goals:
 Power analysis suggests we need 10,000 for 2 digits of precision. Of course, 
 % 
 
+\paragraph{Evaluation measures.} 
+We would like to evaluate the knowledge base output reported by teams on three axes, \it{mention-level relation extraction}, \it{entity-level relation extraction} and \it{mention-level entity-linking}.
+
+\paragraph{Mention-level relation extraction precision.}
+For every relation mention returned by the system, we would like to evaluate the precision of the output, i.e. the likelihood that an output submitted by a system is correct: $P_m \eqdef \E_{x}[\correct(x)]$.
+We derive an unbiased estimator for $P_m$ by randomly sampling output relation mentions, $\hat{P}_m = \frac{1}{n} \sum_{i}^n \correct(x_i)$, where $x_i$ are sampled uniformly from the submitted relations $X$.
+
+\paragraph{Entity-level relation extraction precision.}
+We now want to evaluate micro and macro-averaged relation extraction precision, aggregated over entities. 
+To do so, we note that the entity level relation extraction requires three independent variables to be correct, the system must have correctly labeled the relation mention, and it must also correctly linked the subject and object mentions: $P_e \eqdef \E_{x}[ \correct_r(x) \correct_s(x) \correct_o(x)]$, which we evaluate as $P_e \eqdef \E_{x}[\correct_r(x)] \E_{x}[\correct_s(x)]\E_{x}[ \correct_o(x)] = P^r_m P^s_m P^o_m$.
+
+\paragraph{Mention-level relation extraction recall.}
+Recall is the probability that a correct mention-level relation is extracted,
+  $R_m \eqdef \E_{x}[\outputted(x)]$, where $x$ are the set of true relation mentions.
+To evaluate recall, we randomly sample $D'$ documents out of the corpus of $D$ documents.
+Within each document, we have crowdworkers identify every relation in that document, also pooling any relations outputted by other systems. 
+Thus our estimator is $\hat{R}_m = \frac{1}{n} \sum_{i}^n \outputted(x_i)$ 
+
+
+
+
+For every relation mention returned by the system, we would like to evaluate the precision of the output, i.e. the likelihood that an output submitted by a system is correct: $P_m \eqdef \E_{x}[\correct(x)]$.
+We derive an unbiased estimator for $P_m$ by randomly sampling output relation mentions, $\hat{P}_m = \sum_{i}^n \correct(x_i)$, where $x_i$ are sampled uniformly from the submitted relations $X$.
+
+
+
+
+
+
 \paragraph{Overcoming pooling bias without arbitrary scores.}
 
 Doing a complete evaluation on a particular random set of documents.
