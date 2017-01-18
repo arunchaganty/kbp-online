@@ -43,7 +43,7 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
 
 DocWidget.prototype.highlightListener = []
 DocWidget.prototype.mouseEnterListener = []
-DocWidget.prototype.mouseLeaveListner = []
+DocWidget.prototype.mouseLeaveListener = []
 DocWidget.prototype.clickListener = []
 
 /**
@@ -79,8 +79,7 @@ DocWidget.prototype.attachHandlers = function() {
         selectedTokens.push(startNode);
       }
       
-      console.log("Span selected");
-      console.log(selectedTokens);
+      console.log("span-selected:", selectedTokens);
       self.highlightListener.forEach(function (listener) {listener(selectedTokens);});
     }
     // Kill the selection.
@@ -89,16 +88,19 @@ DocWidget.prototype.attachHandlers = function() {
 
   // mouseEnter
   this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
+    console.log("span-enter:", this);
     self.mouseEnterListener.forEach(function (listener) {listener(this);});
   });
 
   // mouseLeave
   this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
+    console.log("span-leave:", this);
     self.mouseLeaveListener.forEach(function (listener) {listener(this);});
   });
 
   // clickListener
   this.elem.find("span.token").on("click.kbpo.docWidget", function(evt) {
+    console.log("span-click:", this);
     self.clickListener.forEach(function (listener) {listener(this);});
   });
 };
