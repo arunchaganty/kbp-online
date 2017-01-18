@@ -29,6 +29,9 @@
       <div class="col-md-2"></div>
       <div class="col-md-8">
         <h1>Sentence widget</h1>
+        <p id="test">
+        asdff asdf asdf asdf asf asdf asdf asdfasfasdf asf asdfasdf asfasdfasf asf asdfaf asdf 
+        </p>
         <div class="panel panel-default">
           <div class="panel-body">
             <div class="document" id="document">
@@ -48,6 +51,16 @@
         console.log("loaded data.");
         console.log(doc);
         doc.load(data.document);
+
+        // Just highlight and underline a few spans for good fun.
+        $('#token-0-0').addClass("highlight");
+        $('#token-0-2').addClass("underline");
+        $('#token-0-3').addClass("underline");
+        $('#token-0-4').addClass("underline");
+        $('#token-0-7').addClass("highlight");
+
+
+
       })
         .fail(function() {
           console.log("Could not load data.");

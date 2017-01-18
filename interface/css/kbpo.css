@@ -1,5 +1,6 @@
-
-
+#document {
+  font-size: larger;
+}
 
 span.sentence {
   display: inline-block;
@@ -13,4 +14,12 @@ span.token {
 span.token.with-space {
   display: inline-block;
   margin-left: 0.5em;
+}
+
+span.token.underline {
+  text-decoration: underline;
+}
+
+span.token.highlight {
+  font-weight: bold;
 }
