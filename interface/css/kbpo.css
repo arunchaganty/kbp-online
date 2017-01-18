@@ -1,0 +1,16 @@
+
+
+
+span.sentence {
+  display: inline-block;
+  margin-right: 1em;
+}
+
+span.token {
+  display: inline-block;
+}
+
+span.token.with-space {
+  display: inline-block;
+  margin-left: 0.5em;
+}
