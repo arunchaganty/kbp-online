@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>kbpo -- sentence widget</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/kbpo.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery-3.1.1.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/kbpo.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-md-2"></div>
+      <div class="col-md-8">
+        <h1>Sentence widget</h1>
+        <p id="test">
+        asdff asdf asdf asdf asf asdf asdf asdfasfasdf asf asdfasdf asfasdfasf asf asdfaf asdf 
+        </p>
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="document" id="document">
+            </div>
+          </div>
+        </div>
+      <div>
+      <div class="col-md-2"></div>
+    </div>
+
+    <!-- load document -->
+    <script type="text/javascript">
+      var doc = new DocWidget($("#document"));
+      console.log(doc);
+
+      $.getJSON("data/example1.json", function(data) {
+        console.log("loaded data.");
+        console.log(doc);
+        doc.load(data.document);
+
+        // Just highlight and underline a few spans for good fun.
+        $('#token-0-0').addClass("highlight");
+        $('#token-0-2').addClass("underline");
+        $('#token-0-3').addClass("underline");
+        $('#token-0-4').addClass("underline");
+        $('#token-0-7').addClass("highlight");
+
+
+
+      })
+        .fail(function() {
+          console.log("Could not load data.");
+        });
+    </script>
+  </body>
+</html>
