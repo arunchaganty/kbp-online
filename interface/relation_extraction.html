@@ -1,0 +1,102 @@
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
+    <head>
+        <title>kbpo -- relation extraction</title>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="css/font-awesome.min.css">
+        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="css/interface.css">
+        <link rel="stylesheet" href="css/kbpo.css">
+
+        <script src="js/jquery-3.1.1.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+
+        <script src="js/defs.js"></script>
+        <script src="js/kbpo.js"></script>
+    </head>
+    <body>
+      <div class="container">
+        <!-- Example row of columns -->
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+          <h1> Relation Extraction </h1>
+          <div class="row">
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <div class="document" id="document">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class = "row">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Pick a relation</h3>
+              </div>
+              <div class="panel-body">
+                <div class="relation" id="relations">
+                  <div class="icon-box">
+                    <a href="#">
+                      <span class="fa fa-5x fa-fw fa-building-o"></span>
+                      <p>employed by</p>
+                    </a>
+                  </div>
+
+                  <div class="icon-box">
+                    <a href="#">
+                      <span class="fa fa-5x fa-fw fa-building-o"></span>
+                      <p>  by</p>
+                    </a>
+                  </div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <script type="text/javascript">
+var docWidget;
+var relnWidget;
+var relnInt;
+
+$.getJSON("data/example2.json", function(data) {
+  console.log("loaded document.");
+  docWidget = new DocWidget($("#document"));
+  docWidget.load(data.document);
+
+  relnWidget = new RelationWidget($("#relations"));
+  relnInt = new RelationInterface(docWidget, relnWidget);
+
+  mentionPair = {
+    "first": {
+      "type": "PER",
+      "tokens": [$('#token-4-1'), $('#token-4-2'), $('#token-4-3'), $('#token-4-4'),]
+    },
+    "second": {
+      "type": "PER",
+      "tokens": [$('#token-4-8'), $('#token-4-9'), $('#token-4-10'), $('#token-4-11'),]
+    },
+  };
+
+  relnInt.run([mentionPair]);
+})
+.fail(function() {
+  console.log("Could not load data.");
+});
+
+    </script>
+    </body>
+</html>

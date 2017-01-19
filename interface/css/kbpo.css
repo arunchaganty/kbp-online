@@ -1,6 +1,6 @@
 #document {
   font-size: larger;
-  max-height: 800px;
+  max-height: 600px;
   overflow-y: scroll;
 }
 
@@ -25,3 +25,23 @@ span.token.underline {
 span.token.highlight {
   font-weight: bold;
 }
+
+
+div.icon-box {
+  text-align: center;
+}
+
+div.icon-box span.fa {
+  margin: 0 auto;
+}
+
+span.token.subject {
+  color: red;
+  font-weight: bold;
+}
+
+span.token.object {
+  color: blue;
+  font-weight: bold;
+}
+

@@ -153,3 +153,64 @@ DocWidget.prototype.attachHandlers = function() {
 // TODO: hooks for rendering subtext (for the linked entity), colors,
 // underlines, relations.
 
+/**
+ * The relation widget is controlled by the RelationInterface. */
+var RelationWidget = function(elem) {
+  this.elem = elem;
+};
+// TODO: populate pane with relevant relations for given mention pair --
+// returns the chosen relation when done.
+
+/**
+ * Stores actual relations and iterates through every mention pair in
+ * the document, controlling various UI elements.
+ */
+var RelationInterface = function(docWidget, relnWidget) {
+  this.docWidget = docWidget; 
+  this.relnWidget = relnWidget; 
+};
+
+// Iterates through the mention pairs provided.
+RelationInterface.prototype.run = function(mentionPairs) {
+  //this.mentions = mentions;
+  //this.mentionPairs = constructMentionPairs(mentions);
+  this.mentionPairs = mentionPairs;
+
+  this.currentIndex = -1;
+  this.next();
+}
+
+// Draw mention pair
+RelationInterface.prototype.select = function(mentionPair) {
+  mentionPair.first.tokens.forEach(function(t) {t.addClass("subject");});
+  mentionPair.second.tokens.forEach(function(t) {t.addClass("object");});
+}
+
+RelationInterface.prototype.unselect = function(mentionPair) {
+  mentionPair.first.tokens.forEach(function(t) {t.removeClass("subject");});
+  mentionPair.second.tokens.forEach(function(t) {t.removeClass("object");});
+}
+
+// Progress to the next mention pair.
+RelationInterface.prototype.next = function() {
+  this.currentIndex += 1;
+  if (this.currentIndex > this.mentionPairs.length - 1) {
+    return this.done();
+  }
+
+  var mentionPair = this.mentionPairs[this.currentIndex];
+  this.select(mentionPair);
+  // TODO: Activate relationWidget
+  // TODO: add done handler
+}
+
+// Called when the interface is done.
+RelationInterface.prototype.done = function() {
+}
+
+// TODO: highlight a given mention pair
+// TODO: activate relation selection interface.
+// TODO: progress the interface when done.
+
+// TODO: allow moving to a previous mention pair for correction.
+
