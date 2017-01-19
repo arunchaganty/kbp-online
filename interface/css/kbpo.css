@@ -1,5 +1,7 @@
 #document {
   font-size: larger;
+  max-height: 800px;
+  overflow-y: scroll;
 }
 
 span.sentence {
