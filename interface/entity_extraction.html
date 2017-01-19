@@ -33,6 +33,11 @@
 
     <!-- Main jumbotron for a primary marketing message or call to action -->
 
+<!-- TODOs 
+* Bug where removed spans remain highlighted.
+* Bug in spacing of adjacent mentions: make coloring of spans a class property.
+-->
+
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
@@ -54,14 +59,6 @@
                   <button type="button" class="list-group-item zero_entity entity" disabled=true>No entities yet</button>
                   <button type="button" class="hidden list-group-item entity_template entity"><i class="fa fa-2x fa-fw"></i></button>
                 </div>
-               <!--<div class="" data-toggle="buttons">
-                    <label class="btn btn-secondary btn-block ">
-                        <input type="radio" name="options" id="" autocomplete="off"> No entities yet 
-                    </label>
-                    <label class="hidden btn btn-info btn-block entity_template">
-                        <input type="radio" name="options" id="" value="" autocomplete="off" checked>
-                    </label> 
-                </div>-->
               </div>
             </div>
 
@@ -76,24 +73,13 @@
                   </button>
                   <ul id = 'types' class="dropdown-menu">
                     <li class="hidden type_template type">
-
-                        <a onclick='type_clicked(this)'><span class="fa fa-2x fa-fw"></span> </a></li>
+                      <a onclick='type_clicked(this)'><span class="fa fa-2x fa-fw"></span> </a></li>
                   </ul>
                 </div>
-                        <!--<button class="btn btn-primary btn-block" type="button" name="" onclick="addEntity('aha');"> New </button>
-                        
-                <div id = "types" class="" data-toggle="buttons">
-                    <label class="">
-                        <input type="radio" name="options" id="" autocomplete="off"> Test
-                    </label>
-                    <label class="hidden type_template">
-                        <input type="radio" name="options" id="" autocomplete="off">
-                    </label>
-                </div>-->
             </div>
             <div id ="cancel_mention_widget" class = "row hidden">
-                <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
-                </div>
+              <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
+            </div>
         </div>
       </div>
 
