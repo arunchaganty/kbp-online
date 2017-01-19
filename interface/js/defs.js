@@ -52,7 +52,7 @@ var RELATIONS = [{
     "object-types": ["ORG"]
   },{
     "name": "per:employee_or_member_of",
-    "short": "works at",
+    "short": "works for",
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["ORG", "GPE"]
@@ -152,5 +152,11 @@ var RELATIONS = [{
     "icon": "",
     "subject-types": ["GPE"],
     "object-types": ["ORG"]
+  },{
+    "name": "no_relation",
+    "short": "unrelated",
+    "icon": "",
+    "subject-types": ["PER", "ORG", "GPE"],
+    "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
   }];
 

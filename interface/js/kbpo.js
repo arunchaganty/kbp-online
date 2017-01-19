@@ -171,13 +171,55 @@ DocWidget.prototype.attachHandlers = function() {
 // TODO: hooks for rendering subtext (for the linked entity), colors,
 // underlines, relations.
 
+function getCandidateRelations(mentionPair) {
+  var candidates = [];
+  RELATIONS.forEach(function (reln) {
+    if (reln["subject-types"].indexOf(mentionPair.first.type) >= 0 
+        && reln["object-types"].indexOf(mentionPair.second.type) >= 0) {
+      candidates.push(reln);
+    }
+  });
+  return candidates;
+}
+
 /**
  * The relation widget is controlled by the RelationInterface. */
 var RelationWidget = function(elem) {
   this.elem = elem;
 };
-// TODO: populate pane with relevant relations for given mention pair --
-// returns the chosen relation when done.
+
+// initialize the interface using @mentionPair. On completion, call @cb.
+RelationWidget.prototype.init = function(mentionPair, cb) {
+  this.cb = cb;
+  console.log("initializing relation widget for", mentionPair);
+
+  this.relns = getCandidateRelations(mentionPair);
+  console.log("using candiates", this.relns);
+  for (var i = 0; i < this.relns.length; i++) {
+    this.elem.append(this.makeRelnOption(this.relns[i], i));
+  }
+}
+
+RelationWidget.prototype.makeRelnOption = function(reln, id) {
+  var self = this;
+  var div = $("#relation-option-widget").clone();
+  div.html(div.html().replace("{short}", reln.short));
+  div.attr("id", "relation-option-" + id);
+  div.on("click.kbpo.relationWidget", function(evt) {self.done(reln.name)});
+  return div;
+}
+
+// TODO: support editing.
+// The widget selection is done -- send back results.
+RelationWidget.prototype.done = function(chosen_reln) {
+  // Clear the innards of the html.
+  this.elem.html("");
+  if (this.cb) {
+    this.cb(chosen_reln);
+  } else {
+    console.log("Relation chosen but no callback", chosen_reln);
+  }
+}
 
 /**
  * Stores actual relations and iterates through every mention pair in
@@ -218,8 +260,10 @@ RelationInterface.prototype.next = function() {
 
   var mentionPair = this.mentionPairs[this.currentIndex];
   this.select(mentionPair);
-  // TODO: Activate relationWidget
-  // TODO: add done handler
+  this.relnWidget.init(mentionPair, function(reln) {
+    // TODO: Register that reln was chosen.
+    // TODO: move on to next.
+  });
 }
 
 // Called when the interface is done.

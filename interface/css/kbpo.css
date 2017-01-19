@@ -30,15 +30,6 @@ span.token.select {
   font-style:italic;
 }
 
-
-div.icon-box {
-  text-align: center;
-}
-
-div.icon-box span.fa {
-  margin: 0 auto;
-}
-
 span.token.subject {
   color: red;
   font-weight: bold;
@@ -49,3 +40,11 @@ span.token.object {
   font-weight: bold;
 }
 
+div.relation-option {
+  text-align: center;
+  display: inline-block;
+}
+
+div.relation-option span.icon {
+  margin: 0 auto;
+}

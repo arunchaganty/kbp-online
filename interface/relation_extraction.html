@@ -45,28 +45,23 @@
                 <h3 class="panel-title">Pick a relation</h3>
               </div>
               <div class="panel-body">
-                <div class="relation" id="relations">
-                  <div class="icon-box">
-                    <a href="#">
-                      <span class="fa fa-5x fa-fw fa-building-o"></span>
-                      <p>employed by</p>
-                    </a>
-                  </div>
-
-                  <div class="icon-box">
-                    <a href="#">
-                      <span class="fa fa-5x fa-fw fa-building-o"></span>
-                      <p>  by</p>
-                    </a>
-                  </div>
-
-
+                <div class="relation btn-group center-block" id="relations"  role="group">
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
+      <div id="widgets">
+        <button id="relation-option-widget" class="relation-option btn btn-default">
+            <span class="icon fa fa-5x fa-fw fa-building-o"></span>
+            <p>{short}</p>
+        </button>
+      </div>
+
+
+
     <script type="text/javascript">
 var docWidget;
 var relnWidget;
@@ -83,11 +78,11 @@ $.getJSON("data/example2.json", function(data) {
   mentionPair = {
     "first": {
       "type": "PER",
-      "tokens": [$('#token-4-1'), $('#token-4-2'), $('#token-4-3'), $('#token-4-4'),]
+      "tokens": [$('#token-9-4'), $('#token-9-5')]
     },
     "second": {
-      "type": "PER",
-      "tokens": [$('#token-4-8'), $('#token-4-9'), $('#token-4-10'), $('#token-4-11'),]
+      "type": "GPE",
+      "tokens": [$('#token-9-1'),]
     },
   };
 
@@ -96,6 +91,13 @@ $.getJSON("data/example2.json", function(data) {
 .fail(function() {
   console.log("Could not load data.");
 });
+/**
+  TODO: add relation buttons based on mention pair.
+
+  TODO: on click, register relation, continue.
+
+  TODO: draw relation between entities.
+  **/
 
     </script>
     </body>
