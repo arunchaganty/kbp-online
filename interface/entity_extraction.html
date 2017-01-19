@@ -1,4 +1,5 @@
 <!doctype html>
+<html>
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
 <!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
@@ -118,16 +119,6 @@
             console.log(doc);
             doc.load(data.document);
             doc.highlightListener.push(process_selection);
-
-            // Just highlight and underline a few spans for good fun.
-            $('#token-0-0').addClass("highlight");
-            $('#token-0-2').addClass("underline");
-            $('#token-0-3').addClass("underline");
-            $('#token-0-4').addClass("underline");
-            $('#token-0-7').addClass("highlight");
-
-
-
           })
             .fail(function() {
               console.log("Could not load data.");
