@@ -65,7 +65,25 @@ DocWidget.prototype.attachHandlers = function() {
   // be handled.
   this.elem.on("mouseup.kbpo.docWidget", function(evt) { // Any selection in the document.
     var sel = document.getSelection();
-    if (sel.isCollapsed) return; // Collapsed => an empty selection.
+    //if (sel.isCollapsed) return; // Collapsed => an empty selection.
+    if (sel.isCollapsed) {
+      // This is a click event.
+      // Handle the case that the node is an '&nbsp;' text.
+      var startNode;
+      if (self.isToken(sel.anchorNode.parentNode)) {
+        startNode = sel.anchorNode.parentNode;
+      } else if (self.isSentence(sel.anchorNode.parentNode)) {
+        startNode = sel.anchorNode.nextSibling;
+      } else {
+        console.log("[Error] selected anchor node is not part of a sentence or a token");
+        sel.collapseToEnd();
+        return;
+      }
+      self.clickListener.forEach(function (listener) {listener(startNode);});
+      evt.stopPropagation();
+    
+      return; // Collapsed => an empty selection. 
+    }
 
     // The selected elements are not even in the #document.
     if (!self.elem[0].contains(sel.anchorNode) || !self.elem[0].contains(sel.focusNode)) {
@@ -133,21 +151,21 @@ DocWidget.prototype.attachHandlers = function() {
 
   // mouseEnter
   this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
-    //console.log("span-enter:", this);
+    console.log("span-enter:", this);
     self.mouseEnterListener.forEach(function (listener) {listener(this);});
   });
 
   // mouseLeave
   this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
-    //console.log("span-leave:", this);
+    console.log("span-leave:", this);
     self.mouseLeaveListener.forEach(function (listener) {listener(this);});
   });
 
   // clickListener
-  this.elem.find("span.token").on("click.kbpo.docWidget", function(evt) {
+  /*this.elem.find("span.token").on("click.kbpo.docWidget", function(evt) {
     console.log("span-click:", this);
     self.clickListener.forEach(function (listener) {listener(this);});
-  });
+  });*/
 };
 
 // TODO: hooks for rendering subtext (for the linked entity), colors,

@@ -1,7 +1,11 @@
 .token{
 }
-.entity:hover{
-    background-color:#FFF;
+.selected-entity{
+    background-color:#BBF;
+    
+}
+.token-select{
+    background-color:grey;
 }
 
 
