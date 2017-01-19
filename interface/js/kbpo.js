@@ -31,10 +31,11 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
       var token = sentence[j];
       var tokenSpan = $("<span>", {'class': 'token', 'id': 'token-' + i + '-' + j})
                    .text(token.word);
-      if (j > 0 && sentence[j].doc_char_begin > sentence[j-1].doc_char_end) {
-        tokenSpan.html("&nbsp;" + tokenSpan.text());
-      }
       tokenSpan[0].token = token;
+
+      if (j > 0 && sentence[j].doc_char_begin > sentence[j-1].doc_char_end) {
+        tokenSpan.html('&nbsp;' + tokenSpan.text());
+      }
       span.append(tokenSpan);
     }
     this.elem.append(span);
@@ -45,6 +46,13 @@ DocWidget.prototype.highlightListener = []
 DocWidget.prototype.mouseEnterListener = []
 DocWidget.prototype.mouseLeaveListener = []
 DocWidget.prototype.clickListener = []
+
+DocWidget.prototype.isSentence = function(node) {
+  return node.classList.contains("sentence");
+}
+DocWidget.prototype.isToken = function(node) {
+  return node.classList.contains("token");
+}
 
 /**
  * Attaches handlers to the DOM elements in the document and forwards
@@ -59,42 +67,79 @@ DocWidget.prototype.attachHandlers = function() {
     var sel = document.getSelection();
     if (sel.isCollapsed) return; // Collapsed => an empty selection.
 
-    var startNode = sel.anchorNode.parentNode;
-    var endNode = sel.focusNode.parentNode;
+    // The selected elements are not even in the #document.
+    if (!self.elem[0].contains(sel.anchorNode) || !self.elem[0].contains(sel.focusNode)) {
+      sel.collapseToEnd();
+      return;
+    }
 
-    // Ensure that the start and end nodes are in the document.
-    if (!self.elem[0].contains(startNode) || !self.elem[0].contains(endNode)) {
-      // Otherwise, kill the selection.
+    // Handle the case that the node is an '&nbsp;' text.
+    var startNode;
+    if (self.isToken(sel.anchorNode.parentNode)) {
+      startNode = sel.anchorNode.parentNode;
+    } else if (self.isSentence(sel.anchorNode.parentNode)) {
+      startNode = sel.anchorNode.nextSibling;
     } else {
-      // Create a selection object of the spans in between the start and
-      // end nodes.
-      var selectedTokens = [];
-      while (startNode != endNode) {
-        if ($(startNode).hasClass('token')) {
-          selectedTokens.push(startNode);
-        }
-        startNode = startNode.nextSibling;
-      }
+      console.log("[Error] selected anchor node is not part of a sentence or a token");
+      sel.collapseToEnd();
+      return;
+    }
+
+    var endNode;
+    if (self.isToken(sel.focusNode.parentNode)) {
+      endNode = sel.focusNode.parentNode;
+    } else if (self.isSentence(sel.focusNode.parentNode)) {
+      endNode = sel.focusNode.previousSibling;
+    } else {
+      console.log("[Error] selected focus node is not part of a sentence or a token");
+      sel.collapseToEnd();
+      return;
+    }
+
+    // Make sure both startNode and endNode are part of the same sentence.
+    if (startNode.parentNode != endNode.parentNode) {
+      console.log("[Error] selected tokens cross sentence boundaries");
+      sel.collapseToEnd();
+      return;
+    }
+
+    // Make sure startNode appears before endNode.
+    if ($(startNode).nextAll().filter(endNode).length === 0) {
+      var tmpNode = endNode;
+      endNode = startNode;
+      startNode = tmpNode;
+    } 
+    console.assert($(startNode).nextAll(endNode).length !== 0, "[Warning] start node does not preceed end node", startNode, endNode);
+
+    // Create a selection object of the spans in between the start and
+    // end nodes.
+    var selectedTokens = [];
+    while (startNode != endNode) {
+      console.assert(startNode != null);
       if ($(startNode).hasClass('token')) {
         selectedTokens.push(startNode);
       }
-      
-      console.log("span-selected:", selectedTokens);
-      self.highlightListener.forEach(function (listener) {listener(selectedTokens);});
+      startNode = startNode.nextSibling;
     }
-    // Kill the selection.
+    if ($(startNode).hasClass('token')) {
+      selectedTokens.push(startNode);
+    }
+    
+    console.log("span-selected:", selectedTokens);
+    self.highlightListener.forEach(function (listener) {listener(selectedTokens);});
+
     sel.collapseToEnd();
   });
 
   // mouseEnter
   this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
-    console.log("span-enter:", this);
+    //console.log("span-enter:", this);
     self.mouseEnterListener.forEach(function (listener) {listener(this);});
   });
 
   // mouseLeave
   this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
-    console.log("span-leave:", this);
+    //console.log("span-leave:", this);
     self.mouseLeaveListener.forEach(function (listener) {listener(this);});
   });
 
