@@ -259,6 +259,9 @@ RelationInterface.prototype.run = function(mentionPairs) {
 
 // Draw mention pair
 RelationInterface.prototype.select = function(mentionPair) {
+  // Move to the location.
+  // TODO: move to 3 lines before.
+  document.location.hash = mentionPair.first.tokens[0].attr("id")
   mentionPair.first.tokens.forEach(function(t) {t.addClass("subject");});
   mentionPair.second.tokens.forEach(function(t) {t.addClass("object");});
 }
@@ -292,7 +295,8 @@ RelationInterface.prototype.done = function() {
   $("#done-row").removeClass("hidden");
 }
 
-// TODO: focus on relation within text.
+// TODO: Change input to be in mentions.
+// TODO: Highlight mentions.
 // TODO: Show previous reported relations.
 // TODO: allow moving to a previous mention pair for correction.
 
