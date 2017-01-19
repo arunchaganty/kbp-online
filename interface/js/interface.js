@@ -21,16 +21,48 @@ function Mention(list_of_words){
     this.span = list_of_words;
     this.id = "m_"+Mention.count;
     Mention.count+=1;
-    /*for (i =0; i<list_of_words.len; i++){
-        Mention.token_to_mention_map[list_of_words[i].id]
-    }*/
+    console.log(list_of_words);
+    for (i =0; i<list_of_words.length; i++){
+        console.log(list_of_words[i].id);
+        Mention.token_to_mention_map[list_of_words[i].id] = this;
+    }
 }
 Mention.count = 0;
-Mention.prototype.highlight = function(color){
+Mention.prototype.color = function(color){
     for (i = 0; i<this.span.length;i++){
         $(this.span[i]).css("background-color", color);
     }
 };
+Mention.prototype.remove = function(color){
+    this.color("");
+    for (i =0; i<this.span.length; i++){
+        console.log(this.span[i].id);
+        delete Mention.token_to_mention_map[this.span[i].id];
+    }
+    if (this.id in Entity.mention_to_entity_map){
+        Entity.mention_to_entity_map[this.id].removeMention(this);
+    }
+};
+Mention.prototype.highlight = function(){
+    for (i = 0; i<this.span.length;i++){
+        $(this.span[i]).addClass("highlight");
+    }
+}
+Mention.prototype.unhighlight = function(){
+    for (i = 0; i<this.span.length;i++){
+        $(this.span[i]).removeClass("highlight");
+    }
+}
+Mention.prototype.select = function(){
+    for (i = 0; i<this.span.length;i++){
+        $(this.span[i]).addClass("select");
+    }
+}
+Mention.prototype.deselect = function(){
+    for (i = 0; i<this.span.length;i++){
+        $(this.span[i]).removeClass("select");
+    }
+}
 Mention.token_to_mention_map = {}
 Mention.prototype.text = function(){
     text = ""
@@ -45,15 +77,68 @@ function Entity(canonical_mention, type){
     this.mentions = [canonical_mention, ];
     this.id = "e_"+Entity.count;
     Entity.count +=1;
+    Entity.mention_to_entity_map[canonical_mention.id] = this;
+    entities[this.id]=this;
+    
+    //add a dom element
+    this.entity_dom = $('.entity_template').clone();
+    this.entity_dom.removeClass('hidden').removeClass('entity_template').addClass('selected-entity');
+    this.entity_dom.children('i').addClass(this.type.icon);
+    this.entity_dom.append(this.canonical_text());
+    this.entity_dom.attr('onclick', 'linkEntity(\''+this.id+'\')');
+    this.entity_dom.attr('id', this.id).prop('checked', 'checked');
+    this.entity_dom.appendTo($('#entities'));
+    this.canonical_mention.color(type.color);
+    update_zero_entity();
 };
 Entity.count = 0;
 Entity.prototype.addMention = function(mention){
     this.mentions.push(mention);
+    Entity.mention_to_entity_map[mention.id] = this;
+    mention.color(this.type.color);
+};
+Entity.prototype.removeMention = function(mention){
+    var index= this.mentions.indexOf(mention);
+    if (index > -1) {
+        this.mentions.splice(index, 1);
+    }
+    delete Entity.mention_to_entity_map[mention.id];
+    if(this.mentions.length < 1){
+        this.remove();
+    }
 };
 Entity.prototype.canonical_text = function(){
     return this.canonical_mention.text();
 };
+Entity.prototype.remove = function(){
+    for (var i = 0; i<this.mentions.length; i++){
+        delete Entity.mention_to_entity_map[i.id]
+    }
+    this.entity_dom.remove();
+    update_zero_entity();
+}
+Entity.prototype.highlight = function(){
+    for (var i = 0; i<this.mentions.length; i++){
+        this.mentions[i].highlight();
+    }
+    this.entity_dom.addClass('highlight');
+}
+Entity.prototype.unhighlight = function(){
+    for (var i = 0; i<this.mentions.length; i++){
+        this.mentions[i].unhighlight();
+    }
+    this.entity_dom.removeClass('highlight');
+}
 Entity.mention_to_entity_map = {}
+
+function update_zero_entity(){
+    if (Entity.count>=0){
+        $('.zero_entity').addClass('hidden');
+    }
+    else{
+        $('.zero_entity').removeClass('hidden');
+    }
+}
 
 entities = {}
 var current_mention = null;
@@ -63,33 +148,90 @@ function linkEntity(entity_id){
     var i = 0
     console.log(entity_id);
     var entity = entities[entity_id];
-    //TODO: check if current mention is null?
     entity.addMention(current_mention);
     current_mention.highlight(entity.type.color);
     disable_pane();
 }
-function addEntity(type){
+function type_clicked(type_name){
+    var type = $(type_name).parent().attr('entity_type');
     type = entity_types[type];
-    
-    var new_entity = new Entity(current_mention, type);
-    entities[new_entity.id]=new_entity;
-    var new_entity_dom = $('.entity_template').clone();
-    new_entity_dom.removeClass('hidden').removeClass('entity_template');
-    new_entity_dom.children('i').addClass(new_entity.type.icon);
-    new_entity_dom.append(new_entity.canonical_text());
-    new_entity_dom.attr('onclick', 'linkEntity(\''+new_entity.id+'\')');
-    new_entity_dom.attr('value', new_entity.id).prop('checked', 'checked');
-    new_entity_dom.appendTo($('#entities'));
-    new_entity_dom.focus();
-    current_mention.highlight(type.color);
-    if (Entity.count>=0){
-        $('.zero_entity').addClass('hidden');
+    new Entity(current_mention, type);
+    disable_pane(); 
+}
+
+function process_selection(token_span){
+    disable_pane();
+    for(var i=0; i<token_span.length; i++){
+        if(token_span[i].id in Mention.token_to_mention_map){
+            current_mention = Mention.token_to_mention_map[token_span[i].id];
+            process_click(token_span[i]);
+            return;
+        }
+    }
+    current_mention = new Mention(token_span);
+    current_mention.select();
+    current_mention.color('grey');
+    enable_pane();
+}
+
+function process_click(token){
+    disable_pane();
+    if(token.id in Mention.token_to_mention_map){
+        current_mention = Mention.token_to_mention_map[token.id];
+        current_entity = Entity.mention_to_entity_map[current_mention.id];
+        current_entity.highlight();
+        current_entity.entity_dom.addClass('selected-entity');
+        $('#add_entity_widget').addClass('hidden');
+        $('#cancel_mention_widget').removeClass('hidden');
+        enable_pane();
     }
     else{
-        $('.zero_entity').removeClass('hidden');
+    }
+}
+var highlighted_entity = null;
+function process_mouse_enter(token){
+    console.log('mouse entered');
+    if(current_mention == null && token.id in Mention.token_to_mention_map){
+        var hovered_mention = Mention.token_to_mention_map[token.id];
+        highlighted_entity = Entity.mention_to_entity_map[current_mention.id];
+        highlighted_entity.highlight();
+    }
+}
+function process_mouse_leave(token){
+    if (highlighted_entity != null){
+        highlighted_entity.unhighlight();
+    }
+    highlighted_entity = null;
+}
+function remove_mention(){
+    if (current_mention != null){
+        current_mention.remove();
     }
     disable_pane();
 }
+
+function disable_pane(){
+    console.log('oh!');
+    $('.entity-pane *').attr("disabled", "disabled");
+    $('.selected-entity').removeClass("selected-entity");
+    $('#add_entity_widget').removeClass('hidden');
+    $('#cancel_mention_widget').addClass('hidden');
+    if (current_mention !=null){
+        current_mention.deselect();
+        if (current_mention.id in Entity.mention_to_entity_map){
+            var current_entity = Entity.mention_to_entity_map[current_mention.id];
+            current_entity.unhighlight();
+        }else{
+            current_mention.remove();
+        }
+    }
+    current_mention = null;
+    //$('.entity-pane').unbind("click", disable_pane);
+}
+function enable_pane(){
+    $('.entity-pane *').removeAttr("disabled");
+}
+//$('.entity-pane').css('pointer-events', 'none');
 
 function entity_type(type, icon, color){
     this.type = type;
@@ -113,23 +255,6 @@ function populate_types(){
         new_type.appendTo($('#types'));
     }
 }
-function type_clicked(type_name){
-    var type = $(type_name).parent().attr('entity_type');
-//change entity name 
-    addEntity(type);
-}
 populate_types();
-function process_selection(token_span){
-    enable_pane();
-    current_mention = new Mention(token_span);
-    current_mention.highlight('grey');
-}
-//function process_click(
-function disable_pane(){
-    $('.entity-pane *').attr("disabled", "disabled");
-}
-function enable_pane(){
-    $('.entity-pane *').removeAttr("disabled");
-}
 disable_pane();
-//$('.entity-pane').css('pointer-events', 'none');
+//$('.document').bind("click", disable_pane);

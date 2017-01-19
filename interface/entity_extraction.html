@@ -91,8 +91,8 @@
                     </label>
                 </div>-->
             </div>
-            <div id ="cancel_entity_widget" class = "row hide">
-                <button class="btn btn-danger btn-block" type="button" name="" onclick=""> Cancel </button>
+            <div id ="cancel_mention_widget" class = "row hidden">
+                <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
                 </div>
         </div>
       </div>
@@ -118,6 +118,9 @@
             console.log(doc);
             doc.load(data.document);
             doc.highlightListener.push(process_selection);
+            doc.clickListener.push(process_click);
+            doc.mouseEnterListener.push(process_mouse_enter);
+            doc.mouseLeaveListener.push(process_mouse_leave);
           })
             .fail(function() {
               console.log("Could not load data.");

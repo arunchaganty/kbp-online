@@ -23,7 +23,11 @@ span.token.underline {
 }
 
 span.token.highlight {
-  font-weight: bold;
+  text-shadow:1px 0px 0px;
+}
+
+span.token.select {
+  font-style:italic;
 }
 
 
