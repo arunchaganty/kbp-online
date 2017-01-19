@@ -39,14 +39,25 @@
               </div>
             </div>
           </div>
-          <div class = "row">
+          <div class="row" id="relation-row">
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h3 class="panel-title">Pick a relation</h3>
               </div>
-              <div class="panel-body">
-                <div class="relation btn-group center-block" id="relations"  role="group">
+              <div class="panel-body" id="relations">
+                <div id="relation-option-preview" class="well">
                 </div>
+
+                <div class="btn-group" id="relation-options"  role="group">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row hidden" id="done-row">
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <p>Excellent! You have completed the task.</p>
+                <button class="btn btn-success right">Done</button>
               </div>
             </div>
           </div>
@@ -75,30 +86,39 @@ $.getJSON("data/example2.json", function(data) {
   relnWidget = new RelationWidget($("#relations"));
   relnInt = new RelationInterface(docWidget, relnWidget);
 
-  mentionPair = {
-    "first": {
-      "type": "PER",
-      "tokens": [$('#token-9-4'), $('#token-9-5')]
-    },
-    "second": {
-      "type": "GPE",
-      "tokens": [$('#token-9-1'),]
-    },
-  };
-
-  relnInt.run([mentionPair]);
+  var mentionPairs = [{
+      "first": {
+        "type": "ORG",
+        "gloss": "Tesco",
+        "tokens": [$('#token-6-32'),]},
+      "second": {
+        "type": "GPE",
+        "gloss": "Britain",
+        "tokens": [$('#token-6-34'),]},
+    },{
+      "first": {
+        "type": "PER",
+        "gloss": "Victor Ponta",
+        "tokens": [$('#token-9-4'), $('#token-9-5')]},
+      "second": {
+        "type": "GPE",
+        "gloss": "Romanian",
+        "tokens": [$('#token-9-1'),]},
+    },{
+      "first": {
+        "type": "PER",
+        "gloss": "Daniel Constantin",
+        "tokens": [$('#token-9-10'), $('#token-9-11')]},
+      "second": {
+        "type": "TITLE",
+        "gloss": "Minister of Agriculture",
+        "tokens": [$('#token-9-7'), $('#token-9-8'), $('#token-9-9')]},
+    }];
+  relnInt.run(mentionPairs);
 })
 .fail(function() {
   console.log("Could not load data.");
 });
-/**
-  TODO: add relation buttons based on mention pair.
-
-  TODO: on click, register relation, continue.
-
-  TODO: draw relation between entities.
-  **/
-
     </script>
     </body>
 </html>

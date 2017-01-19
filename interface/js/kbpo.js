@@ -190,13 +190,26 @@ var RelationWidget = function(elem) {
 
 // initialize the interface using @mentionPair. On completion, call @cb.
 RelationWidget.prototype.init = function(mentionPair, cb) {
+  this.mentionPair = mentionPair;
   this.cb = cb;
   console.log("initializing relation widget for", mentionPair);
 
   this.relns = getCandidateRelations(mentionPair);
   console.log("using candiates", this.relns);
   for (var i = 0; i < this.relns.length; i++) {
-    this.elem.append(this.makeRelnOption(this.relns[i], i));
+    this.elem.find("#relation-options").append(this.makeRelnOption(this.relns[i], i));
+  }
+}
+
+RelationWidget.prototype.updateText = function(template) {
+  var div = this.elem.find("#relation-option-preview");
+  if (template) { // update text
+    var txt = template
+      .replace("{subject}", "<span class='subject'>" + this.mentionPair.first.gloss + "</span>")
+      .replace("{object}", "<span class='object'>" + this.mentionPair.second.gloss + "</span>");
+    div.html(txt);
+  } else { // clear
+    div.html("");
   }
 }
 
@@ -206,6 +219,9 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   div.html(div.html().replace("{short}", reln.short));
   div.attr("id", "relation-option-" + id);
   div.on("click.kbpo.relationWidget", function(evt) {self.done(reln.name)});
+  // Update widget text. 
+  div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.template)});
+  div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText()});
   return div;
 }
 
@@ -213,7 +229,8 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
 // The widget selection is done -- send back results.
 RelationWidget.prototype.done = function(chosen_reln) {
   // Clear the innards of the html.
-  this.elem.html("");
+  this.elem.find("#relation-options").html("");
+  this.elem.find("#relation-option-preview").html("");
   if (this.cb) {
     this.cb(chosen_reln);
   } else {
@@ -253,6 +270,7 @@ RelationInterface.prototype.unselect = function(mentionPair) {
 
 // Progress to the next mention pair.
 RelationInterface.prototype.next = function() {
+  var self = this;
   this.currentIndex += 1;
   if (this.currentIndex > this.mentionPairs.length - 1) {
     return this.done();
@@ -261,18 +279,20 @@ RelationInterface.prototype.next = function() {
   var mentionPair = this.mentionPairs[this.currentIndex];
   this.select(mentionPair);
   this.relnWidget.init(mentionPair, function(reln) {
-    // TODO: Register that reln was chosen.
-    // TODO: move on to next.
+    mentionPair.relation = reln;
+    self.unselect(mentionPair);
+    self.next();
   });
 }
 
 // Called when the interface is done.
 RelationInterface.prototype.done = function() {
+  // Hide the relation panel, and show the Done > (submit) button.
+  $("#relation-row").addClass("hidden");
+  $("#done-row").removeClass("hidden");
 }
 
-// TODO: highlight a given mention pair
-// TODO: activate relation selection interface.
-// TODO: progress the interface when done.
-
+// TODO: focus on relation within text.
+// TODO: Show previous reported relations.
 // TODO: allow moving to a previous mention pair for correction.
 

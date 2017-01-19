@@ -4,6 +4,10 @@
   overflow-y: scroll;
 }
 
+#document.small {
+  max-height: 300px;
+}
+
 span.sentence {
   display: inline-block;
   margin-right: 1em;
@@ -48,3 +52,18 @@ div.relation-option {
 div.relation-option span.icon {
   margin: 0 auto;
 }
+
+div#relation-option-preview {
+  font-size: large;
+}
+
+div#relation-option-preview span.subject {
+  color: red;
+  font-weight: bold;
+}
+
+div#relation-option-preview span.object {
+  color: blue;
+  font-weight: bold;
+}
+
