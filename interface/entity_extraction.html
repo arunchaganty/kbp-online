@@ -4,13 +4,12 @@
 <!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
     <head>
+        <title>kbpo -- Entity extraction</title>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
         <link rel="stylesheet" href="css/bootstrap.min.css">
         <style>
             body {
@@ -22,8 +21,10 @@
         <link rel="stylesheet" href="css/font-awesome.min.css">
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/interface.css">
+        <link href="css/kbpo.css" rel="stylesheet">
 
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="js/kbpo.js"></script>
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -35,18 +36,34 @@
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-        <div class="col-md-8">
-          <h2>Heading</h2>
-          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        <div class="col-md-9">
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="document" id="document">
+            </div>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div id ="entities" class = "row">
-                <div class="" data-toggle="buttons">
-                    <label class="hidden btn btn-secondary btn-block entity_template">
-                        <input type="radio" name="options" id="" autocomplete="off">
-                    </label>
+        </div>
+        <div class="col-md-3 entity-pane">
+            <div class = "row">
+             <div class="panel panel-default">
+              <div class="panel-body">
+                <h4>Entities:</h4>
+
+                <div id = "entities" class="list-group">
+                  <button type="button" class="list-group-item zero_entity entity" disabled=true>No entities yet</button>
+                  <button type="button" class="hidden list-group-item entity_template entity"></button>
                 </div>
+               <!--<div class="" data-toggle="buttons">
+                    <label class="btn btn-secondary btn-block ">
+                        <input type="radio" name="options" id="" autocomplete="off"> No entities yet 
+                    </label>
+                    <label class="hidden btn btn-info btn-block entity_template">
+                        <input type="radio" name="options" id="" value="" autocomplete="off" checked>
+                    </label> 
+                </div>-->
+              </div>
+            </div>
 
             </div>
 
@@ -54,7 +71,8 @@
             <div id ="add_entity_widget" class = "row">
                 <div class="btn-group btn-block">
                   <button type="button" class="btn btn-primary btn-block dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    New <span class="caret"></span>
+<i class='fa fa-plus-circle'></i>
+                    New Entity <span class="caret"></span>
                   </button>
                   <ul id = 'types' class="dropdown-menu">
                     <li class="hidden type_template type">
@@ -73,16 +91,16 @@
                     </label>
                 </div>-->
             </div>
-            <div id ="cancel_entity_widget" class = "row">
-                        <button class="btn btn-danger btn-block" type="button" name="" onclick=""> Cancel </button>
-            </div>
+            <div id ="cancel_entity_widget" class = "row hide">
+                <button class="btn btn-danger btn-block" type="button" name="" onclick=""> Cancel </button>
+                </div>
         </div>
       </div>
 
       <hr>
 
       <footer>
-        <p>&copy; Company 2015</p>
+        <p>Stanford NLP</p>
       </footer>
     </div> <!-- /container -->        
     <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>-->
@@ -91,5 +109,29 @@
         <script src="js/bootstrap.min.js"></script>
 
         <script src="js/interface.js"></script>
+        <script type="text/javascript">
+          var doc = new DocWidget($("#document"));
+          console.log(doc);
+
+          $.getJSON("data/example1.json", function(data) {
+            console.log("loaded data.");
+            console.log(doc);
+            doc.load(data.document);
+            doc.highlightListener.push(process_selection);
+
+            // Just highlight and underline a few spans for good fun.
+            $('#token-0-0').addClass("highlight");
+            $('#token-0-2').addClass("underline");
+            $('#token-0-3').addClass("underline");
+            $('#token-0-4').addClass("underline");
+            $('#token-0-7').addClass("highlight");
+
+
+
+          })
+            .fail(function() {
+              console.log("Could not load data.");
+            });
+        </script>
     </body>
 </html>
