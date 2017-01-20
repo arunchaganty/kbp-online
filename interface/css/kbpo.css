@@ -34,6 +34,10 @@ span.token.select {
   font-style:italic;
 }
 
+span.token.mention {
+  font-style: italic;
+}
+
 span.token.subject {
   color: red;
   font-weight: bold;

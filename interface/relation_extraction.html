@@ -14,8 +14,6 @@
         <link rel="stylesheet" href="css/bootstrap.min.css">
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" href="css/font-awesome.min.css">
-        <link rel="stylesheet" href="css/main.css">
-        <link rel="stylesheet" href="css/interface.css">
         <link rel="stylesheet" href="css/kbpo.css">
 
         <script src="js/jquery-3.1.1.min.js"></script>
@@ -86,35 +84,41 @@ $.getJSON("data/example2.json", function(data) {
   relnWidget = new RelationWidget($("#relations"));
   relnInt = new RelationInterface(docWidget, relnWidget);
 
-  var mentionPairs = [{
-      "first": {
-        "type": "ORG",
-        "gloss": "Tesco",
-        "tokens": [$('#token-6-32'),]},
-      "second": {
-        "type": "GPE",
-        "gloss": "Britain",
-        "tokens": [$('#token-6-34'),]},
+  var mentions = [{
+      "type": "ORG",
+      "gloss": "Tesco",
+      "doc_char_begin": 987,
+      "doc_char_end": 992,
     },{
-      "first": {
-        "type": "PER",
-        "gloss": "Victor Ponta",
-        "tokens": [$('#token-9-4'), $('#token-9-5')]},
-      "second": {
-        "type": "GPE",
-        "gloss": "Romanian",
-        "tokens": [$('#token-9-1'),]},
+      "type": "GPE",
+      "gloss": "Britain",
+      "doc_char_begin": 994,
+      "doc_char_end": 1001,
     },{
-      "first": {
-        "type": "PER",
-        "gloss": "Daniel Constantin",
-        "tokens": [$('#token-9-10'), $('#token-9-11')]},
-      "second": {
-        "type": "TITLE",
-        "gloss": "Minister of Agriculture",
-        "tokens": [$('#token-9-7'), $('#token-9-8'), $('#token-9-9')]},
+      "type": "PER",
+      "gloss": "Victor Ponta",
+      "doc_char_begin": 1515,
+      "doc_char_end": 1521,
+    },{
+      "type": "GPE",
+      "gloss": "Romanian",
+      "tokens": [$('#token-9-1'),],
+      "doc_char_begin": 1491,
+      "doc_char_end": 1499,
+    },{
+      "type": "PER",
+      "gloss": "Daniel Constantin",
+      "tokens": [$('#token-9-10'), $('#token-9-11')],
+      "doc_char_begin": 1556,
+      "doc_char_end": 1573,
+    },{
+      "type": "TITLE",
+      "gloss": "Minister of Agriculture",
+      "tokens": [$('#token-9-7'), $('#token-9-8'), $('#token-9-9')],
+      "doc_char_begin": 1532,
+      "doc_char_end": 1555,
     }];
-  relnInt.run(mentionPairs);
+  relnInt.run(mentions);
 })
 .fail(function() {
   console.log("Could not load data.");
