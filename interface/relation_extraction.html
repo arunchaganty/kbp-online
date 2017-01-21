@@ -26,38 +26,54 @@
     <body>
       <div class="container">
         <!-- Example row of columns -->
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
+        <div class="row">
           <h1> Relation Extraction </h1>
-          <div class="row">
-            <div class="panel panel-default">
-              <div class="panel-body">
-                <div class="document short" id="document">
+        </div>
+        <div class="row">
+          <div class="col-md-8">
+            <div class="row">
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <div class="document short" id="document">
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="row" id="relation-row">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h3 class="panel-title">Pick a relation</h3>
-              </div>
-              <div class="panel-body" id="relations">
-                <div id="relation-option-preview" class="well">
+            <div class="row" id="relation-row">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h2 class="panel-title"><b>Pick a relation</b>
+                    <span class="pull-right">
+                  <button id="back" class="btn navbar-btn btn-warning right"><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
+                  <button id="done" class="btn navbar-btn btn-success right" disabled><span class="glyphicon glyphicon-ok"></span> Done</button>
+                  </span>
+                  <div class="clearfix"></div>
+                  </h2>
                 </div>
+                <div class="panel-body" id="relations">
+                  <div id="relation-option-preview" class="well">
+                  </div>
 
-                <div class="btn-group" id="relation-options"  role="group">
+                  <div class="btn-group" id="relation-options"  role="group">
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="row hidden" id="done-row">
-            <div class="panel panel-default">
-              <div class="panel-body">
-                <p>Excellent! You have completed the task.</p>
-                <button class="btn btn-success right">Done</button>
-              </div>
+          <div class="col-md-4">
+            <h2>Identified relations</h2>
+
+            <div id="relations-list" class="list-group">
+              <button type="button" id="extraction-empty" class="list-group-item extraction" disabled=true>No relations identified yet</button>
+              <button type="button" id="extraction-template" class="hidden list-group-item extraction">
+                <span class="relation-sentence">
+                </span>
+                <span class="badge cancel">
+                  <span class="glyphicon glyphicon-pencil"></span>
+                </span>
+              </button>
             </div>
+
           </div>
         </div>
       </div>
@@ -82,7 +98,8 @@ $.getJSON("data/example2.json", function(data) {
   docWidget.load(data.document);
 
   relnWidget = new RelationWidget($("#relations"));
-  relnInt = new RelationInterface(docWidget, relnWidget);
+  listWidget = new RelationListWidget($("#relations-list"));
+  relnInt = new RelationInterface(docWidget, relnWidget, listWidget);
 
   var mentions = [{
       "type": "ORG",
@@ -98,23 +115,20 @@ $.getJSON("data/example2.json", function(data) {
       "type": "PER",
       "gloss": "Victor Ponta",
       "doc_char_begin": 1515,
-      "doc_char_end": 1521,
+      "doc_char_end": 1527,
     },{
       "type": "GPE",
       "gloss": "Romanian",
-      "tokens": [$('#token-9-1'),],
       "doc_char_begin": 1491,
       "doc_char_end": 1499,
     },{
       "type": "PER",
       "gloss": "Daniel Constantin",
-      "tokens": [$('#token-9-10'), $('#token-9-11')],
       "doc_char_begin": 1556,
       "doc_char_end": 1573,
     },{
       "type": "TITLE",
       "gloss": "Minister of Agriculture",
-      "tokens": [$('#token-9-7'), $('#token-9-8'), $('#token-9-9')],
       "doc_char_begin": 1532,
       "doc_char_end": 1555,
     }];

@@ -5,7 +5,6 @@
 
 // 
 var Mention = function(m) {
-
 }
 
 /**
@@ -63,6 +62,7 @@ DocWidget.prototype.buildMention = function(m) {
   m.tokens.forEach(function(t) {$(t).addClass("mention");});
   console.assert(m.tokens.length > 0);
 
+  m.inRelation = false;
   m.sentenceIdx = m.tokens[0].sentenceIdx;
   return m;
 }
@@ -199,10 +199,7 @@ DocWidget.prototype.attachHandlers = function() {
 function getCandidateRelations(mentionPair) {
   var candidates = [];
   RELATIONS.forEach(function (reln) {
-    if (reln["subject-types"].indexOf(mentionPair[0].type) >= 0 
-        && reln["object-types"].indexOf(mentionPair[1].type) >= 0) {
-      candidates.push(reln);
-    }
+    if (reln.isApplicable(mentionPair)) candidates.push(reln);
   });
   return candidates;
 }
@@ -220,22 +217,20 @@ RelationWidget.prototype.init = function(mentionPair, cb) {
   console.log("initializing relation widget for", mentionPair);
 
   this.relns = getCandidateRelations(mentionPair);
-  console.log("using candiates", this.relns);
+  this.elem.find("#relation-options").empty(); // Clear.
+  this.elem.find("#relation-option-preview").empty(); // Clear.
   for (var i = 0; i < this.relns.length; i++) {
-    this.elem.find("#relation-options").append(this.makeRelnOption(this.relns[i], i));
+    var relnDiv = this.makeRelnOption(this.relns[i], i);
+    // if this relation has already been selected, then show it in
+    // a different color.
+    if (this.mentionPair.relation != null && this.mentionPair.relation.name == this.relns[i].name) relnDiv.addClass("btn-primary"); 
+    this.elem.find("#relation-options").append(relnDiv);
   }
 }
 
-RelationWidget.prototype.updateText = function(template) {
+RelationWidget.prototype.updateText = function(previewText) {
   var div = this.elem.find("#relation-option-preview");
-  if (template) { // update text
-    var txt = template
-      .replace("{subject}", "<span class='subject'>" + this.mentionPair[0].gloss + "</span>")
-      .replace("{object}", "<span class='object'>" + this.mentionPair[1].gloss + "</span>");
-    div.html(txt);
-  } else { // clear
-    div.html("");
-  }
+  div.html(previewText || "");
 }
 
 RelationWidget.prototype.makeRelnOption = function(reln, id) {
@@ -243,9 +238,9 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   var div = $("#relation-option-widget").clone();
   div.html(div.html().replace("{short}", reln.short));
   div.attr("id", "relation-option-" + id);
-  div.on("click.kbpo.relationWidget", function(evt) {self.done(reln.name)});
+  div.on("click.kbpo.relationWidget", function(evt) {self.done(reln)});
   // Update widget text. 
-  div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.template)});
+  div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair))});
   div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText()});
   return div;
 }
@@ -254,8 +249,10 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
 // The widget selection is done -- send back results.
 RelationWidget.prototype.done = function(chosen_reln) {
   // Clear the innards of the html.
-  this.elem.find("#relation-options").html("");
-  this.elem.find("#relation-option-preview").html("");
+  this.elem.find("#relation-options").empty();
+  this.elem.find("#relation-option-preview").empty();
+
+  // Send a call back to the interface.
   if (this.cb) {
     this.cb(chosen_reln);
   } else {
@@ -267,9 +264,22 @@ RelationWidget.prototype.done = function(chosen_reln) {
  * Stores actual relations and iterates through every mention pair in
  * the document, controlling various UI elements.
  */
-var RelationInterface = function(docWidget, relnWidget) {
+var RelationInterface = function(docWidget, relnWidget, listWidget) {
+  var self = this;
   this.docWidget = docWidget; 
   this.relnWidget = relnWidget; 
+  this.listWidget = listWidget; 
+
+  this.listWidget.mouseEnterListener.push(function(p) {self.highlightExistingMentionPair(p)});
+  this.listWidget.mouseLeaveListener.push(function(p) {self.unhighlightExistingMentionPair(p)});
+  this.listWidget.clickListener.push(function(p) {self.editExistingMentionPair(p)});
+
+  $("#done")[0].disabled = true;
+  $("#back")[0].disabled = true;
+
+  $("#back").on("click.kbpo.interface", function (evt) {
+    self.editExistingMentionPair(self.mentionPairs[self.currentIndex-1]);
+  });
 };
 
 // Iterates through the mention pairs provided.
@@ -280,6 +290,7 @@ RelationInterface.prototype.run = function(mentions) {
   this.mentionPairs = this.constructMentionPairs(mentions);
 
   this.currentIndex = -1;
+  this.viewStack = []; // Used when changing relations.
   this.next();
 }
 
@@ -329,8 +340,9 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
       if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 1 ) break;
 
       // Check that the pair is type compatible and not duplicated.
-      if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
+      if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n)) {
         pairs.push([m,n]);
+      }
     }
     // - Go forwards until you cross a sentence boundary.
     for (var j = i+1; j < mentions.length; j++) {
@@ -340,6 +352,10 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
       if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
         pairs.push([m,n]);
     }
+  }
+  for (var i = 0; i < pairs.length; i++) {
+    pairs[i].id = i;
+    pairs[i].relation = null; // The none relation.
   }
 
   console.log(pairs);
@@ -359,28 +375,72 @@ RelationInterface.prototype.select = function(mentionPair) {
   // Move to the location.
   centerOnMention(mentionPair[0]);
   document.location.hash = $(mentionPair[0].tokens[0]).attr("id")
-  mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject");});
-  mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object");});
+  mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject selected");});
+  mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object selected");});
 }
 
 RelationInterface.prototype.unselect = function(mentionPair) {
-  mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject");});
-  mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object");});
+  mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject selected");});
+  mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object selected");});
 }
 
+RelationInterface.prototype.highlightExistingMentionPair = function(mentionPair) {
+  this.unselect(this.mentionPair);
+  this.select(mentionPair);
+}
+RelationInterface.prototype.unhighlightExistingMentionPair = function(mentionPair) {
+  this.unselect(mentionPair);
+  this.select(this.mentionPair);
+}
+RelationInterface.prototype.editExistingMentionPair = function(mentionPair) {
+  this.unselect(this.mentionPair);
+  if (this.viewStack.length == 0) this.viewStack.push(this.currentIndex);
+  this.next(mentionPair.id);
+}
+
+
 // Progress to the next mention pair.
-RelationInterface.prototype.next = function() {
+RelationInterface.prototype.next = function(idx) {
   var self = this;
-  this.currentIndex += 1;
+
+  if (idx != null) {
+    this.currentIndex = idx;
+  } else if (this.viewStack.length > 0) {
+    this.currentIndex = this.viewStack.pop();
+  } else {
+    this.currentIndex += 1;
+  }
+  if (this.currentIndex > 0) {
+    $("#back")[0].disabled = false;
+  } else {
+    $("#back")[0].disabled = true;
+  }
   if (this.currentIndex > this.mentionPairs.length - 1) {
     return this.done();
   }
-
   var mentionPair = this.mentionPairs[this.currentIndex];
+
+  this.mentionPair = mentionPair;
   this.select(mentionPair);
   this.relnWidget.init(mentionPair, function(reln) {
-    mentionPair.relation = reln;
     self.unselect(mentionPair);
+    console.log("changing", mentionPair.relation, reln);
+
+    // Remove a previous relation from the list if it existed.
+    if (mentionPair.relation && mentionPair.relation.name != reln.name) {
+      console.log("m");
+      self.listWidget.removeRelation(mentionPair);
+    } 
+    if (mentionPair.relation && mentionPair.relation.name == reln.name) {
+    } else {
+      // Set the relation of the pair.
+      mentionPair.relation = reln;
+      // Add mention to the relationList widget.
+      if (reln.name != "no_relation") {
+        self.listWidget.addRelation(mentionPair);
+      }
+    }
+
     self.next();
   });
 }
@@ -388,10 +448,57 @@ RelationInterface.prototype.next = function() {
 // Called when the interface is done.
 RelationInterface.prototype.done = function() {
   // Hide the relation panel, and show the Done > (submit) button.
-  $("#relation-row").addClass("hidden");
-  $("#done-row").removeClass("hidden");
+  $("#done")[0].disabled = false;
 }
 
-// TODO: Show previous reported relations.
-// TODO: allow moving to a previous mention pair for correction.
+RelationListWidget = function(elem) {
+  this.elem = elem;
+}
 
+RelationListWidget.prototype.mouseEnterListener = [];
+RelationListWidget.prototype.mouseLeaveListener = [];
+RelationListWidget.prototype.clickListener = [];
+
+RelationListWidget.prototype.addRelation = function(mentionPair) {
+  var self = this;
+
+  // Make sure that #empty-extraction is hidden.
+  this.elem.find("#extraction-empty").addClass("hidden");
+
+  // Create a new relation to add to the list.
+  var div = this.elem.find("#extraction-template").clone();
+  div.find(".relation-sentence").html(mentionPair.relation.renderTemplate(mentionPair));
+  div.removeClass("hidden");
+  div.attr("id", "mention-pair-" + mentionPair.id);
+  div[0].mentionPair = mentionPair;
+
+  // attach listeners.
+  div.on("mouseenter.kbpo.list", function(evt) {
+    console.log("mention.mouseenter", mentionPair);
+    self.mouseEnterListener.forEach(function(cb) {cb(mentionPair);});
+  });
+  div.on("mouseleave.kbpo.list", function(evt) {
+    console.log("mention.mouseleave", mentionPair);
+    self.mouseLeaveListener.forEach(function(cb) {cb(mentionPair);});
+  });
+  div.on("click.kbpo.click", function(evt) {
+    console.log("mention.cancel", mentionPair);
+    self.clickListener.forEach(function(cb) {cb(mentionPair);});
+  });
+
+  this.elem.append(div);
+}
+
+RelationListWidget.prototype.removeRelation = function(mentionPair) {
+  console.log("Removing", mentionPair.id);
+  this.elem.find(".extraction")
+    .filter(function (_, e) {
+      if (e.mentionPair !== undefined) console.log(mentionPair.id);
+      return e.mentionPair !== undefined && e.mentionPair.id == mentionPair.id;})
+    .remove();
+  if (this.elem.find(".extraction").length == 2) {
+    this.elem.find("#extraction-empty").removeClass("hidden");
+  }
+}
+
+// TODO: prepoulate the preview div with the current relation string.

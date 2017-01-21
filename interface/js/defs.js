@@ -2,7 +2,7 @@
  * Useful definitions
  */
 
-var RELATIONS = [{
+var _RELATIONS = [{
     "name": "per:age",
     "short": "age",
     "icon": "",
@@ -192,3 +192,27 @@ var RELATIONS = [{
     "subject-types": ["PER", "ORG", "GPE"],
     "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
   }];
+
+var RelationLabel = function(r) {
+  this.name = r.name;
+  this.short = r.short;
+  this.icon = r.icon;
+  this.template = r.template;
+  this.subjectTypes = r["subject-types"];
+  this.objectTypes = r["object-types"];
+}
+
+RelationLabel.prototype.renderTemplate = function(mentionPair) {
+  return this.template
+    .replace("{subject}", "<span class='subject'>" + mentionPair[0].gloss + "</span>")
+    .replace("{object}", "<span class='object'>" + mentionPair[1].gloss + "</span>");
+}
+
+RelationLabel.prototype.isApplicable = function(mentionPair) {
+  return this.subjectTypes.indexOf(mentionPair[0].type) >= 0 
+          && this.objectTypes.indexOf(mentionPair[1].type) >= 0;
+}
+
+
+var RELATIONS = [];
+_RELATIONS.forEach(function(r) {RELATIONS.push(new RelationLabel(r))});

@@ -30,22 +30,20 @@ span.token.highlight {
   text-shadow:1px 0px 0px;
 }
 
-span.token.select {
-  font-style:italic;
+span.selected {
+  font-weight:bold;
 }
 
 span.token.mention {
   font-style: italic;
 }
 
-span.token.subject {
+span.subject {
   color: red;
-  font-weight: bold;
 }
 
-span.token.object {
+span.object {
   color: blue;
-  font-weight: bold;
 }
 
 div.relation-option {
