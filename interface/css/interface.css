@@ -21,3 +21,14 @@
     max-height:400px;
     overflow-y:scroll;
 }
+.wiki-entry.list-group-item{
+    padding:5px;
+}
+.wiki-entry>.list-group-item-heading{
+    
+}
+.wiki-entry>.list-group-item-text{
+    font-size:smaller;
+    
+    
+}

@@ -25,6 +25,8 @@
 
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
         <script src="js/levenshtein.min.js"></script>
+        <script src="js/jquery-3.1.1.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
         <script src="js/kbpo.js"></script>
     </head>
     <body>
@@ -106,11 +108,10 @@
       <footer>
         <p>Stanford NLP</p>
       </footer>
+<!-- Button trigger modal -->
     </div> <!-- /container -->        
     <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>-->
     <!-- <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>-->
-        <script src="js/jquery-3.1.1.min.js"></script>
-        <script src="js/bootstrap.min.js"></script>
 
         <script src="js/interface.js"></script>
         <script type="text/javascript">
@@ -130,5 +131,89 @@
               console.log("Could not load data.");
             });
         </script>
+<div id='blah'> </div>
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#wiki-linking-modal">
+  Launch demo modal
+</button>
+
+<!-- Wikification Modal -->
+<div class="modal fade" id="wiki-linking-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="linkingModalLabel">Link to Wikipedia entry</h4>
+    </div>
+        <div class="row">
+          <div class="col-lg-12">
+            <form class="input-group">
+              <input type="text" id='wiki-search-input' name='search_input' class="form-control" placeholder="Search for..." onkeydown = "if (event.keyCode == 13)
+                        document.getElementById('submit-wiki-search').click()">
+              <span class="input-group-btn">
+                <button id ="submit-wiki-search" type="button" class="btn btn-default" onclick='wiki_search(this.form.search_input.value)'>Search</button>
+              </span>
+            </form><!-- /input-group -->
+            <br>
+            <div id='wiki-search-results' class="list-group">
+              <div  class="list-group-item wiki-entry wiki-entry-template hidden">
+<button type="button" class="btn btn-success btn-xs" style='float:right;' onclick='' ><i class="fa fa-fw fa-check-circle-o"></i> Link</button>
+                <h5 class="list-group-item-heading">
+                </h5>
+                <p class="list-group-item-text"></p>
+              </div>
+              <div  class="list-group-item wiki-entry none-wiki-entry">
+<button type="button" class="btn btn-danger btn-block" style='float:auto;' onclick='' ><i class="fa fa-fw fa-times-circle-o"></i>No Link</button>
+                <p class="list-group-item-text"></p>
+              </div>
+            </div>
+          </div><!-- /.col-lg-6 -->
+        </div><!-- /.row -->
+      </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="date-linking-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h4 class="modal-title" id="linkingModalLabel">Ground the date</h4>
+          <p> Document was published on: </p>
+          <p> Date to be grounded: </p>
+        
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-lg-6">
+            <div class="input-group">
+              <span class="input-group-addon">
+                <input type="checkbox" aria-label="...">
+              </span>
+              <input type="text" class="form-control" aria-label="...">
+            </div><!-- /input-group -->
+          </div><!-- /.col-lg-6 -->
+          <div class="col-lg-6">
+            <div class="input-group">
+              <span class="input-group-addon">
+                <input type="radio" aria-label="...">
+              </span>
+              <input type="text" class="form-control" aria-label="...">
+            </div><!-- /input-group -->
+          </div><!-- /.col-lg-6 -->
+        </div><!-- /.row -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
     </body>
+
 </html>
