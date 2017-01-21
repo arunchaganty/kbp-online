@@ -35,6 +35,7 @@ Mention.prototype.color = function(color){
 };
 Mention.prototype.remove = function(color){
     this.color("");
+    this.unhighlight();
     for (i =0; i<this.span.length; i++){
         console.log(this.span[i].id);
         delete Mention.token_to_mention_map[this.span[i].id];
@@ -71,6 +72,9 @@ Mention.prototype.text = function(){
     }
     return text;
 }
+Mention.prototype.levenshtein = function(string){
+    return window.Levenshtein.get(this.text(), string);
+}
 function Entity(canonical_mention, type){
     this.canonical_mention = canonical_mention;
     this.type = type;
@@ -87,7 +91,31 @@ function Entity(canonical_mention, type){
     this.entity_dom.append(this.canonical_text());
     this.entity_dom.attr('onclick', 'linkEntity(\''+this.id+'\')');
     this.entity_dom.attr('id', this.id).prop('checked', 'checked');
-    this.entity_dom.appendTo($('#entities'));
+    this.entity_dom.attr('entity-type', this.type.type);
+    var entities_in_dom = $(".entity").not(".zero_entity").not(".entity_template");
+    var total_len = entities_in_dom.length;
+    console.log(total_len);
+    if (total_len == 0){
+        this.entity_dom.appendTo($('#entities'));
+    }
+    var _this = this;
+    entities_in_dom.each(function(i){
+        console.log(i);
+        console.log($(this).attr("entity-type"));
+        console.log(_this.type.type);
+        console.log(_this.canonical_text());
+        console.log($(this).text());
+        console.log($(this).attr("entity-type")>=_this.type);
+        console.log($(this).text()>=_this.canonical_text());
+        if($(this).attr("entity-type")>=_this.type.type && $(this).text()>=_this.canonical_text()){
+            _this.entity_dom.insertBefore(this);
+            return false;
+        }
+        else if (i ==  total_len- 1) {
+            _this.entity_dom.insertAfter(this);
+            return false;
+        }
+    });
     this.canonical_mention.color(type.color);
     update_zero_entity();
 };
@@ -129,6 +157,18 @@ Entity.prototype.unhighlight = function(){
     }
     this.entity_dom.removeClass('highlight');
 }
+Entity.prototype.levenshtein = function(new_mention_string){
+    var best_match = null
+    var best_score = 1000;
+    for (var i = 0; i<this.mentions.length; i++){
+        var score = this.mentions[i].levenshtein(new_mention_string);
+        if (best_score > score){
+            best_score = score;
+            best_match = this.mentions[i]
+        }
+    }
+    return best_score;
+}
 Entity.mention_to_entity_map = {}
 
 function update_zero_entity(){
@@ -153,7 +193,7 @@ function linkEntity(entity_id){
     disable_pane();
 }
 function type_clicked(type_name){
-    var type = $(type_name).parent().attr('entity_type');
+    var type = $(type_name).attr('entity_type');
     type = entity_types[type];
     new Entity(current_mention, type);
     disable_pane(); 
@@ -171,6 +211,12 @@ function process_selection(token_span){
     current_mention = new Mention(token_span);
     current_mention.select();
     current_mention.color('grey');
+    var cur_text = current_mention.text()
+    for(entity_id in entities){
+        if (entities[entity_id].levenshtein(cur_text)<=3){
+            entities[entity_id].entity_dom.addClass('suggested-entity');
+        }
+    }
     enable_pane();
 }
 
@@ -190,7 +236,6 @@ function process_click(token){
 }
 var highlighted_entity = null;
 function process_mouse_enter(token){
-    console.log('mouse entered');
     if(current_mention == null && token.id in Mention.token_to_mention_map){
         var hovered_mention = Mention.token_to_mention_map[token.id];
         highlighted_entity = Entity.mention_to_entity_map[current_mention.id];
@@ -225,9 +270,18 @@ function disable_pane(){
             current_mention.remove();
         }
     }
+    $('.suggested-entity').removeClass('suggested-entity');
     current_mention = null;
     //$('.entity-pane').unbind("click", disable_pane);
 }
+/*function sort_entities(){
+    var entity_list = $('#entities');
+    var entities = entity_list.children('button');
+    entities.sort(function(a, b){
+        
+    }
+}*/
+
 function enable_pane(){
     $('.entity-pane *').removeAttr("disabled");
 }
@@ -242,14 +296,14 @@ var entity_types = {};
 var colors = ['#7fc97f','#beaed4','#fdc086','#ffff99','#386cb0'];
 entity_types['Person'] = new entity_type("Person", "fa-user", colors[0]);
 entity_types['Organization'] = new entity_type("Organization", "fa-building-o", colors[1]);
-entity_types['GPE'] = new entity_type("GPE", "fa-globe", colors[2]);
+entity_types['City/State/Country'] = new entity_type("City/State/Country", "fa-globe", colors[2]);
 entity_types['Date'] = new entity_type("Date", "fa-calendar", colors[3]);
 entity_types['Title'] = new entity_type("Title", "fa-id-card-o", colors[4]);
 function populate_types(){
     for (type in entity_types){
         var new_type = $('.type_template').clone();
         new_type.removeClass('hidden').removeClass('type_template');
-        new_type.children('a').append(entity_types[type].type);
+        new_type.append(entity_types[type].type);
         new_type.attr('entity_type', entity_types[type].type);
         new_type.find('span').addClass(entity_types[type].icon);
         new_type.appendTo($('#types'));

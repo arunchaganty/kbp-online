@@ -143,7 +143,7 @@ DocWidget.prototype.attachHandlers = function() {
       selectedTokens.push(startNode);
     }
     
-    console.log("span-selected:", selectedTokens);
+    //console.log("span-selected:", selectedTokens);
     self.highlightListener.forEach(function (listener) {listener(selectedTokens);});
 
     sel.collapseToEnd();
@@ -151,13 +151,13 @@ DocWidget.prototype.attachHandlers = function() {
 
   // mouseEnter
   this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
-    console.log("span-enter:", this);
+    //console.log("span-enter:", this);
     self.mouseEnterListener.forEach(function (listener) {listener(this);});
   });
 
   // mouseLeave
   this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
-    console.log("span-leave:", this);
+    //console.log("span-leave:", this);
     self.mouseLeaveListener.forEach(function (listener) {listener(this);});
   });
 

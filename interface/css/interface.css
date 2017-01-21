@@ -4,6 +4,20 @@
     background-color:#BBF;
     
 }
+.suggested-entity {
+    font-weight:bold;
+}
 .token-select {
     background-color:grey;
+}
+/*.type>span{
+    display: inherit;
+}*/
+.entity.list-group-item{
+    padding-top:5px;
+    padding-bottom:5px;
+}
+#entity-pane{
+    max-height:400px;
+    overflow-y:scroll;
 }
