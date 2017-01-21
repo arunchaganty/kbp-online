@@ -425,6 +425,8 @@ RelationInterface.prototype.next = function(idx) {
   }
   if (this.currentIndex > this.mentionPairs.length - 1) {
     return this.done();
+  } else {
+    $("#relation-row").removeClass("hidden");
   }
   var mentionPair = this.mentionPairs[this.currentIndex];
 
@@ -457,6 +459,7 @@ RelationInterface.prototype.next = function(idx) {
 RelationInterface.prototype.done = function() {
   // Hide the relation panel, and show the Done > (submit) button.
   $("#done")[0].disabled = false;
+  $("#relation-row").addClass("hidden");
 }
 
 RelationListWidget = function(elem) {
