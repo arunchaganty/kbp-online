@@ -184,10 +184,12 @@ entities = {}
 var current_mention = null;
 //should actually take mention as input or mention span even (as list of words)
 function linkEntity(entity_id){
-    console.log('ah');
     var i = 0
     console.log(entity_id);
     var entity = entities[entity_id];
+    if (current_entity != null){
+        current_entity.removeMention(current_mention);
+    }
     entity.addMention(current_mention);
     current_mention.highlight(entity.type.color);
     disable_pane();
@@ -208,6 +210,7 @@ function process_selection(token_span){
             return;
         }
     }
+    current_entity = null;
     current_mention = new Mention(token_span);
     current_mention.select();
     current_mention.color('grey');
@@ -272,6 +275,7 @@ function disable_pane(){
     }
     $('.suggested-entity').removeClass('suggested-entity');
     current_mention = null;
+    current_entity = null;
     //$('.entity-pane').unbind("click", disable_pane);
 }
 /*function sort_entities(){

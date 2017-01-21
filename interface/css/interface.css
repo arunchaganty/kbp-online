@@ -5,7 +5,7 @@
     
 }
 .suggested-entity {
-    font-weight:bold;
+    text-decoration:underline;
 }
 .token-select {
     background-color:grey;

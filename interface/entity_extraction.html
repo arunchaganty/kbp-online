@@ -51,6 +51,19 @@
         </div>
         </div>
         <div class="col-md-3 entity-pane">
+            <div class = "row">
+             <div class="panel panel-default">
+              <div id="entity-panel" class="panel-body">
+                <h4>Select Entity to link:</h4>
+
+                <div id = "entities" class="list-group">
+                  <button type="button" class="list-group-item zero_entity entity" disabled=true>No entities yet</button>
+                  <button type="button" class="btn hidden list-group-item entity_template entity"><i class="fa fa-fw"></i></button>
+                </div>
+              </div>
+            </div>
+
+            </div>
             <div id ="add_entity_widget" class = "row">
              <div class="panel panel-default">
               <div class="panel-body">
@@ -74,20 +87,14 @@
                <!-- </div>-->
             </div>
             <div id ="cancel_mention_widget" class = "row hidden">
-              <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
-            </div>
-            <div class = "row">
              <div class="panel panel-default">
-              <div id="entity-panel" class="panel-body">
-                <h4>Extracted Entities:</h4>
-
-                <div id = "entities" class="list-group">
-                  <button type="button" class="list-group-item zero_entity entity" disabled=true>No entities yet</button>
-                  <button type="button" class="hidden list-group-item entity_template entity"><i class="fa fa-fw"></i></button>
+              <div class="panel-body">
+                <h4> Delete Span:</h4>
+                <div id = 'types' class="btn-group" role="group" aria-label="Basic example">
+              <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
+                </div>
                 </div>
               </div>
-            </div>
-
             </div>
 
 
