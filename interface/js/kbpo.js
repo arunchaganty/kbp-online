@@ -534,3 +534,6 @@ RelationListWidget.prototype.removeRelation = function(mentionPair) {
     this.elem.find("#extraction-empty").removeClass("hidden");
   }
 }
+
+
+// TODO: Allow for keyboard shortcuts.
