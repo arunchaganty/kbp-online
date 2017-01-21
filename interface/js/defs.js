@@ -95,8 +95,8 @@ var _RELATIONS = [{
     "object-types": ["PER"]
   },{
     "name": "per:other_family",
-    "short": "otherwise related to",
-    "template": "{subject} is otherwise related to {object}.",
+    "short": "other family",
+    "template": "{subject} and {object} are otherwise family.",
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -150,6 +150,13 @@ var _RELATIONS = [{
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
   },{
+    "name": "org:members",
+    "short": "has member",
+    "template": "{subject} has {object} as a member.",
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
+  },{
     "name": "org:number_of_employees_members",
     "short": "number of employees or members",
     "template": "{subject} has {object} members or employees.",
@@ -164,12 +171,26 @@ var _RELATIONS = [{
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
   },{
+    "name": "org:parents",
+    "short": "owned by",
+    "template": "{subject} is owned by {object}.",
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
+  },{
     "name": "org:shareholders",
-    "short": "shareholders",
+    "short": "shareholder",
     "template": "{object} is a shareholder of {subject}.",
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["PER", "ORG"]
+  },{
+    "name": "org:holds_shares_in",
+    "short": "holds shares in",
+    "template": "{subject} holds shares in {object}.",
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
   },{
     "name": "gpe:member_of",
     "short": "member_of",
