@@ -23,9 +23,13 @@
         <link rel="stylesheet" href="css/interface.css">
         <link href="css/kbpo.css" rel="stylesheet">
 
+        <script src="js/jquery-3.1.1.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
         <script src="js/levenshtein.min.js"></script>
+        <script src="js/defs.js"></script>
         <script src="js/kbpo.js"></script>
+        <script src="js/interface.js"></script>
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -38,97 +42,69 @@
 * Bug where removed spans remain highlighted.
 * Bug in spacing of adjacent mentions: make coloring of spans a class property.
 -->
-
-    <div class="container">
-      <!-- Example row of columns -->
-      <div class="row">
-        <div class="col-md-9">
+<div class="container">
+  <!-- Example row of columns -->
+  <div class="row">
+    <div class="col-md-9">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <div class="document" id="document">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="entity-pane" class="col-md-3">
+      <div class = "row">
         <div class="panel panel-default">
-          <div class="panel-body">
-            <div class="document" id="document">
+          <div id="entity-panel" class="panel-body">
+            <h4>Select Entity to link:</h4>
+
+            <div id="entities" class="list-group">
+              <button type="button" id="entity-empty" class="list-group-item entity" disabled=true>No entities yet</button>
+              <button type="button" id="entity-template" class="btn hidden list-group-item entity"><i class="fa fa-fw {icon}"></i>{gloss}</button>
             </div>
           </div>
         </div>
-        </div>
-        <div class="col-md-3 entity-pane">
-            <div class = "row">
-             <div class="panel panel-default">
-              <div id="entity-panel" class="panel-body">
-                <h4>Select Entity to link:</h4>
-
-                <div id = "entities" class="list-group">
-                  <button type="button" class="list-group-item zero_entity entity" disabled=true>No entities yet</button>
-                  <button type="button" class="btn hidden list-group-item entity_template entity"><i class="fa fa-fw"></i></button>
-                </div>
-              </div>
+      </div>
+      <div id ="add-entity-widget" class="row">
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <h4> Add New Entity:</h4>
+            <div id='types' class="btn-group" role="group">
+              <button id="type-template" type="button" class="hidden type btn btn-secondary"><span class="fa fa-fw {icon}"></span>{name}</button>
             </div>
-
-            </div>
-            <div id ="add_entity_widget" class = "row">
-             <div class="panel panel-default">
-              <div class="panel-body">
-                <h4> Add New Entity:</h4>
-                <div id = 'types' class="btn-group" role="group" aria-label="Basic example">
-                  <button type="button" class="hidden type_template type btn btn-secondary" onclick='type_clicked(this)'><span class="fa fa-fw"></span></button>
-                </div>
-                </div>
-              </div>
-                <!--<div class="btn-group btn-block">-->
-                  <!--<button type="button" class="btn btn-primary btn-block dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-<i class='fa fa-plus-circle'></i>
-                    New Entity <span class="caret"></span>
-                  </button>-->
-                 
-
-                  <!--<ul id = 'types' class="dropdown-menu">
-                    <li class="hidden type_template type">
-                      <a onclick='type_clicked(this)'><span class="fa fa-2x fa-fw"></span> </a></li>
-                  </ul>-->
-               <!-- </div>-->
-            </div>
-            <div id ="cancel_mention_widget" class = "row hidden">
-             <div class="panel panel-default">
-              <div class="panel-body">
-                <h4> Delete Span:</h4>
-                <div id = 'types' class="btn-group" role="group" aria-label="Basic example">
-              <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
-                </div>
-                </div>
-              </div>
-            </div>
-
-
+          </div>
         </div>
       </div>
+      <div id ="cancel-mention-widget" class="row hidden">
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <h4> Delete Span:</h4>
+            <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <hr>
+  <hr>
+  <footer>
+    <p>Stanford NLP</p>
+  </footer>
+</div> <!-- /container -->        
 
-      <footer>
-        <p>Stanford NLP</p>
-      </footer>
-    </div> <!-- /container -->        
-    <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>-->
-    <!-- <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>-->
-        <script src="js/jquery-3.1.1.min.js"></script>
-        <script src="js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+var docWidget = new DocWidget($("#document"));
+var entityWidget = new EntityListWidget($("#entities"));
+var entityInt = new EntityInterface(docWidget, entityWidget);
 
-        <script src="js/interface.js"></script>
-        <script type="text/javascript">
-          var doc = new DocWidget($("#document"));
-          console.log(doc);
-
-          $.getJSON("data/example2.json", function(data) {
-            console.log("loaded data.");
-            console.log(doc);
-            doc.load(data.document);
-            doc.highlightListener.push(process_selection);
-            doc.clickListener.push(process_click);
-            doc.mouseEnterListener.push(process_mouse_enter);
-            doc.mouseLeaveListener.push(process_mouse_leave);
-          })
-            .fail(function() {
-              console.log("Could not load data.");
-            });
-        </script>
+$.getJSON("data/example2.json", function(data) {
+  console.log("loaded data.");
+  docWidget.load(data.document);
+})
+.fail(function() {
+  console.log("Could not load data.");
+});
+    </script>
     </body>
 </html>

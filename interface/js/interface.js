@@ -1,150 +1,5 @@
-//var test_sentence = {tokens: [{word: 'A', lemma: 'a'
-/*function getSelectionText() {
-    var text = "";
-    if (window.getSelection) {
-        text = window.getSelection();
-    } else if (document.selection && document.selection.type != "Control") {
-        text = document.selection;
-    }
-    return text;
-}
-document.onmouseup =  document.onselectionchange = function() {
-  var sel_val = getSelectionText();
-  document.getElementById("sel").value = sel_val;
-  console.log(sel_val);
-};
-$.getJSON("example1.json", function(data){
-    console.log(data);
-};);*/
 
-function Mention(list_of_words){
-    this.span = list_of_words;
-    this.id = "m_"+Mention.count;
-    Mention.count+=1;
-    console.log(list_of_words);
-    for (i =0; i<list_of_words.length; i++){
-        console.log(list_of_words[i].id);
-        Mention.token_to_mention_map[list_of_words[i].id] = this;
-    }
-}
-Mention.count = 0;
-Mention.prototype.color = function(color){
-    for (i = 0; i<this.span.length;i++){
-        $(this.span[i]).css("background-color", color);
-    }
-};
-Mention.prototype.remove = function(color){
-    this.color("");
-    this.unhighlight();
-    for (i =0; i<this.span.length; i++){
-        console.log(this.span[i].id);
-        delete Mention.token_to_mention_map[this.span[i].id];
-    }
-    if (this.id in Entity.mention_to_entity_map){
-        Entity.mention_to_entity_map[this.id].removeMention(this);
-    }
-};
-Mention.prototype.highlight = function(){
-    for (i = 0; i<this.span.length;i++){
-        $(this.span[i]).addClass("highlight");
-    }
-}
-Mention.prototype.unhighlight = function(){
-    for (i = 0; i<this.span.length;i++){
-        $(this.span[i]).removeClass("highlight");
-    }
-}
-Mention.prototype.select = function(){
-    for (i = 0; i<this.span.length;i++){
-        $(this.span[i]).addClass("select");
-    }
-}
-Mention.prototype.deselect = function(){
-    for (i = 0; i<this.span.length;i++){
-        $(this.span[i]).removeClass("select");
-    }
-}
-Mention.token_to_mention_map = {}
-Mention.prototype.text = function(){
-    text = ""
-    for (i = 0; i<this.span.length;i++){
-        text+=$(this.span[i]).text();
-    }
-    return text;
-}
-Mention.prototype.levenshtein = function(string){
-    return window.Levenshtein.get(this.text(), string);
-}
-function Entity(canonical_mention, type){
-    this.canonical_mention = canonical_mention;
-    this.type = type;
-    this.mentions = [canonical_mention, ];
-    this.id = "e_"+Entity.count;
-    Entity.count +=1;
-    Entity.mention_to_entity_map[canonical_mention.id] = this;
-    entities[this.id]=this;
-    
-    //add a dom element
-    this.entity_dom = $('.entity_template').clone();
-    this.entity_dom.removeClass('hidden').removeClass('entity_template').addClass('selected-entity');
-    this.entity_dom.children('i').addClass(this.type.icon);
-    this.entity_dom.append(this.canonical_text());
-    this.entity_dom.attr('onclick', 'linkEntity(\''+this.id+'\')');
-    this.entity_dom.attr('id', this.id).prop('checked', 'checked');
-    this.entity_dom.attr('entity-type', this.type.type);
-    var entities_in_dom = $(".entity").not(".zero_entity").not(".entity_template");
-    var total_len = entities_in_dom.length;
-    console.log(total_len);
-    if (total_len == 0){
-        this.entity_dom.appendTo($('#entities'));
-    }
-    var _this = this;
-    entities_in_dom.each(function(i){
-        console.log(i);
-        console.log($(this).attr("entity-type"));
-        console.log(_this.type.type);
-        console.log(_this.canonical_text());
-        console.log($(this).text());
-        console.log($(this).attr("entity-type")>=_this.type);
-        console.log($(this).text()>=_this.canonical_text());
-        if($(this).attr("entity-type")>=_this.type.type && $(this).text()>=_this.canonical_text()){
-            _this.entity_dom.insertBefore(this);
-            return false;
-        }
-        else if (i ==  total_len- 1) {
-            _this.entity_dom.insertAfter(this);
-            return false;
-        }
-    });
-    this.canonical_mention.color(type.color);
-    update_zero_entity();
-};
-Entity.count = 0;
-Entity.prototype.addMention = function(mention){
-    this.mentions.push(mention);
-    Entity.mention_to_entity_map[mention.id] = this;
-    mention.color(this.type.color);
-};
-Entity.prototype.removeMention = function(mention){
-    var index= this.mentions.indexOf(mention);
-    if (index > -1) {
-        this.mentions.splice(index, 1);
-    }
-    delete Entity.mention_to_entity_map[mention.id];
-    if(this.mentions.length < 1){
-        this.remove();
-    }
-};
-Entity.prototype.canonical_text = function(){
-    return this.canonical_mention.text();
-};
-Entity.prototype.remove = function(){
-    for (var i = 0; i<this.mentions.length; i++){
-        delete Entity.mention_to_entity_map[i.id]
-    }
-    this.entity_dom.remove();
-    update_zero_entity();
-}
+// TODO: Move this code into an interface.
 Entity.prototype.highlight = function(){
     for (var i = 0; i<this.mentions.length; i++){
         this.mentions[i].highlight();
@@ -157,31 +12,184 @@ Entity.prototype.unhighlight = function(){
     }
     this.entity_dom.removeClass('highlight');
 }
-Entity.prototype.levenshtein = function(new_mention_string){
-    var best_match = null
-    var best_score = 1000;
-    for (var i = 0; i<this.mentions.length; i++){
-        var score = this.mentions[i].levenshtein(new_mention_string);
-        if (best_score > score){
-            best_score = score;
-            best_match = this.mentions[i]
-        }
-    }
-    return best_score;
-}
-Entity.mention_to_entity_map = {}
 
-function update_zero_entity(){
-    if (Entity.count>=0){
-        $('.zero_entity').addClass('hidden');
-    }
-    else{
-        $('.zero_entity').removeClass('hidden');
-    }
+// TODO:Package functions below into a EntityWidget and an
+// EntityInterface.
+class AddEntityWidget = function(elem) {
+  this.elem = elem;
+
+  var self = this;
+  for (type in TYPES) {
+    var type = TYPES[type];
+    var elem = this.elem.find("#type-template")
+      .clone()
+      .removeClass("hidden")
+      .attr(id, "type-" + type.name);
+    elem.html(elem.html()
+      .replace("{icon}", type.icon)
+      .replace("{name}", type.name)
+      ;
+    elem.on("click.kbpo.addEntityWidget", function (evt) {
+      self.clickListeners.forEach(function(cb) {cb(type)})
+    });
+    this.elem.append(elem);
+  }
+}
+AddEntityWidget.prototype.clickListeners = [];
+
+class RemoveSpanWidget = function(elem) {
+  var self = this;
+  this.elem = elem;
+  this.elem.find("#remove-span").on("click.kbpo.RemoveSpanWidget", function(evt) {
+    self.clickListeners.forEach(function (cb) {cb(true);});
+  });
+}
+RemoveSpanWidget.prototype.clickListeners = [];
+
+class EntityListWidget = function(elem) {
+  this.elem = elem;
+}
+EntityListWidget.prototype.entitySelectedListeners = [];
+EntityListWidget.prototype.entityMouseEnterListeners = [];
+EntityListWidget.prototype.entityMouseLeaveListeners = [];
+
+// A span in the text has been selected; activate this UI.
+EntityListWidget.prototype.activate = function(mention) {
+  this.elem.find("*").removeAttr("disabled");
 }
 
+EntityListWidget.prototype.deactivate = function() {
+  this.elem.find("*").attr("disabled", "disabled");
+
+  // TODO: why is this all here?
+  this.currentEntity = null;
+  $('.selected-entity').removeClass("selected-entity");
+  $('#add-entity-widget').removeClass('hidden'); // TODO: ???
+  $('#cancel-mention-widget').addClass('hidden');
+  $('.suggested-entity').removeClass('suggested-entity');
+}
+
+EntityListWidget.prototype.addEntity = function(entity) {
+  var elem = $('.entity_template')
+    .clone()
+    .removeClass('hidden')
+    .addClass('selected-entity')
+    .attr("id", entity.id)
+    ;
+  elem.html(elem.html()
+      .replace("{icon}", entity.type.icon)
+      .replace("{gloss}", entity.gloss));
+  elem.on("click.kbpo.entityListWidget", function(evt) {
+    self.clickListeners.forEach(function(cb) {cb(entity)})
+  });
+  elem.prop("checked", "checked");
+
+  elem.entity = entity;
+  entity.elem = elem;
+
+  // Insert into the list in a sorted order.
+  // Remove the 'empty box';
+  $("#entity-empty").addClass("hidden");
+  var entities = $(".entity").not("#entity-empty").not("#entity-template");
+
+  // Sorted based on the tuple (type, name)
+  for (var i = 0; i < entities.length; i++) {
+    if (entities[i].entity.type.name > entity.type.name
+        && entities[i].entity.gloss > entity.gloss) {
+      entities[i].insertAfter(elem);
+      break;
+    }
+  }
+  if (i == entities.length) {
+    this.elem.append(elem);
+  }
+}
+
+EntityListWidget.prototype.removeEntity = function(entity) {
+  entity.elem.remove();
+  if ($(".entity").not("#entity-empty").not("#entity-template").length == 0) {
+    this.elem.find("#entity-empty").removeClass("hidden");
+  }
+}
+
+class EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpanWidget) {
+  var self = this;
+  this.docWidget = docWidget;
+  this.listWidget = listWidget;
+
+  this.entities = [];
+  this.currentMention = null;
+
+  // Attach a listener for entity selections.
+  this.docWidget.highlightListener.push(function(selection) {self.processSpanSelection(selection)});
+  this.docWidget.clickListener.push(function(mention) {self.processMentionClick(mention)});
+  this.addEntityWidget.clickListener.push(function(type) {self.processTypeSelected(type)});
+  this.removeSpanWidget.clickListener.push(function(type) {self.processRemoveSpan(type)});
+  this.listWidget.clickListener.push(function(entity) {self.processEntityClicked(entity)});
+  this.listWidget.mouseEnterListener.push(function(entity) {self.processEntityMouseEnter(entity)});
+  this.listWidget.mouseLeaveListener.push(function(entity) {self.processEntityMouseLeave(entity)});
+
+  // TODO: doc mouseEnter, mouseLeave?
+  // doc.mouseEnterListener.push(process_mouse_enter);
+  // doc.mouseLeaveListener.push(process_mouse_leave);
+}
 entities = {}
-var current_mention = null;
+
+EntityInterface.prototype.deactivate = function() {
+  this.listWidget.deactivate();
+  this.addEntityWidget.deactivate();
+  this.removeSpanWidget.deactivate();
+}
+
+EntityInterface.prototype.processSpanSelection = function(tokens) {
+  this.deactivate();
+  // Remove previous selection.
+  if (this.currentSelection) {
+    // TODO: remove any annotation here.
+    this.currentSelection = null;
+  }
+
+  // Are these tokens arelady part of a mention?
+  for (var i = 0; i < tokens.length; i++) {
+    if (tokens[i].mention !== undefined) {
+      return processMentionClick(tokens[i].mention);
+    }
+  }
+
+  // Highlight all of the tokens being selected.
+  this.currentSelection = tokens;
+  this.currentMention = new Mention(tokens);
+
+  current_entity = null;
+  current_mention = new Mention(token_span);
+  current_mention.select();
+  current_mention.color('grey');
+  var cur_text = current_mention.text()
+    for(entity_id in entities){
+      if (entities[entity_id].levenshtein(cur_text)<=3){
+        entities[entity_id].entity_dom.addClass('suggested-entity');
+      }
+    }
+  enable_pane();
+}
+
+// TODO: at the end of a mention being selected.
+{
+  if (this.currentMention != null) {
+    current_mention.deselect();
+    if (current_mention.id in Entity.mention_to_entity_map){
+      var current_entity = Entity.mention_to_entity_map[current_mention.id];
+      current_entity.unhighlight();
+    }else{
+      current_mention.remove();
+    }
+  }
+  this.currentMention = null;
+}
+
+
+
+// link the entity to the currently highlighted mention.
 //should actually take mention as input or mention span even (as list of words)
 function linkEntity(entity_id){
     var i = 0
@@ -201,27 +209,6 @@ function type_clicked(type_name){
     disable_pane(); 
 }
 
-function process_selection(token_span){
-    disable_pane();
-    for(var i=0; i<token_span.length; i++){
-        if(token_span[i].id in Mention.token_to_mention_map){
-            current_mention = Mention.token_to_mention_map[token_span[i].id];
-            process_click(token_span[i]);
-            return;
-        }
-    }
-    current_entity = null;
-    current_mention = new Mention(token_span);
-    current_mention.select();
-    current_mention.color('grey');
-    var cur_text = current_mention.text()
-    for(entity_id in entities){
-        if (entities[entity_id].levenshtein(cur_text)<=3){
-            entities[entity_id].entity_dom.addClass('suggested-entity');
-        }
-    }
-    enable_pane();
-}
 
 function process_click(token){
     disable_pane();
@@ -258,61 +245,6 @@ function remove_mention(){
     disable_pane();
 }
 
-function disable_pane(){
-    console.log('oh!');
-    $('.entity-pane *').attr("disabled", "disabled");
-    $('.selected-entity').removeClass("selected-entity");
-    $('#add_entity_widget').removeClass('hidden');
-    $('#cancel_mention_widget').addClass('hidden');
-    if (current_mention !=null){
-        current_mention.deselect();
-        if (current_mention.id in Entity.mention_to_entity_map){
-            var current_entity = Entity.mention_to_entity_map[current_mention.id];
-            current_entity.unhighlight();
-        }else{
-            current_mention.remove();
-        }
-    }
-    $('.suggested-entity').removeClass('suggested-entity');
-    current_mention = null;
-    current_entity = null;
-    //$('.entity-pane').unbind("click", disable_pane);
-}
-/*function sort_entities(){
-    var entity_list = $('#entities');
-    var entities = entity_list.children('button');
-    entities.sort(function(a, b){
-        
-    }
-}*/
-
-function enable_pane(){
-    $('.entity-pane *').removeAttr("disabled");
-}
-//$('.entity-pane').css('pointer-events', 'none');
-
-function entity_type(type, icon, color){
-    this.type = type;
-    this.icon = icon;
-    this.color = color;
-}
-var entity_types = {};
-var colors = ['#7fc97f','#beaed4','#fdc086','#ffff99','#386cb0'];
-entity_types['Person'] = new entity_type("Person", "fa-user", colors[0]);
-entity_types['Organization'] = new entity_type("Organization", "fa-building-o", colors[1]);
-entity_types['City/State/Country'] = new entity_type("City/State/Country", "fa-globe", colors[2]);
-entity_types['Date'] = new entity_type("Date", "fa-calendar", colors[3]);
-entity_types['Title'] = new entity_type("Title", "fa-id-card-o", colors[4]);
-function populate_types(){
-    for (type in entity_types){
-        var new_type = $('.type_template').clone();
-        new_type.removeClass('hidden').removeClass('type_template');
-        new_type.append(entity_types[type].type);
-        new_type.attr('entity_type', entity_types[type].type);
-        new_type.find('span').addClass(entity_types[type].icon);
-        new_type.appendTo($('#types'));
-    }
-}
-populate_types();
-disable_pane();
-//$('.document').bind("click", disable_pane);
+// CHAGANTY TODO
+// - Refactor functions into a widget and an interface.
+// - Make class to docWidget.addMention and docWidget.removeMention.

@@ -2,19 +2,6 @@
  * KBP online.
  * Arun Chaganty <arunchaganty@gmail.com>
  */
-
-// 
-var Mention = function(m) {
-  this.id = Mention.count++;
-  this.tokens = m.tokens;
-  this.sentenceIdx = m.tokens[0].sentenceIdx;
-  this.type = TYPES[m.type];
-  this.gloss = m.gloss;
-  this.canonicalId = m['canonical-id'];
-  this.canonicalGloss = m['canonical-gloss'];
-}
-Mention.count = 0;
-
 /**
  * The document object -- handles the storage and representation of
  * sentences.
@@ -205,10 +192,14 @@ DocWidget.prototype.attachHandlers = function() {
 DocWidget.prototype.addMention = function(mention) {
   $(mention.tokens).wrapAll($("<span class='mention' />").addClass(mention.type).attr("id", "mention-"+mention.id));
   var elem = $(mention.tokens[0].parentNode);
-  elem[0].mention = mention;
 
   elem.prepend($("<span class='link-marker' />").html(mention.canonicalGloss + "<sup>" + mention.canonicalId + "</sup>"));
   elem.prepend($("<span class='type-marker fa fa-fw' />").addClass(mention.type.icon));
+
+  // Create links between the mention and DOM element.
+  elem[0].mention = mention;
+  mention.elem = elem[0];
+
   return elem;
 }
 
@@ -217,6 +208,22 @@ DocWidget.prototype.removeMention = function(mention) {
   div.find(".link-marker").remove();
   div.find(".type-marker").remove();
   $(mention.tokens).unwrap();
+}
+
+DocWidget.prototype.highlightMention = function(mention) {
+  mention.elem.addClass("highlight");
+}
+
+DocWidget.prototype.unhighlightMention = function(mention) {
+  mention.elem.removeClass("highlight");
+}
+
+DocWidget.prototype.selectMention = function(mention) {
+  mention.elem.addClass("select");
+}
+
+DocWidget.prototype.selectMention = function(mention) {
+  mention.elem.removeClass("select");
 }
 
 function getCandidateRelations(mentionPair) {

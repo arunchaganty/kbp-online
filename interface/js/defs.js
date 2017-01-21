@@ -267,3 +267,80 @@ var EntityType = function(t) {
 var TYPES = {};
 _TYPES.forEach(function(t) {TYPES[t.name] = t});
 
+
+// 
+var Mention = function(m) {
+  this.id = Mention.count++;
+  this.tokens = m.tokens;
+  this.sentenceIdx = m.tokens[0].sentenceIdx;
+  this.type = TYPES[m.type];
+  this.gloss = m.gloss;
+
+  this.entity = null;
+  this.canonicalId = m['canonical-id'];
+  this.canonicalGloss = m['canonical-gloss'];
+}
+Mention.count = 0;
+
+// Returns the text represented within the spans of text. 
+Mention.prototype.text = function(){
+  text = "";
+  for (i = 0; i<this.span.length;i++){
+    text += this.span[i].textContent;
+  }
+  return text.replace("&nbsp;", " ");
+}
+
+// Compute levenshtein distance from input @string
+Mention.prototype.levenshtein = function(string){
+  return window.Levenshtein.get(this.text(), string);
+}
+
+// Creates a new entity from a @canonical_mention and @type.
+function Entity(canonicalMention) {
+    this.id = "e-" + Entity.count++;
+    this.gloss = canonicalMention.text;
+    this.type = canonicalMention.type;
+
+    this.addMention(canonicalMention);
+}
+Entity.count = 0;
+Entity.map = {};
+
+Entity.prototype.addMention = function(mention) {
+  console.log("Adding mention", mention, this);
+  // Set the type of the mention if it hasn't already been set.
+  if (mention.type === null) {
+    mention.type = this.type;
+  }
+
+  this.mentions = [canonicalMention];
+  this.map[canonicalMention.id] = this;
+}
+
+// Returns "true" if the mention has > 0 mentions.
+Entity.prototype.removeMention = function(mention) {
+  var index = this.mentions.indexOf(mention);
+  console.assert(index > -1);
+  if (index > -1) {
+    this.mentions.splice(index, 1);
+  }
+  delete Entity.map[mention.id];
+
+  return (this.mentions.length > 0);
+};
+
+// returns the minimum levenshtein distance from all the mentions in the
+// entity.
+Entity.prototype.levenshtein = function(mentionText) {
+  var bestMatch = null
+  var bestScore = 1000;
+  for (var i = 0; i < this.mentions.length; i++) {
+    var score = this.mentions[i].levenshtein(mentionText);
+    if (bestScore > score) {
+      bestScore = score;
+      bestMatch = this.mentions[i]
+    }
+  }
+  return best_score;
+}
