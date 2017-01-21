@@ -226,6 +226,8 @@ RelationWidget.prototype.init = function(mentionPair, cb) {
     if (this.mentionPair.relation != null && this.mentionPair.relation.name == this.relns[i].name) relnDiv.addClass("btn-primary"); 
     this.elem.find("#relation-options").append(relnDiv);
   }
+
+  this.updateText(this.renderTemplate(this.mentionPair))
 }
 
 RelationWidget.prototype.updateText = function(previewText) {
@@ -241,11 +243,17 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   div.on("click.kbpo.relationWidget", function(evt) {self.done(reln)});
   // Update widget text. 
   div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair))});
-  div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText()});
+  div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair))});
   return div;
 }
 
-// TODO: support editing.
+RelationWidget.prototype.renderTemplate = function(mentionPair) {
+  var template = "Please choose how <span class='subject'>{subject}</span> and <span class='object'>{object}</span> are related from the options below.";
+  return template
+    .replace("{subject}", mentionPair[0].gloss)
+    .replace("{object}", mentionPair[1].gloss);
+}
+
 // The widget selection is done -- send back results.
 RelationWidget.prototype.done = function(chosen_reln) {
   // Clear the innards of the html.
@@ -500,5 +508,3 @@ RelationListWidget.prototype.removeRelation = function(mentionPair) {
     this.elem.find("#extraction-empty").removeClass("hidden");
   }
 }
-
-// TODO: prepoulate the preview div with the current relation string.
