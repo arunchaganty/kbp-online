@@ -3,6 +3,11 @@
  * Arun Chaganty <arunchaganty@gmail.com>
  */
 
+// 
+var Mention = function(m) {
+
+}
+
 /**
  * The document object -- handles the storage and representation of
  * sentences.
@@ -26,12 +31,15 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
     sentence = doc.sentences[i];
     var span = $("<span>", {'class': 'sentence', 'id': 'sentence-' + i});
     span[0].sentence = sentence;
+    span[0].sentenceIdx = i;
 
     for (var j = 0; j < sentence.length; j++) {
       var token = sentence[j];
       var tokenSpan = $("<span>", {'class': 'token', 'id': 'token-' + i + '-' + j})
                    .text(token.word);
       tokenSpan[0].token = token;
+      tokenSpan[0].sentenceIdx = i;
+      tokenSpan[0].tokenIdx = j;
 
       if (j > 0 && sentence[j].doc_char_begin > sentence[j-1].doc_char_end) {
         tokenSpan.html('&nbsp;' + tokenSpan.text());
@@ -41,6 +49,23 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
     this.elem.append(span);
   };
 };
+
+DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
+  return $('span.token').filter(function(_, t) {
+    return t.token.doc_char_begin >= docCharBegin 
+        && t.token.doc_char_end <= docCharEnd
+  }).get(); 
+};
+
+// Build mention.
+DocWidget.prototype.buildMention = function(m) {
+  m.tokens = this.getTokens(m.doc_char_begin, m.doc_char_end);
+  m.tokens.forEach(function(t) {$(t).addClass("mention");});
+  console.assert(m.tokens.length > 0);
+
+  m.sentenceIdx = m.tokens[0].sentenceIdx;
+  return m;
+}
 
 DocWidget.prototype.highlightListener = []
 DocWidget.prototype.mouseEnterListener = []
@@ -174,8 +199,8 @@ DocWidget.prototype.attachHandlers = function() {
 function getCandidateRelations(mentionPair) {
   var candidates = [];
   RELATIONS.forEach(function (reln) {
-    if (reln["subject-types"].indexOf(mentionPair.first.type) >= 0 
-        && reln["object-types"].indexOf(mentionPair.second.type) >= 0) {
+    if (reln["subject-types"].indexOf(mentionPair[0].type) >= 0 
+        && reln["object-types"].indexOf(mentionPair[1].type) >= 0) {
       candidates.push(reln);
     }
   });
@@ -205,8 +230,8 @@ RelationWidget.prototype.updateText = function(template) {
   var div = this.elem.find("#relation-option-preview");
   if (template) { // update text
     var txt = template
-      .replace("{subject}", "<span class='subject'>" + this.mentionPair.first.gloss + "</span>")
-      .replace("{object}", "<span class='object'>" + this.mentionPair.second.gloss + "</span>");
+      .replace("{subject}", "<span class='subject'>" + this.mentionPair[0].gloss + "</span>")
+      .replace("{object}", "<span class='object'>" + this.mentionPair[1].gloss + "</span>");
     div.html(txt);
   } else { // clear
     div.html("");
@@ -248,24 +273,99 @@ var RelationInterface = function(docWidget, relnWidget) {
 };
 
 // Iterates through the mention pairs provided.
-RelationInterface.prototype.run = function(mentionPairs) {
-  //this.mentions = mentions;
-  //this.mentionPairs = constructMentionPairs(mentions);
-  this.mentionPairs = mentionPairs;
+RelationInterface.prototype.run = function(mentions) {
+  var self = this;
+  this.mentions = [];
+  mentions.forEach(function (m) {self.mentions.push(self.docWidget.buildMention(m))});
+  this.mentionPairs = this.constructMentionPairs(mentions);
 
   this.currentIndex = -1;
   this.next();
 }
 
+function outOfSentenceLimit(m, n) {
+  return Math.abs(m.sentenceIdx - n.sentenceIdx) > 1;
+}
+
+function isRelationCandidate(m, n) {
+  if (m.type == "PER") {
+    return true;
+  } else if (m.type == "ORG") {
+    return !(n.type == "TITLE");
+  } else if (m.type == "GPE") {
+    return (n.type == "ORG");
+  } else { // All other mentions are not entities; can't be subjects.
+    return false;
+  }
+}
+
+function notDuplicated(pairs, m, n) {
+  // Only need to look backwards through list until the sentence
+  // limit
+  for(var i = pairs.length-1; i >= 0; i--) {
+    var m_ = pairs[i][0];
+    var n_ = pairs[i][1];
+
+    if (outOfSentenceLimit(m, m_)
+        || outOfSentenceLimit(m, n_)
+        || outOfSentenceLimit(n, m_)
+        || outOfSentenceLimit(n, n_)) break;
+    if (m_ === n && n_ == m) return false;
+  }
+  return true;
+}
+
+
+// For every pair of mentions in a span of (2) sentences.
+RelationInterface.prototype.constructMentionPairs = function(mentions) {
+  var pairs = [];
+
+  // Get pairs.
+  for (var i = 0; i < mentions.length; i++) {
+    var m = mentions[i];
+    // - Go backwards until you cross a sentence boundary.
+    for (var j = i-1; j >= 0; j--) {
+      var n = mentions[j];
+      if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 1 ) break;
+
+      // Check that the pair is type compatible and not duplicated.
+      if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
+        pairs.push([m,n]);
+    }
+    // - Go forwards until you cross a sentence boundary.
+    for (var j = i+1; j < mentions.length; j++) {
+      var n = mentions[j];
+      if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 1 ) break;
+      // Check that the pair is type compatible and not duplicated.
+      if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
+        pairs.push([m,n]);
+    }
+  }
+
+  console.log(pairs);
+
+  return pairs;
+}
+
+function centerOnMention(m) {
+  loc = "#token-" + Math.max(0, m.sentenceIdx - 1) + "-0";
+  $(loc)[0].scrollIntoView();
+  console.log(loc);
+  //document.location.hash = loc;
+}
+
 // Draw mention pair
 RelationInterface.prototype.select = function(mentionPair) {
-  mentionPair.first.tokens.forEach(function(t) {t.addClass("subject");});
-  mentionPair.second.tokens.forEach(function(t) {t.addClass("object");});
+  // Move to the location.
+  centerOnMention(mentionPair[0]);
+  document.location.hash = $(mentionPair[0].tokens[0]).attr("id")
+  mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject");});
+  mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object");});
 }
 
 RelationInterface.prototype.unselect = function(mentionPair) {
-  mentionPair.first.tokens.forEach(function(t) {t.removeClass("subject");});
-  mentionPair.second.tokens.forEach(function(t) {t.removeClass("object");});
+  mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject");});
+  mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object");});
 }
 
 // Progress to the next mention pair.
@@ -292,7 +392,6 @@ RelationInterface.prototype.done = function() {
   $("#done-row").removeClass("hidden");
 }
 
-// TODO: focus on relation within text.
 // TODO: Show previous reported relations.
 // TODO: allow moving to a previous mention pair for correction.
 

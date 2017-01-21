@@ -4,8 +4,8 @@
   overflow-y: scroll;
 }
 
-#document.small {
-  max-height: 300px;
+#document.short {
+  max-height: 200px;
 }
 
 span.sentence {
@@ -32,6 +32,10 @@ span.token.highlight {
 
 span.token.select {
   font-style:italic;
+}
+
+span.token.mention {
+  font-style: italic;
 }
 
 span.token.subject {
