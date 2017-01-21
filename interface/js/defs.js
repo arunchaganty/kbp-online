@@ -204,15 +204,45 @@ var RelationLabel = function(r) {
 
 RelationLabel.prototype.renderTemplate = function(mentionPair) {
   return this.template
-    .replace("{subject}", "<span class='subject'>" + mentionPair[0].gloss + "</span>")
-    .replace("{object}", "<span class='object'>" + mentionPair[1].gloss + "</span>");
+    .replace("{subject}", "<span class='subject'>" + mentionPair[0].canonicalGloss + "</span>")
+    .replace("{object}", "<span class='object'>" + mentionPair[1].canonicalGloss + "</span>");
 }
 
 RelationLabel.prototype.isApplicable = function(mentionPair) {
-  return this.subjectTypes.indexOf(mentionPair[0].type) >= 0 
-          && this.objectTypes.indexOf(mentionPair[1].type) >= 0;
+  return this.subjectTypes.indexOf(mentionPair[0].type.name) >= 0 
+          && this.objectTypes.indexOf(mentionPair[1].type.name) >= 0;
 }
 
 
 var RELATIONS = [];
 _RELATIONS.forEach(function(r) {RELATIONS.push(new RelationLabel(r))});
+
+var _TYPES = [{
+  "name": "PER",
+  "gloss": "Person",
+  "icon": "fa-user",
+ },{
+  "name": "ORG",
+  "gloss": "Organization",
+  "icon": "fa-building",
+ },{
+  "name": "GPE",
+  "gloss": "City/State/Country",
+  "icon": "fa-globe",
+ },{
+  "name": "DATE",
+  "gloss": "Date",
+  "icon": "fa-calendar",
+ },{
+  "name": "TITLE",
+  "gloss": "Title",
+  "icon": "fa-id-card-o",
+ }];
+var EntityType = function(t) {
+  this.name = t.name;
+  this.gloss = t.gloss;
+  this.icon = t.icon;
+}
+var TYPES = {};
+_TYPES.forEach(function(t) {TYPES[t.name] = t});
+

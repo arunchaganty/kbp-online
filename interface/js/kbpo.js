@@ -5,7 +5,15 @@
 
 // 
 var Mention = function(m) {
+  this.id = Mention.count++;
+  this.tokens = m.tokens;
+  this.sentenceIdx = m.tokens[0].sentenceIdx;
+  this.type = TYPES[m.type];
+  this.gloss = m.gloss;
+  this.canonicalId = m['canonical-id'];
+  this.canonicalGloss = m['canonical-gloss'];
 }
+Mention.count = 0;
 
 /**
  * The document object -- handles the storage and representation of
@@ -193,8 +201,23 @@ DocWidget.prototype.attachHandlers = function() {
   });*/
 };
 
-// TODO: hooks for rendering subtext (for the linked entity), colors,
-// underlines, relations.
+// Create a mention from a set of spans.
+DocWidget.prototype.addMention = function(mention) {
+  $(mention.tokens).wrapAll($("<span class='mention' />").addClass(mention.type).attr("id", "mention-"+mention.id));
+  var elem = $(mention.tokens[0].parentNode);
+  elem[0].mention = mention;
+
+  elem.prepend($("<span class='link-marker' />").html(mention.canonicalGloss + "<sup>" + mention.canonicalId + "</sup>"));
+  elem.prepend($("<span class='type-marker fa fa-fw' />").addClass(mention.type.icon));
+  return elem;
+}
+
+DocWidget.prototype.removeMention = function(mention) {
+  var div = $(mention.tokens[0].parentNode);
+  div.find(".link-marker").remove();
+  div.find(".type-marker").remove();
+  $(mention.tokens).unwrap();
+}
 
 function getCandidateRelations(mentionPair) {
   var candidates = [];
@@ -264,7 +287,7 @@ RelationWidget.prototype.done = function(chosen_reln) {
   if (this.cb) {
     this.cb(chosen_reln);
   } else {
-    console.log("Relation chosen but no callback", chosen_reln);
+    console.log("[Warning] Relation chosen but no callback", chosen_reln);
   }
 }
 
@@ -294,8 +317,13 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
 RelationInterface.prototype.run = function(mentions) {
   var self = this;
   this.mentions = [];
-  mentions.forEach(function (m) {self.mentions.push(self.docWidget.buildMention(m))});
-  this.mentionPairs = this.constructMentionPairs(mentions);
+  mentions.forEach(function (m) {
+    m.tokens = self.docWidget.getTokens(m['doc_char_begin'], m['doc_char_end']);
+    m = new Mention(m);
+    self.docWidget.addMention(m);
+    self.mentions.push(m);
+  });
+  this.mentionPairs = this.constructMentionPairs(this.mentions);
 
   this.currentIndex = -1;
   this.viewStack = []; // Used when changing relations.
@@ -307,12 +335,12 @@ function outOfSentenceLimit(m, n) {
 }
 
 function isRelationCandidate(m, n) {
-  if (m.type == "PER") {
+  if (m.type.name == "PER") {
     return true;
-  } else if (m.type == "ORG") {
-    return !(n.type == "TITLE");
-  } else if (m.type == "GPE") {
-    return (n.type == "ORG");
+  } else if (m.type.name == "ORG") {
+    return !(n.type.name == "TITLE");
+  } else if (m.type.name == "GPE") {
+    return (n.type.name == "ORG");
   } else { // All other mentions are not entities; can't be subjects.
     return false;
   }
@@ -338,6 +366,7 @@ function notDuplicated(pairs, m, n) {
 // For every pair of mentions in a span of (2) sentences.
 RelationInterface.prototype.constructMentionPairs = function(mentions) {
   var pairs = [];
+  console.log(mentions);
 
   // Get pairs.
   for (var i = 0; i < mentions.length; i++) {
@@ -367,15 +396,13 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
   }
 
   console.log(pairs);
-
   return pairs;
 }
 
 function centerOnMention(m) {
-  loc = "#token-" + Math.max(0, m.sentenceIdx - 1) + "-0";
-  $(loc)[0].scrollIntoView();
+  loc = "#mention-" + m.id;
   console.log(loc);
-  //document.location.hash = loc;
+  $(loc)[0].scrollIntoView();
 }
 
 // Draw mention pair
@@ -434,11 +461,9 @@ RelationInterface.prototype.next = function(idx) {
   this.select(mentionPair);
   this.relnWidget.init(mentionPair, function(reln) {
     self.unselect(mentionPair);
-    console.log("changing", mentionPair.relation, reln);
 
     // Remove a previous relation from the list if it existed.
     if (mentionPair.relation && mentionPair.relation.name != reln.name) {
-      console.log("m");
       self.listWidget.removeRelation(mentionPair);
     } 
     if (mentionPair.relation && mentionPair.relation.name == reln.name) {
@@ -485,15 +510,15 @@ RelationListWidget.prototype.addRelation = function(mentionPair) {
 
   // attach listeners.
   div.on("mouseenter.kbpo.list", function(evt) {
-    console.log("mention.mouseenter", mentionPair);
+    //console.log("mention.mouseenter", mentionPair);
     self.mouseEnterListener.forEach(function(cb) {cb(mentionPair);});
   });
   div.on("mouseleave.kbpo.list", function(evt) {
-    console.log("mention.mouseleave", mentionPair);
+    //console.log("mention.mouseleave", mentionPair);
     self.mouseLeaveListener.forEach(function(cb) {cb(mentionPair);});
   });
   div.on("click.kbpo.click", function(evt) {
-    console.log("mention.cancel", mentionPair);
+    //console.log("mention.cancel", mentionPair);
     self.clickListener.forEach(function(cb) {cb(mentionPair);});
   });
 
@@ -501,10 +526,8 @@ RelationListWidget.prototype.addRelation = function(mentionPair) {
 }
 
 RelationListWidget.prototype.removeRelation = function(mentionPair) {
-  console.log("Removing", mentionPair.id);
   this.elem.find(".extraction")
     .filter(function (_, e) {
-      if (e.mentionPair !== undefined) console.log(mentionPair.id);
       return e.mentionPair !== undefined && e.mentionPair.id == mentionPair.id;})
     .remove();
   if (this.elem.find(".extraction").length == 2) {

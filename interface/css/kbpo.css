@@ -11,6 +11,7 @@
 span.sentence {
   display: inline-block;
   margin-right: 1em;
+  line-height: 36px;
 }
 
 span.token {
@@ -36,6 +37,24 @@ span.selected {
 
 span.token.mention {
   font-style: italic;
+}
+
+span.mention {
+  font-style: italic;
+  position: relative;
+}
+
+span.type-marker {
+  vertical-align: super;
+  font-size: small;
+}
+
+span.link-marker {
+  font-size: small;
+  font-variant: small-caps;
+  position: absolute;
+  top: 10px;
+  width: 100px;
 }
 
 span.subject {
