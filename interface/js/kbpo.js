@@ -47,8 +47,11 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
 DocWidget.prototype.setSuggestions = function(mentions) {
   var self = this;
   mentions.forEach(function(m) {
-    var tokens = self.getTokens(m.doc_char_begin, m.doc_char_end);
-    tokens.forEach(function(t) {$(t).addClass("suggestion")});
+    m.tokens = self.getTokens(m.doc_char_begin, m.doc_char_end);
+    m.tokens.forEach(function(t) {
+      $(t).addClass("suggestion");
+      t.suggestedMention = m;
+    });
   });
 };
 
@@ -207,9 +210,11 @@ DocWidget.prototype.addMention = function(mention) {
   var self = this;
   $(mention.tokens).wrapAll($("<span class='mention' />").attr("id", "mention-"+mention.id));
   var elem = $(mention.tokens[0].parentNode)[0];
-  // Create links between the mention and DOM element.
+  // Create links between the mention and DOM elements.
   elem.mention = mention;
   mention.elem = elem;
+  mention.tokens.forEach(function(t) {t.mention = mention});
+
   console.log("added mention", mention);
 
   return this.updateMention(mention);
