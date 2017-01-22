@@ -166,6 +166,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
   this.addEntityWidget = addEntityWidget;
   this.removeSpanWidget = removeSpanWidget;
   this.linkWidget = linkWidget;
+  this.dateWidget = dateWidget;
 
   this.entities = [];
   this.currentMention = null;
@@ -179,6 +180,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
   this.listWidget.mouseEnterListeners.push(function(entity) {self.processEntityMouseEnter(entity)});
   this.listWidget.mouseLeaveListeners.push(function(entity) {self.processEntityMouseLeave(entity)});
   this.linkWidget.doneListeners.push(function(link) {self.processLinkingDone(link)});
+  this.dateWidget.doneListeners.push(function(link) {self.processLinkingDone(link)});
 
   // TODO: doc mouseEnter, mouseLeave?
   // doc.mouseEnterListeners.push(process_mouse_enter);
@@ -233,7 +235,7 @@ EntityInterface.prototype.processTypeSelected = function(type) {
   if (type.linking == 'wiki-search') {
     linkWidget.show(this.currentMention.gloss);
   } else if (type.linking == 'date-picker') {
-      $('#date-linking-modal').modal('show');
+    dateWidget.show(this.currentMention.gloss);
   } else {
     return this.processLinkingDone("");
   }
@@ -349,7 +351,7 @@ LinkWidget.prototype.doneListeners = [];
 LinkWidget.prototype.fetchResults = function(term){
   return $.ajax({
     url: 'https://en.wikipedia.org/w/api.php',
-    data: { action: 'opensearch', limit: this.resultLimit, search: term, format: 'json' , redirects:'resolve'},
+    data: { action: 'opensearch', limit: this.resultLimit, search: term, format: 'json' , redirects:'resolve', namespace:0},
     dataType: 'jsonp',
   });
 }
@@ -371,6 +373,7 @@ LinkWidget.prototype.show = function(mentionText){
 
 LinkWidget.prototype.hide = function(){
   $('#wiki-linking-modal').modal('hide');
+  $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
 }
 
 LinkWidget.prototype.populate = function(mentionText){

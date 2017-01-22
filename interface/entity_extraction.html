@@ -27,6 +27,7 @@
         <script src="js/bootstrap.min.js"></script>
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
         <script src="js/levenshtein.min.js"></script>
+        <script src="js/moment.min.js"></script>
         <script src="js/defs.js"></script>
         <script src="js/kbpo.js"></script>
         <script src="js/interface.js"></script>
@@ -137,50 +138,67 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-          <h4 class="modal-title" id="linkingModalLabel">Ground the date</h4>
-          <p> Document was published on: </p>
-          <p> Date to be grounded: </p>
-        
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
+          <h4 class="modal-title" id="linkingModalLabel">Ground the date</h4>
       </div>
       <div class="modal-body">
+          <p> Document was published on: </p>
+          <p> Date to be grounded: <span id='date-gloss'><span></p>
           <form>
               <div class="row">
 
-                  <div class="col-lg-6">
-                      <div class="input-group">
-                            <div class='form-inline'>
-                              <input type="radio" name = "week-or-date" value = 'day' aria-label="day">
-                              <div class="form-group">
-                                  <label for="year-select">Month</label>
-                                  <select name="month" class="form-control" id="month-select" placeholder="MM">
-                                      <!--  <option value="volvo">Volvo</option>-->
-                                  </select>
+                  <div class="col-lg-9">
+                          <div class="list-group">
+                              <div class="list-group-item">
+                                  <div class="input-group">
+                                      <div class='form-inline'>
+                                          <input type="radio" name = "week-or-date" value = 'day' aria-label="day">
+                                          <div class="form-group">
+                                              <label for="year-select">Month</label>
+                                              <select name="month" class="form-control" id="month-select" placeholder="MM">
+                                                  <!--  <option value="volvo">Volvo</option>-->
+                                              </select>
+                                          </div>
+                                          <div class="form-group">
+                                              <label for="date-select">Day</label>
+                                              <select name="day" class="form-control" id="month-select" placeholder="DD">
+                                                  <!--  <option value="volvo">Volvo</option>-->
+                                              </select>
+                                          </div>
+                                      </div>
+                                  </div><!-- /input-group -->
+
                               </div>
-                              <div class="form-group">
-                                  <label for="date-select">Day</label>
-                                  <select name="day" class="form-control" id="month-select" placeholder="DD">
-                                      <!--  <option value="volvo">Volvo</option>-->
-                                  </select>
+                              <div class="list-group-item">
+                                  <div class="input-group">
+                                      <div class='form-inline'>
+                                          <input type="radio" name='week-or-date' value='week' aria-label="week">
+                                          <div class="form-group">
+                                              <label for="week-select">Week</label>
+                                              <select name="week" class="form-control" id="week-select" placeholder="WW">
+                                                  <!--  <option value="volvo">Volvo</option>-->
+                                              </select>
+
+                                          </div>
+                                      </div>
+                                  </div><!-- /input-group -->
                               </div>
-                        </div>
-                      </div><!-- /input-group -->
-                      <div class="input-group">
-                            <div class='form-inline'>
-                              <input type="radio" name='week-or-date' value='week' aria-label="week">
-                          <div class="form-group">
-                              <label for="week-select">Week</label>
-                              <select name="week" class="form-control" id="week-select" placeholder="WW">
-                                  <!--  <option value="volvo">Volvo</option>-->
-                              </select>
-                
+                              <div class="list-group-item">
+                                  <div class="input-group">
+                                      <div class='form-inline'>
+                                          <div class="form-group">
+                                              <input type="radio" name = "week-or-date" value = 'neither' aria-label="neither">
+                                              <label for="date-select">Neither applicable</label>
+                                          </div>
+                                      </div>
+                                  </div><!-- /input-group -->
+
+                              </div>
                           </div>
-                        </div>
-                      </div><!-- /input-group -->
                   </div><!-- /.col-lg-6 -->
-                  <div class="col-lg-6">
+                  <div class="col-lg-3">
                       <div class="form-group">
                           <label for="year-select">Year</label>
                           <select name="year" class="form-control" id="year-select" placeholder="YYYY">
@@ -190,10 +208,16 @@
                   </div><!-- /.col-lg-6 -->
               </div><!-- /.row -->
           </form>
+          <h4> Guidelines: </h4>
+           <ul>
+          <li> Choose either month-year or week or neither to report </li>
+          <li> Mark only the information that you can deduce </li>
+          <li> Document date and week is shown in bold in the dropdown for reference </li>
+          <li> Use NA option to indicate unknown fields. For instance in "February 2017", date is unknown </li>
+            </ul>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
+        <button id='link-date-submit' type="button" class="btn btn-primary">Save</button>
       </div>
     </div>
   </div>
@@ -204,6 +228,7 @@ var listWidget = new EntityListWidget($("#entities"));
 var addEntityWidget = new AddEntityWidget($("#add-entity-widget"));
 var removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"));
 var linkWidget = new LinkWidget($("#wiki-linking-modal"));
+var dateWidget = new DateWidget($("#date-widget-modal"));
 var entityInt = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
 
 $.getJSON("data/example2.json", function(data) {
@@ -213,8 +238,6 @@ $.getJSON("data/example2.json", function(data) {
 .fail(function() {
   console.log("Could not load data.");
 });
-var dateWidget = new DateWidget(function(link){alert(link);});
-$('#date-widget-modal').modal('show');
         </script>
 </body>
 

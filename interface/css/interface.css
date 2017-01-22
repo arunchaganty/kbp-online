@@ -30,8 +30,12 @@
 }
 .wiki-entry>.list-group-item-text{
     font-size:smaller;
-    
-    
+}
+.date-now{
+    font-weight:bold;
+}
+.date-now:after{
+    content: " (pub)";
 }
 
 .PER {
