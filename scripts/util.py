@@ -4,6 +4,8 @@
 
 """
 
+import os
+
 def unescape_sql(inp):
     if inp.startswith('"') and inp.endswith('"'):
         inp = inp[1:-1]
@@ -50,3 +52,7 @@ def test_parse_psql_array():
     lst_ = parse_psql_array(inp)
     assert all([x == y for (x,y) in zip(lst, lst_)])
 
+def ensure_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path

@@ -43,7 +43,7 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
     this.elem.append(span);
   };
   if (doc.mentions) {
-    this.setSuggestions(doc.mentions);
+    this.setSuggestions(doc["suggested-mentions"]);
   }
 };
 
