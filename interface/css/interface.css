@@ -5,7 +5,8 @@
     
 }
 .suggested-entity {
-    text-decoration:underline;
+  font-weight: bold;
+  text-decoration:underline;
 }
 .token-select {
     background-color:grey;
@@ -17,7 +18,7 @@
     padding-top:5px;
     padding-bottom:5px;
 }
-#entity-pane{
+#entity-panel {
     max-height:400px;
     overflow-y:scroll;
 }
@@ -31,4 +32,20 @@
     font-size:smaller;
     
     
+}
+
+.PER {
+  background-color: #7fc97f;
+}
+.ORG {
+  background-color: #beaed4;
+}
+.GPE {
+  background-color: #fdc086;
+}
+.DATE {
+  background-color: #ffff99;
+}
+.TITLE {
+  background-color: #386cb0;
 }
