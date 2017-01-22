@@ -224,9 +224,11 @@ var RelationLabel = function(r) {
 }
 
 RelationLabel.prototype.renderTemplate = function(mentionPair) {
+  var subject = (mentionPair[0].entity) ? mentionPair[0].entity.gloss : mentionPair[0].gloss;
+  var object = (mentionPair[1].entity) ? mentionPair[1].entity.gloss : mentionPair[1].gloss;
   return this.template
-    .replace("{subject}", "<span class='subject'>" + mentionPair[0].canonicalGloss + "</span>")
-    .replace("{object}", "<span class='object'>" + mentionPair[1].canonicalGloss + "</span>");
+    .replace("{subject}", "<span class='subject'>" + subject + "</span>")
+    .replace("{object}", "<span class='object'>" + object + "</span>");
 }
 
 RelationLabel.prototype.isApplicable = function(mentionPair) {
@@ -286,9 +288,7 @@ var Mention = function(m) {
   this.type = m.type && TYPES[m.type];
   this.gloss = m.gloss;
 
-  this.entity = null;
-  this.canonicalId = m['canonical-id'];
-  this.canonicalGloss = m['canonical-gloss'];
+  this.entity = m.entity;
 }
 Mention.count = 0;
 Mention.fromTokens = function(tokens) {

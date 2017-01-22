@@ -44,6 +44,14 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
   };
 };
 
+DocWidget.prototype.setSuggestions = function(mentions) {
+  var self = this;
+  mentions.forEach(function(m) {
+    var tokens = self.getTokens(m.doc_char_begin, m.doc_char_end);
+    tokens.forEach(function(t) {$(t).addClass("suggestion")});
+  });
+};
+
 DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
   return $('span.token').filter(function(_, t) {
     return t.token.doc_char_begin >= docCharBegin 
@@ -214,7 +222,7 @@ DocWidget.prototype.updateMention = function(mention) {
   if (mention.entity) {
     if (elem.find(".link-marker").length == 0) elem.prepend($("<span class='link-marker' />"));
     elem.find(".link-marker")
-      .html(mention.entity.gloss + "<sup>" + mention.entity.idx + "</sup>");
+      .html(mention.entity.gloss + "<sup>" + (mention.entity.idx ? mention.entity.idx : "") + "</sup>");
   } else {
     elem.find(".link-marker").remove();
   }
@@ -434,8 +442,12 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
 }
 
 function centerOnMention(m) {
-  loc = "#mention-" + m.id;
-  $(loc)[0].scrollIntoView();
+  var sentence = $(m.elem).parent();
+  if (sentence.prev().length > 0) {
+    sentence.prev()[0].scrollIntoView();
+  } else {
+    sentence[0].scrollIntoView();
+  }
 }
 
 // Draw mention pair
@@ -443,13 +455,13 @@ RelationInterface.prototype.select = function(mentionPair) {
   // Move to the location.
   centerOnMention(mentionPair[0]);
   document.location.hash = $(mentionPair[0].tokens[0]).attr("id")
-  mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject selected");});
-  mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object selected");});
+  mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject highlight");});
+  mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object highlight");});
 }
 
 RelationInterface.prototype.unselect = function(mentionPair) {
-  mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject selected");});
-  mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object selected");});
+  mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject highlight");});
+  mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object highlight");});
 }
 
 RelationInterface.prototype.highlightExistingMentionPair = function(mentionPair) {
