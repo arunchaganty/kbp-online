@@ -231,10 +231,10 @@ var linkWidget = new LinkWidget($("#wiki-linking-modal"));
 var dateWidget = new DateWidget($("#date-widget-modal"));
 var entityInt = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
 
-$.getJSON("data/example2.json", function(data) {
+$.getJSON("data/doc1.json", function(data) {
   console.log("loaded data.");
   console.log(data);
-  docWidget.load(data.document);
+  docWidget.load(data);
   docWidget.setSuggestions(data.mentions);
 })
 .fail(function() {
