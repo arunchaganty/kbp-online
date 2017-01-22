@@ -195,6 +195,7 @@ function linkEntity(entity_id){
     disable_pane();
 }
 
+
 //LinkWidget to link with wikipedia entries
 function LinkWidget(callback){
     this.resultLimit = 5;

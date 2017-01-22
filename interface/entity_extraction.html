@@ -21,6 +21,7 @@
         <link rel="stylesheet" href="css/font-awesome.min.css">
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/interface.css">
+        <link rel="stylesheet" href="css/interface.css">
         <link href="css/kbpo.css" rel="stylesheet">
 
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
@@ -114,6 +115,7 @@
     <!-- <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>-->
 
         <script src="js/interface.js"></script>
+        <script src="js/date-widget.js"></script>
 <div id='blah'> </div>
 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#wiki-linking-modal">
   Launch demo modal
@@ -158,7 +160,7 @@
 </div>
 
 <!-- Modal -->
-<div class="modal fade" id="date-linking-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
+<div class="modal fade" id="date-widget-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -171,24 +173,50 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="input-group">
-              <span class="input-group-addon">
-                <input type="checkbox" aria-label="...">
-              </span>
-              <input type="text" class="form-control" aria-label="...">
-            </div><!-- /input-group -->
-          </div><!-- /.col-lg-6 -->
-          <div class="col-lg-6">
-            <div class="input-group">
-              <span class="input-group-addon">
-                <input type="radio" aria-label="...">
-              </span>
-              <input type="text" class="form-control" aria-label="...">
-            </div><!-- /input-group -->
-          </div><!-- /.col-lg-6 -->
-        </div><!-- /.row -->
+          <form>
+              <div class="row">
+
+                  <div class="col-lg-6">
+                      <div class="input-group">
+                            <div class='form-inline'>
+                              <input type="radio" name = "week-or-date" value = 'day' aria-label="day">
+                              <div class="form-group">
+                                  <label for="year-select">Month</label>
+                                  <select name="month" class="form-control" id="month-select" placeholder="MM">
+                                      <!--  <option value="volvo">Volvo</option>-->
+                                  </select>
+                              </div>
+                              <div class="form-group">
+                                  <label for="date-select">Day</label>
+                                  <select name="day" class="form-control" id="month-select" placeholder="DD">
+                                      <!--  <option value="volvo">Volvo</option>-->
+                                  </select>
+                              </div>
+                        </div>
+                      </div><!-- /input-group -->
+                      <div class="input-group">
+                            <div class='form-inline'>
+                              <input type="radio" name='week-or-date' value='week' aria-label="week">
+                          <div class="form-group">
+                              <label for="week-select">Week</label>
+                              <select name="week" class="form-control" id="week-select" placeholder="WW">
+                                  <!--  <option value="volvo">Volvo</option>-->
+                              </select>
+                
+                          </div>
+                        </div>
+                      </div><!-- /input-group -->
+                  </div><!-- /.col-lg-6 -->
+                  <div class="col-lg-6">
+                      <div class="form-group">
+                          <label for="year-select">Year</label>
+                          <select name="year" class="form-control" id="year-select" placeholder="YYYY">
+                              <!--  <option value="volvo">Volvo</option>-->
+                          </select>
+                      </div>
+                  </div><!-- /.col-lg-6 -->
+              </div><!-- /.row -->
+          </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -214,6 +242,8 @@
               console.log("Could not load data.");
             });
         var linkWidget = new LinkWidget(function(link){alert(link);});
+        var dateWidget = new DateWidget(function(link){alert(link);});
+        $('#date-widget-modal').modal('show');
         </script>
     </body>
 
