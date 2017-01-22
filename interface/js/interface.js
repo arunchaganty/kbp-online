@@ -1,43 +1,46 @@
 
 // TODO: Move this code into an interface.
-Entity.prototype.highlight = function(){
-    for (var i = 0; i<this.mentions.length; i++){
-        this.mentions[i].highlight();
-    }
-    this.entity_dom.addClass('highlight');
-}
-Entity.prototype.unhighlight = function(){
-    for (var i = 0; i<this.mentions.length; i++){
-        this.mentions[i].unhighlight();
-    }
-    this.entity_dom.removeClass('highlight');
-}
 
-// TODO:Package functions below into a EntityWidget and an
-// EntityInterface.
-class AddEntityWidget = function(elem) {
+var AddEntityWidget = function(elem) {
   this.elem = elem;
 
   var self = this;
-  for (type in TYPES) {
-    var type = TYPES[type];
-    var elem = this.elem.find("#type-template")
-      .clone()
+  for (var i = 0; i < Object.keys(TYPES).length; i++) {
+    var type = TYPES[Object.keys(TYPES)[i]];
+    var elem = this.elem.find("#type-template").clone();
+    elem
       .removeClass("hidden")
-      .attr(id, "type-" + type.name);
+      .attr("id", "type-" + type.name)
+      .attr("disabled", "disabled")
+      ;
     elem.html(elem.html()
       .replace("{icon}", type.icon)
-      .replace("{name}", type.name)
-      ;
+      .replace("{name}", type.gloss)
+      );
+    elem[0]._type = type;
     elem.on("click.kbpo.addEntityWidget", function (evt) {
+      var type = this._type;
       self.clickListeners.forEach(function(cb) {cb(type)})
     });
-    this.elem.append(elem);
+    this.elem.find("#types").append(elem);
   }
+  this.deactivate();
 }
 AddEntityWidget.prototype.clickListeners = [];
+AddEntityWidget.prototype.activate = function() {
+  this.elem
+    .find(".type")
+    .not("#type-template")
+    .removeAttr("disabled");
+}
+AddEntityWidget.prototype.deactivate = function() {
+  this.elem
+    .find(".type")
+    .not("#type-template")
+    .attr("disabled", "disabled");
+}
 
-class RemoveSpanWidget = function(elem) {
+var RemoveSpanWidget = function(elem) {
   var self = this;
   this.elem = elem;
   this.elem.find("#remove-span").on("click.kbpo.RemoveSpanWidget", function(evt) {
@@ -45,17 +48,32 @@ class RemoveSpanWidget = function(elem) {
   });
 }
 RemoveSpanWidget.prototype.clickListeners = [];
+RemoveSpanWidget.prototype.activate = function() {
+  this.elem.removeClass("hidden");
+}
+RemoveSpanWidget.prototype.deactivate = function() {
+  this.elem.addClass("hidden");
+}
 
-class EntityListWidget = function(elem) {
+var EntityListWidget = function(elem) {
   this.elem = elem;
 }
-EntityListWidget.prototype.entitySelectedListeners = [];
-EntityListWidget.prototype.entityMouseEnterListeners = [];
-EntityListWidget.prototype.entityMouseLeaveListeners = [];
+EntityListWidget.prototype.clickListeners = [];
+EntityListWidget.prototype.mouseEnterListeners = [];
+EntityListWidget.prototype.mouseLeaveListeners = [];
 
 // A span in the text has been selected; activate this UI.
 EntityListWidget.prototype.activate = function(mention) {
   this.elem.find("*").removeAttr("disabled");
+  // Find all entities that are very similar to this one and suggest them.
+
+  var entities = this.entities();
+  for(var i = 0; i < entities.length; i++) {
+    if (entities[i].entity.levenshtein(mention.gloss) <= 3) {
+      $(entities[i]).addClass('suggested-entity');
+      entities[i].scrollIntoView();
+    }
+  }
 }
 
 EntityListWidget.prototype.deactivate = function() {
@@ -69,34 +87,49 @@ EntityListWidget.prototype.deactivate = function() {
   $('.suggested-entity').removeClass('suggested-entity');
 }
 
+// Get current entities
+EntityListWidget.prototype.entities = function() {
+  return this.elem.find(".entity").not("#entity-empty").not("#entity-template");
+}
+
 EntityListWidget.prototype.addEntity = function(entity) {
-  var elem = $('.entity_template')
+  var self = this;
+  var elem = $('#entity-template')
     .clone()
     .removeClass('hidden')
     .addClass('selected-entity')
     .attr("id", entity.id)
     ;
+  console.log(entity);
   elem.html(elem.html()
       .replace("{icon}", entity.type.icon)
-      .replace("{gloss}", entity.gloss));
+      .replace("{gloss}", entity.gloss)
+      .replace("{id}", entity.idx)
+      );
   elem.on("click.kbpo.entityListWidget", function(evt) {
     self.clickListeners.forEach(function(cb) {cb(entity)})
   });
+  elem.on("mouseenter.kbpo.entityListWidget", function(evt) {
+    self.mouseEnterListeners.forEach(function(cb) {cb(entity)})
+  });
+  elem.on("mouseleave.kbpo.entityListWidget", function(evt) {
+    self.mouseLeaveListeners.forEach(function(cb) {cb(entity)})
+  });
   elem.prop("checked", "checked");
 
-  elem.entity = entity;
-  entity.elem = elem;
+  elem[0].entity = entity;
+  entity.elem = elem[0];
 
   // Insert into the list in a sorted order.
   // Remove the 'empty box';
   $("#entity-empty").addClass("hidden");
-  var entities = $(".entity").not("#entity-empty").not("#entity-template");
+  var entities = this.entities();
 
   // Sorted based on the tuple (type, name)
   for (var i = 0; i < entities.length; i++) {
-    if (entities[i].entity.type.name > entity.type.name
+    if (entities[i].entity.type.name >= entity.type.name
         && entities[i].entity.gloss > entity.gloss) {
-      entities[i].insertAfter(elem);
+      elem.insertBefore(entities[i]);
       break;
     }
   }
@@ -104,34 +137,41 @@ EntityListWidget.prototype.addEntity = function(entity) {
     this.elem.append(elem);
   }
 }
-
 EntityListWidget.prototype.removeEntity = function(entity) {
   entity.elem.remove();
-  if ($(".entity").not("#entity-empty").not("#entity-template").length == 0) {
+  if (this.entities().length == 0) {
     this.elem.find("#entity-empty").removeClass("hidden");
   }
 }
+EntityListWidget.prototype.highlight = function(entity) {
+  $(entity.elem).addClass("highlight");
+}
+EntityListWidget.prototype.unhighlight = function(entity) {
+  $(entity.elem).removeClass("highlight");
+}
 
-class EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpanWidget) {
+var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpanWidget) {
   var self = this;
   this.docWidget = docWidget;
   this.listWidget = listWidget;
+  this.addEntityWidget = addEntityWidget;
+  this.removeSpanWidget = removeSpanWidget;
 
   this.entities = [];
   this.currentMention = null;
 
   // Attach a listener for entity selections.
-  this.docWidget.highlightListener.push(function(selection) {self.processSpanSelection(selection)});
-  this.docWidget.clickListener.push(function(mention) {self.processMentionClick(mention)});
-  this.addEntityWidget.clickListener.push(function(type) {self.processTypeSelected(type)});
-  this.removeSpanWidget.clickListener.push(function(type) {self.processRemoveSpan(type)});
-  this.listWidget.clickListener.push(function(entity) {self.processEntityClicked(entity)});
-  this.listWidget.mouseEnterListener.push(function(entity) {self.processEntityMouseEnter(entity)});
-  this.listWidget.mouseLeaveListener.push(function(entity) {self.processEntityMouseLeave(entity)});
+  this.docWidget.highlightListeners.push(function(selection) {self.processSpanSelection(selection)});
+  this.docWidget.clickListeners.push(function(mention) {self.processMentionClick(mention)});
+  this.addEntityWidget.clickListeners.push(function(type) {self.processTypeSelected(type)});
+  this.removeSpanWidget.clickListeners.push(function() {self.processRemoveSpan()});
+  this.listWidget.clickListeners.push(function(entity) {self.processEntityClick(entity)});
+  this.listWidget.mouseEnterListeners.push(function(entity) {self.processEntityMouseEnter(entity)});
+  this.listWidget.mouseLeaveListeners.push(function(entity) {self.processEntityMouseLeave(entity)});
 
   // TODO: doc mouseEnter, mouseLeave?
-  // doc.mouseEnterListener.push(process_mouse_enter);
-  // doc.mouseLeaveListener.push(process_mouse_leave);
+  // doc.mouseEnterListeners.push(process_mouse_enter);
+  // doc.mouseLeaveListeners.push(process_mouse_leave);
 }
 entities = {}
 
@@ -139,15 +179,23 @@ EntityInterface.prototype.deactivate = function() {
   this.listWidget.deactivate();
   this.addEntityWidget.deactivate();
   this.removeSpanWidget.deactivate();
+
+  // Unhighlight any selection.
+  if (this.currentMention) {
+    // Only keep a mention if it has already been assigned an entity.
+    this.docWidget.unselectMention(this.currentMention);
+    if (!this.currentMention.entity) {
+      this.docWidget.removeMention(this.currentMention);
+    }
+
+    this.currentSelection = null;
+    this.currentMention = null;
+  }
 }
 
 EntityInterface.prototype.processSpanSelection = function(tokens) {
+  console.log("span");
   this.deactivate();
-  // Remove previous selection.
-  if (this.currentSelection) {
-    // TODO: remove any annotation here.
-    this.currentSelection = null;
-  }
 
   // Are these tokens arelady part of a mention?
   for (var i = 0; i < tokens.length; i++) {
@@ -158,91 +206,97 @@ EntityInterface.prototype.processSpanSelection = function(tokens) {
 
   // Highlight all of the tokens being selected.
   this.currentSelection = tokens;
-  this.currentMention = new Mention(tokens);
+  this.currentMention = Mention.fromTokens(tokens);
+  this.docWidget.addMention(this.currentMention);
+  this.docWidget.selectMention(this.currentMention);
 
-  current_entity = null;
-  current_mention = new Mention(token_span);
-  current_mention.select();
-  current_mention.color('grey');
-  var cur_text = current_mention.text()
-    for(entity_id in entities){
-      if (entities[entity_id].levenshtein(cur_text)<=3){
-        entities[entity_id].entity_dom.addClass('suggested-entity');
-      }
-    }
-  enable_pane();
+  this.listWidget.activate(this.currentMention);
+  this.addEntityWidget.activate();
 }
 
-// TODO: at the end of a mention being selected.
-{
-  if (this.currentMention != null) {
-    current_mention.deselect();
-    if (current_mention.id in Entity.mention_to_entity_map){
-      var current_entity = Entity.mention_to_entity_map[current_mention.id];
-      current_entity.unhighlight();
-    }else{
-      current_mention.remove();
+// A type has been selected for the current mention which is now going
+// to become a new entity!
+EntityInterface.prototype.processTypeSelected = function(type) {
+  this.currentMention.type = type;
+  var entity = new Entity(this.currentMention);
+  this.entities.push(entity);
+  this.listWidget.addEntity(entity);
+  this.docWidget.updateMention(this.currentMention);
+  
+  // Deactivate the widgets and unselect.
+  this.deactivate();
+}
+
+// An existing entity has been chosen for this brave mention!
+EntityInterface.prototype.processEntityClick = function(entity) {
+  if (this.currentMention.entity !== undefined && this.currentMention.entity !== null) {
+    if (this.currentMention.entity == entity) {
+      this.deactivate();
+      return; // If the entities are the same, don't do anything.
     }
+
+    if(!this.currentMention.entity.removeMention(this.currentMention)) this.removeEntity(this.currentMention.entity);
   }
-  this.currentMention = null;
+
+  this.currentMention.entity = entity;
+  this.currentMention.type = entity.type;
+  entity.addMention(this.currentMention);
+
+  // Update the mention
+  docWidget.updateMention(this.currentMention);
+
+  // Deactivate the widgets and unselect.
+  this.deactivate();
 }
 
+// A mention has been click. Allow the user to either modify the link or
+// remove the mention.
+EntityInterface.prototype.processMentionClick = function(mention) {
+  console.log("click");
+  this.deactivate();
 
+  // Don't do anything for an undefined entity.
+  if (mention.entity === undefined || mention.entity === null) return; 
+  console.log("click", mention);
 
-// link the entity to the currently highlighted mention.
-//should actually take mention as input or mention span even (as list of words)
-function linkEntity(entity_id){
-    var i = 0
-    console.log(entity_id);
-    var entity = entities[entity_id];
-    if (current_entity != null){
-        current_entity.removeMention(current_mention);
-    }
-    entity.addMention(current_mention);
-    current_mention.highlight(entity.type.color);
-    disable_pane();
-}
-function type_clicked(type_name){
-    var type = $(type_name).attr('entity_type');
-    type = entity_types[type];
-    new Entity(current_mention, type);
-    disable_pane(); 
+  this.docWidget.selectMention(mention);
+  this.currentMention = mention; // Make "editMention" 
+
+  // Highlight the current
+  this.listWidget.activate(mention);
+  this.addEntityWidget.deactivate();
+  this.removeSpanWidget.activate();
 }
 
+EntityInterface.prototype.processRemoveSpan = function() {
+  if (!this.currentMention.entity.removeMention(this.currentMention)) {
+    this.removeEntity(this.currentMention.entity);
+  };
+  this.docWidget.removeMention(this.currentMention);
 
-function process_click(token){
-    disable_pane();
-    if(token.id in Mention.token_to_mention_map){
-        current_mention = Mention.token_to_mention_map[token.id];
-        current_entity = Entity.mention_to_entity_map[current_mention.id];
-        current_entity.highlight();
-        current_entity.entity_dom.addClass('selected-entity');
-        $('#add_entity_widget').addClass('hidden');
-        $('#cancel_mention_widget').removeClass('hidden');
-        enable_pane();
-    }
-    else{
-    }
+  // Deactivate the widgets and unselect.
+  this.deactivate();
 }
-var highlighted_entity = null;
-function process_mouse_enter(token){
-    if(current_mention == null && token.id in Mention.token_to_mention_map){
-        var hovered_mention = Mention.token_to_mention_map[token.id];
-        highlighted_entity = Entity.mention_to_entity_map[current_mention.id];
-        highlighted_entity.highlight();
-    }
+
+// Highlight all the mentions for this entity.
+EntityInterface.prototype.processEntityMouseEnter = function(entity) {
+  this.listWidget.highlight(entity);
+  entity.mentions.forEach(function(mention) {this.docWidget.highlightMention(mention)});
 }
-function process_mouse_leave(token){
-    if (highlighted_entity != null){
-        highlighted_entity.unhighlight();
-    }
-    highlighted_entity = null;
+
+EntityInterface.prototype.processEntityMouseLeave = function(entity) {
+  this.listWidget.unhighlight(entity);
+  entity.mentions.forEach(function(mention) {this.docWidget.unhighlightMention(mention)});
 }
-function remove_mention(){
-    if (current_mention != null){
-        current_mention.remove();
-    }
-    disable_pane();
+
+EntityInterface.prototype.removeEntity = function(entity) {
+    console.log("removing entity", entity);
+  var idx = this.entities.indexOf(entity);
+  console.assert(idx > -1);
+
+  entity.mentions.forEach(function(mention) {this.docWidget.removeMention(mention)});
+  this.listWidget.removeEntity(entity);
+  this.entities.splice(idx,1);
 }
 
 // CHAGANTY TODO

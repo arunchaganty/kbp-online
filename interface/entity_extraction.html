@@ -61,7 +61,7 @@
 
             <div id="entities" class="list-group">
               <button type="button" id="entity-empty" class="list-group-item entity" disabled=true>No entities yet</button>
-              <button type="button" id="entity-template" class="btn hidden list-group-item entity"><i class="fa fa-fw {icon}"></i>{gloss}</button>
+              <button type="button" id="entity-template" class="btn hidden list-group-item entity"><i class="fa fa-fw {icon}"></i>{gloss}<sup>{id}</sup></button>
             </div>
           </div>
         </div>
@@ -76,11 +76,11 @@
           </div>
         </div>
       </div>
-      <div id ="cancel-mention-widget" class="row hidden">
+      <div id ="remove-span-widget" class="row hidden">
         <div class="panel panel-default">
           <div class="panel-body">
             <h4> Delete Span:</h4>
-            <button class="btn btn-danger btn-block" type="button" name="" onclick="remove_mention();"> Remove Span </button>
+            <button id="remove-span" class="btn btn-danger btn-block" type="button" name=""> Remove Span </button>
           </div>
         </div>
       </div>
@@ -95,8 +95,10 @@
 
     <script type="text/javascript">
 var docWidget = new DocWidget($("#document"));
-var entityWidget = new EntityListWidget($("#entities"));
-var entityInt = new EntityInterface(docWidget, entityWidget);
+var listWidget = new EntityListWidget($("#entities"));
+var addEntityWidget = new AddEntityWidget($("#add-entity-widget"));
+var removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"));
+var entityInt = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget);
 
 $.getJSON("data/example2.json", function(data) {
   console.log("loaded data.");

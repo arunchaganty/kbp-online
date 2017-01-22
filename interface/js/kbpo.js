@@ -62,10 +62,10 @@ DocWidget.prototype.buildMention = function(m) {
   return m;
 }
 
-DocWidget.prototype.highlightListener = []
-DocWidget.prototype.mouseEnterListener = []
-DocWidget.prototype.mouseLeaveListener = []
-DocWidget.prototype.clickListener = []
+DocWidget.prototype.highlightListeners = []
+DocWidget.prototype.mouseEnterListeners = []
+DocWidget.prototype.mouseLeaveListeners = []
+DocWidget.prototype.clickListeners = []
 
 DocWidget.prototype.isSentence = function(node) {
   return node.classList.contains("sentence");
@@ -81,7 +81,7 @@ DocWidget.prototype.isToken = function(node) {
 DocWidget.prototype.attachHandlers = function() {
   var self = this;
 
-  // highlightListener (a bit complicated because selection objects must
+  // highlightListeners (a bit complicated because selection objects must
   // be handled.
   this.elem.on("mouseup.kbpo.docWidget", function(evt) { // Any selection in the document.
     var sel = document.getSelection();
@@ -99,7 +99,7 @@ DocWidget.prototype.attachHandlers = function() {
         sel.collapseToEnd();
         return;
       }
-      self.clickListener.forEach(function (listener) {listener(startNode);});
+      self.clickListeners.forEach(function (listener) {listener(startNode);});
       evt.stopPropagation();
     
       return; // Collapsed => an empty selection. 
@@ -142,12 +142,12 @@ DocWidget.prototype.attachHandlers = function() {
     }
 
     // Make sure startNode appears before endNode.
-    if ($(startNode).nextAll().filter(endNode).length === 0) {
+    if (startNode != endNode && $(startNode).nextAll().filter(endNode).length === 0) {
       var tmpNode = endNode;
       endNode = startNode;
       startNode = tmpNode;
     } 
-    console.assert($(startNode).nextAll(endNode).length !== 0, "[Warning] start node does not preceed end node", startNode, endNode);
+    console.assert(startNode == endNode || $(startNode).nextAll(endNode).length !== 0, "[Warning] start node does not preceed end node", startNode, endNode);
 
     // Create a selection object of the spans in between the start and
     // end nodes.
@@ -164,7 +164,7 @@ DocWidget.prototype.attachHandlers = function() {
     }
     
     //console.log("span-selected:", selectedTokens);
-    self.highlightListener.forEach(function (listener) {listener(selectedTokens);});
+    self.highlightListeners.forEach(function (listener) {listener(selectedTokens);});
 
     sel.collapseToEnd();
   });
@@ -172,36 +172,58 @@ DocWidget.prototype.attachHandlers = function() {
   // mouseEnter
   this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
     //console.log("span-enter:", this);
-    self.mouseEnterListener.forEach(function (listener) {listener(this);});
+    self.mouseEnterListeners.forEach(function (listener) {listener(this);});
   });
 
   // mouseLeave
   this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
     //console.log("span-leave:", this);
-    self.mouseLeaveListener.forEach(function (listener) {listener(this);});
+    self.mouseLeaveListeners.forEach(function (listener) {listener(this);});
   });
 
-  // clickListener
+  // clickListeners
   /*this.elem.find("span.token").on("click.kbpo.docWidget", function(evt) {
     console.log("span-click:", this);
-    self.clickListener.forEach(function (listener) {listener(this);});
+    self.clickListeners.forEach(function (listener) {listener(this);});
   });*/
 };
 
 // Create a mention from a set of spans.
 DocWidget.prototype.addMention = function(mention) {
-  $(mention.tokens).wrapAll($("<span class='mention' />").addClass(mention.type).attr("id", "mention-"+mention.id));
-  var elem = $(mention.tokens[0].parentNode);
-
-  elem.prepend($("<span class='link-marker' />").html(mention.canonicalGloss + "<sup>" + mention.canonicalId + "</sup>"));
-  elem.prepend($("<span class='type-marker fa fa-fw' />").addClass(mention.type.icon));
-
+  var self = this;
+  $(mention.tokens).wrapAll($("<span class='mention' />").attr("id", "mention-"+mention.id));
+  var elem = $(mention.tokens[0].parentNode)[0];
   // Create links between the mention and DOM element.
-  elem[0].mention = mention;
-  mention.elem = elem[0];
+  elem.mention = mention;
+  mention.elem = elem;
+  console.log("added mention", mention);
 
+  return this.updateMention(mention);
+}
+DocWidget.prototype.updateMention = function(mention) {
+  console.log("updating mention", mention);
+  var elem = $(mention.elem);
+
+  // If we have type and entity information, populate.
+  if (mention.entity) {
+    if (elem.find(".link-marker").length == 0) elem.prepend($("<span class='link-marker' />"));
+    elem.find(".link-marker")
+      .html(mention.entity.gloss + "<sup>" + mention.entity.idx + "</sup>");
+  } else {
+    elem.find(".link-marker").remove();
+  }
+  if (mention.type) {
+    elem.addClass(mention.type.name);
+    if (elem.find(".type-marker").length == 0) 
+      elem.prepend($("<span class='type-marker fa fa-fw' />"));
+    elem.find('.type-marker')
+      .attr("class", "type-marker fa fa-fw").addClass(mention.type.icon);
+  } else {
+    elem.find(".type-marker").remove();
+  }
   return elem;
 }
+
 
 DocWidget.prototype.removeMention = function(mention) {
   var div = $(mention.tokens[0].parentNode);
@@ -211,19 +233,20 @@ DocWidget.prototype.removeMention = function(mention) {
 }
 
 DocWidget.prototype.highlightMention = function(mention) {
-  mention.elem.addClass("highlight");
+  $(mention.elem).addClass("highlight");
 }
 
 DocWidget.prototype.unhighlightMention = function(mention) {
-  mention.elem.removeClass("highlight");
+  $(mention.elem).removeClass("highlight");
 }
 
 DocWidget.prototype.selectMention = function(mention) {
-  mention.elem.addClass("select");
+  $(mention.elem).addClass("selected");
 }
 
-DocWidget.prototype.selectMention = function(mention) {
-  mention.elem.removeClass("select");
+DocWidget.prototype.unselectMention = function(mention) {
+  console.log("unselect", mention);
+  $(mention.elem).removeClass("selected");
 }
 
 function getCandidateRelations(mentionPair) {
@@ -308,9 +331,9 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
   this.relnWidget = relnWidget; 
   this.listWidget = listWidget; 
 
-  this.listWidget.mouseEnterListener.push(function(p) {self.highlightExistingMentionPair(p)});
-  this.listWidget.mouseLeaveListener.push(function(p) {self.unhighlightExistingMentionPair(p)});
-  this.listWidget.clickListener.push(function(p) {self.editExistingMentionPair(p)});
+  this.listWidget.mouseEnterListeners.push(function(p) {self.highlightExistingMentionPair(p)});
+  this.listWidget.mouseLeaveListeners.push(function(p) {self.unhighlightExistingMentionPair(p)});
+  this.listWidget.clickListeners.push(function(p) {self.editExistingMentionPair(p)});
 
   $("#done")[0].disabled = true;
   $("#back")[0].disabled = true;
@@ -373,7 +396,6 @@ function notDuplicated(pairs, m, n) {
 // For every pair of mentions in a span of (2) sentences.
 RelationInterface.prototype.constructMentionPairs = function(mentions) {
   var pairs = [];
-  console.log(mentions);
 
   // Get pairs.
   for (var i = 0; i < mentions.length; i++) {
@@ -402,13 +424,11 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
     pairs[i].relation = null; // The none relation.
   }
 
-  console.log(pairs);
   return pairs;
 }
 
 function centerOnMention(m) {
   loc = "#mention-" + m.id;
-  console.log(loc);
   $(loc)[0].scrollIntoView();
 }
 
@@ -498,9 +518,9 @@ RelationListWidget = function(elem) {
   this.elem = elem;
 }
 
-RelationListWidget.prototype.mouseEnterListener = [];
-RelationListWidget.prototype.mouseLeaveListener = [];
-RelationListWidget.prototype.clickListener = [];
+RelationListWidget.prototype.mouseEnterListeners = [];
+RelationListWidget.prototype.mouseLeaveListeners = [];
+RelationListWidget.prototype.clickListeners = [];
 
 RelationListWidget.prototype.addRelation = function(mentionPair) {
   var self = this;
@@ -518,15 +538,15 @@ RelationListWidget.prototype.addRelation = function(mentionPair) {
   // attach listeners.
   div.on("mouseenter.kbpo.list", function(evt) {
     //console.log("mention.mouseenter", mentionPair);
-    self.mouseEnterListener.forEach(function(cb) {cb(mentionPair);});
+    self.mouseEnterListeners.forEach(function(cb) {cb(mentionPair);});
   });
   div.on("mouseleave.kbpo.list", function(evt) {
     //console.log("mention.mouseleave", mentionPair);
-    self.mouseLeaveListener.forEach(function(cb) {cb(mentionPair);});
+    self.mouseLeaveListeners.forEach(function(cb) {cb(mentionPair);});
   });
   div.on("click.kbpo.click", function(evt) {
     //console.log("mention.cancel", mentionPair);
-    self.clickListener.forEach(function(cb) {cb(mentionPair);});
+    self.clickListeners.forEach(function(cb) {cb(mentionPair);});
   });
 
   this.elem.append(div);

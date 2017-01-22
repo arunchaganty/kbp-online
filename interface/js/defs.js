@@ -273,7 +273,7 @@ var Mention = function(m) {
   this.id = Mention.count++;
   this.tokens = m.tokens;
   this.sentenceIdx = m.tokens[0].sentenceIdx;
-  this.type = TYPES[m.type];
+  this.type = m.type && TYPES[m.type];
   this.gloss = m.gloss;
 
   this.entity = null;
@@ -281,14 +281,26 @@ var Mention = function(m) {
   this.canonicalGloss = m['canonical-gloss'];
 }
 Mention.count = 0;
+Mention.fromTokens = function(tokens) {
+  return new Mention({
+    "tokens": tokens,
+    "sentenceIdx": tokens[0].token.sentenceIdx,
+    "type": undefined,
+    "gloss": Mention.textFromTokens(tokens)
+  });
+}
+Mention.textFromTokens = function(tokens) {
+  text = "";
+  for (i = 0; i < tokens.length; i++){
+    text += tokens[i].textContent;
+  }
+  console.log(text);
+  return text.replace("&nbsp;", " ");
+}
 
 // Returns the text represented within the spans of text. 
 Mention.prototype.text = function(){
-  text = "";
-  for (i = 0; i<this.span.length;i++){
-    text += this.span[i].textContent;
-  }
-  return text.replace("&nbsp;", " ");
+  return Mention.textFromTokens(this.tokens);
 }
 
 // Compute levenshtein distance from input @string
@@ -298,11 +310,14 @@ Mention.prototype.levenshtein = function(string){
 
 // Creates a new entity from a @canonical_mention and @type.
 function Entity(canonicalMention) {
-    this.id = "e-" + Entity.count++;
-    this.gloss = canonicalMention.text;
-    this.type = canonicalMention.type;
+  console.log(canonicalMention);
+  this.idx = 1 + Entity.count++;
+  this.id = "e-" + this.idx;
+  this.gloss = canonicalMention.gloss;
+  this.type = canonicalMention.type;
+  this.mentions = [];
 
-    this.addMention(canonicalMention);
+  this.addMention(canonicalMention);
 }
 Entity.count = 0;
 Entity.map = {};
@@ -313,13 +328,15 @@ Entity.prototype.addMention = function(mention) {
   if (mention.type === null) {
     mention.type = this.type;
   }
+  mention.entity = this;
 
-  this.mentions = [canonicalMention];
-  this.map[canonicalMention.id] = this;
+  this.mentions = [mention];
+  Entity.map[mention.id] = this;
 }
 
 // Returns "true" if the mention has > 0 mentions.
 Entity.prototype.removeMention = function(mention) {
+  console.log(mention, this.mentions);
   var index = this.mentions.indexOf(mention);
   console.assert(index > -1);
   if (index > -1) {
@@ -342,5 +359,5 @@ Entity.prototype.levenshtein = function(mentionText) {
       bestMatch = this.mentions[i]
     }
   }
-  return best_score;
+  return bestScore;
 }
