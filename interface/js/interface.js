@@ -194,14 +194,88 @@ function linkEntity(entity_id){
     current_mention.highlight(entity.type.color);
     disable_pane();
 }
+
+//LinkWidget to link with wikipedia entries
+function LinkWidget(callback){
+    this.resultLimit = 5;
+    this.thumbSize = 50;
+    this.callback = callback;
+    var _this = this;
+    $('#submit-wiki-search').click(function(){_this.populate(this.form.search_input.value);});
+    $('#no-wiki-link').click(function(){_this.callback();});
+}
+LinkWidget.prototype.fetchResults = function(term){
+    return $.ajax({
+                    url: 'https://en.wikipedia.org/w/api.php',
+                    data: { action: 'opensearch', limit: this.resultLimit, search: term, format: 'json' , redirects:'resolve'},
+                    dataType: 'jsonp',
+                });
+}
+LinkWidget.prototype.fetchThumbs = function(searchResults){
+    return $.ajax({
+                    url: 'https://en.wikipedia.org/w/api.php',
+                    data: { action: 'query', titles: searchResults[1].join('|'), format: 'json',prop: 'pageimages' , pithumbsize: this.thumbSize, pilimit:this.resultLimit },
+                    dataType: 'jsonp',
+                    
+                });
+}
+
+LinkWidget.prototype.show = function(mentionText){
+    this.mentionText = mentionText;
+    this.populate(mentionText);
+    $('#wiki-search-input').val(mentionText);
+    $('#wiki-linking-modal').modal('show');
+}
+LinkWidget.prototype.populate = function(mentionText){
+    if (typeof(mentionText) === 'undefined'){
+        mentionText = this.mentionText;
+    }
+    var _this = this;
+    this.fetchResults(mentionText).done(
+            function(searchResults){
+                _this.fetchThumbs(searchResults).done(function(images){
+                    var pages = images['query']['pages'];
+                    var thumbs = [];
+                    for (page in pages){
+                        if ('thumbnail' in pages[page]){
+                            thumbs.push(pages[page]['thumbnail']['source']);
+                        }
+                        else{
+                            thumbs.push(null);
+                        }
+                    }
+                    searchResults.push(thumbs);
+                    _sr = searchResults;
+                    var titles = searchResults[1];
+                    var texts = searchResults[2];
+                    var urls = searchResults[3];
+                    var thumbs = searchResults[4];
+                
+                    $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
+                    for(var i=titles.length-1; i>=0; i--){
+                        var resultDom = $('.wiki-entry-template').clone();
+                        resultDom.removeClass('hidden').removeClass('wiki-entry-template');
+                        var url = new String(urls[i]);
+                        resultDom.children('button').click(function(){
+                            var url = $(this).siblings('.list-group-item-heading').children('a').attr('href')
+                            _this.callback(url.substr(url.lastIndexOf('/') + 1));});
+                        resultDom.children('.list-group-item-heading').prepend('<a href=\"'+urls[i]+'\" target=\'_blank\'>'+titles[i]+'</a>');
+                        if (thumbs[i]!=null){
+                            resultDom.prepend("<img src=\'"+thumbs[i]+"\' style='float:left; padding-right:3px;' class='img-responsive' ></img>");
+                        }
+                        resultDom.children('.list-group-item-text').append(texts[i]);
+                        resultDom.prependTo($('#wiki-search-results'));
+                    }   
+
+                });});
+}
+    
 function type_clicked(type_name){
     var type = $(type_name).attr('entity_type');
     type = entity_types[type];
     if (type.linking == 'wiki-search'){
         var search_text = current_mention.text();
-        $('#wiki-search-input').val(search_text);
-        wiki_search(search_text);
-        $('#wiki-linking-modal').modal('show');
+        linkWidget.show(search_text);
     }
     else if(type.linking = 'date-picker'){
         $('#date-linking-modal').modal('show');
@@ -325,58 +399,9 @@ function populate_types(){
     }
 }
 function wiki_search(term){
-console.log(term);
-var limit = 5;
-$.ajax({
-                url: 'https://en.wikipedia.org/w/api.php',
-                data: { action: 'opensearch', limit: limit, search: term, format: 'json' , redirects:'resolve'},
-                dataType: 'jsonp',
-                
-            })
-.done(function(results){
-$.ajax({
-                url: 'https://en.wikipedia.org/w/api.php',
-                data: { action: 'query', titles: results[1].join('|'), format: 'json',prop: 'pageimages' , pithumbsize: 50, pilimit:limit },
-                dataType: 'jsonp',
-                
-            })
-.done(function(images){
-    var pages = images['query']['pages'];
-    var thumbs = [];
-    for (page in pages){
-        if ('thumbnail' in pages[page]){
-            thumbs.push(pages[page]['thumbnail']['source']);
-        }
-        else{
-            thumbs.push(null);
-        }
-    }
-     console.log(thumbs);
-     results.push(thumbs);
-     update_wiki_results(results);
-     
-});});
-    
-    
 }
 function update_wiki_results(search_results){
     console.log(search_results);
-    var titles = search_results[1];
-    var texts = search_results[2];
-    var urls = search_results[3];
-    var thumbs = search_results[4];
-    $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
-    for(var i=titles.length-1; i>=0; i--){
-        var result_dom = $('.wiki-entry-template').clone();
-        result_dom.removeClass('hidden').removeClass('wiki-entry-template');
-        result_dom.children('.list-group-item-heading').prepend('<a href=\"'+urls[i]+'\" target=\'_blank\'>'+titles[i]+'</a>');
-        if (thumbs[i]!=null){
-            result_dom.prepend("<img src=\'"+thumbs[i]+"\' style='float:left; padding-right:3px;' class='img-responsive' ></img>");
-        }
-        result_dom.children('.list-group-item-text').append(texts[i]);
-        console.log(result_dom);
-        result_dom.prependTo($('#wiki-search-results'));
-    }   
 }
 populate_types();
 disable_pane();

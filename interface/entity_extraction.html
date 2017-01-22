@@ -114,23 +114,6 @@
     <!-- <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>-->
 
         <script src="js/interface.js"></script>
-        <script type="text/javascript">
-          var doc = new DocWidget($("#document"));
-          console.log(doc);
-
-          $.getJSON("data/example2.json", function(data) {
-            console.log("loaded data.");
-            console.log(doc);
-            doc.load(data.document);
-            doc.highlightListener.push(process_selection);
-            doc.clickListener.push(process_click);
-            doc.mouseEnterListener.push(process_mouse_enter);
-            doc.mouseLeaveListener.push(process_mouse_leave);
-          })
-            .fail(function() {
-              console.log("Could not load data.");
-            });
-        </script>
 <div id='blah'> </div>
 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#wiki-linking-modal">
   Launch demo modal
@@ -152,19 +135,19 @@
               <input type="text" id='wiki-search-input' name='search_input' class="form-control" placeholder="Search for..." onkeydown = "if (event.keyCode == 13)
                         document.getElementById('submit-wiki-search').click()">
               <span class="input-group-btn">
-                <button id ="submit-wiki-search" type="button" class="btn btn-default" onclick='wiki_search(this.form.search_input.value)'>Search</button>
+                <button id ="submit-wiki-search" type="button" class="btn btn-default">Search</button>
               </span>
             </form><!-- /input-group -->
             <br>
             <div id='wiki-search-results' class="list-group">
               <div  class="list-group-item wiki-entry wiki-entry-template hidden">
-<button type="button" class="btn btn-success btn-xs" style='float:right;' onclick='' ><i class="fa fa-fw fa-check-circle-o"></i> Link</button>
+<button type="button" class="btn btn-success btn-xs" style='float:right;' onclick='' ><i class="fa fa-fw fa-check-circle-o"></i>Link</button>
                 <h5 class="list-group-item-heading">
                 </h5>
                 <p class="list-group-item-text"></p>
               </div>
               <div  class="list-group-item wiki-entry none-wiki-entry">
-<button type="button" class="btn btn-danger btn-block" style='float:auto;' onclick='' ><i class="fa fa-fw fa-times-circle-o"></i>No Link</button>
+<button type="button" id = 'no-wiki-link' class="btn btn-danger btn-block" style='float:auto;' onclick='' ><i class="fa fa-fw fa-times-circle-o"></i>No Link</button>
                 <p class="list-group-item-text"></p>
               </div>
             </div>
@@ -214,6 +197,24 @@
     </div>
   </div>
 </div>
+        <script type="text/javascript">
+          var doc = new DocWidget($("#document"));
+          console.log(doc);
+
+          $.getJSON("data/example2.json", function(data) {
+            console.log("loaded data.");
+            console.log(doc);
+            doc.load(data.document);
+            doc.highlightListener.push(process_selection);
+            doc.clickListener.push(process_click);
+            doc.mouseEnterListener.push(process_mouse_enter);
+            doc.mouseLeaveListener.push(process_mouse_leave);
+          })
+            .fail(function() {
+              console.log("Could not load data.");
+            });
+        var linkWidget = new LinkWidget(function(link){alert(link);});
+        </script>
     </body>
 
 </html>
