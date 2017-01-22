@@ -1,17 +1,23 @@
 /***
  * Useful definitions
  */
+/*age.png              born.svg      Home_Icon.svg  other_family.png  school.svg        spouse.svg        UN_Members_Flags.JPG
+age.svg              employee.svg  links          parents.png       shareholders.png  Tombstone.svg
+alternate_names.svg  founder.svg   members.jpg    parent.svg        sibling.png       top_employee.jpg
+*/
 
 var _RELATIONS = [{
     "name": "per:age",
     "short": "age",
-    "icon": "",
+    "image": "age.svg",
+    "icon" : "", 
     "template": "{subject} is {object} old.",
     "subject-types": ["PER"],
     "object-types": ["NUM"]
   },{
     "name": "per:alternate_names",
     "short": "alias",
+    "image": "alternate_names.svg",
     "icon": "",
     "template": "{subject} is also known as {object}.",
     "subject-types": ["PER"],
@@ -19,6 +25,7 @@ var _RELATIONS = [{
   },{
     "name": "per:place_of_birth",
     "short": "born at",
+    "image": "born.svg",
     "icon": "",
     "template": "{subject} was born at {object}.",
     "subject-types": ["PER"],
@@ -26,20 +33,23 @@ var _RELATIONS = [{
   },{
     "name": "per:place_of_residence",
     "short": "lived at",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-home",
     "template": "{subject} lived at {object}.",
     "subject-types": ["PER"],
     "object-types": ["GPE"]
   },{
     "name": "per:place_of_death",
     "short": "died at",
-    "icon": "",
+    "image": "Tombstone.svg",
+    "icon": "", 
     "template": "{subject} died at {object}.",
     "subject-types": ["PER"],
     "object-types": ["GPE"]
   },{
     "name": "per:date_of_birth",
     "short": "born on",
+    "image": "born.svg",
     "icon": "",
     "template": "{subject} was born on {object}.",
     "subject-types": ["PER"],
@@ -48,6 +58,7 @@ var _RELATIONS = [{
     "name": "per:date_of_death",
     "short": "died on",
     "template": "{subject} died on {object}.",
+    "image": "Tombstone.svg",
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["DATE"]
@@ -55,13 +66,15 @@ var _RELATIONS = [{
     "name": "per:schools_attended",
     "short": "studied at",
     "template": "{subject} studied at {object}.",
+    "image": "school.svg",
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["ORG"]
   },{
     "name": "per:employee_or_member_of",
     "short": "works for",
-    "icon": "",
+    "image": "employee.svg", 
+    "icon": "", 
     "template": "{subject} works for {object}.",
     "subject-types": ["PER"],
     "object-types": ["ORG", "GPE"]
@@ -69,6 +82,7 @@ var _RELATIONS = [{
     "name": "per:parents",
     "short": "child of",
     "template": "{subject} is the child of {object}.",
+    "image": "parents.png", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -76,6 +90,7 @@ var _RELATIONS = [{
     "name": "per:children",
     "short": "parent of",
     "template": "{subject} is the parent of {object}.",
+    "image": "parents.png", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -83,6 +98,7 @@ var _RELATIONS = [{
     "name": "per:spouse",
     "short": "spouse",
     "template": "{subject} is the spouse of {object}.",
+    "image": "spouse.svg", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -90,6 +106,7 @@ var _RELATIONS = [{
     "name": "per:sibling",
     "short": "sibling of",
     "template": "{subject} is the sibling of {object}.",
+    "image": "sibling.svg", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -97,19 +114,22 @@ var _RELATIONS = [{
     "name": "per:other_family",
     "short": "other family",
     "template": "{subject} and {object} are otherwise family.",
+    "image": "other_family.png", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
   },{
     "name": "per:title",
     "short": "professional title",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-id-card-o",
     "template": "{subject} is a {object}.",
     "subject-types": ["PER"],
     "object-types": ["TITLE"]
   },{
     "name": "org:alternate_names",
     "short": "alias",
+    "image": "alternate_names.svg", 
     "icon": "",
     "template": "{subject} is also known as {object}.",
     "subject-types": ["ORG"],
@@ -118,13 +138,15 @@ var _RELATIONS = [{
     "name": "org:place_of_headquarters",
     "short": "headquartered at",
     "template": "{subject} is headquartered at {object}.",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-building-o",
     "subject-types": ["ORG"],
     "object-types": ["GPE"]
   },{
     "name": "org:date_founded",
     "short": "founded on",
     "template": "{subject} was founded on {object}.",
+    "image": "founder.svg", 
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["DATE"]
@@ -132,13 +154,15 @@ var _RELATIONS = [{
     "name": "org:date_dissolved",
     "short": "closed/dissolved on",
     "template": "{subject} was closed/dissolved on {object}.",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-trash-o",
     "subject-types": ["ORG"],
     "object-types": ["DATE"]
   },{
     "name": "org:founded_by",
     "short": "founded by",
     "template": "{subject} was founded by {object}.",
+    "image": "founder.svg", 
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["PER", "ORG", "GPE"]
@@ -146,6 +170,7 @@ var _RELATIONS = [{
     "name": "org:member_of",
     "short": "member of",
     "template": "{subject} is a member of {object}.",
+    "image": "members.jpg", 
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
@@ -153,6 +178,7 @@ var _RELATIONS = [{
     "name": "org:members",
     "short": "has member",
     "template": "{subject} has {object} as a member.",
+    "image": "members.jpg", 
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
@@ -160,6 +186,7 @@ var _RELATIONS = [{
     "name": "org:number_of_employees_members",
     "short": "number of employees or members",
     "template": "{subject} has {object} members or employees.",
+    "image": "employee.svg",
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["NUM"]
@@ -167,20 +194,23 @@ var _RELATIONS = [{
     "name": "org:subsidiaries",
     "short": "owns",
     "template": "{subject} owns {object}.",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
   },{
     "name": "org:parents",
     "short": "owned by",
     "template": "{subject} is owned by {object}.",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
   },{
     "name": "org:shareholders",
     "short": "shareholder",
     "template": "{object} is a shareholder of {subject}.",
+    "image": "shareholders.png", 
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["PER", "ORG"]
@@ -188,6 +218,7 @@ var _RELATIONS = [{
     "name": "org:holds_shares_in",
     "short": "holds shares in",
     "template": "{subject} holds shares in {object}.",
+    "image": "shareholders.png", 
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
@@ -195,6 +226,7 @@ var _RELATIONS = [{
     "name": "gpe:member_of",
     "short": "member_of",
     "template": "{subject} is a member of {object}.",
+    "image": "members.jpg", 
     "icon": "",
     "subject-types": ["GPE"],
     "object-types": ["ORG"]
@@ -202,14 +234,16 @@ var _RELATIONS = [{
     "name": "gpe:subsidiaries",
     "short": "owns",
     "template": "{subject} owns {object}.",
-    "icon": "",
+    "image": "", 
+    "icon": "fa-sitemap",
     "subject-types": ["GPE"],
     "object-types": ["ORG"]
   },{
     "name": "no_relation",
     "short": "unrelated",
     "template": "{subject} and {object} are otherwise related or not related.",
-    "icon": "",
+    "image" : "", 
+    "icon": "fa-times",
     "subject-types": ["PER", "ORG", "GPE"],
     "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
   }];
@@ -218,6 +252,7 @@ var RelationLabel = function(r) {
   this.name = r.name;
   this.short = r.short;
   this.icon = r.icon;
+  this.image = r.image;
   this.template = r.template;
   this.subjectTypes = r["subject-types"];
   this.objectTypes = r["object-types"];

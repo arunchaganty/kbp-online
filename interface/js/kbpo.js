@@ -311,6 +311,15 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   var self = this;
   var div = $("#relation-option-widget").clone();
   div.html(div.html().replace("{short}", reln.short));
+  if (reln.image !=""){
+    div.find('img').removeClass('hidden').attr('src', 'images/relations/'+reln.image);
+  }
+  else if(reln.icon != ""){
+    div.find('.icon').removeClass('hidden').addClass(reln.icon);
+  }
+  else{
+    div.find('.icon').removeClass('hidden').addClass('fa-question-circle-o').css('color',  'coral');
+  }
   div.attr("id", "relation-option-" + id);
   div.on("click.kbpo.relationWidget", function(evt) {self.done(reln)});
   // Update widget text. 
