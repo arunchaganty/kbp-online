@@ -40,6 +40,14 @@ span.token.mention {
   font-style: italic;
 }
 
+span.token.suggestion {
+  text-shadow: 0px 0px 1px black;
+}
+
+.mention span.token.suggestion {
+  text-shadow: unset;
+}
+
 span.mention {
   font-style: italic;
   position: relative;
