@@ -106,7 +106,7 @@ var _RELATIONS = [{
     "name": "per:sibling",
     "short": "sibling of",
     "template": "{subject} is the sibling of {object}.",
-    "image": "sibling.svg", 
+    "image": "sibling.png", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
