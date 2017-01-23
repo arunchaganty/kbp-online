@@ -248,6 +248,7 @@ EntityInterface.prototype.processTypeSelected = function(type) {
            }
       }
       if(i == this.currentMention.tokens.length){
+          console.log('link not found');
           dateWidget.show(this.currentMention.gloss);
       }
   } else {

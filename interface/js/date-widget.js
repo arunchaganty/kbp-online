@@ -25,29 +25,10 @@ function DateWidget(elem){
         }
     });
     this.elem.find('input[type=radio][name=week-or-date][value=day]').click();
-    var months = moment.monthsShort()
     this.monthSelect = this.elem.find('select[name=month]');
-    this.monthSelect.append($("<option />").val('NA').text('NA'));
     this.weekSelect = this.elem.find('select[name=week]');
-    this.weekSelect.append($("<option />").val('NA').text('NA'));
     this.daySelect = this.elem.find('select[name=day]');
-    this.daySelect.append($("<option />").val('NA').text('NA'));
     this.yearSelect = this.elem.find('select[name=year]');
-    this.yearSelect.append($("<option />").val('NA').text('NA'));
-    this.monthSelect.find('option').not('[value=NA]').remove();
-    for(var i =1; i<=12;i++){ this.monthSelect.append($("<option />").val(i).text(months[i-1]));
-    }
-
-    this.weekSelect.find('option').not('[value=NA]').remove();
-    for(var i =1; i<=53;i++){
-        this.weekSelect.append($("<option />").val(i).text(i));
-    }
-    this.yearSelect.find('option').not('[value=NA]').remove();
-    for(var i =2017; i>=1900;i--){
-        this.yearSelect.append($("<option />").val(i).text(i));
-    }
-    this.monthSelect.change($.proxy(this.refreshDays, this));
-    this.yearSelect.change($.proxy(this.refreshDays, this));
     var self = this;
     this.elem.find('#link-date-submit').click(function(){
         self.doneListeners.forEach(function(cb) {cb(self.getSelectedDateString());})
@@ -56,6 +37,7 @@ function DateWidget(elem){
 }
 DateWidget.prototype.doneListeners = [];
 DateWidget.prototype.show = function(mentionGloss, suggestion, docdate){
+    console.log(parsedSuggestion);
     var parsedSuggestion = moment();
     if(suggestion != undefined){
         var _parsedSuggestion = moment(suggestion);
@@ -63,11 +45,13 @@ DateWidget.prototype.show = function(mentionGloss, suggestion, docdate){
             parsedSuggestion = _parsedSuggestion;
         }
     }
+    console.log(parsedSuggestion);
     var parsedDocdate = moment();
     if(docdate != undefined){
         var _parsedDocdate = moment(docdate);
         if (_parsedDocdate._isValid){
             parsedDocdate = _parsedDocdate;
+            this.docdate = parsedDocdate;
         }
     }
     this.refresh(parsedSuggestion);
@@ -75,7 +59,6 @@ DateWidget.prototype.show = function(mentionGloss, suggestion, docdate){
     this.elem.modal('show');
 }
 DateWidget.prototype.hide = function(mention){
-    this.elem.find('.date-now').removeClass('date-now');
     this.elem.modal('hide');
 }
 DateWidget.prototype.refreshDays = function(){
@@ -94,10 +77,13 @@ DateWidget.prototype.refreshDays = function(){
         }
     }
     if(date.month()==moment().month() && date.year() == moment().year()){
-        this.daySelect.find('option[value='+moment().date()+']').attr("selected", true).addClass('date-now');
+        ////this.daySelect.find('option[value='+moment().date()+']').attr("selected", true);
     }
     else{
-        this.daySelect.find('option[value='+date.date()+']').attr("selected", true).addClass('date-now');
+        //this.daySelect.find('option[value='+date.date()+']').attr("selected", true).addClass('date-now');
+        if(this.docdate != undefined){
+            this.daySelect.find('option[value='+this.docdate.date()+']').addClass('date-now');
+        }
     }
 }
 DateWidget.prototype.getSelectedDate = function(){
@@ -149,7 +135,31 @@ DateWidget.prototype.getSelectedDateString = function(){
     return dateStr;
 }
 
-DateWidget.prototype.refresh = function(date){
+DateWidget.prototype.refresh = function(date, docdate){
+    this.elem.find('.date-now').removeClass('date-now');
+    this.elem.find(':selected').each(function(elem){$(elem).prop("selected", false);});
+
+    this.monthSelect.find('option').remove();
+    this.weekSelect.find('option')./*not('[value=NA]').*/remove();
+    this.yearSelect.find('option')./*not('[value=NA]').*/remove();
+
+    this.monthSelect.append($("<option />").val('NA').text('NA'));
+    this.weekSelect.append($("<option />").val('NA').text('NA'));
+    this.daySelect.append($("<option />").val('NA').text('NA'));
+    this.yearSelect.append($("<option />").val('NA').text('NA'));
+
+    var months = moment.monthsShort()
+    for(var i =1; i<=12;i++){ 
+        this.monthSelect.append($("<option />").val(i).text(months[i-1]));
+    }
+    for(var i =1; i<=53;i++){
+        this.weekSelect.append($("<option />").val(i).text(i));
+    }
+    for(var i =2017; i>=1900;i--){
+        this.yearSelect.append($("<option />").val(i).text(i));
+    }
+    this.monthSelect.change($.proxy(this.refreshDays, this));
+    this.yearSelect.change($.proxy(this.refreshDays, this));
     if (date === undefined){
         date=moment();
     }   
@@ -157,10 +167,15 @@ DateWidget.prototype.refresh = function(date){
     for(var i=1 ;i<=date.daysInMonth();i++){
         this.daySelect.append($("<option />").val(i).text(i));
     }*/
-    this.monthSelect.find('option[value='+(date.month()+1)+']').attr("selected", true).addClass('date-now');
-    this.weekSelect.find('option[value='+date.week()+']').attr("selected", true).addClass('date-now');
-    this.yearSelect.find('option[value='+date.year()+']').attr("selected", true).addClass('date-now');
+    this.monthSelect.find('option[value='+(date.month()+1)+']').attr("selected", true)
+    this.weekSelect.find('option[value='+date.week()+']').attr("selected", true);
+    this.yearSelect.find('option[value='+date.year()+']').attr("selected", true);
     this.refreshDays();
-    this.daySelect.find('option[value='+date.date()+']').attr("selected", true).addClass('date-now');
+    this.daySelect.find('option[value='+date.date()+']').attr("selected", true);
+    if(this.docdate != undefined){
+        this.monthSelect.find('option[value='+(this.docdate.month()+1)+']').addClass('date-now');
+        this.weekSelect.find('option[value='+(this.docdate.week())+']').addClass('date-now');
+        this.yearSelect.find('option[value='+(this.docdate.year())+']').addClass('date-now');
+    }
 }
 
