@@ -223,7 +223,9 @@ EntityInterface.prototype.processSpanSelection = function(tokens) {
   this.docWidget.addMention(this.currentMention);
   this.docWidget.selectMention(this.currentMention);
   this.listWidget.activate(this.currentMention);
+  this.linkWidget.preload(this.currentMention.gloss);
   this.addEntityWidget.activate();
+
 }
 
 // A type has been selected for the current mention which is now going
@@ -377,10 +379,17 @@ LinkWidget.prototype.fetchThumbs = function(searchResults){
   });
 }
 
-LinkWidget.prototype.show = function(mentionText){
+LinkWidget.prototype.preload = function(mentionText){
   this.mentionText = mentionText;
   this.populate(mentionText);
   $('#wiki-search-input').val(mentionText);
+}
+LinkWidget.prototype.show = function(mentionText){
+  if(this.mentionText != mentionText){
+      this.mentionText = mentionText;
+      this.populate(mentionText);
+      $('#wiki-search-input').val(mentionText);
+  }
   $('#wiki-linking-modal').modal('show');
 }
 
