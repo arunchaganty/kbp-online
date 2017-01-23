@@ -5,7 +5,7 @@
 }
 
 #document.short {
-  max-height: 200px;
+  max-height: 300px;
 }
 
 span.sentence {
@@ -28,7 +28,11 @@ span.token.underline {
 }
 
 span.token.highlight {
-  text-shadow:1px 0px 0px;
+  text-shadow:0px 0px 1px black;
+}
+
+.mention.highlight {
+  text-shadow:0px 0px 1px;
 }
 
 span.selected {
@@ -46,6 +50,10 @@ span.token.suggestion {
 
 .mention span.token.suggestion {
   text-shadow: unset;
+}
+
+.mention span.token.suggestion.highlight {
+  text-shadow: 0px 0px 1px;
 }
 
 span.mention {
@@ -84,18 +92,21 @@ div.relation-option span.icon {
 
 div#relation-option-preview {
   font-size: large;
+  height: 90px;
 }
 
 div#relation-option-preview span.subject {
-  color: red;
   font-weight: bold;
 }
 
 div#relation-option-preview span.object {
-  color: blue;
   font-weight: bold;
 }
 
 #instruction-widget-modal>.modal-dialog {
         width: 90%;
 }
+.sentence.highlight {
+  background-color: palegoldenrod;
+}
+

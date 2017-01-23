@@ -213,7 +213,7 @@ EntityInterface.prototype.processSpanSelection = function(tokens) {
   // Are these tokens arelady part of a mention?
   for (var i = 0; i < tokens.length; i++) {
     if (tokens[i].mention !== undefined) {
-      return processMentionClick(tokens[i].mention);
+      return this.processMentionClick(tokens[i].mention);
     }
   }
 

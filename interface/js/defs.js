@@ -63,6 +63,22 @@ var _RELATIONS = [{
     "subject-types": ["PER"],
     "object-types": ["DATE"]
   },{
+    "name": "per:organizations_founded",
+    "short": "founded",
+    "template": "{subject} founded {object}.",
+    "image": "founder.svg",
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["ORG"]
+  },{
+    "name": "per:holds_shares_in",
+    "short": "holds shares in",
+    "template": "{subject} holds shares in {object}.",
+    "image": "shareholders.png", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["ORG"]
+  },{
     "name": "per:schools_attended",
     "short": "studied at",
     "template": "{subject} studied at {object}.",
@@ -106,7 +122,7 @@ var _RELATIONS = [{
     "name": "per:sibling",
     "short": "sibling of",
     "template": "{subject} is the sibling of {object}.",
-    "image": "sibling.svg", 
+    "image": "sibling.png", 
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -152,7 +168,7 @@ var _RELATIONS = [{
     "object-types": ["DATE"]
   },{
     "name": "org:date_dissolved",
-    "short": "closed/dissolved on",
+    "short": "dissolved on",
     "template": "{subject} was closed/dissolved on {object}.",
     "image": "", 
     "icon": "fa-trash-o",
@@ -165,7 +181,7 @@ var _RELATIONS = [{
     "image": "founder.svg", 
     "icon": "",
     "subject-types": ["ORG"],
-    "object-types": ["PER", "ORG", "GPE"]
+    "object-types": ["ORG", "GPE"]
   },{
     "name": "org:member_of",
     "short": "member of",
@@ -173,7 +189,7 @@ var _RELATIONS = [{
     "image": "members.jpg", 
     "icon": "",
     "subject-types": ["ORG"],
-    "object-types": ["ORG"]
+    "object-types": ["ORG", "GPE"]
   },{
     "name": "org:members",
     "short": "has member",
@@ -181,27 +197,19 @@ var _RELATIONS = [{
     "image": "members.jpg", 
     "icon": "",
     "subject-types": ["ORG"],
-    "object-types": ["ORG"]
-  },{
-    "name": "org:number_of_employees_members",
-    "short": "number of employees or members",
-    "template": "{subject} has {object} members or employees.",
-    "image": "employee.svg",
-    "icon": "",
-    "subject-types": ["ORG"],
-    "object-types": ["NUM"]
+    "object-types": ["ORG", "GPE"]
   },{
     "name": "org:subsidiaries",
-    "short": "owns",
-    "template": "{subject} owns {object}.",
+    "short": "parent of",
+    "template": "{subject} is a parent organization  of {object}.",
     "image": "", 
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
   },{
     "name": "org:parents",
-    "short": "owned by",
-    "template": "{subject} is owned by {object}.",
+    "short": "subsidiary of",
+    "template": "{subject} is a subsidiary of {object}.",
     "image": "", 
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
@@ -213,7 +221,7 @@ var _RELATIONS = [{
     "image": "shareholders.png", 
     "icon": "",
     "subject-types": ["ORG"],
-    "object-types": ["PER", "ORG"]
+    "object-types": ["ORG"]
   },{
     "name": "org:holds_shares_in",
     "short": "holds shares in",
@@ -221,22 +229,6 @@ var _RELATIONS = [{
     "image": "shareholders.png", 
     "icon": "",
     "subject-types": ["ORG"],
-    "object-types": ["ORG"]
-  },{
-    "name": "gpe:member_of",
-    "short": "member_of",
-    "template": "{subject} is a member of {object}.",
-    "image": "members.jpg", 
-    "icon": "",
-    "subject-types": ["GPE"],
-    "object-types": ["ORG"]
-  },{
-    "name": "gpe:subsidiaries",
-    "short": "owns",
-    "template": "{subject} owns {object}.",
-    "image": "", 
-    "icon": "fa-sitemap",
-    "subject-types": ["GPE"],
     "object-types": ["ORG"]
   },{
     "name": "no_relation",
@@ -322,6 +314,8 @@ var Mention = function(m) {
   this.sentenceIdx = m.tokens[0].sentenceIdx;
   this.type = m.type && TYPES[m.type];
   this.gloss = m.gloss;
+  this.doc_char_begin = m.doc_char_begin;
+  this.doc_char_end = m.doc_char_end;
 
   this.entity = m.entity;
 }
@@ -331,7 +325,9 @@ Mention.fromTokens = function(tokens) {
     "tokens": tokens,
     "sentenceIdx": tokens[0].token.sentenceIdx,
     "type": undefined,
-    "gloss": Mention.textFromTokens(tokens)
+    "gloss": Mention.textFromTokens(tokens),
+    "doc_char_begin": tokens[0].token.doc_char_begin,
+    "doc_char_end": tokens[tokens.length-1].token.doc_char_end,
   });
 }
 Mention.textFromTokens = function(tokens) {

@@ -42,6 +42,9 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
     }
     this.elem.append(span);
   };
+  if (doc.mentions) {
+    this.setSuggestions(doc.mentions);
+  }
 };
 
 DocWidget.prototype.setSuggestions = function(mentions) {
@@ -57,6 +60,12 @@ DocWidget.prototype.setSuggestions = function(mentions) {
 
 DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
   return $('span.token').filter(function(_, t) {
+    if (t.token.doc_char_begin >= docCharBegin 
+        && t.token.doc_char_end <= docCharEnd) {
+      console.log(t, t.token);
+      console.log(t.token.doc_char_begin, docCharBegin);
+      console.log(t.token.doc_char_end, docCharEnd);
+    }
     return t.token.doc_char_begin >= docCharBegin 
         && t.token.doc_char_end <= docCharEnd
   }).get(); 
@@ -104,7 +113,7 @@ DocWidget.prototype.attachHandlers = function() {
       // This is a click event.
       var parents = $(sel.anchorNode).parentsUntil(".sentence");
       var startNode = parents[parents.length-1];
-      console.assert(startNode.nodeName != "HTML");
+      console.assert(startNode && startNode.nodeName != "HTML");
       console.log("clicked", startNode);
       // startNode is either a token or a sentence.
       if (self.isToken(startNode)) {
@@ -375,8 +384,9 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
 RelationInterface.prototype.run = function(mentions) {
   var self = this;
   this.mentions = [];
+
   mentions.forEach(function (m) {
-    m.tokens = self.docWidget.getTokens(m['doc_char_begin'], m['doc_char_end']);
+    m.tokens = self.docWidget.getTokens(m.doc_char_begin, m.doc_char_end);
     m = new Mention(m);
     self.docWidget.addMention(m);
     self.mentions.push(m);
@@ -393,12 +403,12 @@ function outOfSentenceLimit(m, n) {
 }
 
 function isRelationCandidate(m, n) {
+  if (m.gloss == n.gloss) return false;
+  if (m.entity.link == n.entity.link) return false;
   if (m.type.name == "PER") {
     return true;
   } else if (m.type.name == "ORG") {
-    return !(n.type.name == "TITLE");
-  } else if (m.type.name == "GPE") {
-    return (n.type.name == "ORG");
+    return !(n.type.name == "PER") && !(n.type.name == "TITLE");
   } else { // All other mentions are not entities; can't be subjects.
     return false;
   }
@@ -425,13 +435,15 @@ function notDuplicated(pairs, m, n) {
 RelationInterface.prototype.constructMentionPairs = function(mentions) {
   var pairs = [];
 
+  //var seenEntities = {}; // If you see two entities with the same link, don't ask for another relation between them?
+
   // Get pairs.
   for (var i = 0; i < mentions.length; i++) {
     var m = mentions[i];
     // - Go backwards until you cross a sentence boundary.
     for (var j = i-1; j >= 0; j--) {
       var n = mentions[j];
-      if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 1 ) break;
+      if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 0) break;
 
       // Check that the pair is type compatible and not duplicated.
       if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n)) {
@@ -441,7 +453,7 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
     // - Go forwards until you cross a sentence boundary.
     for (var j = i+1; j < mentions.length; j++) {
       var n = mentions[j];
-      if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 1 ) break;
+      if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 0) break;
       // Check that the pair is type compatible and not duplicated.
       if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
         pairs.push([m,n]);
@@ -458,24 +470,33 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
 function centerOnMention(m) {
   var sentence = $(m.elem).parent();
   if (sentence.prev().length > 0) {
-    sentence.prev()[0].scrollIntoView();
+    sentence.prev()[0].scrollIntoView(true);
   } else {
-    sentence[0].scrollIntoView();
+    sentence[0].scrollIntoView(true);
   }
+}
+
+function centerOnMentionPair(p) {
+  if (p[0].doc_char_begin < p[1].doc_char_begin)
+    centerOnMention(p[0]);
+  else
+    centerOnMention(p[1]);
 }
 
 // Draw mention pair
 RelationInterface.prototype.select = function(mentionPair) {
   // Move to the location.
-  centerOnMention(mentionPair[0]);
-  document.location.hash = $(mentionPair[0].tokens[0]).attr("id")
+  centerOnMentionPair(mentionPair);
   mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject highlight");});
   mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object highlight");});
+  $(mentionPair[0].elem).parent().addClass("highlight");
+
 }
 
 RelationInterface.prototype.unselect = function(mentionPair) {
   mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject highlight");});
   mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object highlight");});
+  $(mentionPair[0].elem).parent().removeClass("highlight");
 }
 
 RelationInterface.prototype.highlightExistingMentionPair = function(mentionPair) {

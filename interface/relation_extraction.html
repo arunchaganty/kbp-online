@@ -103,10 +103,10 @@ var relnWidget;
 var relnInt;
 var instructionWidget = new InstructionWidget('relation_extraction', 'instructions/relation_extraction.html');
 
-$.getJSON("data/example2.json", function(data) {
+$.getJSON("data/doc1.json", function(data) {
   console.log("loaded document.");
   docWidget = new DocWidget($("#document"));
-  docWidget.load(data.document);
+  docWidget.load(data);
 
   relnWidget = new RelationWidget($("#relations"));
   listWidget = new RelationListWidget($("#relations-list"));
