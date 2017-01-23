@@ -78,11 +78,42 @@ def query_mentions(docid):
 
 def remove_nested_mentions(mentions):
     ret = []
-    for m in mentions:
-        for i, n in enumerate(ret):
-            if m.doc_char_begin <= n.doc_char_begin and m.doc_char_end >= n.doc_char_end:
-                ret[i] = m # replace m
-    return list(set(ret))
+    for m in sorted(mentions, key=lambda m: (m["doc_char_end"] - m["doc_char_begin"], -m["doc_char_end"]), reverse=True):
+        overlap = False
+        for n in ret:
+            if (m["doc_char_begin"] <= n["doc_char_begin"] <=  m["doc_char_end"]) or (m["doc_char_begin"] <= n["doc_char_end"] <= m["doc_char_end"]):
+                logger.warning("Ignoring %s b/c %s", m, n)
+                overlap = True
+                break
+        if not overlap:
+            ret.append(m)
+    return sorted(ret, key=lambda m: m["doc_char_begin"])
+
+def test_remove_nested_mentions():
+    mentions = [{
+        "id": 0,
+        "doc_char_begin": 10,
+        "doc_char_end": 20,
+        },{
+            "id": 1,
+            "doc_char_begin": 15,
+            "doc_char_end": 20,
+        },{
+            "id": 2,
+            "doc_char_begin": 15,
+            "doc_char_end": 25,
+        },{
+            "id": 3,
+            "doc_char_begin": 25,
+            "doc_char_end": 30,
+        },{
+            "id": 4,
+            "doc_char_begin": 40,
+            "doc_char_end": 50,
+        }]
+
+    mentions_ = remove_nested_mentions(mentions)
+    assert [m["id"] for m in mentions_] == [0, 3, 4]
 
 def collect_data(fstream):
     """

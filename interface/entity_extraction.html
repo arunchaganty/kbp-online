@@ -248,6 +248,9 @@ $.getJSON("exhaustive/ENG_NW_001382_20150619_F0010004V.json", function(data) {
   console.log("loaded data.");
   console.log(data);
   docWidget.load(data);
+  if (data["suggested-mentions"]) {
+    docWidget.setSuggestions(data["suggested-mentions"]);
+  }
 })
 .fail(function() {
   console.log("Could not load data.");
