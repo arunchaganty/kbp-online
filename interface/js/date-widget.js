@@ -3,8 +3,6 @@
 function DateWidget(elem){
   var self = this;
     this.elem = elem;
-    $('#submit-wiki-search').click(function(){self.populate(this.form.search_input.value);});
-    $('#no-wiki-link').click(function(){self.callback();});
     this.elem.find('input[type=radio][name=week-or-date]').change(function() {
         if (this.value == 'week') {
             $('select[name=month]').prop('disabled', true);
@@ -36,22 +34,23 @@ function DateWidget(elem){
       });
 }
 DateWidget.prototype.doneListeners = [];
-DateWidget.prototype.show = function(mentionGloss, suggestion, docdate){
-    console.log(parsedSuggestion);
-    var parsedSuggestion = moment();
-    if(suggestion != undefined){
-        var _parsedSuggestion = moment(suggestion);
-        if (_parsedSuggestion._isValid){
-            parsedSuggestion = _parsedSuggestion;
-        }
-    }
-    console.log(parsedSuggestion);
+DateWidget.prototype.setDocDate = function(docdate){
     var parsedDocdate = moment();
     if(docdate != undefined){
         var _parsedDocdate = moment(docdate);
         if (_parsedDocdate._isValid){
             parsedDocdate = _parsedDocdate;
             this.docdate = parsedDocdate;
+        }
+    }
+    this.elem.find('#doc-date').text(this.docdate.format("dddd, MMMM Do YYYY"));
+}
+DateWidget.prototype.show = function(mentionGloss, suggestion){
+    var parsedSuggestion = moment();
+    if(suggestion != undefined){
+        var _parsedSuggestion = moment(suggestion);
+        if (_parsedSuggestion._isValid){
+            parsedSuggestion = _parsedSuggestion;
         }
     }
     this.refresh(parsedSuggestion);

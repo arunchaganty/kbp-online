@@ -60,8 +60,8 @@
     <div id="entity-pane" class="col-md-3">
       <div class = "row">
         <div class="panel panel-default">
-          <div class="panel-body">
-          <button type="button" id="instructions" class="btn btn-default btn-block">Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
+          <div class="panel-body" style='padding:0px;'>
+          <button type="button" id="instructions" class="btn btn-default btn-block" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
             </div>
           </div>
       </div>
@@ -98,10 +98,6 @@
     </div>
   </div>
 
-  <hr>
-  <footer>
-    <p>Stanford NLP</p>
-  </footer>
 </div> <!-- /container -->        
 
 <!-- Wikification Modal -->
@@ -153,7 +149,7 @@
           <h4 class="modal-title" id="linkingModalLabel">Ground the date</h4>
       </div>
       <div class="modal-body">
-          <p> Document was published on: </p>
+          <p> Document was published on: <span id='doc-date'></span></p>
           <p> Date to be grounded: <span id='date-gloss'><span></p>
           <form>
               <div class="row">
@@ -248,6 +244,7 @@ $.getJSON("exhaustive/ENG_NW_001382_20150619_F0010004V.json", function(data) {
   console.log("loaded data.");
   console.log(data);
   docWidget.load(data);
+  dateWidget.setDocDate(data.date);
   if (data["suggested-mentions"]) {
     docWidget.setSuggestions(data["suggested-mentions"]);
   }

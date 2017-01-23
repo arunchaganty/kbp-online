@@ -439,3 +439,14 @@ LinkWidget.prototype.populate = function(mentionText){
   });
 }
 
+
+$(document).ready(function () {
+    $('#document').bind('scroll', chk_scroll);
+});
+
+function chk_scroll(e) {
+    var elem = $(e.currentTarget);
+    if (elem[0].scrollHeight - elem.scrollTop() == elem.outerHeight()) {
+        console.log("bottom");
+    }
+}
