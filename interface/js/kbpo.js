@@ -42,9 +42,12 @@ DocWidget.prototype.insertIntoDOM = function(doc) {
     }
     this.elem.append(span);
   };
-  if (doc.mentions) {
+  if (doc["suggested-mentions"]) {
     this.setSuggestions(doc["suggested-mentions"]);
   }
+  //if (doc["mentions"]) {
+  //  this.setMentions(doc["mentions"]);
+  //}
 };
 
 DocWidget.prototype.setSuggestions = function(mentions) {
@@ -58,13 +61,21 @@ DocWidget.prototype.setSuggestions = function(mentions) {
   });
 };
 
+DocWidget.prototype.setMentions = function(mentions) {
+  var self = this;
+  mentions.forEach(function(m) {
+    m.tokens = self.getTokens(m.doc_char_begin, m.doc_char_end);
+    m.tokens.forEach(function(t) {
+      $(t).addClass("true-suggestion");
+      t.mention = m;
+    });
+  });
+};
+
 DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
   return $('span.token').filter(function(_, t) {
     if (t.token.doc_char_begin >= docCharBegin 
         && t.token.doc_char_end <= docCharEnd) {
-      console.log(t, t.token);
-      console.log(t.token.doc_char_begin, docCharBegin);
-      console.log(t.token.doc_char_end, docCharEnd);
     }
     return t.token.doc_char_begin >= docCharBegin 
         && t.token.doc_char_end <= docCharEnd

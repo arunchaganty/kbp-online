@@ -102,8 +102,8 @@ def collect_data(fstream):
             "gloss": gloss,
             "type":  ner,
             "doc_id": doc_id,
-            "doc_char_begin": int(doc_char_begin),
-            "doc_char_end": int(doc_char_end),
+            "doc_char_begin": int(doc_char_begin) + 39, # Correcting a difference in offset format.
+            "doc_char_end": int(doc_char_end) + 40,
             "entity": {
                 "link": link
             }}
