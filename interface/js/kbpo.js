@@ -258,6 +258,10 @@ DocWidget.prototype.removeMention = function(mention) {
   var div = $(mention.tokens[0].parentNode);
   div.find(".link-marker").remove();
   div.find(".type-marker").remove();
+  console.log(mention.tokens);
+  for(var i=0; i<mention.tokens.length; i++){
+        mention.tokens[i].mention = undefined;
+  }
   $(mention.tokens).unwrap();
 }
 

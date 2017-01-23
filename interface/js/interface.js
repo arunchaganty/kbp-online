@@ -197,7 +197,7 @@ EntityInterface.prototype.deactivate = function() {
   if (this.currentMention) {
     // Only keep a mention if it has already been assigned an entity.
     this.docWidget.unselectMention(this.currentMention);
-    if (!this.currentMention.entity) {
+    if (!this.currentMention.entity || !this.currentMention.entity.type) {
       this.docWidget.removeMention(this.currentMention);
     }
 
@@ -222,7 +222,6 @@ EntityInterface.prototype.processSpanSelection = function(tokens) {
   this.currentMention = Mention.fromTokens(tokens);
   this.docWidget.addMention(this.currentMention);
   this.docWidget.selectMention(this.currentMention);
-
   this.listWidget.activate(this.currentMention);
   this.addEntityWidget.activate();
 }
@@ -259,7 +258,6 @@ EntityInterface.prototype.processTypeSelected = function(type) {
 EntityInterface.prototype.processLinkingDone = function(link) {
   var entity = new Entity(this.currentMention);
   entity.link = link;
-  console.log("linked", link);
 
   this.entities.push(entity);
   this.listWidget.addEntity(entity);
