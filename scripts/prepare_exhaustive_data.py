@@ -82,7 +82,7 @@ def remove_nested_mentions(mentions):
         overlap = False
         for n in ret:
             if (m["doc_char_begin"] <= n["doc_char_begin"] <=  m["doc_char_end"]) or (m["doc_char_begin"] <= n["doc_char_end"] <= m["doc_char_end"]):
-                logger.warning("Ignoring %s b/c %s", m, n)
+                #logger.warning("Ignoring %s b/c %s", m, n)
                 overlap = True
                 break
         if not overlap:
@@ -115,7 +115,7 @@ def test_remove_nested_mentions():
     mentions_ = remove_nested_mentions(mentions)
     assert [m["id"] for m in mentions_] == [0, 3, 4]
 
-def collect_data(fstream):
+def collect_data(fstream, date_map):
     """
     Reads fstream and returns a stream of documents with mention annotations.
     """
@@ -154,15 +154,25 @@ def collect_data(fstream):
 
         yield {
             "doc_id": doc_id,
+            "date": date_map.get(doc_id),
             "sentences": query_doc(doc_id),
             "suggested-mentions": query_mentions(doc_id),
             "mentions": mentions
             }
 
+def make_date_map(fstream):
+    ret = {}
+    for line in fstream:
+        doc_id, date = line.split("\t")
+        ret[doc_id.strip()] = date.strip()
+    return ret
+
 def do_command(args):
+
+    date_map = make_date_map(args.dates)
     # Create output folder.
     ensure_dir(args.output)
-    for doc in collect_data(args.input):
+    for doc in collect_data(args.input, date_map):
         with open(os.path.join(args.output, doc['doc_id'] + ".json"), 'w') as f:
             json.dump(doc, f)
 
@@ -170,6 +180,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Saves document to file in json format.')
     parser.add_argument('-i', '--input', type=argparse.FileType('r'), default="data/english_edl.tab", help="Path to LDC2015E103 data")
+    parser.add_argument('-d', '--dates', type=argparse.FileType('r'), default="data/english_edl.dates", help="Path to LDC2015E103 dates")
     parser.add_argument('-o', '--output', type=str, default="data/exhaustive/", help="A path to a folder to save documents.")
     parser.set_defaults(func=do_command)
 
