@@ -213,7 +213,7 @@ var _RELATIONS = [{
     "image": "", 
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
-    "object-types": ["ORG"]
+    "object-types": ["ORG", "GPE"]
   },{
     "name": "org:shareholders",
     "short": "shareholder",
@@ -251,8 +251,8 @@ var RelationLabel = function(r) {
 }
 
 RelationLabel.prototype.renderTemplate = function(mentionPair) {
-  var subject = (mentionPair[0].entity) ? mentionPair[0].entity.gloss : mentionPair[0].gloss;
-  var object = (mentionPair[1].entity) ? mentionPair[1].entity.gloss : mentionPair[1].gloss;
+  var subject = (mentionPair[0].entity.gloss) ? mentionPair[0].entity.gloss : mentionPair[0].gloss;
+  var object = (mentionPair[1].entity.gloss) ? mentionPair[1].entity.gloss : mentionPair[1].gloss;
   return this.template
     .replace("{subject}", "<span class='subject'>" + subject + "</span>")
     .replace("{object}", "<span class='object'>" + object + "</span>");
