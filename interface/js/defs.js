@@ -346,7 +346,7 @@ Mention.prototype.text = function(){
 
 // Compute levenshtein distance from input @string
 Mention.prototype.levenshtein = function(string){
-  return window.Levenshtein.get(this.text(), string);
+  return window.Levenshtein.get(this.text().toLowerCase(), string);
 }
 
 // Creates a new entity from a @canonical_mention and @type.
@@ -391,11 +391,12 @@ Entity.prototype.removeMention = function(mention) {
 // returns the minimum levenshtein distance from all the mentions in the
 // entity.
 Entity.prototype.levenshtein = function(mentionText) {
+  var lowerMentionText = mentionText.toLowerCase();
   var bestMatch = null
   var bestScore = 1000;
   for (var i = 0; i < this.mentions.length; i++) {
-    var score = this.mentions[i].levenshtein(mentionText);
-    if (bestScore > score) {
+    var score = this.mentions[i].levenshtein(lowerMentionText);
+    if (bestScore > score && this.mentions[i].length >=4 && lowerMentionText.length >=4) {
       bestScore = score;
       bestMatch = this.mentions[i]
     }

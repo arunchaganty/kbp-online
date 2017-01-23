@@ -76,7 +76,7 @@ EntityListWidget.prototype.activate = function(mention) {
   } else {
     var entities = this.entities();
     for(var i = 0; i < entities.length; i++) {
-      if (entities[i].entity.levenshtein(mention.gloss) <= 3) {
+      if (entities[i].entity.levenshtein(mention.gloss.toLowerCase()) <= 3) {
         $(entities[i]).addClass('list-group-item-warning');
         entities[i].scrollIntoView();
       }
