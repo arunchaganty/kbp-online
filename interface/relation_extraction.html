@@ -103,7 +103,8 @@ var relnWidget;
 var relnInt;
 var instructionWidget = new InstructionWidget('relation_extraction', 'instructions/relation_extraction.html');
 
-$.getJSON("data/doc1.json", function(data) {
+//$.getJSON("data/doc1.json", function(data) {
+$.getJSON("exhaustive/ENG_NW_001382_20150619_F0010004V.json", function(data) {
   console.log("loaded document.");
   docWidget = new DocWidget($("#document"));
   docWidget.load(data);

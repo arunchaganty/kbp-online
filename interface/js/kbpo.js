@@ -125,7 +125,6 @@ DocWidget.prototype.attachHandlers = function() {
       var parents = $(sel.anchorNode).parentsUntil(".sentence");
       var startNode = parents[parents.length-1];
       console.assert(startNode && startNode.nodeName != "HTML");
-      console.log("clicked", startNode);
       // startNode is either a token or a sentence.
       if (self.isToken(startNode)) {
         selectedTokens = [startNode];
@@ -200,23 +199,20 @@ DocWidget.prototype.attachHandlers = function() {
       selectedTokens.push(startNode);
     }
     
-    //console.log("span-selected:", selectedTokens);
     self.highlightListeners.forEach(function (listener) {listener(selectedTokens);});
 
     sel.collapseToEnd();
   });
 
   // mouseEnter
-  this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
-    //console.log("span-enter:", this);
-    self.mouseEnterListeners.forEach(function (listener) {listener(this);});
-  });
+  // this.elem.find('span.token').on("mouseenter.kbpo.docWidget", function(evt) { // Any selection in the document.
+  //   self.mouseEnterListeners.forEach(function (listener) {listener(this);});
+  // });
 
-  // mouseLeave
-  this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
-    //console.log("span-leave:", this);
-    self.mouseLeaveListeners.forEach(function (listener) {listener(this);});
-  });
+  // // mouseLeave
+  // this.elem.find('span.token').on("mouseleave.kbpo.docWidget", function(evt) { // Any selection in the document.
+  //   self.mouseLeaveListeners.forEach(function (listener) {listener(this);});
+  // });
 
   // clickListeners
   /*this.elem.find("span.token").on("click.kbpo.docWidget", function(evt) {
@@ -235,16 +231,13 @@ DocWidget.prototype.addMention = function(mention) {
   mention.elem = elem;
   mention.tokens.forEach(function(t) {t.mention = mention});
 
-  console.log("added mention", mention);
-
   return this.updateMention(mention);
 }
 DocWidget.prototype.updateMention = function(mention) {
-  console.log("updating mention", mention);
   var elem = $(mention.elem);
 
   // If we have type and entity information, populate.
-  if (mention.entity) {
+  if (mention.entity && mention.entity.gloss) {
     if (elem.find(".link-marker").length == 0) elem.prepend($("<span class='link-marker' />"));
     elem.find(".link-marker")
       .html(mention.entity.gloss + "<sup>" + (mention.entity.idx ? mention.entity.idx : "") + "</sup>");
@@ -284,7 +277,6 @@ DocWidget.prototype.selectMention = function(mention) {
 }
 
 DocWidget.prototype.unselectMention = function(mention) {
-  console.log("unselect", mention);
   $(mention.elem).removeClass("selected");
 }
 
@@ -398,9 +390,11 @@ RelationInterface.prototype.run = function(mentions) {
 
   mentions.forEach(function (m) {
     m.tokens = self.docWidget.getTokens(m.doc_char_begin, m.doc_char_end);
-    m = new Mention(m);
-    self.docWidget.addMention(m);
-    self.mentions.push(m);
+    if (m.tokens.length > 0) {
+      m = new Mention(m);
+      self.docWidget.addMention(m);
+      self.mentions.push(m);
+    }
   });
   this.mentionPairs = this.constructMentionPairs(this.mentions);
 
