@@ -371,6 +371,8 @@ function Entity(canonicalMention) {
   this.id = "e-" + this.idx;
   this.gloss = canonicalMention.gloss;
   this.type = canonicalMention.type;
+  this.doc_char_begin = canonicalMention.doc_char_begin;
+  this.doc_char_end = canonicalMention.doc_char_end;
   this.mentions = [];
 
   this.addMention(canonicalMention);
@@ -386,7 +388,7 @@ Entity.prototype.addMention = function(mention) {
   }
   mention.entity = this;
 
-  this.mentions = [mention];
+  this.mentions.push(mention);
   Entity.map[mention.id] = this;
 }
 

@@ -182,6 +182,19 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
   this.linkWidget.doneListeners.push(function(link) {self.processLinkingDone(link)});
   this.dateWidget.doneListeners.push(function(link) {self.processLinkingDone(link)});
 
+  $("#done")[0].disabled = true;
+  $("#done").on("click.kbpo.interface", function (evt) {
+    var entities = [];
+    for (var i = 0; i < self.entities.length; i++) {
+      var entity = self.entities[i];
+      for (var j = 0; j < entity.mentions.length; j++) {
+        var mention = entity.mentions[j];
+        entities.push(mention.toJSON());
+      }
+    }
+    $("#entities-output").attr('value', JSON.stringify(entities));
+  });
+
   // TODO: doc mouseEnter, mouseLeave?
   // doc.mouseEnterListeners.push(process_mouse_enter);
   // doc.mouseLeaveListeners.push(process_mouse_leave);
@@ -437,14 +450,17 @@ LinkWidget.prototype.populate = function(mentionText){
   });
 }
 
-
-$(document).ready(function () {
-    $('#document').bind('scroll', chk_scroll);
+$(window).on('beforeunload', function () {
+  $("#document").scrollTop(0);
 });
 
-function chk_scroll(e) {
-    var elem = $(e.currentTarget);
-    if (elem[0].scrollHeight - elem.scrollTop() == elem.outerHeight()) {
-        console.log("bottom");
-    }
-}
+$(window).on('load', function () {
+  $("#document").scrollTop(0);
+    $('#document').bind('scroll', function(e){
+      var elem = $(e.currentTarget);
+      if (elem[0].scrollHeight - elem.scrollTop() == elem.outerHeight()) {
+        $("#done")[0].disabled = false;
+      }
+    });
+});
+

@@ -117,10 +117,12 @@ DocWidget.prototype.attachHandlers = function() {
   this.elem.on("mouseup.kbpo.docWidget", function(evt) { // Any selection in the document.
     var sel = document.getSelection();
     //if (sel.isCollapsed) return; // Collapsed => an empty selection.
+    if (!self.elem[0].contains(sel.anchorNode)) return;
     if (sel.isCollapsed) {
       // This is a click event.
       var parents = $(sel.anchorNode).parentsUntil(".sentence");
       var startNode = parents[parents.length-1];
+
       console.assert(startNode && startNode.nodeName != "HTML");
       // startNode is either a token or a sentence.
       if (self.isToken(startNode)) {
@@ -375,6 +377,8 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
   this.listWidget.mouseEnterListeners.push(function(p) {self.highlightExistingMentionPair(p)});
   this.listWidget.mouseLeaveListeners.push(function(p) {self.unhighlightExistingMentionPair(p)});
   this.listWidget.clickListeners.push(function(p) {self.editExistingMentionPair(p)});
+
+  this.docWidget.elem[0].scrollTop = 0;
 
   $("#done")[0].disabled = true;
   $("#back")[0].disabled = true;
