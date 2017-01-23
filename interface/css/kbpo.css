@@ -48,6 +48,14 @@ span.token.suggestion {
   text-shadow: 0px 0px 1px black;
 }
 
+span.token.true-suggestion {
+  text-shadow: 0px 0px 1px green;
+}
+
+span.token.suggestion.true-suggestion {
+  text-decoration: underline;
+}
+
 .mention span.token.suggestion {
   text-shadow: unset;
 }

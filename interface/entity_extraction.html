@@ -243,12 +243,11 @@ var dateWidget = new DateWidget($("#date-widget-modal"));
 var instructionWidget = new InstructionWidget('entity_extraction', 'instructions/entity_extraction.html');
 var entityInt = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
 
-
-$.getJSON("data/example2.json", function(data) {
+//$.getJSON("data/doc1.json", function(data) {
+$.getJSON("exhaustive/ENG_NW_001382_20150619_F0010004V.json", function(data) {
   console.log("loaded data.");
   console.log(data);
   docWidget.load(data);
-  docWidget.setSuggestions(data.mentions);
 })
 .fail(function() {
   console.log("Could not load data.");
