@@ -76,6 +76,14 @@ def query_mentions(docid):
             })
     return mentions
 
+def remove_nested_mentions(mentions):
+    ret = []
+    for m in mentions:
+        for i, n in enumerate(ret):
+            if m.doc_char_begin <= n.doc_char_begin and m.doc_char_end >= n.doc_char_end:
+                ret[i] = m # replace m
+    return list(set(ret))
+
 def collect_data(fstream):
     """
     Reads fstream and returns a stream of documents with mention annotations.
@@ -111,6 +119,8 @@ def collect_data(fstream):
 
     for doc_id, mentions in doc_mentions.items():
         logger.warning("Getting data for doc-id %s (with %d mentions)", doc_id, len(mentions))
+        mentions = remove_nested_mentions(mentions)
+
         yield {
             "doc_id": doc_id,
             "sentences": query_doc(doc_id),
