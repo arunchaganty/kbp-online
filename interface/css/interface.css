@@ -53,3 +53,9 @@
 .TITLE {
   background-color: #386cb0;
 }
+#date-widget-modal>.modal-dialog {
+        width: 750px;
+}
+#instruction-widget-modal>.modal-dialog {
+        width: 90%;
+}

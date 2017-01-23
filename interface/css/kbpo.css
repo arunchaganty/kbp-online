@@ -96,3 +96,6 @@ div#relation-option-preview span.object {
   font-weight: bold;
 }
 
+#instruction-widget-modal>.modal-dialog {
+        width: 90%;
+}

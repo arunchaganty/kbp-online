@@ -28,10 +28,12 @@
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
         <script src="js/levenshtein.min.js"></script>
         <script src="js/moment.min.js"></script>
+        <script src="js/js.cookie.js"></script>
         <script src="js/defs.js"></script>
         <script src="js/kbpo.js"></script>
         <script src="js/interface.js"></script>
         <script src="js/date-widget.js"></script>
+        <script src="js/instruction-widget.js"></script>
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -56,6 +58,13 @@
       </div>
     </div>
     <div id="entity-pane" class="col-md-3">
+      <div class = "row">
+        <div class="panel panel-default">
+          <div class="panel-body">
+          <button type="button" id="instructions" class="btn btn-default btn-block">Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
+            </div>
+          </div>
+      </div>
       <div class = "row">
         <div class="panel panel-default">
           <div id="entity-panel" class="panel-body">
@@ -108,8 +117,8 @@
         <div class="row">
           <div class="col-lg-12">
             <form class="input-group">
-              <input type="text" id='wiki-search-input' name='search_input' class="form-control" placeholder="Search for..." onkeydown = "if (event.keyCode == 13)
-                        document.getElementById('submit-wiki-search').click()">
+                <input type="text" id='wiki-search-input' name='search_input' class="form-control" placeholder="Search for..." onkeydown = "if (event.keyCode == 13){event.preventDefault();
+                document.getElementById('submit-wiki-search').click(); return false;}">
               <span class="input-group-btn">
                 <button id ="submit-wiki-search" type="button" class="btn btn-default">Search</button>
               </span>
@@ -133,7 +142,7 @@
   </div>
 </div>
 
-<!-- Modal -->
+<!-- date-widget Modal -->
 <div class="modal fade" id="date-widget-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -177,7 +186,7 @@
                                           <input type="radio" name='week-or-date' value='week' aria-label="week">
                                           <div class="form-group">
                                               <label for="week-select">Week</label>
-                                              <select name="week" class="form-control" id="week-select" placeholder="WW">
+                                              <select name="week" class="form-control" id="week-select" placeholder="WW" disabled>
                                                   <!--  <option value="volvo">Volvo</option>-->
                                               </select>
 
@@ -222,6 +231,8 @@
     </div>
   </div>
 </div>
+<div id="modals">
+</div>
         <script type="text/javascript">
 var docWidget = new DocWidget($("#document"));
 var listWidget = new EntityListWidget($("#entities"));
@@ -229,7 +240,9 @@ var addEntityWidget = new AddEntityWidget($("#add-entity-widget"));
 var removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"));
 var linkWidget = new LinkWidget($("#wiki-linking-modal"));
 var dateWidget = new DateWidget($("#date-widget-modal"));
+var instructionWidget = new InstructionWidget('entity_extraction', 'instructions/entity_extraction.html');
 var entityInt = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
+
 
 $.getJSON("data/example2.json", function(data) {
   console.log("loaded data.");

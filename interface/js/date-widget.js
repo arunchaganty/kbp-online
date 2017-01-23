@@ -15,12 +15,15 @@ function DateWidget(elem){
             $('select[name=day]').prop('disabled', false);
             $('select[name=week]').prop('disabled', true);
         }
-        else if (this.value == 'neither') {
+        else 
+        //if (this.value == 'neither') 
+        {
             $('select[name=month]').prop('disabled', true);
             $('select[name=day]').prop('disabled', true);
             $('select[name=week]').prop('disabled', true);
         }
     });
+    this.elem.find('input[type=radio][name=week-or-date][value=day]').click();
     var months = moment.monthsShort()
     this.monthSelect = this.elem.find('select[name=month]');
     this.monthSelect.append($("<option />").val('NA').text('NA'));
@@ -72,8 +75,15 @@ DateWidget.prototype.refreshDays = function(){
     var date = this.getSelectedDate();
     console.log(date);
     this.daySelect.find('option').not('[value=NA]').remove();
-    for(var i=1 ;i<=date.daysInMonth();i++){
-        this.daySelect.append($("<option />").val(i).text(date.clone().date(i).format('dddd, DD')));
+    if (this.monthSelect.val()=='NA' || this.yearSelect.val()=='NA'){
+        for(var i=1 ;i<=date.daysInMonth();i++){
+            this.daySelect.append($("<option />").val(i).text(date.clone().date(i).format('DD')));
+        }
+    }
+    else{
+        for(var i=1 ;i<=date.daysInMonth();i++){
+            this.daySelect.append($("<option />").val(i).text(date.clone().date(i).format('dddd, DD')));
+        }
     }
     if(date.month()==moment().month() && date.year() == moment().year()){
         this.daySelect.find('option[value='+moment().date()+']').attr("selected", true).addClass('date-now');

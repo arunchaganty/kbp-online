@@ -19,9 +19,11 @@
         <script src="js/jquery-3.1.1.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="js/js.cookie.js"></script>
 
         <script src="js/defs.js"></script>
         <script src="js/kbpo.js"></script>
+        <script src="js/instruction-widget.js"></script>
     </head>
     <body>
       <div class="container">
@@ -29,6 +31,7 @@
         <div class="row">
           <h1> Relation Extraction
             <span class="pull-right">
+          <button id="instructions" class="btn btn-default right"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
           <button id="back" class="btn navbar-btn btn-warning right" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
           <button id="done" class="btn navbar-btn btn-success right" disabled><span class="glyphicon glyphicon-ok"></span> Done</button> 
           </span>
@@ -92,10 +95,13 @@
 
 
 
+<div id="modals">
+</div>
     <script type="text/javascript">
 var docWidget;
 var relnWidget;
 var relnInt;
+var instructionWidget = new InstructionWidget('relation_extraction', 'instructions/relation_extraction.html');
 
 $.getJSON("data/example2.json", function(data) {
   console.log("loaded document.");
