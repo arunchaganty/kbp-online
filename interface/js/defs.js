@@ -349,6 +349,21 @@ Mention.prototype.levenshtein = function(string){
   return window.Levenshtein.get(this.text().toLowerCase(), string);
 }
 
+Mention.prototype.toJSON = function() {
+  return {
+    "gloss": this.gloss,
+    "type": this.type,
+    "doc_char_begin": this.doc_char_begin,
+    "doc_char_end": this.doc_char_end,
+    "entity": (this.entity) ? {
+      "gloss": this.entity.gloss,
+      "link": this.entity.link,
+      "doc_char_begin": this.entity.doc_char_begin,
+      "doc_char_end": this.entity.doc_char_end,
+    } : null
+  };
+}
+
 // Creates a new entity from a @canonical_mention and @type.
 function Entity(canonicalMention) {
   console.log(canonicalMention);

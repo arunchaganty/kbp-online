@@ -382,6 +382,19 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
   $("#back").on("click.kbpo.interface", function (evt) {
     self.editExistingMentionPair(self.mentionPairs[self.currentIndex-1]);
   });
+
+  $("#done").on("click.kbpo.interface", function (evt) {
+    var relations = [];
+    self.listWidget.relations().each(function(_, e){
+      e = e.mentionPair;
+      relations.push({
+        "subject": e[0].toJSON(),
+        "relation": e.relation.name,
+        "object": e[1].toJSON(),
+      });
+    });
+    $("#relations-output").attr('value', JSON.stringify(relations));
+  });
 };
 
 // Iterates through the mention pairs provided.
@@ -619,6 +632,10 @@ RelationListWidget.prototype.removeRelation = function(mentionPair) {
   if (this.elem.find(".extraction").length == 2) {
     this.elem.find("#extraction-empty").removeClass("hidden");
   }
+}
+
+RelationListWidget.prototype.relations = function() {
+  return this.elem.find(".extraction").not("#extraction-empty").not("#extraction-template");
 }
 
 
