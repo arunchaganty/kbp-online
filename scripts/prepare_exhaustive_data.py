@@ -30,12 +30,24 @@ def query_psql(sql):
 
 def query_doc(docid):
     doc = []
+    T = {
+        "-LRB-": "(",
+        "-RRB-": ")",
+        "-LSB-": "[",
+        "-RSB-": "]",
+        "-LCB-": "{",
+        "-RCB-": "}",
+        "``": "\"",
+        "''": "\"",
+        "`": "'",
+        }
     for row in query_psql("SELECT sentence_index, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end FROM sentence WHERE doc_id = '{}' ORDER BY sentence_index".format(docid)):
         idx, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end = row
 
         # Happens in some DF
         #assert int(idx) == idx_, "Seems to have skipped a line: {} != {}".format(idx, idx_)
         words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end = map(parse_psql_array, (words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end))
+        words = list(map(lambda w: T.get(w, w), words))
         doc_char_begin, doc_char_end = map(int, doc_char_begin), map(int, doc_char_end)
         keys = ("word", "lemma", "pos_tag", "ner_tag", "doc_char_begin", "doc_char_end")
         tokens = [{k:v for k, v in zip(keys, values)} for values in zip(words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end)]
