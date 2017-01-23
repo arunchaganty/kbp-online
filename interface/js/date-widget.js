@@ -1,9 +1,10 @@
 
 //Cannonicalize dates
 function DateWidget(elem){
+  var self = this;
     this.elem = elem;
-    $('#submit-wiki-search').click(function(){_this.populate(this.form.search_input.value);});
-    $('#no-wiki-link').click(function(){_this.callback();});
+    $('#submit-wiki-search').click(function(){self.populate(this.form.search_input.value);});
+    $('#no-wiki-link').click(function(){self.callback();});
     this.elem.find('input[type=radio][name=week-or-date]').change(function() {
         if (this.value == 'week') {
             $('select[name=month]').prop('disabled', true);
