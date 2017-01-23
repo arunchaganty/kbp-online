@@ -55,7 +55,14 @@ function DateWidget(elem){
       });
 }
 DateWidget.prototype.doneListeners = [];
-DateWidget.prototype.show = function(mentionGloss, docdate){
+DateWidget.prototype.show = function(mentionGloss, suggestion, docdate){
+    var parsedSuggestion = moment();
+    if(suggestion != undefined){
+        var _parsedSuggestion = moment(suggestion);
+        if (_parsedSuggestion._isValid){
+            parsedSuggestion = _parsedSuggestion;
+        }
+    }
     var parsedDocdate = moment();
     if(docdate != undefined){
         var _parsedDocdate = moment(docdate);
@@ -63,7 +70,7 @@ DateWidget.prototype.show = function(mentionGloss, docdate){
             parsedDocdate = _parsedDocdate;
         }
     }
-    this.refresh();
+    this.refresh(parsedSuggestion);
     this.elem.find('#date-gloss').text(mentionGloss);
     this.elem.modal('show');
 }

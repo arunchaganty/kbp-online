@@ -235,7 +235,21 @@ EntityInterface.prototype.processTypeSelected = function(type) {
   if (type.linking == 'wiki-search') {
     linkWidget.show(this.currentMention.gloss);
   } else if (type.linking == 'date-picker') {
-    dateWidget.show(this.currentMention.gloss);
+      //Find the first related entity
+      var i=0;
+      for(; i<this.currentMention.tokens.length; i++){
+           if ('suggestedMention' in this.currentMention.tokens[i]){
+               if('entity' in this.currentMention.tokens[i].suggestedMention){
+                   if('link' in this.currentMention.tokens[i].suggestedMention.entity){
+                       dateWidget.show(this.currentMention.gloss, this.currentMention.tokens[i].suggestedMention.entity.link);
+                       break;
+                   }
+               }
+           }
+      }
+      if(i == this.currentMention.tokens.length){
+          dateWidget.show(this.currentMention.gloss);
+      }
   } else {
     return this.processLinkingDone("");
   }
