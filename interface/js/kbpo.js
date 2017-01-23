@@ -117,10 +117,12 @@ DocWidget.prototype.attachHandlers = function() {
   this.elem.on("mouseup.kbpo.docWidget", function(evt) { // Any selection in the document.
     var sel = document.getSelection();
     //if (sel.isCollapsed) return; // Collapsed => an empty selection.
+    if (!self.elem[0].contains(sel.anchorNode)) return;
     if (sel.isCollapsed) {
       // This is a click event.
       var parents = $(sel.anchorNode).parentsUntil(".sentence");
       var startNode = parents[parents.length-1];
+
       console.assert(startNode && startNode.nodeName != "HTML");
       // startNode is either a token or a sentence.
       if (self.isToken(startNode)) {
@@ -376,11 +378,26 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
   this.listWidget.mouseLeaveListeners.push(function(p) {self.unhighlightExistingMentionPair(p)});
   this.listWidget.clickListeners.push(function(p) {self.editExistingMentionPair(p)});
 
+  this.docWidget.elem[0].scrollTop = 0;
+
   $("#done")[0].disabled = true;
   $("#back")[0].disabled = true;
 
   $("#back").on("click.kbpo.interface", function (evt) {
     self.editExistingMentionPair(self.mentionPairs[self.currentIndex-1]);
+  });
+
+  $("#done").on("click.kbpo.interface", function (evt) {
+    var relations = [];
+    self.listWidget.relations().each(function(_, e){
+      e = e.mentionPair;
+      relations.push({
+        "subject": e[0].toJSON(),
+        "relation": e.relation.name,
+        "object": e[1].toJSON(),
+      });
+    });
+    $("#relations-output").attr('value', JSON.stringify(relations));
   });
 };
 
@@ -619,6 +636,10 @@ RelationListWidget.prototype.removeRelation = function(mentionPair) {
   if (this.elem.find(".extraction").length == 2) {
     this.elem.find("#extraction-empty").removeClass("hidden");
   }
+}
+
+RelationListWidget.prototype.relations = function() {
+  return this.elem.find(".extraction").not("#extraction-empty").not("#extraction-template");
 }
 
 

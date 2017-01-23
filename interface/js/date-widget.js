@@ -136,7 +136,7 @@ DateWidget.prototype.getSelectedDateString = function(){
 
 DateWidget.prototype.refresh = function(date, docdate){
     this.elem.find('.date-now').removeClass('date-now');
-    this.elem.find(':selected').each(function(elem){$(elem).prop("selected", false);});
+    //this.elem.find(':selected').each(function(elem){$(elem).prop("selected", false);});
 
     this.monthSelect.find('option').remove();
     this.weekSelect.find('option')./*not('[value=NA]').*/remove();

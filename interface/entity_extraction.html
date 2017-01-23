@@ -42,10 +42,9 @@
 
     <!-- Main jumbotron for a primary marketing message or call to action -->
 
-<!-- TODOs 
-* Bug where removed spans remain highlighted.
-* Bug in spacing of adjacent mentions: make coloring of spans a class property.
--->
+<input id="document-input" name="document" value="" type="hidden" />
+<input id="entities-output" name="entities" value="" type="hidden" />
+
 <div class="container">
   <!-- Example row of columns -->
   <div class="row">
@@ -61,7 +60,9 @@
       <div class = "row">
         <div class="panel panel-default">
           <div class="panel-body" style='padding:0px;'>
-          <button type="button" id="instructions" class="btn btn-default btn-block" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
+          <button type="button" id="instructions" class="btn btn-default" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
+          <button id="done" class="btn navbar-btn btn-success right" disabled><span class="glyphicon glyphicon-ok"></span> Done</button> 
+
             </div>
           </div>
       </div>
