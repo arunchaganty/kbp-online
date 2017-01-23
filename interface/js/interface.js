@@ -76,9 +76,11 @@ EntityListWidget.prototype.activate = function(mention) {
   } else {
     var entities = this.entities();
     for(var i = 0; i < entities.length; i++) {
-      if (entities[i].entity.levenshtein(mention.gloss.toLowerCase()) <= 3) {
-        $(entities[i]).addClass('list-group-item-warning');
-        entities[i].scrollIntoView();
+      if(mention.tokens[0].token.pos_tag != 'PRP'){
+          if (entities[i].entity.levenshtein(mention.gloss.toLowerCase()) <= 2) {
+            $(entities[i]).addClass('list-group-item-warning');
+            entities[i].scrollIntoView();
+          }
       }
     }
   }
@@ -418,7 +420,13 @@ LinkWidget.prototype.populate = function(mentionText){
 
   var self = this;
   this.fetchResults(mentionText).done(function(searchResults) {
+    console.log('callback working');
+    if (searchResults[1].length == 0){
+        //No results were found, simply clear and move on
+        $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
+    }
     self.fetchThumbs(searchResults).done(function(images){
+      console.log(images);
       var pages = images['query']['pages'];
       var thumbs = [];
       for (page in pages) {

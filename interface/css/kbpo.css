@@ -72,6 +72,7 @@ span.mention {
 span.type-marker {
   vertical-align: super;
   font-size: small;
+  z-index:0;
 }
 
 span.link-marker {
@@ -79,6 +80,7 @@ span.link-marker {
   font-variant: small-caps;
   position: absolute;
   top: 10px;
+  z-index:0;
 }
 
 span.subject {

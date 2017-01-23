@@ -134,7 +134,7 @@ DateWidget.prototype.getSelectedDateString = function(){
     return dateStr;
 }
 
-DateWidget.prototype.refresh = function(date, docdate){
+DateWidget.prototype.refresh = function(date){
     this.elem.find('.date-now').removeClass('date-now');
     //this.elem.find(':selected').each(function(elem){$(elem).prop("selected", false);});
 
@@ -144,7 +144,6 @@ DateWidget.prototype.refresh = function(date, docdate){
 
     this.monthSelect.append($("<option />").val('NA').text('NA'));
     this.weekSelect.append($("<option />").val('NA').text('NA'));
-    this.daySelect.append($("<option />").val('NA').text('NA'));
     this.yearSelect.append($("<option />").val('NA').text('NA'));
 
     var months = moment.monthsShort()
@@ -160,7 +159,12 @@ DateWidget.prototype.refresh = function(date, docdate){
     this.monthSelect.change($.proxy(this.refreshDays, this));
     this.yearSelect.change($.proxy(this.refreshDays, this));
     if (date === undefined){
-        date=moment();
+        if (this.docdate == undefined){
+            date=moment();
+        }
+        else{
+            date = this.docdate;
+        }
     }   
     /*this.daySelect.find('option').not('[value=NA]').remove();
     for(var i=1 ;i<=date.daysInMonth();i++){
