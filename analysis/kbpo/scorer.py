@@ -9,6 +9,9 @@ import sys
 import logging
 from collections import defaultdict
 
+import numpy as np
+
+import ipdb
 from tqdm import tqdm
 from .util import EvaluationEntry, OutputEntry, micro, macro, bootstrap, confidence_intervals
 
@@ -147,6 +150,57 @@ def do_mention_evaluation(args):
     args.output.write("micro {:.04f} {:.04f} {:.04f}\n".format(*micro(S,C,T)))
     args.output.write("macro {:.04f} {:.04f} {:.04f}\n".format(*macro(S,C,T)))
 
+def compute_score_matrix(scores, E):
+    X_rs = np.zeros((len(scores), len(E)))
+    for i, runid in enumerate(sorted(scores)):
+        S, C, T = scores[runid]
+        for j, s in enumerate(sorted(S)):
+            X_rs[i, j] = micro({s: S[s]}, {s: C[s]}, {s: T[s]})[-1]
+    return X_rs
+
+def measure_variance(X_st):
+    """
+    Measure the variance in the scores of X_rs
+    """
+    S, T = X_st.shape
+    mu = X_st.mean()
+    v_s = X_st.mean(1) - mu # average over columns
+    v_t = X_st.mean(0) - mu # average over rows
+    v_st = X_st - np.tile(v_s.reshape(S,1), (1, T)) - np.tile(v_t.reshape(1,T), (S, 1)) - mu
+
+    s_s = v_s.var()
+    s_t = v_t.var()
+    s_st = v_st.var()
+
+    assert abs(X_st.var() - (s_s + s_t + s_st)) < 1e-5
+
+    phi = s_s/(s_s + s_t + s_st)
+    rho = s_s/(s_s + s_st)
+
+    return X_st.var(), s_s, s_t, s_st, phi, rho
+
+def report_score_matrix(X_st, out, S, T):
+    out.write("\t".join(["s", "s_s", "s_t", "s_st", "phi", "rho"]) + "\n")
+    out.write("\t".join(map(str, measure_variance(X_st))) + "\n")
+
+    # Actually print X_st
+
+    out.write("\t" + "\t".join(sorted(T)) + "\n")
+    for s, X_s in zip(sorted(S), X_st):
+        out.write(s + "\t" + "\t".join(map("{:.4f}".format, X_s)) + "\n")
+
+def standardize_scores(X_st):
+    """
+    Do a bias, variance correction on the t dimension
+    """
+    S = X_st.std(0)
+
+    if abs(sum(X_st.mean(0)[S==0.])) > 1e-5:
+        logger.warning("X_st matrix had some topic rows with identical scores")
+
+    S[S == 0] = 1. #
+    return ((X_st - X_st.mean(0))/S).mean(1)
+
 def do_experiment1(args):
     assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
 
@@ -249,6 +303,54 @@ def do_experiment2(args):
 
         writer.writerow([runid,] + row)
 
+def do_experiment3(args):
+    assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
+
+    Q = load_queries(args.queries)
+    E = sorted(set(Q.values()))
+
+    gold = load_gold(args.gold, Q)
+    scores = {}
+
+    for fname in os.listdir(args.preds):
+        if not fname.endswith(".txt"): continue
+        runid = fname.split(".")[0]
+        logger.info("Loading output for %s", runid)
+
+        if runid == "LDC": continue
+
+        with open(os.path.join(args.preds, fname)) as f:
+            output = load_output(f, Q)
+            scores[runid] = compute_entity_scores(gold, output, Q)
+
+    X_rs = compute_score_matrix(scores, E)
+    report_score_matrix(X_rs, args.output_vis, sorted(scores), sorted(Q))
+
+    writer = csv.writer(args.output, delimiter="\t")
+    writer.writerow([
+        "system",
+        "macro-sf1", "macro-sf1-left", "macro-sf1-right",
+        ])
+
+    def compute_metric(E_):
+        scores_ = {}
+        for runid in scores:
+            S, C, T = scores[runid]
+            S_, C_, T_ = {}, {}, {}
+            for i, e in enumerate(E_):
+                S_[i], C_[i], T_[i] = S[e], C[e], T[e]
+            scores_[runid] = S_, C_, T_
+        X_rs = compute_score_matrix(scores_, E_)
+        ys = standardize_scores(X_rs)
+        return ys
+
+    # compute bootstrap
+    stats = confidence_intervals(E, compute_metric, args.samples, args.confidence)
+    logger.info("stats: %d, %d", *stats.shape)
+    stats = stats.T
+    for i, runid in enumerate(sorted(scores)):
+        writer.writerow([runid, *list(stats[i])])
+
 if __name__ == "__main__":
     DD = "data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31"
     import argparse
@@ -279,6 +381,15 @@ if __name__ == "__main__":
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_experiment2)
 
+    command_parser = subparsers.add_parser('experiment3', help='Evaluate standardized micro/macro F1 (entity) scores for every entity with 95% confidence thresholds')
+    command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
+    command_parser.add_argument('-c', '--confidence', type=float, default=.95, help="Confidence threshold")
+    command_parser.add_argument('-s', '--samples', type=int, default=5000, help="Confidence threshold")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
+    command_parser.add_argument('-ov', '--output-vis', type=argparse.FileType('w'), default="vis.tsv", help="Where to write visualization output.")
+    command_parser.set_defaults(func=do_experiment3)
+
+    # TODO: measurement of pairwise
 
     ARGS = parser.parse_args()
     if ARGS.func:

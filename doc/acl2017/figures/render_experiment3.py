@@ -24,13 +24,13 @@ def do_command(args):
     rc('font', family='serif')#, size=22)
 
     # Set up plotter.
-    plt.ylabel('Macro $F_1$', fontsize=22)
+    plt.ylabel('Standardized Macro $F_1$', fontsize=22)
     plt.xlabel('Systems', fontsize=22)
 
-    ixs = (-data).argsort(0).T[I['macro-f1']]
+    ixs = (-data).argsort(0).T[I['macro-sf1']]
     data = data[ixs, :]
 
-    p, dp_l, dp_r = data.T[I['macro-f1']], data.T[I['macro-f1-left']], data.T[I['macro-f1-right']]
+    p, dp_l, dp_r = data.T[I['macro-sf1']], data.T[I['macro-sf1-left']], data.T[I['macro-sf1-right']]
 
     plt.errorbar(np.arange(1,data.shape[0]+1), p, yerr=[p - dp_l, dp_r - p], fmt='o', color='k', linestyle='-', capsize=10, alpha=0.5)
     plt.savefig(args.output)
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser( description='' )
     parser.add_argument('-i', '--input', type=argparse.FileType('r'), default=sys.stdin, help="")
-    parser.add_argument('-o', '--output', type=str, default='experiment1.pdf', help="")
+    parser.add_argument('-o', '--output', type=str, default='experiment3.pdf', help="")
     parser.set_defaults(func=do_command)
 
     #subparsers = parser.add_subparsers()

@@ -6,6 +6,7 @@ Read LDC's output format
 
 from collections import defaultdict, namedtuple
 import numpy as np
+from tqdm import tqdm
 
 class Provenance(namedtuple("Provenance", ["doc_id", "start", "end"])):
     @classmethod
@@ -140,7 +141,7 @@ def bootstrap(xs, fn, samples=5000):
     Return an array of statistics computed using a boostrap over xs
     """
     ys = []
-    for xs_ in np.random.choice(np.array(xs), (samples, len(xs))):
+    for xs_ in tqdm(np.random.choice(np.array(xs), (samples, len(xs)))):
         ys.append(fn(xs_))
     return np.array(ys)
 
