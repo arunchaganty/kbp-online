@@ -33,8 +33,8 @@ def do_command(args):
     p, loo, lto = data.T[I['macro-f1']], data.T[I['macro-f1-loo']], data.T[I['macro-f1-lto']]
 
     plt.errorbar(np.arange(1,data.shape[0]+1), p, yerr=[p - lto, p - p], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7, label="Pooled score")
-    plt.plot(np.arange(1,data.shape[0]+1), lto, color='g', marker='^', linestyle='', alpha=0.9, label="Leave-one-out pooling bias")
-    plt.plot(np.arange(1,data.shape[0]+1), loo, color='b', marker='d', linestyle='', alpha=0.9, label="Leave-team-out pooling bias")
+    plt.plot(np.arange(1,data.shape[0]+1), lto, color='g', marker='^', linestyle='', alpha=0.9, label="Leave-team-out pooling bias")
+    plt.plot(np.arange(1,data.shape[0]+1), loo, color='b', marker='d', linestyle='', alpha=0.9, label="Leave-one-out pooling bias")
     plt.legend()
 
     plt.savefig(args.output)
