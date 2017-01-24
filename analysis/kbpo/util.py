@@ -4,40 +4,16 @@
 Read LDC's output format
 """
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import numpy as np
+from tqdm import tqdm
 
-class Provenance(object):
-    def __init__(self, doc_id, start, end):
-        self.doc_id = doc_id
-        self.start = start
-        self.end = end
-
-    def __hash__(self):
-        return hash(self.doc_id) ^ (self.start) ^ (self.end)
-
-    def __lt__(self, other):
-        if not isinstance(other, Provenance): raise AttributeError("Comparing {} with {}".format(self.__class__.__name__, other.__class__.__name__))
-        return (self.doc_id, self.start, self.end) < (other.doc_id, other.start, other.end)
-
-    def __le__(self, other):
-        return (self == other) or (self < other)
-
-    def __eq__(self, other):
-        if not isinstance(other, Provenance): return False
-        return self.doc_id == other.doc_id and self.start == other.start and self.end == other.end
-
-    def __str__(self):
-        return "{}:{}-{}".format(self.doc_id, self.start, self.end)
-
+class Provenance(namedtuple("Provenance", ["doc_id", "start", "end"])):
     @classmethod
     def from_str(cls, str_):
         doc_id, start_end = str_.split(':', 1)
         start, end = map(int, start_end.split('-', 1))
         return cls(doc_id, start, end)
-
-    def __repr__(self):
-        return "<Provenance:{}>".format(str(self))
 
 def test_provenance_from_str():
     str_ = "ENG_NW_001278_20130214_F00011JDX:1448-1584"
@@ -58,18 +34,7 @@ def test_provenance_cmp():
     assert p3 > p1
     assert p1 < p4
 
-class EvaluationEntry(object):
-    def __init__(self, id_, query_id, relation, relation_provenances, slot_value, slot_provenances, slot_value_label, relation_label, eq_class):
-        self.id = id_
-        self.query_id = query_id
-        self.relation = relation
-        self.relation_provenances = relation_provenances
-        self.slot_value = slot_value
-        self.slot_provenances = slot_provenances
-        self.slot_value_label = slot_value_label
-        self.relation_label = relation_label
-        self.eq_class = eq_class
-
+class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", "relation", "relation_provenances", "slot_value", "slot_provenances", "slot_value_label", "relation_label", "eq_class", "eq"])):
     def __str__(self):
         return "{}: {} {} {}".format(self.id, self.query_id, self.relation, self.slot_value)
 
@@ -87,7 +52,8 @@ class EvaluationEntry(object):
         slot_value_label = parts[5]
         relation_label = parts[6]
         eq_class = parts[7]
-        return cls(id_, query_id, relation, relation_provenances, slot_value, slot_provenances, slot_value_label, relation_label, eq_class)
+        eq = int(parts[7].split(":")[-1])
+        return cls(id_, query_id, relation, relation_provenances, slot_value, slot_provenances, slot_value_label, relation_label, eq_class, eq)
 
     def to_list(self):
         return [
@@ -111,17 +77,7 @@ def test_evaluation_entry():
     assert entry.relation_label == "W"
     assert entry.eq_class == "0"
 
-class OutputEntry(object):
-    def __init__(self, query_id, relation, run_id, relation_provenances, slot_value, slot_type, slot_provenances, confidence):
-        self.query_id = query_id
-        self.relation = relation
-        self.run_id = run_id
-        self.relation_provenances = relation_provenances
-        self.slot_value = slot_value
-        self.slot_type = slot_type
-        self.slot_provenances = slot_provenances
-        self.confidence = confidence
-
+class OutputEntry(namedtuple("EvaluationEntry", ["query_id", "relation", "run_id", "relation_provenances", "slot_value", "slot_type", "slot_provenances", "confidence"])):
     @classmethod
     def from_line(cls, line):
         parts = line.split("\t")
@@ -153,3 +109,48 @@ def invert_dict(dct):
     for k, v in dct.items():
         ret[v].append(k)
     return ret
+
+def micro(S, C, T):
+    """
+    Computes micro-average over @elems
+    """
+    S, C, T = sum(S.values()), sum(C.values()), sum(T.values())
+    P = C/S if S > 0. else 0.
+    R = C/T if T > 0. else 0.
+    F1 = 2 * P * R /(P + R) if C > 0. else 0.
+    return P, R, F1
+
+def macro(S, C, T):
+    """
+    Computes macro-average over @elems
+    """
+    P, R, F1 = 0., 0., 0.
+    for i, s in enumerate(S):
+        p = C[s]/S[s] if S[s] > 0. else 0.
+        r = C[s]/T[s] if T[s] > 0. else 0.
+        f1 = 2 * p * r /(p + r) if C[s] > 0. else 0.
+
+        P  += (p  -  P)/(i+1)
+        R  += (r  -  R)/(i+1)
+        F1 += (f1 - F1)/(i+1)
+    return P, R, F1
+
+
+def bootstrap(xs, fn, samples=5000):
+    """
+    Return an array of statistics computed using a boostrap over xs
+    """
+    ys = []
+    for xs_ in tqdm(np.random.choice(np.array(xs), (samples, len(xs)))):
+        ys.append(fn(xs_))
+    return np.array(ys)
+
+def confidence_intervals(xs, fn, samples=5000, interval=0.95):
+    """
+    Compute confidence intervals for data.
+    """
+    ys = bootstrap(xs, fn, samples)
+
+    mu = np.mean(ys, 0)
+    lr = np.percentile(ys, [100*(1-interval)/2, 100*(interval + (1-interval)/2)], 0)
+    return np.vstack((mu, lr))
