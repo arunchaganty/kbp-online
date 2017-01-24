@@ -1,11 +1,10 @@
 function getUrlVars()
 {
-    var vars = [], hash;
+    var vars = {}, hash;
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
     for(var i = 0; i < hashes.length; i++)
     {
         hash = hashes[i].split('=');
-        vars.push(hash[0]);
         vars[hash[0]] = hash[1];
     }
     return vars;
@@ -22,7 +21,9 @@ mainInterface.doneListeners.push(function(data){
     //var submitUrl = "https://www.mturk.com/mturk/externalSubmit";
     var submitUrl = "https://workersandbox.mturk.com/mturk/externalSubmit";
     //Basic test to prevent development runs from submitting 
-    if ('assignmentId' in getUrlVars()){
-        $.post(submitUrl , { assignmentId: getUrlVars['assignmentId'], data: data} );
+    var urlVars = getUrlVars();
+    if ('assignmentId' in urlVars){
+        urlVars['data'] = data;
+        $.post(submitUrl , urlVars );
     }
 });
