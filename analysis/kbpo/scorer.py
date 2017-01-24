@@ -73,7 +73,7 @@ def compute_entity_scores(gold, output, Q):
     O = defaultdict(lambda: defaultdict(set)) # Gold data
     for entry in output:
         s = Q[entry.query_id]
-        f = Gr[s, k(entry)]
+        f = Gr.get((s, k(entry)), 0)
         O[s][f].add(k(entry))
 
     S, C, T = {}, {}, {} # submitted, correct, total
@@ -155,7 +155,6 @@ def do_experiment1(args):
 
     gold = load_gold(args.gold, Q)
 
-
     writer = csv.writer(args.output, delimiter="\t")
     writer.writerow([
         "system",
@@ -186,6 +185,70 @@ def do_experiment1(args):
             stats = confidence_intervals(E, compute_metric, args.samples, args.confidence)
             writer.writerow([runid, *list(stats.T.flatten())])
 
+def teamid(runid):
+    """
+    SF_UMass_IESL1 -> UMass_IESL
+    """
+    return runid.split("_", 1)[-1][:-1]
+
+def do_experiment2(args):
+    assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
+
+    Q = load_queries(args.queries)
+    E = sorted(set(Q.values()))
+
+    gold = load_gold(args.gold, Q)
+    outputs = {}
+
+    for fname in os.listdir(args.preds):
+        if not fname.endswith(".txt"): continue
+        runid = fname.split(".")[0]
+        logger.info("Loading output for %s", runid)
+
+        with open(os.path.join(args.preds, fname)) as f:
+            outputs[runid] = load_output(f, Q)
+
+    def make_loo_pool(gold, outputs, runid):
+        """
+        Create a new gold set which includes only the inputs from all other systems.
+        """
+        valid_entries = set([])
+        for runid_, output in outputs.items():
+            if runid == runid_: continue
+            valid_entries.update(k(entry) for entry in output)
+        return [entry for entry in gold if k(entry) in valid_entries]
+
+    def make_lto_pool(gold, outputs, runid):
+        """
+        Create a new gold set which includes only the inputs from all other systems.
+        """
+        valid_entries = set([])
+        for runid_, output in outputs.items():
+            if teamid(runid) == teamid(runid_): continue
+            valid_entries.update(k(entry) for entry in output)
+        return [entry for entry in gold if k(entry) in valid_entries]
+
+    writer = csv.writer(args.output, delimiter="\t")
+    writer.writerow([
+        "system",
+        "micro-p", "micro-r", "micro-f1", "macro-p", "macro-r", "macro-f1",
+        "micro-p-loo", "micro-r-loo", "micro-f1-loo", "macro-p-loo", "macro-r-loo", "macro-f1-loo",
+        "micro-p-lto", "micro-r-lto", "micro-f1-lto", "macro-p-lto", "macro-r-lto", "macro-f1-lto",
+        ])
+
+    for runid, output in outputs.items():
+        row = []
+        S, C, T = compute_entity_scores(gold, output, Q)
+        row += micro(S, C, T) + macro(S,C,T)
+
+        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid), output, Q)
+        row += micro(S, C, T) + macro(S,C,T)
+
+        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid), output, Q)
+        row += micro(S, C, T) + macro(S,C,T)
+
+        writer.writerow([runid,] + row)
+
 if __name__ == "__main__":
     DD = "data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31"
     import argparse
@@ -210,6 +273,12 @@ if __name__ == "__main__":
     command_parser.add_argument('-s', '--samples', type=int, default=5000, help="Confidence threshold")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_experiment1)
+
+    command_parser = subparsers.add_parser('experiment2', help='Evaluate pooling bias')
+    command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
+    command_parser.set_defaults(func=do_experiment2)
+
 
     ARGS = parser.parse_args()
     if ARGS.func:
