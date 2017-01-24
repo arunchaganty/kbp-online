@@ -1,13 +1,13 @@
-% vim:ft=tex
-% Diagram depciting how mentions and entities are sampled.
-\documentclass{article}
-%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
-\usepackage{scabby-diag}
-\usepackage{booktabs}
-\usetikzlibrary{fit}
-\usetikzlibrary{patterns}
-
-\begin{document}
+%% vim:ft=tex
+%% Diagram depciting how mentions and entities are sampled.
+%\documentclass{article}
+%%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+%\usepackage{scabby-diag}
+%\usepackage{booktabs}
+%\usetikzlibrary{fit}
+%\usetikzlibrary{patterns}
+%
+%\begin{document}
 
 \tikzset{correct/.style = {fill=green},
          incorrect/.style = {pattern=north east lines, pattern color=red},
@@ -19,7 +19,7 @@
          part/.style = {draw, rectangle, dashed, black, thick},
         }
 
-\begin{table}
+%\begin{table}
 \begin{tabular}{l | c c c c} \toprule
   $s$ & $f_1$ & $f_2$ & $f_3$ & $f_4$ \\ \midrule
   & 
@@ -76,7 +76,7 @@
   \bottomrule
 
 \end{tabular}
-\end{table}
-
-
-\end{document}
+%\end{table}
+%
+%
+%\end{document}

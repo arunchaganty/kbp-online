@@ -389,7 +389,7 @@ if __name__ == "__main__":
     command_parser.add_argument('-ov', '--output-vis', type=argparse.FileType('w'), default="vis.tsv", help="Where to write visualization output.")
     command_parser.set_defaults(func=do_experiment3)
 
-    # TODO: measurement of pairwise
+    # TODO: measurement of pairwise significance and diagrams.
 
     ARGS = parser.parse_args()
     if ARGS.func:
