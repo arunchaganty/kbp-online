@@ -112,12 +112,12 @@ def compute_mention_scores(gold, output):
         O[entry.relation_provenances[0].doc_id].add(k(entry))
 
     S, C, T = {}, {}, {} # submitted, correct, total
-    for d, Fd in gold.items():
+    for d, Fd in G.items():
         Fd_ = O[d]
 
-        S[d] = sum(len(ms) for f, ms in Fd_.items()) #
-        C[d] = sum(1. for f in Fd if f > 0 and f in Fd_)
-        T[d] = sum(1. for f in Fd if f > 0)
+        S[d] = len(Fd_)
+        C[d] = len(Fd.intersection(Fd_))
+        T[d] = len(Fd)
 
     return S, C, T
 
@@ -133,6 +133,18 @@ def do_entity_evaluation(args):
     args.output.write("micro {:.04f} {:.04f} {:.04f}\n".format(*micro(S,C,T)))
     args.output.write("macro {:.04f} {:.04f} {:.04f}\n".format(*macro(S,C,T)))
 
+def do_mention_evaluation(args):
+    Q = load_queries(args.queries)
+    gold = load_gold(args.gold, Q)
+    output = load_output(args.pred, Q)
+
+    S, C, T = compute_mention_scores(gold, output)
+
+    for s in sorted(S):
+        args.output.write("{} {:.04f} {:.04f} {:.04f}\n".format(s, *micro({s:S[s]}, {s:C[s]}, {s:T[s]})))
+    args.output.write("micro {:.04f} {:.04f} {:.04f}\n".format(*micro(S,C,T)))
+    args.output.write("macro {:.04f} {:.04f} {:.04f}\n".format(*macro(S,C,T)))
+
 if __name__ == "__main__":
     DD = "data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31"
     import argparse
@@ -141,10 +153,15 @@ if __name__ == "__main__":
     parser.add_argument('-q', '--queries', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_queryids.v3.0.man-cmp.txt"), help="A list of queries that were evaluated")
 
     subparsers = parser.add_subparsers()
-    command_parser = subparsers.add_parser('entity-evaluation', help='Evaluate a single entry')
+    command_parser = subparsers.add_parser('entity-evaluation', help='Evaluate a single entry (entity)')
     command_parser.add_argument('-p', '--pred', type=argparse.FileType('r'), required=True, help="A list of predicted entries")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_entity_evaluation)
+
+    command_parser = subparsers.add_parser('mention-evaluation', help='Evaluate a single entry (mention)')
+    command_parser.add_argument('-p', '--pred', type=argparse.FileType('r'), required=True, help="A list of predicted entries")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
+    command_parser.set_defaults(func=do_mention_evaluation)
 
     ARGS = parser.parse_args()
     if ARGS.func:
