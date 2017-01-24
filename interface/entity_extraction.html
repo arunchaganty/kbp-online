@@ -57,7 +57,6 @@
     <!-- Main jumbotron for a primary marketing message or call to action -->
 
 <input id="document-input" name="document" value="" type="hidden" />
-<input id="entities-output" name="entities" value="" type="hidden" />
 
 <div class="container">
   <!-- Example row of columns -->
@@ -75,7 +74,14 @@
         <div class="panel panel-default">
           <div class="panel-body" style='padding:0px;'>
           <button type="button" id="instructions" class="btn btn-default" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
-          <button id="done" class="btn navbar-btn btn-success right" disabled><span class="glyphicon glyphicon-ok"></span> Done</button> 
+<form id='mturk_form' action="https://workersandbox.mturk.com/mturk/externalSubmit"
+     method="POST">
+	<input type="hidden" name="assignmentId" id="assignmentId" value="" />
+	<!--<input type="hidden" name="hitId" id="myHitId" value="" />-->
+	<input id="entities-output" name="entities" value="" type="hidden" />
+        <button id="done" class="btn navbar-btn btn-success right" disabled type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Done</button> 
+	<!--<input id="submitButton" class = 'hidden' type="submit" name="submit" value="Submit" />-->
+   </form>
 
             </div>
           </div>

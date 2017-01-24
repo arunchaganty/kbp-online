@@ -197,6 +197,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
     var data = JSON.stringify(entities)
     $("#entities-output").attr('value', data);
     self.doneListeners.forEach(function(cb) {cb(data);});
+    return true;
   });
 
   // TODO: doc mouseEnter, mouseLeave?
