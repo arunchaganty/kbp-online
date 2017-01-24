@@ -17,23 +17,37 @@
                 padding-bottom: 20px;
             }
         </style>
-        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
-        <link rel="stylesheet" href="css/font-awesome.min.css">
-        <link rel="stylesheet" href="css/main.css">
-        <link rel="stylesheet" href="css/interface.css">
-        <link href="css/kbpo.css" rel="stylesheet">
 
+        <!-- CDN hosted -->
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js" integrity="sha256-0rguYS0qgS6L4qVzANq4kjxPLtvnp5nn2nB5G1lWRv4=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js" integrity="sha256-Gn7MUQono8LUxTfRA0WZzJgTua52Udm1Ifrk5421zkA=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js" integrity="sha256-S20kSlaai+/AuQHj3KjoLxmxiOLT5298YvzpaTXtYxE=" crossorigin="anonymous"></script>
+
+
+        <!-- Locally hosted external files-->
+        <!--<link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="css/font-awesome.min.css">
         <script src="js/jquery-3.1.1.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
         <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
-        <script src="js/levenshtein.min.js"></script>
         <script src="js/moment.min.js"></script>
-        <script src="js/js.cookie.js"></script>
+        <script src="js/js.cookie.js"></script>-->
+
+        <!-- Locally hosted internal files-->
         <script src="js/defs.js"></script>
         <script src="js/kbpo.js"></script>
         <script src="js/interface.js"></script>
         <script src="js/date-widget.js"></script>
         <script src="js/instruction-widget.js"></script>
+        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="css/interface.css">
+        <link rel="stylesheet" href="css/kbpo.css">
+        <script src="js/levenshtein.min.js"></script>
+
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -238,10 +252,10 @@ var removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"));
 var linkWidget = new LinkWidget($("#wiki-linking-modal"));
 var dateWidget = new DateWidget($("#date-widget-modal"));
 var instructionWidget = new InstructionWidget('entity_extraction', 'instructions/entity_extraction.html');
-var entityInt = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
+var mainInterface = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
 
 //$.getJSON("data/doc1.json", function(data) {
-$.getJSON("exhaustive/ENG_NW_001436_20150718_F0010006Q.json", function(data) {
+function initialize_interface(data){
   console.log("loaded data.");
   console.log(data);
   docWidget.load(data);
@@ -249,11 +263,13 @@ $.getJSON("exhaustive/ENG_NW_001436_20150718_F0010006Q.json", function(data) {
   if (data["suggested-mentions"]) {
     docWidget.setSuggestions(data["suggested-mentions"]);
   }
-})
-.fail(function() {
-  console.log("Could not load data.");
-});
+}
         </script>
-</body>
+        <script src="js/mturk.js"></script>
+        <script type="text/javascript">
+        initialize_doc(getUrlVars()['doc_id']);
+//initialize_doc('ENG_NW_001436_20150718_F0010006Q');
+        </script>
+        </body>
 
 </html>

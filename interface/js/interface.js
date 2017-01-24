@@ -194,7 +194,9 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
         entities.push(mention.toJSON());
       }
     }
-    $("#entities-output").attr('value', JSON.stringify(entities));
+    var data = JSON.stringify(entities)
+    $("#entities-output").attr('value', data);
+    self.doneListeners.forEach(function(cb) {cb(data);});
   });
 
   // TODO: doc mouseEnter, mouseLeave?
@@ -202,6 +204,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
   // doc.mouseLeaveListeners.push(process_mouse_leave);
 }
 entities = {}
+EntityInterface.prototype.doneListeners = [];
 
 EntityInterface.prototype.deactivate = function() {
   this.listWidget.deactivate();

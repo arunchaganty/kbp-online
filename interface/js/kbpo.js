@@ -397,10 +397,13 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
         "object": e[1].toJSON(),
       });
     });
-    $("#relations-output").attr('value', JSON.stringify(relations));
+    var data = JSON.stringify(relations);
+    $("#relations-output").attr('value', data);
+    self.doneListeners.forEach(function(cb) {cb(data);});
   });
 };
 
+RelationInterface.prototype.doneListeners = [];
 // Iterates through the mention pairs provided.
 RelationInterface.prototype.run = function(mentions) {
   var self = this;
