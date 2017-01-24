@@ -133,3 +133,23 @@ def macro(S, C, T):
         R  += (r  -  R)/(i+1)
         F1 += (f1 - F1)/(i+1)
     return P, R, F1
+
+
+def bootstrap(xs, fn, samples=5000):
+    """
+    Return an array of statistics computed using a boostrap over xs
+    """
+    ys = []
+    for xs_ in np.random.choice(np.array(xs), (samples, len(xs))):
+        ys.append(fn(xs_))
+    return np.array(ys)
+
+def confidence_intervals(xs, fn, samples=5000, interval=0.95):
+    """
+    Compute confidence intervals for data.
+    """
+    ys = bootstrap(xs, fn, samples)
+
+    mu = np.mean(ys, 0)
+    lr = np.percentile(ys, [100*(1-interval)/2, 100*(interval + (1-interval)/2)], 0)
+    return np.vstack((mu, lr))

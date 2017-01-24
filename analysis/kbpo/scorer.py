@@ -3,14 +3,16 @@
 """
 A scoring script.
 """
+import os
+import csv
 import sys
 import logging
-
 from collections import defaultdict
 
 from tqdm import tqdm
-from .util import EvaluationEntry, OutputEntry, micro, macro
+from .util import EvaluationEntry, OutputEntry, micro, macro, bootstrap, confidence_intervals
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -145,6 +147,45 @@ def do_mention_evaluation(args):
     args.output.write("micro {:.04f} {:.04f} {:.04f}\n".format(*micro(S,C,T)))
     args.output.write("macro {:.04f} {:.04f} {:.04f}\n".format(*macro(S,C,T)))
 
+def do_experiment1(args):
+    assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
+
+    Q = load_queries(args.queries)
+    E = sorted(set(Q.values()))
+
+    gold = load_gold(args.gold, Q)
+
+
+    writer = csv.writer(args.output, delimiter="\t")
+    writer.writerow([
+        "system",
+        "micro-p", "micro-p-left", "micro-p-right",
+        "micro-r", "micro-r-left", "micro-r-right",
+        "micro-f1", "micro-f1-left", "micro-f1-right",
+        "macro-p", "macro-p-left", "macro-p-right",
+        "macro-r", "macro-r-left", "macro-r-right",
+        "macro-f1", "macro-f1-left", "macro-f1-right",
+        ])
+
+    for fname in os.listdir(args.preds):
+        if not fname.endswith(".txt"): continue
+        runid = fname.split(".")[0]
+        logger.info("Loading output for %s", runid)
+
+        with open(os.path.join(args.preds, fname)) as f:
+            output = load_output(f, Q)
+            S, C, T = compute_entity_scores(gold, output, Q)
+
+            def compute_metric(E_):
+                S_, C_, T_ = {}, {}, {}
+                for i, e in enumerate(E_):
+                    S_[i], C_[i], T_[i] = S[e], C[e], T[e]
+                return micro(S_, C_, T_) + macro(S_, C_, T_)
+
+            # compute bootstrap
+            stats = confidence_intervals(E, compute_metric, args.samples, args.confidence)
+            writer.writerow([runid, *list(stats.T.flatten())])
+
 if __name__ == "__main__":
     DD = "data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31"
     import argparse
@@ -162,6 +203,13 @@ if __name__ == "__main__":
     command_parser.add_argument('-p', '--pred', type=argparse.FileType('r'), required=True, help="A list of predicted entries")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_mention_evaluation)
+
+    command_parser = subparsers.add_parser('experiment1', help='Evaluate P/R/F1 (entity) scores for every entity with 95% confidence thresholds')
+    command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
+    command_parser.add_argument('-c', '--confidence', type=float, default=.95, help="Confidence threshold")
+    command_parser.add_argument('-s', '--samples', type=int, default=5000, help="Confidence threshold")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
+    command_parser.set_defaults(func=do_experiment1)
 
     ARGS = parser.parse_args()
     if ARGS.func:
