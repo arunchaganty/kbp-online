@@ -45,12 +45,6 @@
         <!-- Example row of columns -->
         <div class="row">
           <h1> Relation Extraction
-            <span class="pull-right">
-          <button id="instructions" class="btn btn-default right"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
-          <button id="back" class="btn navbar-btn btn-warning right" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
-          <button id="done" class="btn navbar-btn btn-success right" disabled><span class="glyphicon glyphicon-ok"></span> Done</button> 
-          </span>
-            <span class="clearfix"></span>
           </h1>
         </div>
         <div class="row">
@@ -83,6 +77,18 @@
             </div>
           </div>
           <div class="col-md-4">
+            <span class="pull-right">
+<form class ='input-group' id='mturk_form' action="https://workersandbox.mturk.com/mturk/externalSubmit" method="POST">
+          <button id="instructions" class="btn btn-default right"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
+          <button id="back" class="btn navbar-btn btn-warning right" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
+          <button id="done" class="btn btn-success" disabled type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
+          <input id="document-input" name="document" value="" type="hidden" />
+          <input id="relations-output" name="relations" class = 'data' value="" type="hidden" />
+	    <input type="hidden" name="assignmentId" id="assignmentId" value="" />
+
+   </form>
+          </span>
+            <span class="clearfix"></span>
             <h2>Identified relations</h2>
 
             <div id="relations-list" class="list-group">
