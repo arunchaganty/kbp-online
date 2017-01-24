@@ -23,7 +23,19 @@ mainInterface.doneListeners.push(function(data){
     //Basic test to prevent development runs from submitting 
     var urlVars = getUrlVars();
     if ('assignmentId' in urlVars){
-        urlVars['data'] = data;
-        $.post(submitUrl , urlVars );
+        console.log('trying to post');
+	urlVars1 = {};
+	urlVars1['assignmentId'] = urlVars['assignmentId'];
+	urlVars1['hitId'] = urlVars['hitId'];
+	urlVars1['workerId'] = urlVars['workerId'];
+        //urlVars1['data'] = data;
+	console.log(urlVars1);
+	
+    	$("#assignmentId").attr('value', urlVars['assignmentId']);
+    	//$("#myHitId").attr('value', urlVars['hitId']);
+	console.log('submitting');
+	//$('#mturk_form').submit();
+	
+        //$.post(submitUrl , urlVars1 ).done(function( data ) { console.log( data ); }).fail(function(xhr, textStatus, errorThrown) { console.log( xhr.responseText); console.log(textStatus); console.log(errorThrown);});
     }
 });
