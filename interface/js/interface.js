@@ -205,8 +205,12 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
   // doc.mouseLeaveListeners.push(process_mouse_leave);
 }
 entities = {}
+
 EntityInterface.prototype.doneListeners = [];
 
+EntityInterface.prototype.minOutput = function() {
+    return this.entities.length > 0;
+}
 EntityInterface.prototype.deactivate = function() {
   this.listWidget.deactivate();
   this.addEntityWidget.deactivate();
@@ -480,7 +484,9 @@ $(window).on('load', function () {
     $('#document').bind('scroll', function(e){
       var elem = $(e.currentTarget);
       if (elem[0].scrollHeight - elem.scrollTop() == elem.outerHeight()) {
-        $("#done")[0].disabled = false;
+        if((turkHelper == undefined || !turkHelper.activated || !turkHelper.preview) && mainInterface.minOutput()){
+            $("#done")[0].disabled = false;
+        }
       }
     });
 });

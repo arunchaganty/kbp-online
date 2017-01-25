@@ -400,6 +400,7 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
     var data = JSON.stringify(relations);
     $("#relations-output").attr('value', data);
     self.doneListeners.forEach(function(cb) {cb(data);});
+    return true;
   });
 };
 
@@ -629,6 +630,7 @@ RelationListWidget.prototype.addRelation = function(mentionPair) {
   });
 
   this.elem.append(div);
+  return true;
 }
 
 RelationListWidget.prototype.removeRelation = function(mentionPair) {
