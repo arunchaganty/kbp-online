@@ -1,0 +1,99 @@
+%% vim:ft=tex
+%% Diagram depciting how mentions and entities are sampled.
+%\documentclass{article}
+%%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+%\usepackage{scabby-diag}
+%\usepackage{booktabs}
+%\usetikzlibrary{fit}
+%\usetikzlibrary{patterns}
+%
+%\begin{document}
+
+\tikzset{correct/.style = {fill=green},
+         incorrect/.style = {pattern=north east lines, pattern color=red},
+         node/.style = {circle, scale=.7},
+         sysa/.style = {draw, circle, dashed, thick, purple},
+         sysb/.style = {draw, circle, dotted, thick, blue},
+         output/.style = {inner sep=-2pt},
+         duplicate/.style = {draw, rectangle, thick, red},
+         part/.style = {draw, rectangle, dashed, black, thick},
+        }
+
+%\begin{table}
+\begin{tabular}{l c c c c} \toprule
+  $e$
+  & \tikz{
+        \node (f1) {$f_1$};
+        \node[sysa,output,fit=(f1)](f1A){};
+        \node[sysb,output,fit=(f1A)](f1B){};
+        }
+  & \tikz{
+        \node (f2) {$f_2$};
+        \node[sysa,output,fit=(f2)](f2A){};
+        }
+  & \tikz{
+        \node (f3) {$f_3$};
+        \node[sysa,output,fit=(f3)](f3A){};
+        \node[duplicate,fit=(f3A)](f3AD){};
+        }
+  & \tikz{
+        \node (f4) {$f_4$};
+        } \\ \midrule
+  & 
+    \tikz{
+  \node[node,correct] (m11){$c_{11}$};
+  \node[sysa,output,fit= (m11)] (m11A){};
+  } 
+  & 
+  \tikz{
+  \node[node, correct] (m21) {$c_{21}$};
+    \node[sysa, output, fit= (m21)] (m21A) {};
+  }
+  & 
+  \tikz{
+    \node[node, correct] (m31) {$c_{31}$};
+    \node[sysa, output, fit= (m31)] (m31A) {};
+    }
+  & 
+  \tikz{
+    \node[node, correct] (m41) {$c_{41}$};
+    }
+  \\
+
+  & 
+  \tikz{
+  \node[node,incorrect] (m12){$c_{12}$};
+  \node[sysb,output,fit= (m11)](m11B){};
+  } 
+  & 
+  \tikz{
+    \node[node, incorrect] (m22) {$c_{22}$};
+    \node[sysb, output, fit= (m22)] (m22B) {};
+  }
+  
+  &
+  \tikz{
+    \node[node, correct] (m32) {$c_{32}$};
+    \node[sysa, output, fit= (m32)] (m32A) {};
+    \node[duplicate, fit= (m32A)] (m32AD) {};
+    }
+  & \\
+  & 
+  \tikz{
+    \node[node,correct] (m13){$c_{13}$};
+  }
+  & & & \\
+  & 
+    \tikz{
+  \node[node,correct] (m14){$c_{14}$};
+  \node[sysa,output,fit= (m14)] (m14A){};
+  \node[sysb,output,fit= (m14A)]{};
+  } 
+  \\
+  \bottomrule
+
+\end{tabular}
+%\end{table}
+%
+%
+%\end{document}

@@ -22,6 +22,11 @@
 \usepackage{scabby-lite}
 \usepackage{multicol}
 
+\usepackage{tikz}
+\usepackage{booktabs}
+\usetikzlibrary{fit}
+\usetikzlibrary{patterns}
+
 \input std-macros
 \input macros
 
@@ -31,25 +36,25 @@
 \title{Learn something new every day: a continuous assessment platform for knowledge base population}
 
 \author{%
-  Arun Tejasvi Chaganty \\
+  Arun Tejasvi Chaganty$^*$ \\
   Computer Science Department \\
   Stanford University \\
   {\tt chaganty@cs.stanford.edu}
 \And%
-  Ashwin Pradeep Paranjape \\
+  Ashwin Pradeep Paranjape$^*$ \\
   Computer Science Department \\
   Stanford University \\
   {\tt ashwinpp@cs.stanford.edu}
-\And%
-  Yuhao Zhang \\
-  Computer Science Department \\
-  Stanford University \\
-  {\tt zyh@cs.stanford.edu}
-\And%
-  Eduard Hovy \\
-  Computer Science Department \\
-  Carnegie Mellon University \\
-  {\tt hovy@cs.cmu.edu}
+% \And%
+%   Yuhao Zhang \\
+%   Computer Science Department \\
+%   Stanford University \\
+%   {\tt zyh@cs.stanford.edu}
+% \And%
+%   Eduard Hovy \\
+%   Computer Science Department \\
+%   Carnegie Mellon University \\
+%   {\tt hovy@cs.cmu.edu}
 \And%
   Percy Liang \\
   Computer Science Department \\
@@ -76,6 +81,7 @@
 \input method
 \input analysis
 \input design
+\input evaluation
 \input discussion
 
 %\paragraph{Reproducibility}
