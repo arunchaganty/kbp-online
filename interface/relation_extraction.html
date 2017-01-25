@@ -77,7 +77,7 @@
           </div>
           <div class="col-md-4">
             <span class="pull-right">
-<form class ='input-group' id='mturk_form' action="https://workersandbox.mturk.com/mturk/externalSubmit" method="POST">
+<form class ='input-group' id='mturk_form' action="" method="POST">
           <button id="instructions" class="btn btn-default right"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
           <button id="back" class="btn navbar-btn btn-warning right" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
           <button id="done" class="btn btn-success" disabled type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
@@ -138,7 +138,8 @@ function initialize_interface(data){
     </script>
         <script src="js/mturk.js"></script>
         <script type="text/javascript">
-        initialize_doc(getUrlVars()['doc_id']);
+            var turkHelper = new TurkHelper();
+            turkHelper.initialize_doc(turkHelper.getUrlVars()['doc_id']);
         </script>
     </body>
 </html>

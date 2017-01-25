@@ -246,7 +246,7 @@ DocWidget.prototype.updateMention = function(mention) {
   if (mention.type) {
     elem.addClass(mention.type.name);
     if (elem.find(".type-marker").length == 0) 
-      elem.prepend($("<span class='type-marker fa fa-fw' />"));
+      elem.append($("<span class='type-marker fa fa-fw' />"));
     elem.find('.type-marker')
       .attr("class", "type-marker fa fa-fw").addClass(mention.type.icon);
   } else {
@@ -384,7 +384,8 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
   $("#back")[0].disabled = true;
 
   $("#back").on("click.kbpo.interface", function (evt) {
-    self.editExistingMentionPair(self.mentionPairs[self.currentIndex-1]);
+    self.editExistingMentionPair(self.mentionPairs[self.currentIndex-1]); 
+    return false;
   });
 
   $("#done").on("click.kbpo.interface", function (evt) {
@@ -400,6 +401,7 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
     var data = JSON.stringify(relations);
     $("#relations-output").attr('value', data);
     self.doneListeners.forEach(function(cb) {cb(data);});
+    return true;
   });
 };
 
@@ -629,6 +631,7 @@ RelationListWidget.prototype.addRelation = function(mentionPair) {
   });
 
   this.elem.append(div);
+  return true;
 }
 
 RelationListWidget.prototype.removeRelation = function(mentionPair) {

@@ -1,8 +1,20 @@
+# TeX
+*.log
 *.aux
+*.out
+*.nav
+*.toc
 *.bbl
 *.blg
-*.out
+*.snm
 *.pdf
+*.dvi
+*_tmp.*
+
+#refdb
+main.aux
+main.log
+main.bbl
+main.blg
+main.pdf
 refdb
-*.pdf
-*.out
