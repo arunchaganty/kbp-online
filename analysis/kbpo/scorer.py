@@ -22,6 +22,9 @@ logger.setLevel(logging.DEBUG)
 def k(entry):
     return (entry.relation_provenances[0], entry.slot_value) # A cheap way to also correct for linking errors.
 
+def kn(entry):
+    return (entry.slot_value) # A cheap way to also correct for linking errors.
+
 def load_queries(fstream):
     Q = {}
     for line in fstream:
@@ -50,7 +53,7 @@ def load_output(fstream, Q):
     logger.info("Loaded %d output entries.", len(output))
     return output
 
-def compute_entity_scores(gold, output, Q):
+def compute_entity_scores(gold, output, Q, key=k):
     """
     @gold is a dictionary of {s: F*_s}.
     F*_s = {f: [m]}
@@ -70,14 +73,14 @@ def compute_entity_scores(gold, output, Q):
         # Considering inexact queries as correct because these are
         # considered correct as per recall computations.
         f = entry.eq # if (entry.slot_value_label == "C") else 0
-        G[s][f].add(k(entry)) # Make a key out of this entry.
-        Gr[s, k(entry)] = f
+        G[s][f].add(key(entry)) # Make a key out of this entry.
+        Gr[s, key(entry)] = f
 
     O = defaultdict(lambda: defaultdict(set)) # Gold data
     for entry in output:
         s = Q[entry.query_id]
-        f = Gr.get((s, k(entry)), 0)
-        O[s][f].add(k(entry))
+        f = Gr.get((s, key(entry)), 0)
+        O[s][f].add(key(entry))
 
     S, C, T = {}, {}, {} # submitted, correct, total
     for s, Fs in G.items():
@@ -94,7 +97,7 @@ def compute_entity_scores(gold, output, Q):
 
     return S, C, T
 
-def compute_mention_scores(gold, output):
+def compute_mention_scores(gold, output, key=k):
     """
     @gold is a dictionary of {s: F*_s}.
     F*_s = {f: [m]}
@@ -110,11 +113,11 @@ def compute_mention_scores(gold, output):
     G = defaultdict(set) # Gold data
     for entry in gold:
         if entry.eq > 0: # it's correct!
-            G[entry.relation_provenances[0].doc_id].add(k(entry))
+            G[entry.relation_provenances[0].doc_id].add(key(entry))
 
     O = defaultdict(set) # output data
     for entry in output:
-        O[entry.relation_provenances[0].doc_id].add(k(entry))
+        O[entry.relation_provenances[0].doc_id].add(key(entry))
 
     S, C, T = {}, {}, {} # submitted, correct, total
     for d, Fd in G.items():
@@ -245,7 +248,7 @@ def teamid(runid):
     """
     return runid.split("_", 1)[-1][:-1]
 
-def do_experiment2(args):
+def do_pooling_bias(args):
     assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
 
     Q = load_queries(args.queries)
@@ -262,25 +265,29 @@ def do_experiment2(args):
         with open(os.path.join(args.preds, fname)) as f:
             outputs[runid] = load_output(f, Q)
 
-    def make_loo_pool(gold, outputs, runid):
+    def make_loo_pool(gold, outputs, runid, key=k):
         """
         Create a new gold set which includes only the inputs from all other systems.
         """
         valid_entries = set([])
         for runid_, output in outputs.items():
             if runid == runid_: continue
-            valid_entries.update(k(entry) for entry in output)
-        return [entry for entry in gold if k(entry) in valid_entries]
+            valid_entries.update(key(entry) for entry in output)
+        gold_ = [entry for entry in gold if key(entry) in valid_entries]
+        logger.info("loo pool for %s contains %d entries", runid, len(gold_))
+        return gold_
 
-    def make_lto_pool(gold, outputs, runid):
+    def make_lto_pool(gold, outputs, runid, key=k):
         """
         Create a new gold set which includes only the inputs from all other systems.
         """
         valid_entries = set([])
         for runid_, output in outputs.items():
             if teamid(runid) == teamid(runid_): continue
-            valid_entries.update(k(entry) for entry in output)
-        return [entry for entry in gold if k(entry) in valid_entries]
+            valid_entries.update(key(entry) for entry in output)
+        gold_ = [entry for entry in gold if key(entry) in valid_entries]
+        logger.info("lto pool for %s contains %d entries", runid, len(gold_))
+        return gold_
 
     writer = csv.writer(args.output, delimiter="\t")
     writer.writerow([
@@ -288,9 +295,12 @@ def do_experiment2(args):
         "micro-p", "micro-r", "micro-f1", "macro-p", "macro-r", "macro-f1",
         "micro-p-loo", "micro-r-loo", "micro-f1-loo", "macro-p-loo", "macro-r-loo", "macro-f1-loo",
         "micro-p-lto", "micro-r-lto", "micro-f1-lto", "macro-p-lto", "macro-r-lto", "macro-f1-lto",
+        "micro-nd-p", "micro-nd-r", "micro-nd-f1", "macro-nd-p", "macro-nd-r", "macro-nd-f1",
+        "micro-nd-p-loo", "micro-nd-r-loo", "micro-nd-f1-loo", "macro-nd-p-loo", "macro-nd-r-loo", "macro-nd-f1-loo",
+        "micro-nd-p-lto", "micro-nd-r-lto", "micro-nd-f1-lto", "macro-nd-p-lto", "macro-nd-r-lto", "macro-nd-f1-lto",
         ])
 
-    for runid, output in outputs.items():
+    for runid, output in tqdm(outputs.items()):
         row = []
         S, C, T = compute_entity_scores(gold, output, Q)
         row += micro(S, C, T) + macro(S,C,T)
@@ -299,6 +309,15 @@ def do_experiment2(args):
         row += micro(S, C, T) + macro(S,C,T)
 
         S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid), output, Q)
+        row += micro(S, C, T) + macro(S,C,T)
+
+        S, C, T = compute_entity_scores(gold, output, Q, kn)
+        row += micro(S, C, T) + macro(S,C,T)
+
+        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid, kn), output, Q, kn)
+        row += micro(S, C, T) + macro(S,C,T)
+
+        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid, kn), output, Q, kn)
         row += micro(S, C, T) + macro(S,C,T)
 
         writer.writerow([runid,] + row)
@@ -376,10 +395,10 @@ if __name__ == "__main__":
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_experiment1)
 
-    command_parser = subparsers.add_parser('experiment2', help='Evaluate pooling bias')
+    command_parser = subparsers.add_parser('pooling-bias', help='Evaluate pooling bias')
     command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
-    command_parser.set_defaults(func=do_experiment2)
+    command_parser.set_defaults(func=do_pooling_bias)
 
     command_parser = subparsers.add_parser('experiment3', help='Evaluate standardized micro/macro F1 (entity) scores for every entity with 95% confidence thresholds')
     command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
