@@ -79,7 +79,7 @@ EntityListWidget.prototype.activate = function(mention) {
       if(mention.tokens[0].token.pos_tag != 'PRP'){
           if (entities[i].entity.levenshtein(mention.gloss.toLowerCase()) <= 2) {
             $(entities[i]).addClass('list-group-item-warning');
-            entities[i].scrollIntoView();
+            this.scrollEntityIntoView(entities[i]);
           }
       }
     }
@@ -95,6 +95,14 @@ EntityListWidget.prototype.deactivate = function() {
 }
 
 // Get current entities
+EntityListWidget.prototype.scrollEntityIntoView = function(entity) {
+    var topPosRel = entity.offsetTop;
+    console.log(topPosRel);
+    var parentPosRel = listWidget.elem.parent()[0].offsetTop;
+    console.log(parentPosRel);
+    this.elem.parent().scrollTop(topPosRel - parentPosRel);
+    //$(entity).position();
+}
 EntityListWidget.prototype.entities = function() {
   return this.elem.find(".entity").not("#entity-empty").not("#entity-template");
 }
@@ -197,7 +205,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
     var data = JSON.stringify(entities)
     $("#entities-output").attr('value', data);
     self.doneListeners.forEach(function(cb) {cb(data);});
-    return true;
+    //return true;
   });
 
   // TODO: doc mouseEnter, mouseLeave?

@@ -24,6 +24,7 @@ InstructionWidget.prototype.showFirstTime = function(){
 }
 InstructionWidget.prototype.show = function(){
     this.elem.modal('show');
+    return false;
 }
 InstructionWidget.prototype.hide = function(mention){
     Cookies.set(this.name+'_seen', 'True');
