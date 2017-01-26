@@ -46,7 +46,7 @@ DateWidget.prototype.setDocDate = function(docdate){
     this.elem.find('#doc-date').text(this.docdate.format("dddd, MMMM Do YYYY"));
 }
 DateWidget.prototype.show = function(mentionGloss, suggestion){
-    var parsedSuggestion = moment();
+    var parsedSuggestion = undefined;
     if(suggestion != undefined){
         var _parsedSuggestion = moment(suggestion);
         if (_parsedSuggestion._isValid){
