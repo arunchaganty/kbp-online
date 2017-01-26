@@ -39,6 +39,7 @@ function TurkHelper(){
 
         $('#mturk_form').attr('action', submitUrl);
         $("#assignmentId").attr('value', this.urlVars['assignmentId']);
+        $("#docId").attr('value', this.urlVars['doc_id']);
 	console.log('all ready to submit');
     }
 }

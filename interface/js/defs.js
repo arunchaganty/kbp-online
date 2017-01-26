@@ -6,7 +6,17 @@
   alternate_names.svg  founder.svg   members.jpg    parent.svg        sibling.png       top_employee.jpg
   */
 
-var _RELATIONS = [{
+var _RELATIONS = [
+{
+    "name": "no_relation",
+    "short": "unrelated",
+    "template": "{subject} and {object} are otherwise related or not related.",
+    "image" : "", 
+    "icon": "fa-times",
+    "subject-types": ["PER", "ORG", "GPE"],
+    "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
+}, 
+{
     "name": "per:age",
     "short": "age",
     "image": "age.svg",
@@ -230,14 +240,6 @@ var _RELATIONS = [{
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
-},{
-    "name": "no_relation",
-    "short": "unrelated",
-    "template": "{subject} and {object} are otherwise related or not related.",
-    "image" : "", 
-    "icon": "fa-times",
-    "subject-types": ["PER", "ORG", "GPE"],
-    "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
 }];
 
 var RelationLabel = function(r) {

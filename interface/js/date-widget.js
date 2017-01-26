@@ -158,7 +158,7 @@ DateWidget.prototype.refresh = function(date){
     }
     this.monthSelect.change($.proxy(this.refreshDays, this));
     this.yearSelect.change($.proxy(this.refreshDays, this));
-    if (date === undefined){
+    if (date == undefined){
         if (this.docdate == undefined){
             date=moment();
         }

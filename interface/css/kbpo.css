@@ -5,7 +5,7 @@
 }
 
 #document.short {
-  max-height: 300px;
+  max-height: 200px;
 }
 
 span.sentence {
@@ -92,9 +92,10 @@ span.object {
   color: blue;
 }
 
-div.relation-option {
+div.btn.relation-option {
   text-align: center;
   display: inline-block;
+  padding: 6px;
 }
 
 div.relation-option span.icon {
