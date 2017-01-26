@@ -73,8 +73,21 @@ def compute_entity_scores(gold, output, Q, key=k):
         # Considering inexact queries as correct because these are
         # considered correct as per recall computations.
         f = entry.eq # if (entry.slot_value_label == "C") else 0
-        G[s][f].add(key(entry)) # Make a key out of this entry.
-        Gr[s, key(entry)] = f
+        if (s, key(entry)) not in Gr:
+            G[s][f].add(key(entry)) # Make a key out of this entry.
+            Gr[s, key(entry)] = f
+        else:
+            # Remove any conflicting entries in 0 because of inexactness.
+            f_ = Gr[s, key(entry)]
+            if f == f_: continue # Nothing to worry about!
+            elif f  > f_: # replace
+                #logger.warning("conflicting labels for %s, %s; replacing %s with %s (%s)", s, key(entry), f, f_, G[s][f_])
+                G[s][f_].remove(key(entry))
+                G[s][f].add(key(entry))
+                Gr[s, key(entry)] = f
+            else:
+                #logger.warning("conflicting labels for %s, %s; not replacing %s with %s (%s)", s, key(entry), f, f_, G[s][f_])
+                pass # do nothing. Do not pass go, do not collect 1 million dollars.
 
     O = defaultdict(lambda: defaultdict(set)) # Gold data
     for entry in output:
@@ -131,10 +144,11 @@ def compute_mention_scores(gold, output, key=k):
 
 def do_entity_evaluation(args):
     Q = load_queries(args.queries)
+    key = kn if args.anydoc else k
     gold = load_gold(args.gold, Q)
     output = load_output(args.pred, Q)
 
-    S, C, T = compute_entity_scores(gold, output, Q)
+    S, C, T = compute_entity_scores(gold, output, Q, key)
 
     for s in sorted(S):
         args.output.write("{} {:.04f} {:.04f} {:.04f}\n".format(s, *micro({s:S[s]}, {s:C[s]}, {s:T[s]})))
@@ -295,9 +309,9 @@ def do_pooling_bias(args):
         "micro-p", "micro-r", "micro-f1", "macro-p", "macro-r", "macro-f1",
         "micro-p-loo", "micro-r-loo", "micro-f1-loo", "macro-p-loo", "macro-r-loo", "macro-f1-loo",
         "micro-p-lto", "micro-r-lto", "micro-f1-lto", "macro-p-lto", "macro-r-lto", "macro-f1-lto",
-        "micro-nd-p", "micro-nd-r", "micro-nd-f1", "macro-nd-p", "macro-nd-r", "macro-nd-f1",
-        "micro-nd-p-loo", "micro-nd-r-loo", "micro-nd-f1-loo", "macro-nd-p-loo", "macro-nd-r-loo", "macro-nd-f1-loo",
-        "micro-nd-p-lto", "micro-nd-r-lto", "micro-nd-f1-lto", "macro-nd-p-lto", "macro-nd-r-lto", "macro-nd-f1-lto",
+        "micro-p-anydoc", "micro-r-anydoc", "micro-f1-anydoc", "macro-p-anydoc", "macro-r-anydoc", "macro-f1-anydoc",
+        "micro-p-loo-anydoc", "micro-r-loo-anydoc", "micro-f1-loo-anydoc", "macro-p-loo-anydoc", "macro-r-loo-anydoc", "macro-f1-loo-anydoc",
+        "micro-p-lto-anydoc", "micro-r-lto-anydoc", "micro-f1-lto-anydoc", "macro-p-lto-anydoc", "macro-r-lto-anydoc", "macro-f1-lto-anydoc",
         ])
 
     for runid, output in tqdm(outputs.items()):
@@ -375,12 +389,14 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-g', '--gold', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_poolc.assessed.fqec"), help="A list of gold entries")
-    parser.add_argument('-q', '--queries', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_queryids.v3.0.man-cmp.txt"), help="A list of queries that were evaluated")
+    #parser.add_argument('-q', '--queries', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_queryids.v3.0.man-cmp.txt"), help="A list of queries that were evaluated")
+    parser.add_argument('-q', '--queries', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_queryids.v3.0.txt"), help="A list of queries that were evaluated")
 
     subparsers = parser.add_subparsers()
     command_parser = subparsers.add_parser('entity-evaluation', help='Evaluate a single entry (entity)')
     command_parser.add_argument('-p', '--pred', type=argparse.FileType('r'), required=True, help="A list of predicted entries")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
+    command_parser.add_argument('-a', '--anydoc', action='store_true', default=False, help="Use anydoc?")
     command_parser.set_defaults(func=do_entity_evaluation)
 
     command_parser = subparsers.add_parser('mention-evaluation', help='Evaluate a single entry (mention)')
