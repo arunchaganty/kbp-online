@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 def k(entry):
-    return (entry.relation_provenances[0], entry.slot_value) # A cheap way to also correct for linking errors.
+    return (entry.ldc_id, entry.relation_provenances[0], entry.slot_value) # A cheap way to also correct for linking errors.
 
 def kn(entry):
-    return (entry.slot_value) # A cheap way to also correct for linking errors.
+    return (entry.ldc_id, entry.slot_value) # A cheap way to also correct for linking errors.
 
 def load_queries(fstream):
     Q = {}
@@ -40,7 +40,7 @@ def load_gold(fstream, Q):
     for line in tqdm(fstream):
         entry = EvaluationEntry.from_line(line)
         if entry.query_id in Q:
-            gold.append(entry)
+            gold.append(entry._replace(ldc_id=Q[entry.query_id]))
     logger.info("Loaded %d evaluation entries", len(gold))
     return gold
 
@@ -49,7 +49,7 @@ def load_output(fstream, Q):
     for line in tqdm(fstream):
         entry = OutputEntry.from_line(line)
         if entry.query_id in Q:
-            output.append(entry)
+            output.append(entry._replace(ldc_id=Q[entry.query_id]))
     logger.info("Loaded %d output entries.", len(output))
     return output
 

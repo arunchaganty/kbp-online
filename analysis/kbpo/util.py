@@ -34,7 +34,7 @@ def test_provenance_cmp():
     assert p3 > p1
     assert p1 < p4
 
-class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", "relation", "relation_provenances", "slot_value", "slot_provenances", "slot_value_label", "relation_label", "eq_class", "eq"])):
+class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", 'ldc_id', "relation", "relation_provenances", "slot_value", "slot_provenances", "slot_value_label", "relation_label", "eq_class", "eq"])):
     def __str__(self):
         return "{}: {} {} {}".format(self.id, self.query_id, self.relation, self.slot_value)
 
@@ -46,6 +46,7 @@ class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", "relation
         parts = line.split("\t")
         id_ = parts[0]
         query_id, relation = parts[1].split(':', 1)
+        ldc_id = None
         relation_provenances = [Provenance.from_str(s) for s in parts[2].split(',')]
         slot_value = parts[3]
         slot_provenances = [Provenance.from_str(s) for s in parts[4].split(',')]
@@ -53,7 +54,7 @@ class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", "relation
         relation_label = parts[6]
         eq_class = parts[7]
         eq = int(parts[7].split(":")[-1])
-        return cls(id_, query_id, relation, relation_provenances, slot_value, slot_provenances, slot_value_label, relation_label, eq_class, eq)
+        return cls(id_, query_id, ldc_id, relation, relation_provenances, slot_value, slot_provenances, slot_value_label, relation_label, eq_class, eq)
 
     def to_list(self):
         return [
@@ -77,11 +78,12 @@ def test_evaluation_entry():
     assert entry.relation_label == "W"
     assert entry.eq_class == "0"
 
-class OutputEntry(namedtuple("EvaluationEntry", ["query_id", "relation", "run_id", "relation_provenances", "slot_value", "slot_type", "slot_provenances", "confidence"])):
+class OutputEntry(namedtuple("EvaluationEntry", ["query_id", "ldc_id", "relation", "run_id", "relation_provenances", "slot_value", "slot_type", "slot_provenances", "confidence"])):
     @classmethod
     def from_line(cls, line):
         parts = line.split("\t")
         query_id = parts[0]
+        ldc_id = None
         relation = parts[1]
         run_id = parts[2]
         relation_provenances = [Provenance.from_str(s) for s in parts[3].split(',')]
@@ -89,7 +91,7 @@ class OutputEntry(namedtuple("EvaluationEntry", ["query_id", "relation", "run_id
         slot_type = parts[5]
         slot_provenances = [Provenance.from_str(s) for s in parts[6].split(',')]
         confidence = float(parts[7])
-        return cls(query_id, relation, run_id, relation_provenances, slot_value, slot_type, slot_provenances, confidence)
+        return cls(query_id, ldc_id, relation, run_id, relation_provenances, slot_value, slot_type, slot_provenances, confidence)
 
 def test_output_entry():
     line = "CSSF15_ENG_001e2aa16f	gpe:births_in_city	KB_BBN1	NYT_ENG_20130513.0090:2476-2540	Kenneth Everette Battelle	PER	NYT_ENG_20130513.0090:2476-2500	0.9"
