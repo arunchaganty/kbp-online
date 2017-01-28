@@ -1,11 +1,11 @@
 from boto.mturk.connection import MTurkConnection
 
-def connect(host):
+def connect(host_str):
     SANDBOX_HOST = 'mechanicalturk.sandbox.amazonaws.com'
     HOST = 'mechanicalturk.amazonaws.com'
-    if config.get('default', 'target') == 'sandbox':
+    if  host_str == 'sandbox':
         host = SANDBOX_HOST
-    elif config.get('default', 'target') == 'actual':
+    elif host_str == 'actual':
         host = HOST
         
     mtc = MTurkConnection(host = host)

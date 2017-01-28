@@ -32,7 +32,7 @@ for path in args.doc_paths_file[0]:
             lifetime = config.get('default', 'lifetime'), 
             reward = config.get('default', 'reward'))
     batch_info.append({'docId': params['doc_id'], 'HITTypeId': response[0].HITTypeId, 'HITId': response[0].HITId, })
-metadata_dir = './metadata/'
+metadata_dir = './batch/'
 if not os.path.exists(metadata_dir):
     os.makedirs(metadata_dir) 
 timestr = time.strftime("%Y%m%d-%H%M%S")
