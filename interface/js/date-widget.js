@@ -47,7 +47,7 @@ DateWidget.prototype.setDocDate = function(docdate){
 }
 DateWidget.prototype.show = function(mentionGloss, suggestion){
     var parsedSuggestion = undefined;
-    if(suggestion != undefined){
+    if(suggestion != undefined && suggestion.match('X')==null){
         var _parsedSuggestion = moment(suggestion);
         if (_parsedSuggestion._isValid){
             parsedSuggestion = _parsedSuggestion;
