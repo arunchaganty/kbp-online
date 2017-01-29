@@ -1,0 +1,200 @@
+\onecolumn
+\section{Power analysis}
+\label{sec:power}
+
+In this section, we'll calculate the variance of our different annotation schemes.
+
+\newcommand{\xh}{\hat{x}}
+\newcommand{\xb}{\bar{x}}
+\newcommand{\yh}{\hat{y}}
+\newcommand{\yb}{\bar{y}}
+\newcommand{\rh}{\hat{r}}
+
+Let $\sC$ be the entire corpus (our ``population'') that we wish to compute statistics over
+  and $\sP$ be a subset of $\sC$ that represents the population of pooled contexts, with $r \eqdef |\sP|\|\sC|$ being the proportion of the corpus that the pool represents.
+
+Let $E$ be a randomly drawn subset of $\sC$ with $n_E$ samples for exhaustive annotation and
+    $P$ be a randomly drawn subset of $\sP$ with $n_P$ samples for pooling annotation.
+
+\begin{lemma}[Variance of using pooled annotations to compute corpus statistics] 
+  % Define all the variables
+  Let $x$ be a statistic that we wish to compute on $\sC$ (e.g.\ recall),
+    $\xh_e$ be an unbiased estimator of $x$ on $E$ with variance $\sigma_e^2$,
+    $\rh$ be an unbiased estimator of $r$ on $E$ with variance $\sigma_r^2$,
+    $\yh_p$ be an unbiased estimator of $x$ on $P$ with variance $\sigma_y^2$,
+  then $\xh_p = \rh \yh_p$ is an unbiased estimator of $x$ on $P$ with variance
+  $$
+  \sigma_p^2 = \sigma_r^2 \sigma_y^2 + y \sigma_r^2 + r \sigma_r^2.
+  $$
+
+  Furthermore,
+  \begin{align*}
+    \sigma_e^2 &= \frac{x (1-x)}{n_E + 1} \\
+    \sigma_r^2 &= \frac{r (1-r)}{n_E + 1} \\
+    \sigma_y^2 &= \frac{y (1-y)}{n_P + 1} \\
+    \sigma_p^2 
+    &= \frac{r (1-r)}{n_E + 1} \frac{y (1-y)}{n_P + 1} + y \frac{r (1-r)}{n_E + 1} + r\frac{y (1-y)}{n_P + 1} \\
+    &= \frac{x (1-r)(1-y)}{(n_E + 1)(n_P + 1)} + \frac{x (1-r)}{n_E + 1} + \frac{x (1-y)}{n_P + 1}.
+  \end{align*}
+
+  Finally, the optimal combination of $\xh_e$ and $\xh_p$ has a variance that is $1 + \beta$ times less than the $\xh_e$ alone, where,
+  $$\beta = \frac{1-x}{
+        \frac{(1-r)(1-y)}{n_P + 1} +
+        \frac{(1-y)}{(n_P + 1)/(n_E + 1)} +
+        (1-r)}.$$
+
+  $$\beta \approx \frac{1-ry}{
+        \frac{(1-y)}{(n_P + 1)/(n_E + 1)} +
+        (1-r)}.$$
+\end{lemma}
+
+\begin{figure}
+  \includegraphics[width=0.49\textwidth]{figures/pool-ratio}
+  \caption{\label{fig:pool-for-corpus} The reduction in variance by using pooled annotations to estimate corpus statistics.}
+\end{figure}
+
+\begin{lemma}[Variance of using pooled annotations to compute corpus statistics] 
+  % Define all the variables
+  Let $x$ be a statistic that we wish to compute on $\sC$ (e.g.\ recall),
+    $\xh_e$ be an unbiased estimator of $x$ on $E$ with variance $\sigma_e^2$,
+    $\rh$ be an unbiased estimator of $r$ on $E$ with variance $\sigma_r^2$,
+    $\yh_p$ be an unbiased estimator of $x$ on $P$ with variance $\sigma_y^2$,
+  then $\xh_p = \rh \yh_p$ is an unbiased estimator of $x$ on $P$ with variance
+  $$
+  \sigma_p^2 = \sigma_r^2 \sigma_y^2 + y \sigma_r^2 + r \sigma_r^2.
+  $$
+
+  Furthermore,
+  \begin{align*}
+    \sigma_e^2 &= \frac{x (1-x)}{n_E + 1} \\
+    \sigma_r^2 &= \frac{r (1-r)}{n_E + 1} \\
+    \sigma_y^2 &= \frac{y (1-y)}{n_P + 1} \\
+    \sigma_p^2 
+    &= \frac{r (1-r)}{n_E + 1} \frac{y (1-y)}{n_P + 1} + y \frac{r (1-r)}{n_E + 1} + r\frac{y (1-y)}{n_P + 1} \\
+    &= \frac{x (1-r)(1-y)}{(n_E + 1)(n_P + 1)} + \frac{x (1-r)}{n_E + 1} + \frac{x (1-y)}{n_P + 1}.
+  \end{align*}
+
+  Finally, the optimal combination of $\xh_e$ and $\xh_p$ has a variance that is $1 + \beta$ times less than the $\xh_e$ alone, where,
+  $$\beta = \frac{1-x}{
+        \frac{(1-r)(1-y)}{n_P + 1} +
+        \frac{(1-y)}{(n_P + 1)/(n_E + 1)} +
+        (1-r)}.$$
+
+  $$\beta \approx \frac{1-ry}{
+        \frac{(1-y)}{(n_P + 1)/(n_E + 1)} +
+        (1-r)}.$$
+\end{lemma}
+
+
+\section{Basic probability lemmas}
+\label{sec:probability}
+
+% TODO: include KKT variables.
+\begin{lemma}[Combined variance of two random variables]
+  \label{lem:combined-variance}
+  Let $x$ and $y$ be two random variables with mean $0$, variances $\sigma^2_x$ and $\sigma^2_y$ and a correlation coefficient of $\rho$.
+  Then, the estimator $z = \alpha x + (1-\alpha) y$, where $0 \le \alpha
+  \le 1$ also has mean $0$ and has minimum variance $\sigma^2_z$ when
+  \begin{align*}
+  \alpha &= 
+  \begin{cases}
+    0 & \rho > \frac{\sigma_x}{\sigma_y} \\
+    1 & \rho > \frac{\sigma_x}{\sigma_y} \\
+    \frac{\sigma_y (\sigma_y - \rho \sigma_x)}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y} & \text{otherwise},
+  \end{cases}
+  &
+  \sigma^2_z &= 
+  \begin{cases}
+    \sigma^2_y & \rho > \frac{\sigma_x}{\sigma_y} \\
+    \sigma^2_x & \rho > \frac{\sigma_x}{\sigma_y} \\
+    \frac{\sigma_x^2 \sigma_y^2 (1 - \rho^2)}{\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x \sigma_y} & \text{otherwise}.
+  \end{cases}
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \newcommand{\alphab}{\bar{\alpha}}
+  For notational convenience, let $\alphab \eqdef 1 - \alpha$.
+  That $z$ has mean $0$ follows directly from the linearity of expectations.
+  The variance of $z$ can be calculated as follows:
+  \begin{align*}
+    \sigma^2_z &\eqdef \var(z) 
+            &= \E[z^2] - \E[z]^2 \\
+            &= \E[(\alpha x+ \alphab y)^2] - 0 \\
+            &= \E[\alpha^2 x^2 + \alphab^2 y^2 + 2 \alpha \alphab x y] \\
+            &= \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \E[x y] \\
+            &= \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \rho \sigma_x \sigma_y,
+  \end{align*}
+  using the fact that $\rho \eqdef \frac{\E[xy]}{\sigma_x \sigma_y}$.
+
+  We introduce Lagrange multipliers $\lambda_1, \lambda_2 \ge 0$ to handle the constraint that $0 \le \alpha \le 1$,
+  \begin{align*}
+    \sL &= 
+    \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \rho \sigma_x \sigma_y
+    + \lambda_1 \alpha + \lambda_2 \alphab \\
+    \frac{d}{d\alpha} \sL &= 
+    2 \alpha \sigma_x^2 - 2(1 - \alpha) \sigma_y^2 + 2 (1 - 2\alpha) \rho \sigma_x \sigma_y + \lambda_1 - \lambda_2
+&= 
+    2 (\alpha (\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x\sigma_y) - \sigma_y^2 + \rho \sigma_x \sigma_y + \lambda'_1 - \lambda'_2),
+  \end{align*}
+  where $\lambda'_1$ and $\lambda'_2$ are suitably redefined to absorb the constant.
+
+  This quantity is minimized when the gradient with respect $\alpha$ is $0$,
+  \begin{align*}
+    \alpha (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y) &= \sigma_y^2 - \rho \sigma_x \sigma_y + \lambda'_2 - \lambda'_1 \\
+    \alpha &= \frac{\sigma_y^2 - \rho \sigma_x \sigma_y + \lambda'_2 - \lambda'_1}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y} \\
+    \alphab &= \frac{\sigma_x^2 - \rho \sigma_x \sigma_y - \lambda'_2 + \lambda'_1}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y}.
+  \end{align*}
+
+  The KKT conditions give us that $\lambda'_1 \alpha = 0$ and $\lambda'_2 (1-\alpha) = 0$, which implies that only one of $\lambda'_1$ or $\lambda'_2$ are non-zero.
+  We can see that $\alpha = 0$ when $\sigma_y^2 - \rho \sigma_x \sigma_y < 0$, or when $\rho \ge \frac{\sigma_y}{\sigma_x}$.
+  Likewise, $\alpha = 1$ when $\sigma_x^2 - \rho \sigma_x \sigma_y < 0$, or when $\rho \ge \frac{\sigma_x}{\sigma_y}$.
+  This gives us the result on $\alpha$.
+
+  The value of $\sigma_z^2$ when $\alpha = 0$ or $\alpha=1$ is simply $\sigma_y^2$ or $\sigma_x^2$.
+  When $0 < \alpha < 1$, it is,
+  \begin{align*}
+    \sigma_z^2
+            &= \frac{
+            \sigma_x^2 \sigma_y^2 (\sigma_y - \rho \sigma_x)^2
+            + \sigma_x^2 \sigma_y^2 (\sigma_x - \rho \sigma_y)^2
+            + 2 \rho \sigma_x^2 \sigma_y^2 (\sigma_y - \rho \sigma_x) (\sigma_x - \rho \sigma_y)}{
+            (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)^2
+            }\\
+            &= \sigma_x^2 \sigma_y^2 
+            \frac{
+             \sigma_y^2 + \rho^2 \sigma_x^2 - 2 \rho \sigma_x \sigma_y 
+            + \sigma_x^2 + \rho^2 \sigma_y^2 - 2 \rho \sigma_x \sigma_y 
+            + 2 \rho (\sigma_x \sigma_y - \rho \sigma_y^2 - \rho \sigma_x^2 + \rho^2 \sigma_x \sigma_y)}{
+            (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)^2
+            }\\
+            &= \sigma_x^2 \sigma_y^2 
+            \frac{
+             (1 - \rho^2) (\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x \sigma_y)}{
+            (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)^2
+            }\\
+            &= 
+            \frac{(1 - \rho^2) \sigma_x^2 \sigma_y^2}{
+              \sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y
+            }\\
+  \end{align*}
+\end{proof}
+
+\begin{lemma}[Variance of the product of two random variables]
+  \label{lem:variance-product}
+  Let $x$ and $y$ be two independent random variables with means $\mu_x$ and $\mu_y$, and variances $\sigma^2_x$ and $\sigma^2_y$.
+  Then, the estimator $z = x y$ has mean $\mu_x \mu_y$ and variance
+  $$\sigma^2_z = \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2.$$
+\end{lemma}
+\begin{proof}
+  If $x$ and $y$ are independent, $\E[xy] = \E[x]\E[y]$. Thus $\E[z] = \mu_x \mu_y$.
+
+  The variance of $z$ can be calculated as follows:
+  \begin{align*}
+    \var(z) &= \E[z^2] - {\E[z]}^2 \\
+            &= \E[(xy)^2] - {\E[xy]}^2 \\
+            &= \E[x^2] \E[y^2] - {\E[x]}^2 {\E[y]}^2 \\
+            &= (\sigma^2_x + \mu_x^2)(\sigma^2_y + \mu_y^2) - \mu_x^2 \mu_y^2 \\
+            &= \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2 + \mu_x^2 \mu_y^2 - \mu_x^2 \mu_y^2 \\
+            &= \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2.
+  \end{align*}
+\end{proof}
