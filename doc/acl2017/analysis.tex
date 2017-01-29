@@ -12,7 +12,51 @@ Considering only the submissions to the first hop of the two-hop evaluation,
 each submission contains on average about 35,951 predicted slotfills. 
 There are in total 201,332 relations that were predicted, of which only 11,008 of these slotfills have were evaluated.
 
+\subsection{What is the effect of pooling?}
+
+\begin{figure*}
+  \begin{subfigure}{\columnwidth}
+  \includegraphics[width=\columnwidth]{figures/pooling-bias}
+  \caption{\label{fig:pooling-bias} Pooling bias for the macro \fone{} metric.}
+  \end{subfigure}
+  \begin{subfigure}{\columnwidth}
+  \includegraphics[width=\columnwidth]{figures/pooling-bias-anydoc}
+  \caption{\label{fig:pooling-bias-anydoc} Pooling bias for the macro \fone{} metric with the `anydoc' heuristic.}
+  \end{subfigure}
+  \caption{Pooling bias measures how much a system's score is affected by not having its output as part of the pooled evaluation.
+  The median bias against an unpooled team is 13.55\% points for the standard macro \fone{} metric and 1.09\% when evaluating using the anydoc heuristic.
+  Note that the median bias of anydoc score over the actual macro score is 0.61\%, and the mean bias for the top 10 submissions is 1.03\%.
+  % TODO: the correctness of anydoc
+  }
+\end{figure*}
+
+The ``gold'' labels on relation contexts are collected by a combination of a time-bounded human search in the corpus and a human evaluation of pooled output from participating systems.
+While the human search identifies a significant fraction of relations (\todo{80\%}),
+  it does not sufficiently cover the variety of contexts that are submitted as justifications of the relation. 
+This has two implications on how a development system, \textit{D}, that did not participate in the original evaluation is scored.
+Firstly, it is likely that contexts the system \textit{D} submits has never been seen before and hence can not be evaluated.
+Secondly, it is also likely that relations the system \textit{D} submits have never been seen before, particularly if \textit{D} incorporates a novel method of relation extraction, creating a perverse incentive to ensure that new extraction methods behave similarly to old extraction systems.
+The magnitude of this effect, the pooling bias, is can be quantified by performing a ``leave-one-out'' (``leave-team-out'') experiment on previous years submissions, measuring the difference in metric scores when output unique to a single submission (team) is excluded from the gold data.
+The former is a proxy that measures how much bias development systems of teams that had participated in the KBP evaluation experience and the latter measures the bias development systems of new teams experience.
+\figureref{pooling-bias} shows the pooling bias experienced by teams and systems in the 2015 evaluation;
+  the median bias against an unpooled team is 13.55\% \fone{} points and for an unpooled system is 4.55\% \fone{} points,
+  making it impossible to evaluate against this metric in development (also significantly biasing new entrants to the task).
+
+% TODO: update for top 40 teams.
+To mitigate this unreasonable bias, teams typically adopt an `anydoc' heuristic during evaluation, which ignores the justification of a context while evaluating a relation.
+With this heuristic (\figureref{pooling-bias-anydoc}), the pooling bias decreases considerably, with 
+  the median bias against an unpooled team being 1.09\% \fone{} points and for an unpooled system is 0.05\% \fone{} points.
+However, it should also be noted that scores under the `anydoc` heuristics are on average 0.61\% higher than the standard scores.
+Regardless, this level of bias is not insignificant and worse yet, it is actively biased against new participants on the task.
+% TAKEAWAY: new entrants are biased against!
+% TODO: also mention how inaccurate the metric is.  
+This analysis confirms the necessity of the `anydoc' heuristic on the current evaluations, but also highlights why using it as a heuristic is problematic.
+
+%
+In the latter sections of this paper, we eliminate the problem of pooling evaluation all together by proposing an online evaluation methodology where every new submission is considered and selectively evaluated to ensure statistical validity.
+
 % NOTE: should we describe any more statistics?
+\paragraph{How informative is \fone{} as a metric?}
 
 \begin{figure*}
   \begin{subfigure}{0.49\textwidth}
@@ -42,15 +86,9 @@ Macro $\fone^e$ & $22.72\%$ &  $ 6.19\%$ & 1.04\% &     &  \\ \bottomrule
   Metric ($\sigma^2$) & System variance ($\sigma^2_{s}) $ & Query variance($\sigma_{e}$) & Residual ($\sigma_{s,e})$ \\ \midrule % & $\psi$  & $\rho$ \\
   \fone{} (0.102) & 11.75\% & 20.59\% & 66.66\% \\ \bottomrule % &     0.120 & 0.152
 \end{tabular}
-
-
-
-
-
   \caption{\label{metric-variance}}
 \end{table*}
 
-\paragraph{How informative is \fone{} as a metric?}
 Most teams hill climb on a combination of micro and macro entity-level $\fone$ during development.
 It is natural to ask how much of an improvement on the metric score is necessary to actually trust that system performance has improved.
 We use a bootstrap sampling method to estimate the variance of $\fone$ and other metrics over query sets \tableref{metric-variance} and measure the 95\% confidence intervals for system scores \figureref{f1}.
@@ -80,6 +118,8 @@ Variance can also be decomposed as,
 %Another consequence is in confidence intervals.
 %Bad differentiation from pairwise scores.
 
+% TODO: replace with a GLMM
+
 \paragraph{Controlling for query variance.}
 
 It's easy for us to control for query variance by standardizing our metric,  
@@ -92,30 +132,4 @@ $$X'_{se} = \frac{X_{se} - \mu_e}{\sigma_e}$$.
 
 % TODO: I wish we could give scroes for this.
 % \subsection{Are we improving over time?}
-
-\subsection{What is the effect of pooling?}
-
-\begin{figure*}
-  \begin{subfigure}{\columnwidth}
-  \includegraphics[width=\columnwidth]{figures/pooling-bias}
-  \caption{Pooling bias for the macro \fone{} metric.}
-  \end{subfigure}
-  \begin{subfigure}{\columnwidth}
-  \includegraphics[width=\columnwidth]{figures/pooling-bias-anydoc}
-  \caption{Pooling bias for the macro \fone{} metric (anydoc).}
-  \end{subfigure}
-  \caption{Pooling bias. The median bias against a team not participating in the pooling evaluation is 13.55\% points (1.09\% with the anydoc setting).
-  The median bias of anydoc score over the actual macro score is 0.61\%, and the mean bias for the top 10 submissions is 1.03\%.}
-\end{figure*}
-
-Another aspect of the evaluation that could have adverse effects on system developments is the pooling approach used to collect contexts that contain mentions.
-% While humans independently contribute to this pool, there j0
-
-
-Define pooling bias. Statistical model used.
-Significant!
-
-If we increased the amount of data annotated, we may hopefully avoid pooling bias.
-Expensive and perhaps regressive.
-Next section, explore a new way.
 

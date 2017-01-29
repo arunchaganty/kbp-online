@@ -1,9 +1,172 @@
-\section{A new methodology}
+\section{A new evaluation methodology}
+\label{sec:methodology}
+
+In \sectionref{analysis} we identified two main problems with the current evaluation methodology:
+\begin{enumerate}
+  \item A closed-window pooling evaluation is significantly biased
+    against development systems, particularly those of new teams.
+  \item Existing evaluation metrics have too much variance on the
+    evaluation data to be a measure of performance that will generalize
+    to new documents and queries.
+\end{enumerate}
+Our goal in this section is to propose a new methodology that addresses both of these problems head on 
+  by indefinitely opening the pooling evaluation window by making the evaluation online
+  and by combining evaluation data for each team in statistically optimal fashion.
+
+\paragraph{Would a larger human-annotated dataset suffice?}
+A natural question to ask before embarking on the significant effort of an online evaluation is whether a large-enough dataset could be reliably collected by spending a little more money. 
+
+An important part of the KBP evaluation is to test on an unseen document collection.
+
+A number of datasets for relation extraction, even on the TAC-KBP task, have been collected in the past, for example in the work of \citet{angeli2014combining}.
+This dataset is very small and does not have sufficient coverage, but is useful for training.
+Unfortunately, these datasets have also been collected by pooling responses.
+
+Another way of empirically answering this question is to see how many contexts need be evaluated to reduce pooling bias sufficiently. We can extrapolate this number by studying how the pooling bias varies by the number of systems.
+Using the 2015 evaluation data, we find that we would need to pool the output of \todo{100} systems with \todo{$10^6$} lines of output evaluated.
+With the `anydoc' heuristic, this number is far less, but the error introduced by the heuristic also increases.
+%TODO: graph.
+
+We can estimate the cost of annotating such a large corpus by calculating how many documents need be exhaustively annotated by humans-- it comes out to \todo{\$10 million}. 
+We believe this is reasonable justification to discard the static dataset approach and embrace an online evaluation wherein systems are continuously evaluated.
+
+\paragraph{Constructing an online evaluation.}
+
+When constructing our online evaluation methodology, we must be very careful not to bias the evaluation data we produce towards any particular system. 
+There are several modes in which we can obtain annotations on our data.
+
+\begin{enumerate}
+  \item \textbf{Exhaustive annotation.} 
+    We can sample documents from the corpus and have crowdworkers exhaustively annotate them.
+    There are three types of annotations that are required, corresponding to each component of the relation extraction task:
+    detecting entities in documents, linking them within and across documents and identifying relations between entities in a document. 
+    % Include details about the turk interfaces?
+  \item \textbf{Pooling annotation.} 
+    Exhaustively annotating documents is quite laborious and hence expensive to do.
+    Verifying a systems' submission is much easier to do; it takes only \todo{10 seconds} a relation.
+    It also reduces wasted effort in reading text that doesn't contain any relations.
+
+    By including every new submission into the pool, we can avoid the negative consequences of pooling evaluation.
+    Furthermore, we will show how annotations collected in the pooling and exhaustive schemes can be combined to estimate true recall and precision more cheaply.
+
+  \item \textbf{Estimative annotation.} 
+    Finally, we should be able to use agreements between submitting systems as a weak signal of correctness and be able to compute precision and recall on the entire corpus of unannotated contexts.
+    One of the main challenges  we'll have to solve is to make sure that we aren't biasing our scores due to correlations between systems. 
+
+    % TODO: explain using a pooling classifier?
+    % Builds on the previous two systems.
+\end{enumerate}
+
+\paragraph{Combining annotations.}
+
+Each of the annotation schemes above is advantageous for particular metrics: the exhaustive scheme is necessary for estimating true recall, the pooling scheme is important to reliably estimate precision and the estimative annotation is cheap.
+
+However, we can combine the strengths of these three estimators to allow us to reliably evaluate systems at a fraction of the original cost.
+
+Let us consider how data in the pooling scheme can be used to better estimate recall when combined with the exhaustive annotation.
+Let us assume that we have annotated $n_e$ true contexts through the exhaustive annotation, and are able to evaluate the recall of a system $A$ is $r_A$, with some variance $\sigma^2_A$.
+We are also able to evaluate the recall of the entire pool $P$ as $r_P$, with variance $\sigma^2_P$.
+Let's assume that we can evaluate $n_p$ contexts at random from the pool. 
+%The recall of $A$ within the pool is $r'_A$, with variance $\sigma'^2_{A}$.
+%We could use the recall of $A$ in the pool to estimate the recall of $A$ as $r_A = r_P * r'_A$.
+%The variance of this estimate is $\sigma^2_P \sigma'^2_A + r^2_P \sigma'^2_A + \sigma^2_P r'_A^2$.
+%Let's take the limit where estimating pooled recall is very cheap -- in this case, we can take $\sigma'^2_A \to 0$, giving us a new estimate of $r'_A^2 \sigma^2_P$. 
+%Noting that recall is a binomial estimator, 
+%  we know that $\sigma^2_A = \frac{r_A (1 - r_A)}{n_e}$ and 
+%  that $\sigma^2_P = \frac{r_P (1 - r_P)}{n_e}$.
+%Thus, our two-step estimator has less variance than the one-step estimator when,
+%  $\frac{r'_A^2 r_P (1 - r_P)}{n_e} < \frac{r'_A r_P (1 - r'_A r_P)}{n_e}$, or when $r_'A (1 - r_P) < (1 - r'_A r_P)$.
+
+With a Bernoulli assumption, we get that.
+
+Then, our updated estimate of recall would combine $r_A$ and 
+\onecolumn
+
+% TODO: include KKT variables.
+\begin{lemma}
+  Let $x$ and $y$ be two random variables with mean $0$, variances $\sigma^2_x$ and $\sigma^2_y$ and a correlation coefficient of $\rho$.
+  Then, the estimator $z = \alpha x + (1-\alpha) y$ also has mean $0$ and has minimum variance when
+  $$\alpha = \frac{\sigma_y (\sigma_y - \rho \sigma_x)}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y},$$
+  equal to
+  $$\sigma^2_z = \frac{\sigma_x^2 \sigma_y^2 (1 - \rho^2)}{\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x \sigma_y}.$$
+\end{lemma}
+\begin{proof}
+  That $z$ has mean $0$ follows directly from the linearity of expectations.
+
+  \newcommand{\alphab}{\bar{\alpha}}
+
+  The variance of $z$ can be calculated as follows:
+  \begin{align*}
+    \var(z) &= \E[z^2] - \E[z]^2 \\
+            &= \E[(\alpha x+ \alphab y)^2] - 0 \\
+            &= \E[\alpha^2 x^2 + \alphab^2 y^2 + 2 \alpha \alphab x y] \\
+            &= \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \E[x y] \\
+            &= \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \rho \sigma_x \sigma_y.
+  \end{align*}
+  This quantity is minimized when the gradient with respect $\alpha$ is $0$,
+  \begin{align*}
+    \frac{d}{d\alpha} \var(z) &= 0 \\
+    2 \alpha \sigma_x^2 - 2(1 - \alpha) \sigma_y^2 + 2 (1 - 2\alpha) \rho \sigma_x \sigma_y &= 0\\
+    \alpha (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y) &= \sigma_y^2 - \rho \sigma_x \sigma_y \\
+    \alpha &= \frac{\sigma_y^2 - \rho \sigma_x \sigma_y}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y}.
+  \end{align*}
+
+  At this optimal $\alpha$, the variance of $z$ is,
+  \begin{align*}
+    \var(z) 
+            &= \frac{
+            \sigma_x^2 \sigma_y^2 (\sigma_y - \rho \sigma_x)^2
+            + \sigma_x^2 \sigma_y^2 (\sigma_x - \rho \sigma_y)^2
+            + 2 \rho \sigma_x^2 \sigma_y^2 (\sigma_y - \rho \sigma_x) (\sigma_x - \rho \sigma_y)}{
+            (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)^2
+            }\\
+            &= \sigma_x^2 \sigma_y^2 
+            \frac{
+             \sigma_y^2 + \rho^2 \sigma_x^2 - 2 \rho \sigma_x \sigma_y 
+            + \sigma_x^2 + \rho^2 \sigma_y^2 - 2 \rho \sigma_x \sigma_y 
+            + 2 \rho (\sigma_x \sigma_y - \rho \sigma_y^2 - \rho \sigma_x^2 + \rho^2 \sigma_x \sigma_y)}{
+            (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)^2
+            }\\
+            &= \sigma_x^2 \sigma_y^2 
+            \frac{
+             (1 - \rho^2) (\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x \sigma_y)}{
+            (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)^2
+            }\\
+            &= 
+            \frac{(1 - \rho^2) \sigma_x^2 \sigma_y^2}{
+              \sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y
+            }\\
+  \end{align*}
+\end{proof}
+
+\begin{lemma}
+  Let $x$ and $y$ be two independent random variables with means $\mu_x$ and $\mu_y$, and variances $\sigma^2_x$ and $\sigma^2_y$.
+  Then, the estimator $z = x y$ has mean $\mu_x \mu_y$ and variance
+  $$\sigma^2_z = \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2.$$
+\end{lemma}
+\begin{proof}
+  If $x$ and $y$ are independent, $\E[xy] = \E[x]\E[y]$. Thus $\E[z] = \mu_x \mu_y$.
+
+  The variance of $z$ can be calculated as follows:
+  \begin{align*}
+    \var(z) &= \E[z^2] - {\E[z]}^2 \\
+            &= \E[(xy)^2] - {\E[xy]}^2 \\
+            &= \E[x^2] \E[y^2] - {\E[x]}^2 {\E[y]}^2 \\
+            &= (\sigma^2_x + \mu_x^2)(\sigma^2_y + \mu_y^2) - \mu_x^2 \mu_y^2 \\
+            &= \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2 + \mu_x^2 \mu_y^2 - \mu_x^2 \mu_y^2 \\
+            &= \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2.
+  \end{align*}
+\end{proof}
+
+
+\twocolumn
+
+
 % (2 pages)
 
 \begin{table*}
   \begin{tabular}{l r r r r r r r r} \toprule
-    Annotation scheme & Cost per sample & \multicolumn{6}{c}{Information} & Total cost \\ 
+    Annotation scheme & Cost per sample & \multicolumn{6}{c}{Information ratio} & Total cost \\ 
                       &                      & $P^m$ & $R^m$ & $F_1^m$ & $P^e$ & $R^e$ & $F_1^e$ &  \\ \midrule
     Exhaustive & \$0.20 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & \$1000 \\
     Selective  & \$0.05 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & \$1000 \\
@@ -13,87 +176,13 @@
   \caption{Cost accuracy tradeoffs}
 \end{table*}
 
-\paragraph{Can we trust crowdworkers to produce accurate responses?}
-% Description of task.
+A motivation for pooling is to reduce cost.
+The intuition is in computing recall, we can compute recall against a particular corpus of exhaustively annotated documents,
+or compute the recall of the pool with respect to the exhaustive annotations, followed by evaluating the recall of with respect to the pool. 
+The latter is much cheaper to evaluate, and as a result, we can get a much more precise annotation on it.
+Consider this example to gain intuition as to why incorporating pooling results would help.
 
-Measurement of inter-turker agreement.
-
-Controls:
-* The LDC invests significant effort in identifying challenging queries. There are a number of criteria involved in the selection of these queries:
-  * cross-document presence.
-  * "cross-lingual clusters"
-  * nominal mentions for relations.
-  * topic selection via events.
-* Key questions: how to guide annotators to "rare" but important events?
-  * how to create 2-hop queries?
-  * null queries?
-  * identifying duplicate fills
-
-* Variants in asking turkers:
-  * specialize turkers for a single relation (faster, more accurate).
-  * ordering multiple questions to ensure the questions are reasonable.
-      + Does (X) represent a company (like e.g. Google...)?
-      + Does (Y) represent a NER?
-      + (other restrictions based on annotation guideline)?
-      + Does this sentence justify X to be the employer of Y? 
-* Examples:
-  + Example: "[Wahid], also known as [Gus Dur]"
-  + $per:alternate_names$
-    - 1: Does "Gus Dur" refer to a person's name?
-    - 2: Does "Wahid" refer to a person's name?
-    - if 1,2; 3: "Do you think "Gus Dur" could be used to refer "Wahid"?
-    - constraints:
-      + computational: the substring offset must be unique.
-      + computational: differences solely in punctuation. 
-      + "Generally, a given (first) name alone is not a correct alternate name unless the person is unambiguously known that way (e.g., ‘the Donald’ for Donald Trump, or ‘Oprah’ for Oprah Winfrey, but not ‘John’ for ‘John Smith’)."
-        (computationally -- if name is only the first name)
-        - If I said 'John', would you likely think 'John' would refer to 'John Smith'?
-        - If I said 'Oprah', would you likely think I was referring to 'Oprah Winfrey'?
-  + $per:date_of_birth$
-    + "the Jan. 1 anniversary of Williams' death, and on his Sept. 17 birthday."
-    + Is 'Hank Williams' a person?
-    + Was Hank Williams born on Sept. 17th?
-    + Is Sept. 17th actually 09-17? (partly computational?)
-  + per:age
-    + Was "Today is a day of tragedy for democracy," Megawati, 49, told 
-    her supporters before the demonstration in Jakarta.
-    + Is Megawati Sukarnoputri a person? 
-    + Was Megawati Sukarnoputri 49 years old at the time of this article, or at the time of his/her death?
-    + "Michael Jackson died June 25 2009 at the age of 50."
-    + Is Michael Jackson a person?
-    + Was Michael Jackson 50 years old at the time of this article, or at the time of his/her death?
-  + $per:countries_of_residence$
-    + "Finland's Nurmi won his nine golds in the 1920's."
-    + Computational: is Finland a country?
-    + Is "Nurmi" a person?
-    + Did Nurmi necessarily live in Finland for some duration of time, given this sentence? -- Yes
-    + "Surveillance cameras show a Chinese man, later identified as Jon Wong, leaving the White House".
-    + Did Jon Wong necessarily live in China for some duration of time, given this sentence? -- No
-    + "said Qalibaf, who succeeded President Mahmoud Ahmadinejad as mayor after losing in Iran's 2005 presidential 
-race." 
-    + Is Qalibaf a person?
-    + Did Qalibaf live in Iran? vs How likely is it that Qalifbaf lived in Iran?
-    + "Israeli Defense Minister and Labour party chairman Ehud 
-    Barak on Wednesday demanded..."
-    + Does/did Ehud Barak live in Israel?
-  + per:title
-    + "Wearing a white veil and surrounded by her girlfriends, [the former Playboy bunny] looked to.."
-    + Does the title 'Playboy bunny' include the name of the [the former Playboy bunny]'s employer?
-    + "Gonzales, an architect of contentious US 'war on terror' legal tactics."
-    + Is Gonzales working as/employed as an architect?
-
-\paragraph{Ensuring statistical validity on precision without breaking the bank.}
-
-Options:
-
-1A) evaluate each team independently to a confidence interval of +/- n\%.
-1B) do 1A and then aggregate responses from different teams, indefinitely.
-1C) do 1B but stop.
-
-Goals:
-- as the number of systems increase, so should our digits of precision. However, we would rather that additional digits of precision not be added indefinitely, when such digits are not likely to be actually beneficial.
-Power analysis suggests we need 10,000 for 2 digits of precision. Of course, 
-% 
+Intuition is that if we take two sets of documents and ask for overlap, magic 
 
 \paragraph{Evaluation measures.} 
 We would like to evaluate the knowledge base output reported by teams on three axes, \it{mention-level relation extraction}, \it{entity-level relation extraction} and \it{mention-level entity-linking}.
@@ -113,25 +202,12 @@ To evaluate recall, we randomly sample $D'$ documents out of the corpus of $D$ d
 Within each document, we have crowdworkers identify every relation in that document, also pooling any relations outputted by other systems. 
 Thus our estimator is $\hat{R}_m = \frac{1}{n} \sum_{i}^n \outputted(x_i)$ 
 
-
-
-
-For every relation mention returned by the system, we would like to evaluate the precision of the output, i.e. the likelihood that an output submitted by a system is correct: $P_m \eqdef \E_{x}[\correct(x)]$.
-We derive an unbiased estimator for $P_m$ by randomly sampling output relation mentions, $\hat{P}_m = \sum_{i}^n \correct(x_i)$, where $x_i$ are sampled uniformly from the submitted relations $X$.
-
-
-
-
-
-
 \paragraph{Overcoming pooling bias without arbitrary scores.}
 
 Doing a complete evaluation on a particular random set of documents.
 Q. How much variation is there across documents? -- what is the right axis to vary over? 
 
 \paragraph{Final protocol}
-
-
 
 Set up is as follows:
 
