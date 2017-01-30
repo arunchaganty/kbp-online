@@ -63,6 +63,7 @@ Let $E$ be a randomly drawn subset of $\sC$ with $n_E$ samples for exhaustive an
 \end{proof}
 
 \begin{lemma}[Relative efficiency of using unassessed pooled output to compute corpus statistics]
+  \todo{What about dependencies of $P_i$?}
   % Define all the variables
   Let $x$ be a statistic that we wish to compute on $\sC$ (e.g.\ recall) that is $0$ outside of $\sP$,
     $\rh$ be an unbiased estimator of $r$ on $E$ with variance $\sigma_r^2$,
@@ -182,7 +183,7 @@ Let $E$ be a randomly drawn subset of $\sC$ with $n_E$ samples for exhaustive an
 \end{proof}
 
 \begin{lemma}[Relative efficiency of using unassessed pooled output to compute submission statistics]
-  \todo{Compute!}
+  \todo{Compute! What are dependences of $S_i$?}
   % Define all the variables
   Let $x$ be a statistic that we wish to compute on $\sS$ (e.g.\ precision) that is $0$ outside of $\sS$,
     $\sP_1, \dots \sP_m$ be partitions of the pool $\sP$ such that $p_i \eqdef \Pr(c \in \sC \given c \in  \sP_i)$ with $S_1, \dots, S_m$ be corresponding partitions of the sample $S$ with sizes $n_1, \dots, n_m$,
