@@ -278,6 +278,7 @@ def do_pooling_bias(args):
 
         with open(os.path.join(args.preds, fname)) as f:
             outputs[runid] = load_output(f, Q)
+    logger.info("Loaded output for %d systems", len(outputs))
 
     def make_loo_pool(gold, outputs, runid, key=k):
         """
@@ -314,6 +315,7 @@ def do_pooling_bias(args):
         "micro-p-lto-anydoc", "micro-r-lto-anydoc", "micro-f1-lto-anydoc", "macro-p-lto-anydoc", "macro-r-lto-anydoc", "macro-f1-lto-anydoc",
         ])
 
+    rows = []
     for runid, output in tqdm(outputs.items()):
         row = []
         S, C, T = compute_entity_scores(gold, output, Q)
@@ -325,16 +327,22 @@ def do_pooling_bias(args):
         S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid), output, Q)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(gold, output, Q, kn)
+        S, C, T = compute_entity_scores(gold, output, Q, k)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid, kn), output, Q, kn)
+        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid, kn), output, Q, k)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid, kn), output, Q, kn)
+        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid, kn), output, Q, k)
         row += micro(S, C, T) + macro(S,C,T)
 
         writer.writerow([runid,] + row)
+        args.output.flush()
+        rows.append([runid,] + row)
+
+    logger.info("Wrote %d rows of output", len(rows))
+
+    args.output.flush()
 
 def do_experiment3(args):
     assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)

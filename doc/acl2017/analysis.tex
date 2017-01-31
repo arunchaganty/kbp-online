@@ -24,10 +24,8 @@ There are in total 201,332 relations that were predicted, of which only 11,008 o
   \caption{\label{fig:pooling-bias-anydoc} Pooling bias for the macro \fone{} metric with the `anydoc' heuristic.}
   \end{subfigure}
   \caption{Pooling bias measures how much a system's score is affected by not having its output as part of the pooled evaluation.
-  The median bias against an unpooled team is 13.55\% points for the standard macro \fone{} metric and 1.09\% when evaluating using the anydoc heuristic.
-  Note that the median bias of anydoc score over the actual macro score is 0.61\%, and the mean bias for the top 10 submissions is 1.03\%.
-  % TODO: the correctness of anydoc
-  }
+  The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 1.98\% when evaluating using the anydoc heuristic.
+  Note that the median difference between the anydoc scores and standard scores is 0.74\% points; this difference is caused because the anydoc heuristic erroneously scores fills with incorrect judgements to be correct.
 \end{figure*}
 
 The ``gold'' labels on relation contexts are collected by a combination of a time-bounded human search in the corpus and a human evaluation of pooled output from participating systems.
@@ -42,18 +40,14 @@ The former is a proxy that measures how much bias development systems of teams t
   the median bias against an unpooled team is 13.55\% \fone{} points and for an unpooled system is 4.55\% \fone{} points,
   making it impossible to evaluate against this metric in development (also significantly biasing new entrants to the task).
 
-% TODO: update for top 40 teams.
 To mitigate this unreasonable bias, teams typically adopt an `anydoc' heuristic during evaluation, which ignores the justification of a context while evaluating a relation.
 \pl{hard for me to get intuition for implications of anydoc}
-With this heuristic (\figureref{pooling-bias-anydoc}), the pooling bias decreases considerably, with
-  the median bias against an unpooled team being 1.09\% \fone{} points and for an unpooled system is 0.05\% \fone{} points.
-However, it should also be noted that scores under the `anydoc` heuristics are on average 0.61\% higher than the standard scores.
-Regardless, this level of bias is not insignificant and worse yet, it is actively biased against new participants on the task.
+With this heuristic (\figureref{pooling-bias-anydoc}), the pooling bias decreases considerably, with 
+  the median bias against an unpooled team being 1.98\% \fone{} points and unpooled system is 0.0\% \fone{} points.
+However, it should also be noted that scores under the `anydoc' heuristics are on average 0.74\% higher than the standard scores due to erroneously labeling entries to be correct.
+This analysis confirms the necessity of the `anydoc' heuristic on the current evaluations, but regardless, the bias is large enough to wash out the effect of the typical improvement a development makes.
 % TAKEAWAY: new entrants are biased against!
-% TODO: also mention how inaccurate the metric is.  
-This analysis confirms the necessity of the `anydoc' heuristic on the current evaluations, but also highlights why using it as a heuristic is problematic.
 
-%
 In the latter sections of this paper, we eliminate the problem of pooling evaluation all together by proposing an online evaluation methodology where every new submission is considered and selectively evaluated to ensure statistical validity.
 
 % NOTE: should we describe any more statistics?
