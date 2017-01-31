@@ -89,7 +89,7 @@ crowdworkers are asked to verify
   whether the mentions are correctly linked if the mention is linked to a Wikipedia entry.
 If the participating mention is not linked to a Wikipedia entry,
 then we ask crowdworkers to resolve cluster assignments using a separate interface (\figureref{linking-interface}).
-On average, we find that crowdworkers are able to perform this task at about \fake{10 seconds an entry}, corresponding to about \fake{\$0.10 per entry}, and we need about \fake{3 workers per entry} to achieve an inter annotator agreement of \fake{0.90}.
+On average, we find that crowdworkers are able to perform this task at about 10 seconds an entry, corresponding to about \$0.03 per entry, and we need about \fake{3 workers per entry} to achieve an inter annotator agreement of \fake{0.90}.
 
 % We need to sample output.
 Each system may output many thousands of relations-- evaluating every one of these relations would be prohibitively expensive
@@ -119,10 +119,11 @@ Every pair of mentions within a sentence\footnote{
   In this interface, crowdworkers are shown canonical mentions for every unlinked entity cluster from the small document corpus.
 
 These interface are far more involved and consequently take longer for crowdworkers to complete.
-The entity annotation interface takes on average about \fake{10 minutes per document}, corresponding to about \fake{\$2.00 a document}, and 
+The entity annotation interface takes on average about 10 minutes per document, corresponding to about \$2.00 a document, and 
 again required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
-The relation annotation interface takes on average about \fake{3 minutes per document}, corresponding to about \fake{\$0.60 a document}, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
+The relation annotation interface takes on average about 3 minutes per document, corresponding to about \$0.60 a document, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
 Finally, the clustering interface takes on average about \fake{6 minutes for 100 documents}, corresponding to about \fake{\$1.20 a document}, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
+On average, there are about \fake{10 relations a document} and it costs about \fake{\$0.36 a relation} through the exhaustive interface.
 
 There are two simplifications we adopt in our interfaces.
 Firstly, we exclude the extremely rare relations corresponding to ``cause of death'', ``has criminal charge'', ``age'' and ``number of employees'' and correspondingly their slot types.
@@ -136,55 +137,61 @@ We repeat this procedure until we have 100 documents.
 While this sampling procedure is not representative of the whole corpus, it does increase the probability of having cross-document links for less popular entities, capturing that criteria from the TAC-KBP evaluation queries.
 
 \paragraph{Reducing variance by incorporating pooled and unassessed output.}
+We have just seen that identifying a relation through exhaustive annotation scheme costs about 10 times as much as it does to verify a predicted relation.
+Given this price differential, it is tempting to consider using the recall of a system measured against the pooled output instead of measuring the true recall.
+However, if use the exhaustive annotation to compute the \textit{recall of the entire pool}, we can in fact use \textit{pooled annotations} and the \textit{unassessed output} to better estimate \textit{true recall}.
 
-%    Finally, we should be able to use agreements between submitting systems as a weak signal of correctness and be able to compute precision and recall on the entire corpus of unannotated contexts.
-%    One of the main challenges  we'll have to solve is to make sure that we aren't biasing our scores due to correlations between systems. 
-%
-%    % TODO: explain using a pooling classifier?
-%    % Builds on the previous two systems.
-%\end{enumerate}
+\begin{figure*}
+  \begin{subfigure}{0.49\textwidth}
+    \caption{\label{fig:variance-reduction}}
+  \end{subfigure}
+  \begin{subfigure}{0.49\textwidth}
+    \begin{tabular}{l r r r r} \toprule
+      Scheme     & Cost   & $E\oft{p}$ & $E\oft{e}$ & Total cost \\ \midrule
+      Exhaustive & \$0.36 &   & 1 & \$1000 \\
+      Pooled     & \$0.03 & 1 &\fake{3} & \$1000 \\
+      Unassessed & \$0.00 & \fake{0.5} & \fake{0.5} & \$0 \\
+      Hybrid     & \fake{\$0.10} & \fake{1.5} & \fake{4.5} & \$1000 \\ \bottomrule
+    \end{tabular}
+    \caption{\label{tbl:variance-reduction}}
+  \end{subfigure}
+  \caption{(a) A schematic to show how pooled and unassessed annotations can decrease the variance of predicting recall when combined with exhaustive annotations (see text). Green and red identify correct and incorrect contexts. 
+  (b) A summary of cost-accuracy tradeoffs of different annotation schemes described in the text.
+  The hybrid annotation scheme uses an optimal combination of the exhaustive, pooled and unassessed schemes.
+  The middle two columns describe estimated relative efficiencies of using the specified scheme versus only the pooled annotation scheme for precision ($E\oft{p}$) and versus only the exhaustive annotation scheme for recall ($E\oft{e}$).
+  The last column estimates the cost of using the specified scheme to annotate \fake{the entire document corpus}.
+  }
+\end{figure*}
 
-Each of the annotation schemes above is advantageous for particular metrics: the exhaustive scheme is necessary for estimating true recall, the pooling scheme is important to reliably estimate precision and the estimative annotation is cheap.
+Consider the following example for intuition (see \figureref{variance-reduction}).
+Let $E$ be the set of contexts that are exhaustively annotated,
+  $P$ the pooled set of contexts that have been annotated and 
+%  $U$ the pooled set of unassessed contexts and 
+  $S$ is the set of contexts submitted by a system.
+As earlier, let $C^*$ be the set of correct contexts (shown in green) and $\bar{C}^*$ be the set of incorrect contexts (shown in red).
+The recall of a system $A$ is the proportion of correct contexts it predicts, i.e. $R_A = \frac{|S \intersection C^*|}{|C^*|}$.
+However, because $S \subseteq P$, we can also describe its recall to be the product of the recall of $A$ within the pool and recall of the pool itself: 
+  $R_A = \frac{|S \intersection P^*|}{|P^*|} \frac{|P^*|}{|C^*|}$, where $P^* \eqdef P \intersection C^*$ is the set of correct entries within the pool, identified by pooled annotation.
 
-However, we can combine the strengths of these three estimators to allow us to reliably evaluate systems at a fraction of the original cost.
+Both these methods of computing recall have the same value in expectation, but may differ in variance; let's compare these now.
+Let $\hat{R}_A\oft{e}$ be an estimator of $R_A$ using only exhaustive annotations, 
+  $\hat{R}_P\oft{e}$ be an estimator of the recall of the pool, $R_P$, using only exhaustive annotations, 
+  $\hat{S}_A\oft{p}$ be an estimator of the pooled recall of $A$, $S_A$, using pooled annotations and 
+  $\hat{R}_A\oft{p} = \hat{R}_P\oft{e} \hat{S}_A\oft{p}$ be an estimator of $R_A$ that combines exhaustive and pooling annotations.
+  To first order, the variance of recall is determined only by the number of contexts annotated and thus the variance of $\hat{R}_A\oft{e}$ and $\hat{R}_P\oft{e}$ are about the same.
+  Also, given that it is very easy to annotate many more contexts with a pooled scheme, let us assume that the variance of $\hat{S}_A\oft{p}$ is practically zero.
+  Then, the variance of $\hat{R}_A\oft{p}$ is (again, to first order) basically $(\hat{S}_A\oft{p})^2$ times the variance of $\hat{R}_P\oft{e}$-- in other words $\hat{R}_A\oft{p}$ is less than $\hat{R}_A\oft{e}$ by a factor of $(\hat{S}_A\oft{p})^2$!
+Intuitively, if the recall of a system is very small compared to its pool we should hope to reliably estimate its recall using the pool.
+On the other hand, if it is large relative to the pool, the pooling annotation is unlikely to help.
 
-Let us consider how data in the pooling scheme can be used to better estimate recall when combined with the exhaustive annotation.
-Let us assume that we have annotated $n_e$ true contexts through the exhaustive annotation, and are able to evaluate the recall of a system $A$ is $r_A$, with some variance $\sigma^2_A$.
-We are also able to evaluate the recall of the entire pool $P$ as $r_P$, with variance $\sigma^2_P$.
-Let's assume that we can evaluate $n_p$ contexts at random from the pool. 
-%The recall of $A$ within the pool is $r'_A$, with variance $\sigma'^2_{A}$.
-%We could use the recall of $A$ in the pool to estimate the recall of $A$ as $r_A = r_P * r'_A$.
-%The variance of this estimate is $\sigma^2_P \sigma'^2_A + r^2_P \sigma'^2_A + \sigma^2_P r'_A^2$.
-%Let's take the limit where estimating pooled recall is very cheap -- in this case, we can take $\sigma'^2_A \to 0$, giving us a new estimate of $r'_A^2 \sigma^2_P$. 
-%Noting that recall is a binomial estimator, 
-%  we know that $\sigma^2_A = \frac{r_A (1 - r_A)}{n_e}$ and 
-%  that $\sigma^2_P = \frac{r_P (1 - r_P)}{n_e}$.
-%Thus, our two-step estimator has less variance than the one-step estimator when,
-%  $\frac{r'_A^2 r_P (1 - r_P)}{n_e} < \frac{r'_A r_P (1 - r'_A r_P)}{n_e}$, or when $r_'A (1 - r_P) < (1 - r'_A r_P)$.
+% TODO: address concern of valuating the recall of a perfect system poorly.
+In a similar way, we can also use agreements between the unassessed output of different systems to estimate recall within the unassessed pool, $U$.
+For example, let us assume that, on average, half of the unassessed output is predicted by only one system and is true only 10\% of the time and that the other half of the unassessed output is predicted by at least 2 systems and is true 20\% of the time-- both these numbers can be estimated using the pooled annotations.
+If our system only predicts half of the first part and two-thirds of the second, we can estimate that our system identifies $\frac{1}{10} \times \frac{1}{3}$ of the correct entries in the first part and $\frac{2}{10} \times \frac{2}{3}$ of correct entries in the second part. Furthermore, we can estimate that there are $\frac{1}{2} \times \frac{1}{10} \times U$ correct entries in the first part and $\frac{1}{2} \times \frac{2}{10} \times U$ correct entries in the second part.
+Thus, our estimate of recall within this unassessed pool work out to be $\frac{1}{10}$.
+Note that the variance of both of this recall prediction can be quite large, but can still nominally decrease variance of our predictions.
 
-With a Bernoulli assumption, we get that.
-
-Then, our updated estimate of recall would combine $r_A$ and 
-
-% (2 pages)
-
-\begin{table*}
-  \begin{tabular}{l r r r r r r r r} \toprule
-    Annotation scheme & Cost per sample & \multicolumn{6}{c}{Information ratio} & Total cost \\ 
-                      &                      & $P^m$ & $R^m$ & $F_1^m$ & $P^e$ & $R^e$ & $F_1^e$ &  \\ \midrule
-    Exhaustive & \$0.20 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & \$1000 \\
-    Selective  & \$0.05 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & \$1000 \\
-    Estimative & \$0.00 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 &  \\
-    Hybrid     & \$0.06 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & 0.7 & \$1000 \\ \bottomrule
-  \end{tabular}
-  \caption{Cost accuracy tradeoffs}
-\end{table*}
-
-A motivation for pooling is to reduce cost.
-The intuition is in computing recall, we can compute recall against a particular corpus of exhaustively annotated documents,
-or compute the recall of the pool with respect to the exhaustive annotations, followed by evaluating the recall of with respect to the pool. 
-The latter is much cheaper to evaluate, and as a result, we can get a much more precise annotation on it.
-Consider this example to gain intuition as to why incorporating pooling results would help.
-
-Intuition is that if we take two sets of documents and ask for overlap, magic 
-
+\tableref{variance-reduction} summarizes the variance reductions to be expected by combining pooled and unassessed annotations over using just exhaustive annotations, measured as relative efficiency.
+Note that the two estimators can always be combined so that the variance of the combination is less than the variance of each and that relative efficiency of the optimal combination of two or more estimators is simply the sum of their relative efficiencies.
+As a result, we can combine both pooled and unassessed annotations.
+The exact details are worked out in \sectionref{power}.
