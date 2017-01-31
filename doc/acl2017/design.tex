@@ -18,7 +18,7 @@ At the same time, we would like to capture some of the defining aspects of the o
 \end{enumerate}
 
 Our goal in this section is to propose a new methodology that maintains the above elements while addressing the mentioned problems head on 
-  by indefinitely opening the pooling evaluation window by making the evaluation online
+  by indefinitely opening the pooling evaluation window by making the evaluation online \pl{not sure what this means}
   and by combining evaluation data for each team in statistically optimal fashion.
 Before we describe the overview of our proposed evaluation platform, we take a brief detour to answer an important question.
 
@@ -28,11 +28,12 @@ A natural question to ask before embarking on the significant effort of an onlin
 An important part of the KBP evaluation is to test on an unseen document collection.
 
 A number of datasets for relation extraction, even on the TAC-KBP task, have been collected in the past, for example in the work of \citet{angeli2014combining}.
-This dataset is very small and does not have sufficient coverage, but is useful for training.
-Unfortunately, these datasets have also been collected by pooling responses.
+This dataset is very small \pl{quantify} and does not have sufficient coverage, but is useful for training \pl{strange - usually test set is smaller than training}.
+Unfortunately, these datasets have also been collected by pooling responses. \pl{clarify what this means}
 
 Another way of empirically answering this question is to see how many contexts need be evaluated to reduce pooling bias sufficiently. We can extrapolate this number by studying how the pooling bias varies by the number of systems.
-Using the 2015 evaluation data, we find that we would need to pool the output of \fake{100} systems with \fake{$10^6$} lines of output evaluated.
+Using the 2015 evaluation data, we find that we would need to pool the output of \fake{100} systems with \fake{$10^6$} lines of output \pl{what is line of output?} evaluated.
+\pl{not clear what is being computed or how to think about this}
 With the `anydoc' heuristic, this number is far less, but the error introduced by the heuristic also increases.
 %TODO: graph.
 
