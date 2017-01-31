@@ -5,7 +5,7 @@
 % Goal: remind the reader what information extraction is, what its relation to knowledge base population is and why it is important. Hook question.
 Harnessing the wealth of information present in unstructured text online has been and continues to be a long standing goal for the natural language processing community.
 In particular, one approach to doing so has been to construct a \textit{knowledge base} storing information in a (possibly weak) relational schema, integrating the output of several information extraction tasks, including entity detection and linking, relation extraction and event extraction.
-Knowledge bases such as Yago, Freebase and Wikidata have shown immense value for question answering, search relevance, and potential in reasoning systems\needcite.
+Knowledge bases such as YAGO, Freebase and Wikidata have shown immense value for question answering, search relevance, and potential in reasoning systems\needcite.
 
 % TODO: This line would be nice to follow, but it's pending a cross-year evaluation.
 % Significant effort and resources have been invested in improving the performance of knowledge base population (KBP) systems, but have our systems actually gotten better and if so, by how much?
@@ -14,7 +14,7 @@ Knowledge bases such as Yago, Freebase and Wikidata have shown immense value for
 The main way performance on the KBP task has been evaluated has been through the annual TAC-KBP competition organized by NIST.\@
 % TODO: argue the merits of the TAC-KBP challenge and its evaluation.
 The competition has invited X submissions over Y years.
-Each year, teams are provided a document corpus and a list of query entities to find facts for.
+Each year, teams are provided a document corpus and a list of query entities to find facts for \pl{example?}.
 The proposed facts from each participating team is pooled together and evaluated by human annotators.
 While scores of top performing teams have improved, they remain under 30\% \fone.
 In contrast, human evaluators provided access to simple text search for X minutes per query are able to identify far more relations and measure at $\approx$80\% \fone.
@@ -24,18 +24,27 @@ This plateau should be alarming for any researcher; if we are to break through t
 Accordingly, we begin with an statistical analysis of the KBP evaluation in \sectionref{analysis}.
 We find that there is a large amount of variance in the scores due to varying difficulties of the query entities which leads to wide confidence intervals on the reported results.
 We show that this variance can be reduced by standardizing scores across queries, a new metric that is able to discriminate between systems \todo{50\%} more effectively. 
+\pl{the variance doesn't seem to be the thing causing the plateau;
+certainly it doesn't explain the difference between 30\% and 80\%;
+seems the bias is more pressing and should be talked about first
+}
 
-Next, we measure the effect of the pooling methodology and find that it is significantly biased against unpooled systems: when evaluating improvements to your KBP system, your scores on the evaluation data could be 4--7\% lower than they would be if you had submitted said system; if you are developing a new KBP system, the bias can be as much as 20\%.
+Next, we measure the effect of the pooling methodology \pl{need to explain pooling in enough detail for people to appreciate the problem} and find that it is significantly biased against unpooled systems: when evaluating improvements to your KBP system, your scores on the evaluation data could be 4--7\% lower than they would be if you had submitted said system; if you are developing a new KBP system, the bias can be as much as 20\%.
 This is serious methodological problem that provides a barrier of entry for new teams and makes incremental improvements to systems a coin toss-- real improvements in results will easily pass unnoticed. 
 
 % TODO: We haven't tried doing a cross-evaluation yet -- this would basically mean we take a reference system and try and compare performance across years relative to this system.
 % We use a method for score standarization (\refsec{analysis}) to compare scores across years and find that \todo{there is no statistically significant improvement in the last several years}.
 
 % Goal: Describe solution.
-In the light of these depressing results, what can we hope to do?
+In the light of these depressing \pl{too strong} results, what can we hope to do?
 We believe that a larger dataset is simply not an effective solution for information extraction. \todo{justify.}
 For these reasons, we propose and implement a new evaluation methodology: an online evaluation platform that teams can submit to as they develop their systems (\sectionref{design}).
 We use a combination of exhaustive, selective and estimative annotations to balance cost, accuracy and guaranteed unbiased estimates of precision, recall and $\fone$ scores at the mention and entity level.
+\pl{I don't see the 'online evaluation platform' as the immediate solution;
+what I'd expect is a more technical solution - how to do the crowdsourcing to deal
+with bias and reweighting to deal with variance;
+making it online seems to help with more community aspects,
+which can be argued as valuable, but that seems like a separate point}
 
 We use the submissions to the 2015 challenge to simulate a mock evaluation and find that we are able to confidently evaluate all 70 submission within a budget of \todo{\$1000}.
 The implementation of the online evaluation platform will be made available at \url{http://anonymo.us}.
