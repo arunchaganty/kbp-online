@@ -32,11 +32,11 @@ This dataset is very small and does not have sufficient coverage, but is useful 
 Unfortunately, these datasets have also been collected by pooling responses.
 
 Another way of empirically answering this question is to see how many contexts need be evaluated to reduce pooling bias sufficiently. We can extrapolate this number by studying how the pooling bias varies by the number of systems.
-Using the 2015 evaluation data, we find that we would need to pool the output of \todo{100} systems with \todo{$10^6$} lines of output evaluated.
+Using the 2015 evaluation data, we find that we would need to pool the output of \fake{100} systems with \fake{$10^6$} lines of output evaluated.
 With the `anydoc' heuristic, this number is far less, but the error introduced by the heuristic also increases.
 %TODO: graph.
 
-We can estimate the cost of annotating such a large corpus by calculating how many documents need be exhaustively annotated by humans-- it comes out to \todo{\$10 million}. 
+We can estimate the cost of annotating such a large corpus by calculating how many documents need be exhaustively annotated by humans-- it comes out to \fake{\$100,000}. 
 We believe this is reasonable justification to discard the static dataset approach and embrace an online evaluation wherein systems are continuously evaluated.
 
 \paragraph{Overview of the evaluation platform.}
@@ -55,75 +55,16 @@ First, we ask teams to submit every relation context justifying a predicted rela
   this additional output will be valuable in measuring the relation extraction quality independent of entity linking performance.
 % queries?
 Secondly, we evaluate entity-level scores on randomly sampled entities from documents instead of manually constructed queries.
-The queries developed by the LDC were explicitly designed to be challenging, but unfortunately this is a subjective criterion that is hard to automate-- \todo{we show later that queries that are randomly sampled are still quite challenging to state of the art systems.}
-
-Next, we will describe how crowdworkers evaluate the submitted output, starting first with precision and followed by recall.
-
-\paragraph{Evaluating precision with pooled annotation.}
-% Actual interface to verify turker output.
-Entries in the submitted knowledge base are verified by crowdworkers using the context provided.   
-Using an annotation interface shown in \figureref{interface-relation},
-crowdworkers asked to verify 
-  whether the participating mentions in the relation are valid entities,
-  whether the predicted relation holds between the two mentions and
-  whether the mentions are correctly linked if the mention is linked to a Wikipedia entry.
-If the participating mention is not linked to a Wikipedia entry,
-then we ask crowdworkers to resolve cluster assignments using a separate interface (\figureref{interface-linking}).
-On average, we find that crowdworkers are able to perform this task at about \fake{10 seconds an entry}, which corresponds to about \fake{\$0.10 per entry}.
-
-% We need to sample output.
-Each system may output many thousands of relations-- evaluating every one of these relations would be prohibitively expensive
-  and ultimately unnecessary if we are willing to only provide metric scores up to a certain degree of confidence.
-% How much output to sample?
-We propose instead to sample predicted relations and their contexts from each system's output to achieve a desired confidence interval.
-% how to extend to entities?
-However, uniformly sampling over entries would cause only the most popular entities to be represented in our entity-level scores.
-Instead, we first uniformly sample entities from the output, fills from each entity and mentions for each fill (see \figureref{evaluation-table} for a visual representation of this clustering).
-It is easy to reuse these stratified samples to evaluate mention-level metric scores using importance reweighing. 
-Annotating 1,000 contexts is sufficient for a confidence interval of about 3\% points and comes at a much more reasonable cost of about \$100 for a submission. 
-% how to reuse labels and amortize costs?
-Furthermore, we can reuse annotations on entries from previous submissions\footnote{
-These annotations must be importance reweighed to eliminate bias.},
-  allowing the cost per submission to decrease with increasing numbers of submissions.
-
-\paragraph{Evaluating recall with exhaustive annotation.}
-
-
-\paragraph{Evaluating entity-level scores.}
-% Readers already know what entities are.
-Entity-level scores couple the relation extraction performance with entity detection and linking.
-must aggregate over entities.
-As mentioned earlier, we consider entities to be identified as clusters of mentions in documents with a unique id.
-Two teams may differ in the ids they provide to the clusters, but for any mention, we can evaluate the overlap of the two clusters assigned to this mention.
-
-Another challenge affected by entity-level evaluation is that random sampling of mentions is unlikely to find two mentions linked to the same entity, unless that entity is uncommonly common (e.g. USA).
-We address this problem by sampling entity clusters while choosing what to evaluate. More details later.
-
-Latter scheme called nil-clustering.
-
-brand new entity, also known  (i.e.\ a nil- 
-Each cluster can be assigned 
-
-One of the challenges in evaluating entity-level scores is that 
-
-\paragraph{Constructing an online evaluation.}
-\ac{Ignore for now!}
-
-Measuring recall accurately is far harder. Simply pooling together output from submitting systems is insufficient.
-For this reason, we propose an exhaustive annotation wherein a collection of documents randomly subsampled from the corpus are exhaustively annotated for entities and relations.
-We additionally annotate X.
-
-While predicting entities, we w
-want to combine information across.
-
-
+The queries developed by the LDC were explicitly designed to be challenging, but unfortunately this is a subjective criterion that is hard to automate-- \fake{we show later that queries that are randomly sampled are still quite challenging to state of the art systems.}
 Recent editions of the competition have included `two-hop' scores that evaluate how well the constructed knowledge base can answer queries that traverse two relational edges, e.g.\ ``What was Carrie Fisher's mother professional title?''
 Evaluation using these two hop queries is currently out of scope for this work.
+
+Next, we will describe how crowdworkers evaluate the submitted output, starting first with precision and followed by recall.
 
 \begin{figure*}
 \begin{subfigure}{0.31\textwidth}
   \includegraphics[width=\textwidth]{figures/extraction-interface}
-  \caption{\label{fig:extraction-interface} Entity detection and linking.}
+  \caption{\label{fig:entity-interface} Entity detection and linking.}
 \end{subfigure}
 \hfill
 \begin{subfigure}{0.31\textwidth}
@@ -135,44 +76,73 @@ Evaluation using these two hop queries is currently out of scope for this work.
   \includegraphics[width=\textwidth]{figures/relation-interface}
   \caption{\label{fig:linking-interface} Cross-document linking.}
 \end{subfigure}
-% TODO: cross-document linking
-%\begin{subfigure}{0.49\textwidth}
-%  \includegraphics[width=\textwidth]{figures/extraction-interface}
-%  \caption{\label{fig:extraction-interface} Exhaustive entity detection and linking.}
-%\end{subfigure}
 \caption{\label{fig:interfaces} Screenshots of the annotation interfaces.}
 \end{figure*}
 
-\paragraph{Exhaustive annotation.}
-We can sample documents from the corpus and have crowdworkers exhaustively annotate them.
-There are three types of annotations that are required, corresponding to each component of the relation extraction task:
-detecting entities in documents, linking them within and across documents and identifying relations between entities in a document. 
+\paragraph{Evaluating precision with pooled annotation.}
+% Actual interface to verify turker output.
+Entries in the submitted knowledge base are verified by crowdworkers using the context provided.   
+Using an annotation interface shown in \figureref{relation-interface},
+crowdworkers are asked to verify 
+  whether the participating mentions in the relation are valid entities,
+  whether the predicted relation holds between the two mentions and
+  whether the mentions are correctly linked if the mention is linked to a Wikipedia entry.
+If the participating mention is not linked to a Wikipedia entry,
+then we ask crowdworkers to resolve cluster assignments using a separate interface (\figureref{linking-interface}).
+On average, we find that crowdworkers are able to perform this task at about \fake{10 seconds an entry}, corresponding to about \fake{\$0.10 per entry}, and we need about \fake{3 workers per entry} to achieve an inter annotator agreement of \fake{0.90}.
 
-% How is the document collection expanded?
-When constructing our online evaluation methodology, we must be very careful not to bias the evaluation data we produce towards any particular system. 
-There are several modes in which we can obtain annotations on our data.
+% We need to sample output.
+Each system may output many thousands of relations-- evaluating every one of these relations would be prohibitively expensive
+  and ultimately unnecessary if we are willing to only provide metric scores up to a certain degree of confidence.
+% How much output to sample?
+We propose instead to sample predicted relations and their contexts from each system's output to achieve a desired confidence interval.
+% how to extend to entities?
+However, uniformly sampling over entries would cause popular entities to be overrepresented in our entity-level scores.
+Instead, we first uniformly sample entities from the output, then sample fills from each entity and mentions for each fill (see \figureref{evaluation-table} for a visual representation of this clustering).
+Precision scores of each fill (measured over its mentions) are aggregated to compute the precision score of that entity.
+It is easy to reuse these stratified samples to evaluate mention-level metric scores using importance reweighing. 
+Annotating 1,000 contexts is sufficient for a confidence interval of about 3\% points and comes at a much more reasonable cost of about \$100 for a submission. 
+% how to reuse labels and amortize costs?
+Furthermore, we can reuse annotations on entries from previous submissions\footnote{
+These annotations must be importance reweighed to eliminate bias.},
+  allowing the cost per submission to decrease with increasing numbers of submissions.
 
-%\begin{enumerate}
-%  \item \textbf{Exhaustive annotation.} 
-%    % Include details about the turk interfaces?
-%  \item \textbf{Pooling annotation.} 
-%    Exhaustively annotating documents is quite laborious and hence expensive to do.
-%    Verifying a systems' submission is much easier to do; it takes only \todo{10 seconds} a relation.
-%    It also reduces wasted effort in reading text that doesn't contain any relations.
-%
-%    By including every new submission into the pool, we can avoid the negative consequences of pooling evaluation.
-%    Furthermore, we will show how annotations collected in the pooling and exhaustive schemes can be combined to estimate true recall and precision more cheaply.
-%
-%  \item \textbf{Estimative annotation.} 
+\paragraph{Evaluating recall with exhaustive annotation.}
+The pooled collection of relations from submissions is unfortunately still a very poor proxy for the set of all possible relations in the document corpus.
+Consequently, we propose having crowdworkers attempt to exhaustively annotate entities and relations on a random sample of about 100 documents.
+Crowdworkers begin by identifying every mention span in a document and specifying its type using the interface shown in \figureref{entity-interface}. For each mention, they are also asked to identify the canonical mention (i.e.\ perform coreference) within the document and identify links to Wikipedia pages.
+Every pair of mentions within a sentence\footnote{
+  We found that an overwhelming majority of relations were expressed in a single sentence.
+  The quadratic blowup in overhead of considering mentions across two sentences is simply not worth it.}
+  with compatible types is then shown to a crowdworker, who is then requested identify the relation between the two mentions using the relation identification interface (\figureref{relation-interface}).
+  Finally, we ask crowdworkers to cluster entities that could not be linked to Wikipedia using the clustering interface (\figureref{linking-interface}).
+  In this interface, crowdworkers are shown canonical mentions for every unlinked entity cluster from the small document corpus.
+
+These interface are far more involved and consequently take longer for crowdworkers to complete.
+The entity annotation interface takes on average about \fake{10 minutes per document}, corresponding to about \fake{\$2.00 a document}, and 
+again required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
+The relation annotation interface takes on average about \fake{3 minutes per document}, corresponding to about \fake{\$0.60 a document}, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
+Finally, the clustering interface takes on average about \fake{6 minutes for 100 documents}, corresponding to about \fake{\$1.20 a document}, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
+
+There are two simplifications we adopt in our interfaces.
+Firstly, we exclude the extremely rare relations corresponding to ``cause of death'', ``has criminal charge'', ``age'' and ``number of employees'' and correspondingly their slot types.
+In total, annotators specify one of five types, ``Person'', ``Organization'', ``City, State or Country'', ``Date'' and ``Title'', with the latter being a very common example of an open-category non-named type.
+Secondly, we do not allow crowdworkers to annotate nested spans, preventing them from identifying both the organization and the city in \textit{``[University of [Chicago]]''}. 
+
+Unfortunately, a uniformly random sample of documents from the corpus is unlikely to contain any cross-document links for any but the most popular of entities.
+Consequently, while constructing the document collection, we first randomly sample about 20 documents and annotate them.
+From the set of named entities identified, we uniformly sample (without replacement) an entity and then uniformly sample up to 4 additional documents that mention this entity by name and annotate them.
+We repeat this procedure until we have 100 documents.
+While this sampling procedure is not representative of the whole corpus, it does increase the probability of having cross-document links for less popular entities, capturing that criteria from the TAC-KBP evaluation queries.
+
+\paragraph{Reducing variance by incorporating pooled and unassessed output.}
+
 %    Finally, we should be able to use agreements between submitting systems as a weak signal of correctness and be able to compute precision and recall on the entire corpus of unannotated contexts.
 %    One of the main challenges  we'll have to solve is to make sure that we aren't biasing our scores due to correlations between systems. 
 %
 %    % TODO: explain using a pooling classifier?
 %    % Builds on the previous two systems.
 %\end{enumerate}
-
-\paragraph{Combining annotations.}
-\ac{Ignore for now!}
 
 Each of the annotation schemes above is advantageous for particular metrics: the exhaustive scheme is necessary for estimating true recall, the pooling scheme is important to reliably estimate precision and the estimative annotation is cheap.
 
