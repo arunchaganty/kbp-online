@@ -10,7 +10,7 @@ import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('doc_paths_file', nargs=1, type=argparse.FileType('r'), default=sys.stdin, help="File or stdin containing documents paths")
-parser.add_argument('config_file', nargs=1, type=str, help="Config file containing parameters to spin the batch")
+parser.add_argument('config_file',  type=str, help="Config file containing parameters to spin the batch")
 args = parser.parse_args()
 config = ConfigParser.ConfigParser()
 config.read(args.config_file)
@@ -36,7 +36,7 @@ metadata_dir = './batch/'
 if not os.path.exists(metadata_dir):
     os.makedirs(metadata_dir) 
 timestr = time.strftime("%Y%m%d-%H%M%S")
-metadata_filepath = metadata_dir+args.config+'.'+timestr+'.csv'
+metadata_filepath = metadata_dir+args.config_file.split('/')[-1]+'.'+timestr+'.csv'
 pd.DataFrame(batch_info).to_csv(path_or_buf = metadata_filepath, sep = '\t', index=False)
 
  
