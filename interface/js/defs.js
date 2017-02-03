@@ -251,16 +251,16 @@ var RelationLabel = function(r) {
 }
 
 RelationLabel.prototype.renderTemplate = function(mentionPair) {
-    var subject = (mentionPair[0].entity.gloss) ? mentionPair[0].entity.gloss : mentionPair[0].gloss;
-    var object = (mentionPair[1].entity.gloss) ? mentionPair[1].entity.gloss : mentionPair[1].gloss;
+    var subject = (mentionPair.subject.entity.gloss) ? mentionPair[0].entity.gloss : mentionPair.subject.gloss;
+    var object = (mentionPair.object.entity.gloss) ? mentionPair[1].entity.gloss : mentionPair.object.gloss;
     return this.template
         .replace("{subject}", "<span class='subject'>" + subject + "</span>")
         .replace("{object}", "<span class='object'>" + object + "</span>");
 }
 
 RelationLabel.prototype.isApplicable = function(mentionPair) {
-    return this.subjectTypes.indexOf(mentionPair[0].type.name) >= 0 
-        && this.objectTypes.indexOf(mentionPair[1].type.name) >= 0;
+    return this.subjectTypes.indexOf(mentionPair.subject.type.name) >= 0 
+        && this.objectTypes.indexOf(mentionPair.object.type.name) >= 0;
 }
 
 

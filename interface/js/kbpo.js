@@ -346,8 +346,8 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
 RelationWidget.prototype.renderTemplate = function(mentionPair) {
   var template = "Please choose how <span class='subject'>{subject}</span> and <span class='object'>{object}</span> are related from the options below.";
   return template
-    .replace("{subject}", mentionPair[0].gloss)
-    .replace("{object}", mentionPair[1].gloss);
+    .replace("{subject}", mentionPair.subject.gloss)
+    .replace("{object}", mentionPair.object.gloss);
 }
 
 // The widget selection is done -- send back results.
@@ -393,9 +393,9 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
     self.listWidget.relations().each(function(_, e){
       e = e.mentionPair;
       relations.push({
-        "subject": e[0].toJSON(),
+        "subject": (e.subject).toJSON(),
         "relation": e.relation.name,
-        "object": e[1].toJSON(),
+        "object": (e.object).toJSON(),
       });
     });
     var data = JSON.stringify(relations);
@@ -445,9 +445,10 @@ function isRelationCandidate(m, n) {
 function notDuplicated(pairs, m, n) {
   // Only need to look backwards through list until the sentence
   // limit
+  console.log(pairs)
   for(var i = pairs.length-1; i >= 0; i--) {
-    var m_ = pairs[i][0];
-    var n_ = pairs[i][1];
+    var m_ = pairs[i].subject;
+    var n_ = pairs[i].object;
 
     if (outOfSentenceLimit(m, m_)
         || outOfSentenceLimit(m, n_)
@@ -475,7 +476,7 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
 
       // Check that the pair is type compatible and not duplicated.
       if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n)) {
-        pairs.push([m,n]);
+        pairs.push({'subject':m,'object':n});
       }
     }
     // - Go forwards until you cross a sentence boundary.
@@ -484,7 +485,7 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
       if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 0) break;
       // Check that the pair is type compatible and not duplicated.
       if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
-        pairs.push([m,n]);
+        pairs.push({'subject':m,'object':n});
     }
   }
   for (var i = 0; i < pairs.length; i++) {
@@ -505,26 +506,26 @@ function centerOnMention(m) {
 }
 
 function centerOnMentionPair(p) {
-  if (p[0].doc_char_begin < p[1].doc_char_begin)
-    centerOnMention(p[0]);
+  if (p.subject.doc_char_begin < p.object.doc_char_begin)
+    centerOnMention(p.subject);
   else
-    centerOnMention(p[1]);
+    centerOnMention(p.object);
 }
 
 // Draw mention pair
 RelationInterface.prototype.select = function(mentionPair) {
   // Move to the location.
   centerOnMentionPair(mentionPair);
-  mentionPair[0].tokens.forEach(function(t) {$(t).addClass("subject highlight");});
-  mentionPair[1].tokens.forEach(function(t) {$(t).addClass("object highlight");});
-  $(mentionPair[0].elem).parent().addClass("highlight");
+  mentionPair.subject.tokens.forEach(function(t) {$(t).addClass("subject highlight");});
+  mentionPair.object.tokens.forEach(function(t) {$(t).addClass("object highlight");});
+  $(mentionPair.subject.elem).parent().addClass("highlight");
 
 }
 
 RelationInterface.prototype.unselect = function(mentionPair) {
-  mentionPair[0].tokens.forEach(function(t) {$(t).removeClass("subject highlight");});
-  mentionPair[1].tokens.forEach(function(t) {$(t).removeClass("object highlight");});
-  $(mentionPair[0].elem).parent().removeClass("highlight");
+  mentionPair.subject.tokens.forEach(function(t) {$(t).removeClass("subject highlight");});
+  mentionPair.object.tokens.forEach(function(t) {$(t).removeClass("object highlight");});
+  $(mentionPair.subject.elem).parent().removeClass("highlight");
 }
 
 RelationInterface.prototype.highlightExistingMentionPair = function(mentionPair) {
