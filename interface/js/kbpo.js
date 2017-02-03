@@ -401,7 +401,7 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
     var data = JSON.stringify(relations);
     $("#relations-output").attr('value', data);
     self.doneListeners.forEach(function(cb) {cb(data);});
-    return true;
+    //return true;
   });
 };
 
@@ -498,11 +498,19 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
 
 function centerOnMention(m) {
   var sentence = $(m.elem).parent();
+  var elem = null;
   if (sentence.prev().length > 0) {
-    sentence.prev()[0].scrollIntoView(true);
+    elem = sentence.prev()[0];
+//.scrollIntoView(true);
   } else {
-    sentence[0].scrollIntoView(true);
+    elem = sentence[0];
+//.scrollIntoView(true);
   }
+    var topPosRel = elem.offsetTop;
+    console.log(topPosRel);
+    var parentPosRel = $('#document')[0].offsetTop;
+    console.log(parentPosRel);
+    $('#document').scrollTop(topPosRel - parentPosRel);
 }
 
 function centerOnMentionPair(p) {

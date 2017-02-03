@@ -26,6 +26,7 @@ function TurkHelper(){
     if(this.activated){
         var submitUrl = "";
         if(this.preview){
+  	    $("#done")[0].disabled = true;
             return;
         }
         if ('target' in this.urlVars){
@@ -39,6 +40,7 @@ function TurkHelper(){
 
         $('#mturk_form').attr('action', submitUrl);
         $("#assignmentId").attr('value', this.urlVars['assignmentId']);
+        $("#docId").attr('value', this.urlVars['doc_id']);
 	console.log('all ready to submit');
     }
 }
