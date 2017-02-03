@@ -26,6 +26,7 @@ function TurkHelper(){
     if(this.activated){
         var submitUrl = "";
         if(this.preview){
+  	    $("#done")[0].disabled = true;
             return;
         }
         if ('target' in this.urlVars){

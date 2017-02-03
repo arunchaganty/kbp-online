@@ -192,7 +192,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
   this.linkWidget.doneListeners.push(function(link) {self.processLinkingDone(link)});
   this.dateWidget.doneListeners.push(function(link) {self.processLinkingDone(link)});
 
-  $("#done")[0].disabled = true;
+  //$("#done")[0].disabled = false;
   $("#done").on("click.kbpo.interface", function (evt) {
     var entities = [];
     for (var i = 0; i < self.entities.length; i++) {
@@ -487,15 +487,13 @@ $(window).on('beforeunload', function () {
   $("#document").scrollTop(0);
 });
 
-$(window).on('load', function () {
+/*$(window).on('load', function () {
   $("#document").scrollTop(0);
     $('#document').bind('scroll', function(e){
       var elem = $(e.currentTarget);
-      if (elem[0].scrollHeight - elem.scrollTop() == elem.outerHeight()) {
         if((turkHelper == undefined || !turkHelper.activated || !turkHelper.preview) && mainInterface.minOutput()){
             $("#done")[0].disabled = false;
         }
-      }
     });
-});
+});*/
 
