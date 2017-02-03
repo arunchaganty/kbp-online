@@ -1,8 +1,43 @@
 \section{A mock evaluation}
 \label{sec:evaluation}
+At the beginning of \sectionref{methodology}, we set out to design a new evaluation methodology that improved on the previous methodology.
+In this section, we will empirically test if the proposed methodology does indeed work as promised through a mock evaluation using the TAC-KBP 2015 cold-start document corpus.
 
-\begin{figure*}
-  \includegraphics[width=\columnwidth]{figures/experiment1}
-  \includegraphics[width=\columnwidth]{figures/experiment3}
-  \caption{Evaluating KBP Part2}
-\end{figure*}
+Unfortunately, our new methodology relies on having access to the full output of participating systems, particularly on the subset of documents used for exhaustive evaluation.
+The system outputs shared in the slot filling validation tracks only contain output on the set of evaluation query entities and thus can not be used.
+As a proxy, we consider the output of three of our own distinct relation extraction systems, based on patterns, a supervised classifier and a neural network classifier as three submissions.
+None of these systems have been trained on the 2015 KBP evaluation data.
+We note that these submissions are still more correlated than the typical submission pool because they share the same entity linker~\citet{ratinov2011local}.
+
+\begin{table*}
+  \begin{tabular}{l l c c c} \toprule
+    Scheme      & System    & $P^e (\pm 95\%)$ & $R^e (\pm 95\%)$ & $\fone{}^e (\pm 95\%)$ \\ \midrule
+\multirow{3}{*}{Uncombined} &
+  Patterns   & \fake{80.4 $\pm$ 3.0}\% & \fake{10.4 $\pm$ 5.0}\% & \fake{18.41 $\pm$ 4.3}\% \\
+& Supervised & \fake{60.4 $\pm$ 3.0}\% & \fake{15.4 $\pm$ 5.0}\% & \fake{24.54 $\pm$ 4.3}\% \\
+& Neural     & \fake{20.4 $\pm$ 3.0}\% & \fake{30.4 $\pm$ 5.0}\% & \fake{24.41 $\pm$ 4.3}\% \\ \midrule
+\multirow{3}{*}{+ Pooling} &
+  Patterns   & \fake{80.4 $\pm$ 3.0}\% & \fake{10.4 $\pm$ 3.0}\% & \fake{18.41 $\pm$ 3.0}\% \\
+& Supervised & \fake{60.4 $\pm$ 3.0}\% & \fake{15.4 $\pm$ 3.0}\% & \fake{24.54 $\pm$ 3.0}\% \\
+& Neural     & \fake{20.4 $\pm$ 3.0}\% & \fake{30.4 $\pm$ 3.0}\% & \fake{24.41 $\pm$ 3.0}\% \\ \midrule
+\multirow{3}{*}{+ Unassessed} &
+  Patterns   & \fake{80.4 $\pm$ 2.6}\% & \fake{10.4 $\pm$ 2.7}\% & \fake{18.41 $\pm$ 2.6}\% \\
+& Supervised & \fake{60.4 $\pm$ 2.6}\% & \fake{15.4 $\pm$ 2.7}\% & \fake{24.54 $\pm$ 2.6}\% \\
+& Neural     & \fake{20.4 $\pm$ 2.6}\% & \fake{30.4 $\pm$ 2.7}\% & \fake{24.41 $\pm$ 2.6}\% \\ \bottomrule
+  \end{tabular}
+  \caption{\label{tbl:evaluation-results} Results from a mock evaluation.}
+\end{table*}
+
+\tableref{evaluation-results} presents the results of these systems on the mock evaluation.\footnote{
+A summary of mention-level scores \fake{can be found in the appendix}.}  
+% How does cost compare?
+The exhaustive annotation cost about \fake{\$1,500} and the pooled annotation cost \fake{\$300}.
+% How do absolute scores compare?
+Two immediate takeaways are that the precisions of these systems are \fake{on par with their precisions} in the original 2015 evaluation but the 95\% confidence interval is \fake{almost a third as large}.
+The recall scores on this evaluation are \fake{a bit smaller than on the 2015 evaluation} and again the 95\% confidence window is \fake{significantly smaller}.
+% Score adjustment.
+Combining annotation pooling annotations \fake{noticeably reduces} the variance over the uncombined estimation,
+while combining the unassessed output \fake{makes a smaller impact}.
+
+% TODO: plot scores per queries as a measure of query variability? How
+% do we demonstrate that our artificial query scheme isn't rubbish?

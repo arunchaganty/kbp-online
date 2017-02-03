@@ -1,10 +1,20 @@
-Despite significant efforts made over the last 10 years in the areas of entity linking, relation extraction and event extraction automated knowledge base population (KBP) systems continue to fair abysmally against human annotators.
-We analyze submissions to the TAC-KBP challenge over the last 3 years and find that (a) the current evaluation methodology is inadequate in confirming statistical validity of measured improvements and (b) the evaluation data collected through a pooling approach is significantly biased against systems during development, enough to mask any genuine improvements on the task.
-Unfortunately, we find that fixing these problems by constructing a larger ``gold-standard'' dataset is infeasible, costing at least \todo{US\$1,000,000} by our estimates.
-Instead, we propose and implement a new online evaluation methodology that removes the problem of pooling bias and is able to provide statistically valid results cost effectively through judicious sampling of system submissions and crowdsourcing.
-A mock evaluation conducted on the 2015 KBP submissions confirms that we are able to provide statistically significant results at about \$100/system.
-% ARUN: This is getting really wordy.
-The methodology will be made available as an online evaluation platform that is easy to submit to.
-%We have implemented this methodology through an online evaluation platform
-%\todo{sell the benefits of submitting to this challenge?}.
-We hope this new platform will enable quick progress in the field.
+Despite significant efforts made over the last 7 years in the areas of entity linking, relation extraction and event extraction automated knowledge base population (KBP) systems continue to fair poorly in comparison with human annotators.
+Our analysis of submissions to the TAC-KBP challenge over the last 3 years identifies that the current pooling methodology is significantly biased against systems during development, enough to mask genuine improvements on the task.
+% AC: there is also the fact that we analyze past performance!
+% and confirm that \fake{progress has been measurably small}.
+We address this problem by designing a new automated evaluation methodology that 
+  allows development systems to submit their output online.
+Carefully chosen random samples of submissions are annotated by crowdworkers to
+  measure unbiased estimates of both instance-level and entity-level performance metrics.
+We are also able to report corpus-wide recall by incorporating exhaustive annotations collected on a subset of the evaluation corpus.
+A mock-run of this evaluation protocol conducted on the 2015 KBP submissions allows us to compute metrics within a \fake{1\%} interval for only about \fake{\$100/system}.
+  
+%Unfortunately, we find that fixing these problems by constructing a larger ``gold-standard'' dataset is infeasible, costing at least \todo{US\$1,000,000} by our estimates.
+%Instead, we propose and implement a new online evaluation methodology that removes the problem of pooling bias and is able to provide statistically valid results cost effectively through judicious sampling of system submissions and crowdsourcing.
+%A mock evaluation conducted on the 2015 KBP submissions confirms that we are able to provide statistically significant results at about \$100/system.
+%% ARUN: This is getting really wordy.
+%The methodology will be made available as an online evaluation platform that is easy to submit to.
+%%We have implemented this methodology through an online evaluation platform
+%%\todo{sell the benefits of submitting to this challenge?}.
+%We hope this new platform will enable quick progress in the field.
+%\pl{too long}
