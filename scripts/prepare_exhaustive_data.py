@@ -128,15 +128,15 @@ def make_date_map(fstream):
         ret[doc_id.strip()] = date.strip()
     return ret
 
-def collect_sample(corpus_id, num_docs, per_entity):
+def collect_sample(corpus_id, num_docs, per_entity, sentence_table, mention_table):
     # Sample 0.2 * n documents.
-    docs = (d for d, in query_docs(corpus_id))
+    docs = (d for d, in query_docs(corpus_id, sentence_table=sentence_table))
 
     doc_collection = set(sample(docs, int(.2 * num_docs)))
     logger.info("Seeding with %d documents", len(doc_collection))
 
     # Find all mentions and hence links in these documents.
-    seed_entities = list(query_entities(sorted(doc_collection)))
+    seed_entities = list(query_entities(sorted(doc_collection), mention_table=mention_table))
     logger.info("Found %d entities", len(seed_entities))
     random.shuffle(seed_entities)
 
@@ -144,7 +144,7 @@ def collect_sample(corpus_id, num_docs, per_entity):
     # canonical glosses of entities.
     for entity_gloss, _ in seed_entities:
         logger.info("Searching for %s", entity_gloss)
-        docs_ = set(d for d, in query_docs(corpus_id, [entity_gloss]))
+        docs_ = set(d for d, in query_docs(corpus_id, [entity_gloss], sentence_table=sentence_table))
         docs_.difference_update(doc_collection)
         # Measure how many to sample.
         m = min(num_docs - len(doc_collection), per_entity)
@@ -159,8 +159,8 @@ def collect_sample(corpus_id, num_docs, per_entity):
         yield {
             "doc_id": doc_id,
             "date": date_map[doc_id],
-            "sentences": query_doc(doc_id),
-            "suggested-mentions": query_mentions(doc_id),
+            "sentences": query_doc(doc_id,  sentence_table=sentence_table),
+            "suggested-mentions": query_mentions(doc_id, mention_table=mention_table),
             }
 
 def do_edl(args):
@@ -174,7 +174,7 @@ def do_edl(args):
 def do_sample(args):
     random.seed(args.seed)
     ensure_dir(args.output)
-    for doc in collect_sample(args.corpus, args.num_docs, args.per_entity):
+    for doc in collect_sample(args.corpus, args.num_docs, args.per_entity, args.sentence_table, args.mention_table):
         with open(os.path.join(args.output, doc['doc_id'] + ".json"), 'w') as f:
             json.dump(doc, f)
 
@@ -194,6 +194,8 @@ if __name__ == "__main__":
     command_parser.add_argument('-c', '--corpus', type=str, default="2016", help="Corpus to select documents from.")
     command_parser.add_argument('-n', '--num-docs', type=int, default=200, help="Number of documents to exhaustively sample")
     command_parser.add_argument('-p', '--per-entity', type=int, default=4, help="Number of documents to sample per entity")
+    command_parser.add_argument('-mt', '--mention-table', type=str, default="mention_8_30_16", help="Mention table to use")
+    command_parser.add_argument('-st', '--sentence-table', type=str, default="sentence_8_30_16", help="Sentence table")
     command_parser.add_argument('-o', '--output', type=str, default="data/exhaustive/", help="A path to a folder to save documents.")
     command_parser.set_defaults(func=do_sample)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
+Utility functions for querying the database
 """
 
 import os
@@ -284,35 +284,41 @@ def query_psql(sql):
         if len(line) == 0: continue
         yield tuple(line.split("\t"))
 
-def query_docs(corpus_id, keywords=None):
+def query_docs(corpus_id, keywords=None, sentence_table="sentence"):
     """
     List all documents from @corpus_id which match the given @keywords.
     """
     if keywords is None:
         keywords = []
 
-    qry = "SELECT DISTINCT(doc_id) FROM sentence WHERE corpus_id = {corpus_id} {addtl} AND doc_id IN (SELECT doc_id FROM document_date) ORDER BY doc_id"
+    qry = """
+SELECT DISTINCT(doc_id) 
+FROM {sentence}
+WHERE corpus_id = {corpus_id} {addtl} 
+  AND doc_id IN (SELECT doc_id FROM document_date)
+ORDER BY doc_id"""
+
     addtl = " AND ".join("gloss ILIKE '%{word}%'".format(word=sanitize(word)) for word in keywords)
     if addtl:
         addtl = " AND " + addtl
-    return query_psql(qry.format(corpus_id=corpus_id, addtl=addtl))
+    return query_psql(qry.format(corpus_id=corpus_id, sentence=sentence_table, addtl=addtl))
 
 def query_wikilinks(fb_ids):
     qry = "SELECT fb_id, wiki_id FROM fb_to_wiki_map WHERE fb_id IN ({fb_ids})"
     return query_psql(qry.format(fb_ids=make_list(fb_ids)))
 
-def query_entities(doc_ids):
+def query_entities(doc_ids, mention_table="mention"):
     """
     Get all (canonical) entities across these @doc_ids.
     """
     qry = """
 SELECT max(gloss), COUNT(*)
-FROM mention 
+FROM {mention}
 WHERE doc_canonical_char_begin = doc_char_begin AND doc_canonical_char_end = doc_char_end 
 AND ner IN ('PERSON', 'ORGANIZATION', 'GPE') 
 AND doc_id IN ({doc_ids})
 GROUP BY best_entity"""
-    return query_psql(qry.format(doc_ids=make_list(doc_ids)))
+    return query_psql(qry.format(doc_ids=make_list(doc_ids), mention=mention_table))
 
 def query_dates(doc_ids):
     """
@@ -324,7 +330,7 @@ FROM document_date
 WHERE doc_id IN ({doc_ids})"""
     return query_psql(qry.format(doc_ids=",".join("'{}'".format(d) for d in doc_ids)))
 
-def query_doc(docid):
+def query_doc(docid, sentence_table="sentence"):
     doc = []
     T = {
         "-LRB-": "(",
@@ -337,8 +343,15 @@ def query_doc(docid):
         "''": "\"",
         "`": "'",
         }
-    for row in query_psql("SELECT sentence_index, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end FROM sentence WHERE doc_id = '{}' ORDER BY sentence_index".format(docid)):
-        idx, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end = row
+    qry = """
+SELECT sentence_index, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end 
+FROM {sentence}
+WHERE doc_id = '{}'
+ORDER BY sentence_index
+"""
+
+    for row in query_psql(qry.format(docid, sentence=sentence_table)):
+        _, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end = row
 
         # Happens in some DF
         #assert int(idx) == idx_, "Seems to have skipped a line: {} != {}".format(idx, idx_)
@@ -350,14 +363,15 @@ def query_doc(docid):
         doc.append(tokens)
     return doc
 
-def query_mentions(docid):
-    mentions = []
-    for row in query_psql("""SELECT m.gloss, n.ner, m.doc_char_begin, m.doc_char_end, n.gloss AS canonical_gloss, m.best_entity, m.doc_canonical_char_begin, m.doc_canonical_char_end
-    FROM mention m, mention n 
+def query_mentions(docid, mention_table="mention"):
+    qry = """SELECT m.gloss, n.ner, m.doc_char_begin, m.doc_char_end, n.gloss AS canonical_gloss, m.best_entity, m.doc_canonical_char_begin, m.doc_canonical_char_end
+    FROM {mention} m, {mention} n 
     WHERE m.doc_id = '{doc_id}' AND n.doc_id = m.doc_id 
       AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end 
       AND n.parent_id IS NULL
-    ORDER BY m.doc_char_begin""".format(doc_id=docid)):
+    ORDER BY m.doc_char_begin"""
+    mentions = []
+    for row in query_psql(qry.format(doc_id=docid, mention=mention_table)):
         gloss, ner, doc_char_begin, doc_char_end, entity_gloss, entity_link, entity_doc_char_begin, entity_doc_char_end = row
         if ner not in ner_map: continue
         ner = ner_map[ner]

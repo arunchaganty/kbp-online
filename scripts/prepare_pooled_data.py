@@ -92,7 +92,7 @@ SELECT subject_id FROM {kb} k
 UNION
 SELECT object_id FROM {kb} k
 """
-    mention_ids = set(m for m, in query_psql(qry.format(kb=kb_table, mention=mention_table)))
+    mention_ids = set(m for m, in query_psql(qry.format(kb=kb_table)))
     mention_ids = query_mention_ids(mention_ids, mention_table)
     logger.info("Found %d mentions", len(mention_ids))
 
