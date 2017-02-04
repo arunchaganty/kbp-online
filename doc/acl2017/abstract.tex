@@ -1,14 +1,11 @@
-Despite significant efforts made over the last 7 years in the areas of entity linking, relation extraction and event extraction automated knowledge base population (KBP) systems continue to fair poorly in comparison with human annotators.
-Our analysis of submissions to the TAC-KBP challenge over the last 3 years identifies that the current pooling methodology is significantly biased against systems during development, enough to mask genuine improvements on the task.
-% AC: there is also the fact that we analyze past performance!
-% and confirm that \fake{progress has been measurably small}.
-We address this problem by designing a new automated evaluation methodology that 
-  allows development systems to submit their output online.
-Carefully chosen random samples of submissions are annotated by crowdworkers to
-  measure unbiased estimates of both instance-level and entity-level performance metrics.
-We are also able to report corpus-wide recall by incorporating exhaustive annotations collected on a subset of the evaluation corpus.
-A mock-run of this evaluation protocol conducted on the 2015 KBP submissions allows us to compute metrics within a \fake{1\%} interval for only about \fake{\$100/system}.
-  
+Many information extraction tasks have long been evaluated using a closed-world assumption. 
+Under this assumption, facts outside the “gold” annotation set are assumed to be untrue, largely due to the prohibitive cost of exhaustively annotating a sufficiently large corpus.
+We analyze data from the TAC-KBP challenge, an annual competition for knowledge base population, and empirically show that this closed world assumption can penalize novel improvements in systems because their predictions are falsely marked negative.
+We propose opening the closed world for knowledge base populatoin by introducing an online evaluation platform that immediately assesses newly predicted facts through crowdsourcing.
+Moreover, we ensure that estimates are unbiased by exhaustively annotating a few randomly sampled documents.
+Through careful sampling, the cost of evaluation and variance of scores decreases with each additional system evaluated.
+We are able to obtain scores at a fraction of the cost of and with half the variance of official scores on the 2016 TAC-KBP task through a mock evaluation.
+We hope that the combination of a cost-effective automated evaluation with a quick turnaround time along with diverse exhaustive annotations will drive progress in knowledge base population and information extraction as a whole.
 %Unfortunately, we find that fixing these problems by constructing a larger ``gold-standard'' dataset is infeasible, costing at least \todo{US\$1,000,000} by our estimates.
 %Instead, we propose and implement a new online evaluation methodology that removes the problem of pooling bias and is able to provide statistically valid results cost effectively through judicious sampling of system submissions and crowdsourcing.
 %A mock evaluation conducted on the 2015 KBP submissions confirms that we are able to provide statistically significant results at about \$100/system.
