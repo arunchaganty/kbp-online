@@ -1,6 +1,8 @@
+% TODO: more information about kbp setup and evaluation.
 Many information extraction tasks have long been evaluated using a closed-world assumption. 
 Under this assumption, facts outside the “gold” annotation set are assumed to be untrue, largely due to the prohibitive cost of exhaustively annotating a sufficiently large corpus.
 We analyze data from the TAC-KBP challenge, an annual competition for knowledge base population, and empirically show that this closed world assumption can penalize novel improvements in systems because their predictions are falsely marked negative.
+% Using lazy than online evaluation.
 We propose opening the closed world for knowledge base populatoin by introducing an online evaluation platform that immediately assesses newly predicted facts through crowdsourcing.
 Moreover, we ensure that estimates are unbiased by exhaustively annotating a few randomly sampled documents.
 Through careful sampling, the cost of evaluation and variance of scores decreases with each additional system evaluated.
