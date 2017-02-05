@@ -71,6 +71,7 @@ def link_to_wikipedia(doc_mentions):
                 # create a new NIL cluster
                 link = "NIL{:04d}".format(nil_count)
                 wikilink[m['entity']['link']] = link
+                nil_count += 1
             m['entity']['link'] = link
     logger.info("Used %d NIL ids", nil_count)
 

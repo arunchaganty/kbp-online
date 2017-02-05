@@ -55,6 +55,7 @@ DocWidget.prototype.setSuggestions = function(mentions) {
       $(t).addClass("suggestion");
       t.suggestedMention = m;
     });
+    $(m.tokens[m.tokens.length-1]).addClass("suggestion-end");
   });
 };
 
@@ -317,6 +318,11 @@ RelationWidget.prototype.init = function(mentionPair, cb, linkVerify) {
     // a different color.
     if (this.mentionPair.relation != null && this.mentionPair.relation.name == this.relns[i].name) relnDiv.addClass("btn-primary"); 
     this.elem.find("#relation-options").append(relnDiv);
+
+    if (this.relns[i].examples.length > 0) {
+        var relnHelp = this.makeRelnHelp(this.relns[i], i);
+        this.elem.find("#relation-examples").append(relnHelp);
+    }
   }
 
   this.updateText(this.renderTemplate(this.mentionPair))
@@ -352,6 +358,23 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   return div;
 }
 
+RelationWidget.prototype.makeRelnHelp = function(reln, id) {
+  var elem = $("<li>");
+  elem.html("<b>{}</b>".replace("{}", reln.short));
+  var elems = $("<ul>");
+  for (var i = 0; i < reln.examples.length; i++) {
+      elems.append($("<li>").html(
+            reln.examples[i]
+            .replace("{", "<span class='subject'>") 
+            .replace("}", "</span>") 
+            .replace("[", "<span class='object'>") 
+            .replace("]", "</span>") 
+      ));
+  }
+  elem.append(elems);
+  return elem;
+}
+
 RelationWidget.prototype.renderTemplate = function(mentionPair) {
   var template = "Please choose how <span class='subject'>{subject}</span> and <span class='object'>{object}</span> are related from the options below.";
   return template
@@ -364,6 +387,7 @@ RelationWidget.prototype.done = function(chosen_reln) {
   // Clear the innards of the html.
   this.elem.find("#relation-options").empty();
   this.elem.find("#relation-option-preview").empty();
+  this.elem.find("#relation-examples").empty();
 
   // Send a call back to the interface.
   if (this.cb) {

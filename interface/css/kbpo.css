@@ -46,6 +46,11 @@ span.token.mention {
 
 span.token.suggestion {
   text-shadow: 0px 0px 1px black;
+  text-decoration: underline;
+}
+
+span.token.suggestion-end {
+  padding-right: 10px;
 }
 
 span.token.true-suggestion {
@@ -58,6 +63,11 @@ span.token.suggestion.true-suggestion {
 
 .mention span.token.suggestion {
   text-shadow: unset;
+  text-decoration: unset;
+}
+
+.mention span.token.suggestion-end {
+  padding-right: 0px;
 }
 
 .mention span.token.suggestion.highlight {
@@ -120,5 +130,9 @@ div#relation-option-preview span.object {
 }
 .sentence.highlight {
   background-color: palegoldenrod;
+}
+
+#relation-options {
+  margin-bottom: 10px;
 }
 

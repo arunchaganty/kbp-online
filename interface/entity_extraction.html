@@ -60,7 +60,7 @@
 <div class="container">
   <!-- Example row of columns -->
   <div class="row">
-    <h1>Identify entities in the article <small>Select words and use the interface on the right</small></h1>
+    <h1>Identify entities in the article <small>Select words and use the interface on the right.</small></h1>
   </div>
   <div class="row">
     <div class="col-md-9">
@@ -76,6 +76,13 @@
       <div class = "row">
         <div class="panel panel-default">
             <div class="panel-body" style='padding:5px;'>
+              <p>
+              <b>Estimated time:</b> <span id="estimated-time">10 minutes</span>
+              </p>
+              <p>
+              <b>Reward:</b> <span id="reward">$6.00</span>
+              </p>
+
                     <button type="button" id="instructions" class="btn btn-default" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
                     <input type="hidden" name="assignmentId" id="assignmentId" value="" />
                     <input type="hidden" name="docId" id="docId" value="" />
@@ -279,6 +286,14 @@ var dateWidget = new DateWidget($("#date-widget-modal"));
 var instructionWidget = new InstructionWidget('entity_extraction', 'instructions/entity_extraction.html');
 var mainInterface = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
 
+function reportCostTime(cost, time) {
+  var time = parseInt(time);
+  var lowerTime = Math.floor(.8 * time / 60);
+  var upperTime = Math.ceil(1.2 * time / 60);
+  $("#reward").text("$" + cost);
+  $("#estimated-time").text(lowerTime + " - " + upperTime + " minutes");
+}
+
 //$.getJSON("data/doc1.json", function(data) {
 function initialize_interface(data){
   console.log("loaded data.");
@@ -293,6 +308,7 @@ function initialize_interface(data){
         <script src="js/mturk.js"></script>
         <script type="text/javascript">
             var turkHelper = new TurkHelper();
+            reportCostTime(turkHelper.getUrlVars()['reward'], turkHelper.getUrlVars()['est_time']);
             turkHelper.initialize_doc(turkHelper.getUrlVars()['doc_id']);
         </script>
         </body>
