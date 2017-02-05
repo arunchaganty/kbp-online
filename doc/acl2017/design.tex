@@ -80,6 +80,12 @@ Next, we will describe how crowdworkers evaluate the submitted output, starting 
 \caption{\label{fig:interfaces} Screenshots of the annotation interfaces.}
 \end{figure*}
 
+% TODO: Report entropy of our entity selection?
+
+% Basically, why do it document based versus query based?
+% TODO: Report recall of our entity annotation
+% TODO: Report "entropy" of our entity annotations -- are they more "diverse" than LDC's?
+
 \paragraph{Evaluating precision with pooled annotation.}
 % Actual interface to verify turker output.
 Entries in the submitted knowledge base are verified by crowdworkers using the context provided.   
@@ -184,13 +190,12 @@ Let $\hat{R}_A\oft{e}$ be an estimator of $R_A$ using only exhaustive annotation
   Then, the variance of $\hat{R}_A\oft{p}$ is (again, to first order) basically $(\hat{S}_A\oft{p})^2$ times the variance of $\hat{R}_P\oft{e}$-- in other words $\hat{R}_A\oft{p}$ is less than $\hat{R}_A\oft{e}$ by a factor of $(\hat{S}_A\oft{p})^2$!
 Intuitively, if the recall of a system is very small compared to its pool we should hope to reliably estimate its recall using the pool.
 On the other hand, if it is large relative to the pool, the pooling annotation is unlikely to help.
-
 % TODO: address concern of valuating the recall of a perfect system poorly.
 In a similar way, we can also use agreements between the unassessed output of different systems to estimate recall within the unassessed pool, $U$.
-For example, let us assume that, on average, half of the unassessed output is predicted by only one system and is true only 10\% of the time and that the other half of the unassessed output is predicted by at least 2 systems and is true 20\% of the time-- both these numbers can be estimated using the pooled annotations.
-If our system only predicts half of the first part and two-thirds of the second, we can estimate that our system identifies $\frac{1}{10} \times \frac{1}{3}$ of the correct entries in the first part and $\frac{2}{10} \times \frac{2}{3}$ of correct entries in the second part. Furthermore, we can estimate that there are $\frac{1}{2} \times \frac{1}{10} \times U$ correct entries in the first part and $\frac{1}{2} \times \frac{2}{10} \times U$ correct entries in the second part.
-Thus, our estimate of recall within this unassessed pool work out to be $\frac{1}{10}$.
-Note that the variance of both of this recall prediction can be quite large, but can still nominally decrease variance of our predictions.
+%For example, let us assume that, on average, half of the unassessed output is predicted by only one system and is true only 10\% of the time and that the other half of the unassessed output is predicted by at least 2 systems and is true 20\% of the time-- both these numbers can be estimated using the pooled annotations.
+%If our system only predicts half of the first part and two-thirds of the second, we can estimate that our system identifies $\frac{1}{10} \times \frac{1}{3}$ of the correct entries in the first part and $\frac{2}{10} \times \frac{2}{3}$ of correct entries in the second part. Furthermore, we can estimate that there are $\frac{1}{2} \times \frac{1}{10} \times U$ correct entries in the first part and $\frac{1}{2} \times \frac{2}{10} \times U$ correct entries in the second part.
+%Thus, our estimate of recall within this unassessed pool work out to be $\frac{1}{10}$.
+%Note that the variance of both of this recall prediction can be quite large, but can still nominally decrease variance of our predictions.
 
 \tableref{variance-reduction} summarizes the variance reductions to be expected by combining pooled and unassessed annotations over using just exhaustive annotations, measured as relative efficiency.
 Note that the two estimators can always be combined so that the variance of the combination is less than the variance of each and that relative efficiency of the optimal combination of two or more estimators is simply the sum of their relative efficiencies.
