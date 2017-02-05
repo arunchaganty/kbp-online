@@ -1,15 +1,20 @@
 \section{Introduction}
 \label{sec:intro}
 
-\begin{figure}
+\begin{figure}[t]
   \includegraphics[width=\columnwidth]{figures/overview}
   \caption{\label{fig:task}
-  In knowledge base population, systems identify \textit{facts} about \textit{entities}, such as where a person was born or who a company's founder is, from a large corpus of documents.
+  In knowledge base population (KBP), systems construct a knowledge base (KB) containing \textit{facts} about \textit{entities} 
+  %such as where a person was born or who a company's founder is, 
+  from a large document corpus documents.
   \encircle{1}
-  Under the closed-world evaluation methodology, only those facts that intersect with an existing annotation set, usually constructed from other output of other systems, are considered to be true and all others are considered false.
-  This can significantly penalize a novel system that predicts new facts outside what has already been annotated.
+  Under the closed-world evaluation methodology, only those facts that intersect with an existing of annotated facts
+  %, usually constructed from other output of other systems,
+  are considered to be true and all others are assumed false.
+  %This can significantly penalize a novel system that predicts new facts outside what has already been annotated.
+  \\
   \encircle{2}
-  Under the on-demand open-world evaluation methodology, facts that have never been annotated before are sub-sampled and immediately evaluated through crowd-sourcing, providing an unbiased estimate of what the systems score would be on the entire open-world. 
+  In the on-demand open-world methodology, predicted facts that have never been annotated before are sampled and immediately evaluated through crowd-sourcing to provide an unbiased estimate of performance in an open-world setting.
   % TODO: refine and sell more why this is a good thing.
   }
 \end{figure}
