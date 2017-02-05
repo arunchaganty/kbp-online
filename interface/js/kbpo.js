@@ -55,6 +55,7 @@ DocWidget.prototype.setSuggestions = function(mentions) {
       $(t).addClass("suggestion");
       t.suggestedMention = m;
     });
+    $(m.tokens[m.tokens.length-1]).addClass("suggestion-end");
   });
 };
 
