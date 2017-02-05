@@ -80,10 +80,19 @@
             </div>
           </div>
           <div class="col-md-4">
-            <span class="pull-right">
+        <div class="panel panel-default">
+            <div class="panel-body" style='padding:5px;'>
+              <p>
+              <b>Estimated time:</b> <span id="estimated-time">10 minutes</span>
+              </p>
+              <p>
+              <b>Reward:</b> <span id="reward">$6.00</span>
+              </p>
+
+
 <form class ='input-group' id='mturk_form' action="" method="POST">
-          <button id="instructions" class="btn btn-default right"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
-          <button id="back" class="btn navbar-btn btn-warning right" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
+          <button id="instructions" class="btn btn-default"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
+          <button id="back" class="btn navbar-btn btn-warning" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
           <button id="done" class="btn btn-success" disabled type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
           <input id="document-input" name="document" value="" type="hidden" />
           <input id="relations-output" name="relations" class = 'data' value="" type="hidden" />
@@ -91,8 +100,9 @@
 	    <input type="hidden" name="docId" id="docId" value="" />
 
    </form>
-          </span>
-            <span class="clearfix"></span>
+          </div>
+          </div>
+
             <h2>Identified relations</h2>
 
             <div id="relations-list" class="list-group">
@@ -128,6 +138,14 @@ var relnWidget;
 var mainInterface;
 var instructionWidget = new InstructionWidget('relation_extraction', 'instructions/relation_extraction.html');
 
+function reportCostTime(cost, time) {
+  var time = parseInt(time);
+  var lowerTime = Math.floor(.8 * time / 60);
+  var upperTime = Math.ceil(1.2 * time / 60);
+  $("#reward").text("$" + cost);
+  $("#estimated-time").text(lowerTime + " - " + upperTime + " minutes");
+}
+
 function initialize_interface(data){
   console.log("loaded document.");
   docWidget = new DocWidget($("#document"));
@@ -139,11 +157,13 @@ function initialize_interface(data){
 
   mainInterface.run(data.mentions);
 }
+
 //$.getJSON("data/doc1.json", function(data) {
     </script>
         <script src="js/mturk.js"></script>
         <script type="text/javascript">
             var turkHelper = new TurkHelper();
+            reportCostTime(turkHelper.getUrlVars()['reward'], turkHelper.getUrlVars()['est_time']);
             turkHelper.initialize_doc(turkHelper.getUrlVars()['doc_id']);
         </script>
     </body>

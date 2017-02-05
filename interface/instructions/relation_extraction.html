@@ -1,11 +1,28 @@
 <p> First of all, welcome :) </p>
 <p> 
-The focus of this task is to identify relationships between entities, i.e. people, organizations, places, dates and job titles, in the article.
+The focus of this task is to <b>identify relationships between entities</b>, i.e. people, organizations, places, dates and job titles, in the article.
 You will be shown a highlighted sentence with a <span style="color:red; font-weight:bold">red</span> and a <span style="color:blue; font-weight:bold">blue</span> entity.
-
-We would like you to identify how the 
+We would like you to <b>identify how the 
 <span style="color:red; font-weight:bold">red</span> and a <span style="color:blue; font-weight:bold">blue</span> entity
-are related, <i>according to the highlighted sentence</i>. It is also possible that they are unrelated or their relationship is not described in the highlighted sentence.
+are related, <i>according to the highlighted sentence</i></b>.
+It is also possible that they are unrelated or their relationship is not described in the highlighted sentence.
+<b>Do not think about whether or not the two highlighted entities are related OUTSIDE this sentence</b>.
+</p>
+
+<h3>Example</h3>
+<p>Consider the following example:
+<blockquote>
+  In the Tampa Bay political battleground counties of Hillsborough, Pinellas, Pasco and Hernando, Bush raised nearly five times as much as <span style="color:blue; font-weight:bold">Sen.</span> <span style="color:red; font-weight:bold">Rubio</span>.
+</blockquote>
+We would mark <b>job title</b> because the sentence identifies <span style="color:red; font-weight:bold">Rubio</span> to be a <span style="color:blue; font-weight:bold">Sen.</span>.
+</p>
+
+<p>
+On the other hand, for,
+<blockquote>
+  In the <span style="color:blue; font-weight:bold">Tampa</span> Bay political battleground counties of Hillsborough, Pinellas, Pasco and Hernando, Bush raised nearly five times as much as Sen. <span style="color:red; font-weight:bold">Rubio</span>.
+</blockquote>
+we would mark the two to be <b>unrelated</b> because there is no obvious relationship between <span style="color:red; font-weight:bold">Rubio</span> and <span style="color:blue; font-weight:bold">Tampa</span> in the sentence.
 </p>
 <h3>Steps</h3>
 <ol>

@@ -79,7 +79,7 @@
               <b>Estimated time:</b> <span id="estimated-time">10 minutes</span>
               </p>
               <p>
-              <b>Payment:</b> <span id="payment">$6.00</span>
+              <b>Reward:</b> <span id="reward">$6.00</span>
               </p>
 
                 <form class ='input-group' id='mturk_form' action="" method="POST">
@@ -283,7 +283,7 @@ function reportCostTime(cost, time) {
   var time = parseInt(time);
   var lowerTime = Math.floor(.8 * time / 60);
   var upperTime = Math.ceil(1.2 * time / 60);
-  $("#payment").text("$" + cost);
+  $("#reward").text("$" + cost);
   $("#estimated-time").text(lowerTime + " - " + upperTime + " minutes");
 }
 
