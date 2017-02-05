@@ -243,7 +243,6 @@ def do_make_task(args):
 
         if relation in TYPES: # new mention!
             assert subj not in mention_map, "Seeing a duplicate mention definition!?: {}".format(row)
-
             doc_id, begin, end = parse_prov(prov)
 
             mention_map[subj] = doc_id
@@ -269,8 +268,8 @@ def do_make_task(args):
                 "id": other["id"],
                 "gloss": other["gloss"],
                 "link": other["link"],
-                "doc_char_begin": begin,
-                "doc_char_end": end
+                "doc_char_begin": other["doc_char_begin"],
+                "doc_char_end": other["doc_char_end"],
                 }
 
         elif relation == "link":
@@ -283,6 +282,7 @@ def do_make_task(args):
 
         else:
             doc_id, begin, end = parse_prov(prov)
+
             mentions = documents[doc_id]["mentions"]
             relations = documents[doc_id]["relations"]
 
@@ -303,12 +303,17 @@ def do_make_task(args):
 
     ensure_dir(args.output)
     for doc_id, doc in documents.items():
+        relations = doc['relations']
         doc['doc_id'] = doc_id
         doc['sentences'] = query_doc(doc_id)
-        logger.info("Saving %s with %d relations", doc_id, len(doc['relations']))
+        for relation in relations:
+            doc['relations'] = [relation]
+            b1, e1 = relation['subject']['doc_char_begin'], relation['subject']['doc_char_end']
+            b2, e2 = relation['object']['doc_char_begin'], relation['object']['doc_char_end']
 
-        with open(os.path.join(args.output, doc['doc_id'] + ".json"), 'w') as f:
-            json.dump(doc, f)
+            logger.info("Saving %s with %d relations", doc_id, len(doc['relations']))
+            with open(os.path.join(args.output, "{}-{}-{}-{}-{}.json".format(doc['doc_id'], b1, e1, b2, e2)), 'w') as f:
+                json.dump(doc, f)
 
 if __name__ == "__main__":
     import argparse

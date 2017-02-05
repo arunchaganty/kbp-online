@@ -1,4 +1,4 @@
-LATEX = pdflatex
+LATEX = pdflatex --shell-escape
 #LATEX = pdflatex -interaction=nonstopmode
 FIGURES = $(wildcard *.tikz)
 DOTS = $(wildcard *.dot)

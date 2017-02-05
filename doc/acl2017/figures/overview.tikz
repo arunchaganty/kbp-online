@@ -1,0 +1,85 @@
+% vim:ft=tex
+% Diagram depciting how mention-level and entity-level scores are
+% computed.
+\documentclass[tikz]{standalone}
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+\usepackage{scabby-diag}
+\usepackage{svg}
+\usepackage{amssymb}
+\usetikzlibrary{arrows}
+\usetikzlibrary{fit}
+\usetikzlibrary{patterns}
+
+\begin{document}
+
+\newcommand\encircle[1]{%
+\raisebox{.5pt}{\textcircled{\raisebox{-.9pt} {#1}}}}
+
+
+\begin{tikzpicture}[
+    correct/.style = {fill=green},
+    incorrect/.style = {pattern=north east lines, pattern color=red},
+    node/.style = {circle, minimum size=3em},
+    sysa/.style = {draw, circle, dashed, thick, purple},
+    sysb/.style = {draw, circle, dotted, thick, blue},
+    output/.style = {inner sep=-3pt},
+    duplicate/.style = {draw, rectangle, thick, red},
+    part/.style = {draw, rectangle, dashed, black, thick},
+    every fit/.style={ellipse, inner sep=-5pt}
+    ]
+    \newcommand{\Cross}{\color{red}$\times$}%
+    \newcommand{\Checkmark}{$\color{green}\checkmark$}
+    \newcommand{\Question}{\color{blue}?}
+
+    \node (corpus) {\includesvg[width=0.5cm]{document-corpus}};
+    \node[anchor=north, scale=0.6] (corpus-lbl) at ($(corpus.south) + (0cm, +0.1cm)$) {\small Large corpus};
+    \node[anchor=north] (system) at ($(corpus.south) + (0cm,-0.4cm)$) {\includesvg[width=0.5cm]{system}};
+    \node[anchor=south, scale=0.6] (system-lbl) at ($(system.south) - (0cm, 0.2cm)$) {\small KBP system};
+    \draw[-latex] ($(corpus-lbl.south) + (0, 0.02cm)$) -- ($(system.north) - (0, 0.02cm)$);
+
+    % Reality 1
+    \point{closed-world}{($(system) + (1.0cm, 1.1cm)$)};
+    \tikzrect{cw-box}{}{($(closed-world) - (0cm, 0.45cm)$)}{1.5cm}{0.9cm};
+    \node (cw-a) at ($(closed-world) + (0.30, 0.20)$) {\Checkmark};
+    \node (cw-b) at ($(closed-world) + (0.45, 0.1)$) {\Checkmark};
+    \node (cw-c) at ($(closed-world) + (0.35, -0.2)$) {\Cross};
+    \node (cw-d) at ($(closed-world) + (0.65, 0.0)$) {\Cross};
+    \node (cw-e) at ($(closed-world) + (0.95, -0.2)$) {\Question};
+    \node[rotate=90, scale=0.5] (cw-e-d) at ($(cw-e.north east) - (0.1cm, 0.1cm)$) {\Cross};
+    \node (cw-f) at ($(closed-world) + (1.15, 0.2)$) {\Question};
+    \node[rotate=90, scale=0.5] (cw-f-d) at ($(cw-f.north east) - (0.1cm, 0.1cm)$) {\Cross};
+    \node (cw-g) at ($(closed-world) + (1.25, -0.3)$) {\Question};
+    \node[rotate=90, scale=0.5] (cw-g-d) at ($(cw-g.north east) - (0.1cm, 0.1cm)$) {\Cross};
+    \begin{pgfonlayer}{background}
+    \node[draw, very thin, fit=(cw-a)(cw-b)(cw-c)(cw-d), fill=gold!30] {};
+    \end{pgfonlayer}
+    \node[anchor=east, rotate=0, scale=0.5] at ($(closed-world) + (1.7cm, -0.6cm)$) {\small \encircle{1} \textsc{closed-world}};
+    \node[anchor=west, scale=0.6] at ($(closed-world) + (0.1cm, 0.6cm)$) {\small predicted KB};
+    % TODO: closed-world text.
+
+    \point{open-world}{($(system) + (1.0cm, -0.3cm)$)};
+    \node (ow-a) at ($(open-world) + (0.30, 0.20)$) {\Checkmark};
+    \node (ow-b) at ($(open-world) + (0.45, 0.1)$) {\Checkmark};
+    \node (ow-c) at ($(open-world) + (0.35, -0.2)$) {\Cross};
+    \node (ow-d) at ($(open-world) + (0.65, 0.0)$) {\Cross};
+    \node (ow-e) at ($(open-world) + (0.95, -0.2)$) {\Question};
+    \node[rotate=90] (ow-e-d) at ($(ow-e.north east) - (0.1cm, 0.1cm)$) {\includesvg[width=0.2cm]{dice}};
+    \node (ow-f) at ($(open-world) + (1.15, 0.2)$) {\Checkmark};
+    \node[rotate=90] (ow-f-d) at ($(ow-f.north east) - (0.1cm, 0.1cm)$) {\includesvg[width=0.2cm]{dice}};
+    \node[rotate=0] (ow-f-p) at ($(ow-f-d) - (-0.05cm, 0.15cm)$) {\includesvg[width=0.1cm]{profile}};
+    \node (ow-g) at ($(open-world) + (1.25, -0.3)$) {\Cross};
+    \node[rotate=90] (ow-g-d) at ($(ow-g.north east) - (0.15cm, 0.1cm)$) {\includesvg[width=0.2cm]{dice}};
+    \node[rotate=0] (ow-g-p) at ($(ow-g-d) - (-0.05cm, 0.15cm)$) {\includesvg[width=0.1cm]{profile}};
+    \begin{pgfonlayer}{background}
+    \tikzrect{ow-box}{fill=gold!20}{($(open-world) - (0cm, 0.45cm)$)}{1.5cm}{0.9cm};
+    \node[draw, very thin, densely dotted, fit=(ow-a)(ow-b)(ow-c)(ow-d)] {};
+    \end{pgfonlayer}
+    \node[anchor=east, rotate=0, scale=0.5] at ($(open-world) + (1.7cm, 0.6cm)$) {\small \encircle{2} \textsc{on-demand open-world}};
+
+    \draw[-latex] (system.east) -- (closed-world);
+    \draw[-latex] (system.east) -- (open-world);
+    \draw[gray,dashed] ($(system.east) + (0.35cm, 0.4cm)$) -- ($(system.east) + (0.8cm, 0.4cm) + (1.5cm, 0cm)$);
+
+\end{tikzpicture}
+
+\end{document}
