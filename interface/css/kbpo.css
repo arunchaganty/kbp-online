@@ -132,3 +132,7 @@ div#relation-option-preview span.object {
   background-color: palegoldenrod;
 }
 
+#relation-options {
+  margin-bottom: 10px;
+}
+

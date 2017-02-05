@@ -38,6 +38,9 @@ var _RELATIONS = [
     "short": "born at",
     "image": "born.svg",
     "icon": "",
+    "examples": ["Julia is born in Hawaii if she is a Hawaiian-native.",
+                 "Julia is NOT born in Hawaii if she is a Hawaiian congresswoman."
+                ],
     "template": "{subject} was born at {object}.",
     "subject-types": ["PER"],
     "object-types": ["GPE"]
@@ -47,6 +50,10 @@ var _RELATIONS = [
     "image": "", 
     "icon": "fa-home",
     "template": "{subject} lived at {object}.",
+    "examples": ["Mike lives in Hawaii if he grew up or studied there.",
+                 "Mia lives in Hawaii if she is a Hawaiian senator.",
+                 "Mike does NOT live in Hawaii if he visited for a business trip."
+                ],
     "subject-types": ["PER"],
     "object-types": ["GPE"]
 },{
@@ -103,6 +110,10 @@ var _RELATIONS = [
     "image": "employee.svg", 
     "icon": "", 
     "template": "{subject} works for {object}.",
+    "examples": ["Mike works for Shell if he is Shell's spokesperson.",
+                 "Mia works for the US government if she is an American ambassador.",
+                 "Mia does NOT work for the Fox News if she was interviewed on Fox News.",
+                ],
     "subject-types": ["PER"],
     "object-types": ["ORG", "GPE"]
 },{
@@ -141,6 +152,7 @@ var _RELATIONS = [
     "name": "per:other_family",
     "short": "other family",
     "template": "{subject} and {object} are otherwise family.",
+    "examples": ["Grandparents, cousins and uncles would be considered as other family."],
     "image": "other_family.png", 
     "icon": "",
     "subject-types": ["PER"],
@@ -196,32 +208,40 @@ var _RELATIONS = [
 },{
     "name": "org:member_of",
     "short": "member of",
-    "template": "{subject} is a member of {object}.",
+    "template": "{subject} is a member of {object}, though {subject} can operate independently of {object}.",
     "image": "members.jpg", 
+    "examples": ["The United States is a member of United Nations",
+                 "Golden State Warriors are a member of the National Basketball Association"],
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG", "GPE"]
 },{
     "name": "org:members",
     "short": "has member",
-    "template": "{subject} has {object} as a member.",
+    "template": "{subject} has {object} as a member, though {object} can operate independently of {subject}.",
     "image": "members.jpg", 
+    "examples": ["The United Nations has the United States as a member",
+                 "The American Humane Society has Clover Farms as a member"],
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG", "GPE"]
 },{
     "name": "org:subsidiaries",
     "short": "parent of",
-    "template": "{subject} is a parent organization  of {object}.",
+    "template": "{subject} owns {object} and {object} can not exist without {subject}.",
     "image": "", 
+    "examples": [
+        "Fox Entertainment Group is the parent of Fox News.",
+        "Google is the parent of Google's Board of Directors."],
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
 },{
     "name": "org:parents",
     "short": "subsidiary of",
-    "template": "{subject} is a subsidiary of {object}.",
+    "template": "{subject} is a subsidiary of {object} and {subject} can not exist without {object}.",
     "image": "", 
+    "examples": ["The Department of Homeland Security is a subsidiary of the U.S. Government."],
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG", "GPE"]

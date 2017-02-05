@@ -318,6 +318,11 @@ RelationWidget.prototype.init = function(mentionPair, cb, linkVerify) {
     // a different color.
     if (this.mentionPair.relation != null && this.mentionPair.relation.name == this.relns[i].name) relnDiv.addClass("btn-primary"); 
     this.elem.find("#relation-options").append(relnDiv);
+
+    if (this.relns[i].examples.length > 0) {
+        var relnHelp = this.makeRelnHelp(this.relns[i], i);
+        this.elem.find("#relation-examples").append(relnHelp);
+    }
   }
 
   this.updateText(this.renderTemplate(this.mentionPair))
@@ -351,6 +356,17 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair))});
   div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair))});
   return div;
+}
+
+RelationWidget.prototype.makeRelnHelp = function(reln, id) {
+  var elem = $("<li>");
+  elem.text("<b>{}</b>".replace("{}", reln.short));
+  var elems = $("<ul>");
+  for (var i = 0; i < reln.examples.length; i++) {
+      elems.append($("<li>").html(reln.examples[i]));
+  }
+  elem.append(elems);
+  return elem;
 }
 
 RelationWidget.prototype.renderTemplate = function(mentionPair) {
