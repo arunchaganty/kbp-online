@@ -51,5 +51,5 @@ TurkHelper.prototype.initialize_doc = function(doc_id){
         console.log("Could not load data.");
     });
 }
-mainInterface.doneListeners.push(function(){
-});
+/*mainInterface.doneListeners.push(function(){
+});*/

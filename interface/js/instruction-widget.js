@@ -17,7 +17,7 @@ function InstructionWidget( name, instructionsFile){
 }
 InstructionWidget.prototype.doneListeners = [];
 InstructionWidget.prototype.showFirstTime = function(){
-    console.log(Cookies.get(this.name+"_seen"));
+    console.log(Cookies.get(this.name+"_seen_1"));
     if(Cookies.get(this.name+"_seen") != 'True'){
         this.show();
     }

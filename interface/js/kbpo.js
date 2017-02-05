@@ -298,9 +298,14 @@ var RelationWidget = function(elem) {
 };
 
 // initialize the interface using @mentionPair. On completion, call @cb.
-RelationWidget.prototype.init = function(mentionPair, cb) {
+RelationWidget.prototype.init = function(mentionPair, cb, linkVerify) {
   this.mentionPair = mentionPair;
   this.cb = cb;
+  if(linkVerify != undefined){
+    this.linkVerify = linkVerify;
+  }else{
+      this.linkVerify = false;
+  }
   console.log("initializing relation widget for", mentionPair);
 
   this.relns = getCandidateRelations(mentionPair);
@@ -336,7 +341,11 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
     div.find('.icon').removeClass('hidden').addClass('fa-question-circle-o').css('color',  'coral');
   }
   div.attr("id", "relation-option-" + id);
-  div.on("click.kbpo.relationWidget", function(evt) {self.done(reln)});
+  div.on("click.kbpo.relationWidget", function(evt) {
+      if(this.linkVerify){
+      }
+      self.done(reln)
+  });
   // Update widget text. 
   div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair))});
   div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair))});

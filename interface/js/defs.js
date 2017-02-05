@@ -6,6 +6,7 @@
   alternate_names.svg  founder.svg   members.jpg    parent.svg        sibling.png       top_employee.jpg
   */
 
+/*TODO: replace with relations.json*/
 var _RELATIONS = [
 {
     "name": "no_relation",
