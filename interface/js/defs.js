@@ -5,6 +5,12 @@
   age.svg              employee.svg  links          parents.png       shareholders.png  Tombstone.svg
   alternate_names.svg  founder.svg   members.jpg    parent.svg        sibling.png       top_employee.jpg
   */
+String.prototype.replaceAll = function(search, replace) {
+    if (replace === undefined) {
+        return this.toString();
+    }
+    return this.split(search).join(replace);
+}
 
 /*TODO: replace with relations.json*/
 var _RELATIONS = [
@@ -13,6 +19,10 @@ var _RELATIONS = [
     "short": "unrelated",
     "template": "{subject} and {object} are otherwise related or not related.",
     "image" : "", 
+    "examples": [
+      "{Tony Blair} informed the [British] public on Thursday.",
+      "{Binney} as accosted by an [FBI] agent.",
+    ],
     "icon": "fa-times",
     "subject-types": ["PER", "ORG", "GPE"],
     "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
@@ -22,6 +32,7 @@ var _RELATIONS = [
     "short": "age",
     "image": "age.svg",
     "icon" : "", 
+    "examples": [],
     "template": "{subject} is {object} old.",
     "subject-types": ["PER"],
     "object-types": ["NUM"]
@@ -30,6 +41,10 @@ var _RELATIONS = [
     "short": "alias",
     "image": "alternate_names.svg",
     "icon": "",
+    "examples": [
+      "{Dwayne Johnson}, popularly known as [The Rock], ...",
+        "{Cardozar} ([Snoop Dog]) announced his new song...",
+    ],
     "template": "{subject} is also known as {object}.",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -38,7 +53,7 @@ var _RELATIONS = [
     "short": "born at",
     "image": "born.svg",
     "icon": "",
-    "examples": ["Julia is born in Hawaii if she is a Hawaiian-native.",
+    "examples": ["{Julia} is a [Hawaiian] native.",
                  "Julia is NOT born in Hawaii if she is a Hawaiian congresswoman."
                 ],
     "template": "{subject} was born at {object}.",
@@ -50,9 +65,9 @@ var _RELATIONS = [
     "image": "", 
     "icon": "fa-home",
     "template": "{subject} lived at {object}.",
-    "examples": ["Mike lives in Hawaii if he grew up or studied there.",
-                 "Mia lives in Hawaii if she is a Hawaiian senator.",
-                 "Mike does NOT live in Hawaii if he visited for a business trip."
+    "examples": ["{Mike} lived in [Hawaii] because he grew up or studied there.",
+                 "{Mia} lived in [Hawaii] because she is a Hawaiian senator.",
+                 "{Mike} does NOT live in [Hawaii] because he visited for a business trip."
                 ],
     "subject-types": ["PER"],
     "object-types": ["GPE"]
@@ -61,6 +76,10 @@ var _RELATIONS = [
     "short": "died at",
     "image": "Tombstone.svg",
     "icon": "", 
+    "examples": [
+        "{Mike} was mourned in [Philadelphia] where he died last weekend.",
+        "{Mike} did not necessarily die in [Kansas City] if that is where he was laid to rest.",
+    ],
     "template": "{subject} died at {object}.",
     "subject-types": ["PER"],
     "object-types": ["GPE"]
@@ -69,6 +88,9 @@ var _RELATIONS = [
     "short": "born on",
     "image": "born.svg",
     "icon": "",
+    "examples": [
+        "{Mike} was born on [December 31st, 1975].",
+    ],
     "template": "{subject} was born on {object}.",
     "subject-types": ["PER"],
     "object-types": ["DATE"]
@@ -78,12 +100,19 @@ var _RELATIONS = [
     "template": "{subject} died on {object}.",
     "image": "Tombstone.svg",
     "icon": "",
+    "examples": [
+        "{Mike} was died on [December 31st, 2015].",
+    ],
     "subject-types": ["PER"],
     "object-types": ["DATE"]
 },{
     "name": "per:organizations_founded",
-    "short": "founded",
+    "short": "founded by",
     "template": "{subject} founded {object}.",
+    "examples": [
+        "{Steve Jobs} founded [Apple Inc.] in 1976.",
+        "{Abu al-Zarqawi} is widely regarded to be the founder of [ISIS].",
+    ],
     "image": "founder.svg",
     "icon": "",
     "subject-types": ["PER"],
@@ -93,6 +122,9 @@ var _RELATIONS = [
     "short": "holds shares in",
     "template": "{subject} holds shares in {object}.",
     "image": "shareholders.png", 
+    "examples": [
+      "{Eric Schmidt} a the leading shareholder in [Google].",
+    ],
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["ORG"]
@@ -100,6 +132,9 @@ var _RELATIONS = [
     "name": "per:schools_attended",
     "short": "studied at",
     "template": "{subject} studied at {object}.",
+    "examples": [
+      "{Eric Schmidt}, an [UC Berkeley]-graduate ...",
+    ],
     "image": "school.svg",
     "icon": "",
     "subject-types": ["PER"],
@@ -110,9 +145,9 @@ var _RELATIONS = [
     "image": "employee.svg", 
     "icon": "", 
     "template": "{subject} works for {object}.",
-    "examples": ["Mike works for Shell if he is Shell's spokesperson.",
-                 "Mia works for the US government if she is an American ambassador.",
-                 "Mia does NOT work for the Fox News if she was interviewed on Fox News.",
+    "examples": ["{Mike} is for [Shell] if he is Shell's spokesperson.",
+                 "{Mia} works for [America] if she is an American ambassador.",
+                 "{Mia} does NOT work for the [Fox News] if she was interviewed on Fox News.",
                 ],
     "subject-types": ["PER"],
     "object-types": ["ORG", "GPE"]
@@ -120,6 +155,9 @@ var _RELATIONS = [
     "name": "per:parents",
     "short": "child of",
     "template": "{subject} is the child of {object}.",
+    "examples": [
+                 "{Fisher}'s mother, [Debbie Reynolds].",
+    ],
     "image": "parents.png", 
     "icon": "",
     "subject-types": ["PER"],
@@ -128,6 +166,9 @@ var _RELATIONS = [
     "name": "per:children",
     "short": "parent of",
     "template": "{subject} is the parent of {object}.",
+    "examples": [
+                 "{Debbie Reynolds} said [her daughter] was in a better place now.",
+    ],
     "image": "parents.png", 
     "icon": "",
     "subject-types": ["PER"],
@@ -137,6 +178,9 @@ var _RELATIONS = [
     "short": "spouse",
     "template": "{subject} is the spouse of {object}.",
     "image": "spouse.svg", 
+    "examples": [
+                 "{Barack Obama} thanked his wife, [Michelle].",
+    ],
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -145,6 +189,9 @@ var _RELATIONS = [
     "short": "sibling of",
     "template": "{subject} is the sibling of {object}.",
     "image": "sibling.png", 
+    "examples": [
+                 "Obama said he was proud of his daughters {Malia} and [Sasha].",
+    ],
     "icon": "",
     "subject-types": ["PER"],
     "object-types": ["PER"]
@@ -162,6 +209,10 @@ var _RELATIONS = [
     "short": "professional title",
     "image": "", 
     "icon": "fa-id-card-o",
+    "examples": [
+                 "Official [spokesperson] {Shayne Williams}",
+                 "[Wife] is NOT a title."
+    ],
     "template": "{subject} is a {object}.",
     "subject-types": ["PER"],
     "object-types": ["TITLE"]
@@ -171,12 +222,17 @@ var _RELATIONS = [
     "image": "alternate_names.svg", 
     "icon": "",
     "template": "{subject} is also known as {object}.",
+    "examples": ["{Quantum Computer Services} was renamed [Americal Online]"],
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
 },{
     "name": "org:place_of_headquarters",
     "short": "headquartered at",
     "template": "{subject} is headquartered at {object}.",
+    "examples": [
+      "[Singapore]-based {Flextronics}...",
+      "A company is NOT headquartered in a city if it only has an office there.",
+    ],
     "image": "", 
     "icon": "fa-building-o",
     "subject-types": ["ORG"],
@@ -185,6 +241,9 @@ var _RELATIONS = [
     "name": "org:date_founded",
     "short": "founded on",
     "template": "{subject} was founded on {object}.",
+    "examples": [
+      "Steve Jobs founded {Apple Inc.} in [1976].",
+    ],
     "image": "founder.svg", 
     "icon": "",
     "subject-types": ["ORG"],
@@ -194,6 +253,9 @@ var _RELATIONS = [
     "short": "dissolved on",
     "template": "{subject} was closed/dissolved on {object}.",
     "image": "", 
+    "examples": [
+      "{Lehman Brothers} was sold to Nomura and Barclays in [2008].",
+    ],
     "icon": "fa-trash-o",
     "subject-types": ["ORG"],
     "object-types": ["DATE"]
@@ -201,6 +263,9 @@ var _RELATIONS = [
     "name": "org:founded_by",
     "short": "founded by",
     "template": "{subject} was founded by {object}.",
+    "examples": [
+      "{The association} was started by [Walmart].",
+    ],
     "image": "founder.svg", 
     "icon": "",
     "subject-types": ["ORG"],
@@ -210,8 +275,7 @@ var _RELATIONS = [
     "short": "member of",
     "template": "{subject} is a member of {object}, though {subject} can operate independently of {object}.",
     "image": "members.jpg", 
-    "examples": ["The United States is a member of United Nations",
-                 "Golden State Warriors are a member of the National Basketball Association"],
+    "examples": ["{Golden State Warriors} is a member of the [NBA]."],
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG", "GPE"]
@@ -220,8 +284,8 @@ var _RELATIONS = [
     "short": "has member",
     "template": "{subject} has {object} as a member, though {object} can operate independently of {subject}.",
     "image": "members.jpg", 
-    "examples": ["The United Nations has the United States as a member",
-                 "The American Humane Society has Clover Farms as a member"],
+    "examples": ["The {United Nations} has the [United States] as a member",
+                 "The {American Humane Society} has [Clover Farms] as a member"],
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG", "GPE"]
@@ -231,8 +295,8 @@ var _RELATIONS = [
     "template": "{subject} owns {object} and {object} can not exist without {subject}.",
     "image": "", 
     "examples": [
-        "Fox Entertainment Group is the parent of Fox News.",
-        "Google is the parent of Google's Board of Directors."],
+        "{Fox Entertainment Group} is the parent of [Fox News].",
+        "{Google} is the parent of Google's [Board of Directors]."],
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
@@ -241,7 +305,7 @@ var _RELATIONS = [
     "short": "subsidiary of",
     "template": "{subject} is a subsidiary of {object} and {subject} can not exist without {object}.",
     "image": "", 
-    "examples": ["The Department of Homeland Security is a subsidiary of the U.S. Government."],
+    "examples": ["The {Department of Homeland Security} is a subsidiary of the [U.S.]."],
     "icon": "fa-sitemap",
     "subject-types": ["ORG"],
     "object-types": ["ORG", "GPE"]
@@ -250,6 +314,7 @@ var _RELATIONS = [
     "short": "shareholder",
     "template": "{object} is a shareholder of {subject}.",
     "image": "shareholders.png", 
+    "examples": [],
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
@@ -258,6 +323,7 @@ var _RELATIONS = [
     "short": "holds shares in",
     "template": "{subject} holds shares in {object}.",
     "image": "shareholders.png", 
+    "examples": [],
     "icon": "",
     "subject-types": ["ORG"],
     "object-types": ["ORG"]
@@ -268,6 +334,7 @@ var RelationLabel = function(r) {
     this.short = r.short;
     this.icon = r.icon;
     this.image = r.image;
+    this.examples = r.examples;
     this.template = r.template;
     this.subjectTypes = r["subject-types"];
     this.objectTypes = r["object-types"];
@@ -277,8 +344,8 @@ RelationLabel.prototype.renderTemplate = function(mentionPair) {
     var subject = (mentionPair.subject.entity.gloss) ? mentionPair[0].entity.gloss : mentionPair.subject.gloss;
     var object = (mentionPair.object.entity.gloss) ? mentionPair[1].entity.gloss : mentionPair.object.gloss;
     return this.template
-        .replace("{subject}", "<span class='subject'>" + subject + "</span>")
-        .replace("{object}", "<span class='object'>" + object + "</span>");
+        .replaceAll("{subject}", "<span class='subject'>" + subject + "</span>")
+        .replaceAll("{object}", "<span class='object'>" + object + "</span>");
 }
 
 RelationLabel.prototype.isApplicable = function(mentionPair) {

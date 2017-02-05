@@ -360,10 +360,16 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
 
 RelationWidget.prototype.makeRelnHelp = function(reln, id) {
   var elem = $("<li>");
-  elem.text("<b>{}</b>".replace("{}", reln.short));
+  elem.html("<b>{}</b>".replace("{}", reln.short));
   var elems = $("<ul>");
   for (var i = 0; i < reln.examples.length; i++) {
-      elems.append($("<li>").html(reln.examples[i]));
+      elems.append($("<li>").html(
+            reln.examples[i]
+            .replace("{", "<span class='subject'>") 
+            .replace("}", "</span>") 
+            .replace("[", "<span class='object'>") 
+            .replace("]", "</span>") 
+      ));
   }
   elem.append(elems);
   return elem;
@@ -381,6 +387,7 @@ RelationWidget.prototype.done = function(chosen_reln) {
   // Clear the innards of the html.
   this.elem.find("#relation-options").empty();
   this.elem.find("#relation-option-preview").empty();
+  this.elem.find("#relation-examples").empty();
 
   // Send a call back to the interface.
   if (this.cb) {
