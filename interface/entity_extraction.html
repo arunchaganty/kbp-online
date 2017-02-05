@@ -72,10 +72,10 @@
       </div>
     </div>
     <div id="entity-pane" class="col-md-3">
+    <form class ='input-group' id='mturk_form' action="" method="POST">
       <div class = "row">
         <div class="panel panel-default">
             <div class="panel-body" style='padding:5px;'>
-                <form class ='input-group' id='mturk_form' action="" method="POST">
                     <button type="button" id="instructions" class="btn btn-default" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
                     <input type="hidden" name="assignmentId" id="assignmentId" value="" />
                     <input type="hidden" name="docId" id="docId" value="" />
@@ -83,7 +83,6 @@
                     <input id="entities-output" name="entities" value="" type="hidden" />
                     <button id="done" class="btn btn-success" type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
                     <!--<input id="submitButton" class = 'hidden' type="submit" name="submit" value="Submit" />-->
-                </form>
 
             </div>
         </div>
@@ -112,12 +111,20 @@
       </div>
       <div id ="remove-span-widget" class="row hidden">
         <div class="panel panel-default">
-          <div class="panel-body">
+            <div class="panel-body">
             <h4> Delete Span:</h4>
             <button id="remove-span" class="btn btn-danger btn-block" type="button" name=""> Remove Span </button>
           </div>
         </div>
       </div>
+    <div class = "row">
+        <div class="panel panel-default">
+            <div class="panel-body" style='padding:5px;'>
+            <textarea name="comment" form="mturk_form" placeholder="Any comments, suggestions, improvements, questions?" style='width:100%; height:100px;'></textarea>
+            </div>
+        </div>
+    </div>
+                </form>
     </div>
   </div>
 
