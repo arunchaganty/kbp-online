@@ -2,12 +2,15 @@
 \label{sec:intro}
 
 \begin{figure}
-  \includegraphics[width=\columnwidth]{figures/task}
+  \includegraphics[width=\columnwidth]{figures/overview}
   \caption{\label{fig:task}
-  In knowledge base population, systems identify \textit{facts} about \textit{entities}, such as Carrie Fisher's place of birth, from a large corpus of documents.
-  Unfortunately, because it is prohibitively expensive to exhaustively annotate a sufficiently large document corpus,
-  only a subset of possible facts are judged for correctness and 
-  facts outside this set (indicated in gray) are assumed to be false.
+  In knowledge base population, systems identify \textit{facts} about \textit{entities}, such as where a person was born or who a company's founder is, from a large corpus of documents.
+  \encircle{1}
+  Under the closed-world evaluation methodology, only those facts that intersect with an existing annotation set, usually constructed from other output of other systems, are considered to be true and all others are considered false.
+  This can significantly penalize a novel system that predicts new facts outside what has already been annotated.
+  \encircle{2}
+  Under the on-demand open-world evaluation methodology, facts that have never been annotated before are sub-sampled and immediately evaluated through crowd-sourcing, providing an unbiased estimate of what the systems score would be on the entire open-world. 
+  % TODO: refine and sell more why this is a good thing.
   }
 \end{figure}
 
