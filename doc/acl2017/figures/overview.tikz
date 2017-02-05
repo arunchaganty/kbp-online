@@ -66,8 +66,10 @@
     \node[rotate=90] (ow-e-d) at ($(ow-e.north east) - (0.1cm, 0.1cm)$) {\includesvg[width=0.2cm]{dice}};
     \node (ow-f) at ($(open-world) + (1.15, 0.2)$) {\Checkmark};
     \node[rotate=90] (ow-f-d) at ($(ow-f.north east) - (0.1cm, 0.1cm)$) {\includesvg[width=0.2cm]{dice}};
+    \node[rotate=0] (ow-f-p) at ($(ow-f-d) - (-0.05cm, 0.15cm)$) {\includesvg[width=0.1cm]{profile}};
     \node (ow-g) at ($(open-world) + (1.25, -0.3)$) {\Cross};
     \node[rotate=90] (ow-g-d) at ($(ow-g.north east) - (0.15cm, 0.1cm)$) {\includesvg[width=0.2cm]{dice}};
+    \node[rotate=0] (ow-g-p) at ($(ow-g-d) - (-0.05cm, 0.15cm)$) {\includesvg[width=0.1cm]{profile}};
     \begin{pgfonlayer}{background}
     \tikzrect{ow-box}{fill=gold!20}{($(open-world) - (0cm, 0.45cm)$)}{1.5cm}{0.9cm};
     \node[draw, very thin, densely dotted, fit=(ow-a)(ow-b)(ow-c)(ow-d)] {};
