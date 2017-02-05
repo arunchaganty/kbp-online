@@ -281,7 +281,7 @@ var mainInterface = new EntityInterface(docWidget, listWidget, addEntityWidget, 
 
 function reportCostTime(cost, time) {
   var time = parseInt(time);
-  var lowerTime = Math.ceil(.8 * time / 60);
+  var lowerTime = Math.floor(.8 * time / 60);
   var upperTime = Math.ceil(1.2 * time / 60);
   $("#reward").text("$" + cost);
   $("#estimated-time").text(lowerTime + " - " + upperTime + " minutes");
