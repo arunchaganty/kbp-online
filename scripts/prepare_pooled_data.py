@@ -303,12 +303,17 @@ def do_make_task(args):
 
     ensure_dir(args.output)
     for doc_id, doc in documents.items():
+        relations = doc['relations']
         doc['doc_id'] = doc_id
         doc['sentences'] = query_doc(doc_id)
-        logger.info("Saving %s with %d relations", doc_id, len(doc['relations']))
+        for relation in relations:
+            doc['relations'] = [relation]
+            b1, e1 = relation['subject']['doc_char_begin'], relation['subject']['doc_char_end']
+            b2, e2 = relation['object']['doc_char_begin'], relation['object']['doc_char_end']
 
-        with open(os.path.join(args.output, doc['doc_id'] + ".json"), 'w') as f:
-            json.dump(doc, f)
+            logger.info("Saving %s with %d relations", doc_id, len(doc['relations']))
+            with open(os.path.join(args.output, "{}-{}-{}-{}-{}.json".format(doc['doc_id'], b1, e1, b2, e2)), 'w') as f:
+                json.dump(doc, f)
 
 if __name__ == "__main__":
     import argparse
