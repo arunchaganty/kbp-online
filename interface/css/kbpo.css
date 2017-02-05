@@ -98,6 +98,10 @@ span.subject {
   color: red;
 }
 
+span.canonical {
+  text-decoration: underline;
+}
+
 span.object {
   color: blue;
 }
@@ -130,6 +134,11 @@ div#relation-option-preview span.object {
 }
 .sentence.highlight {
   background-color: palegoldenrod;
+}
+#relation-option-preview>.sentence.highlight {
+  background-color: transparent;
+  border: 1px solid black;
+  border-radius: 16px;
 }
 
 #relation-options {

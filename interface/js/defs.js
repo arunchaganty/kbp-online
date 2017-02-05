@@ -340,9 +340,12 @@ var RelationLabel = function(r) {
     this.objectTypes = r["object-types"];
 }
 
-RelationLabel.prototype.renderTemplate = function(mentionPair) {
-    var subject = (mentionPair.subject.entity.gloss) ? mentionPair[0].entity.gloss : mentionPair.subject.gloss;
-    var object = (mentionPair.object.entity.gloss) ? mentionPair[1].entity.gloss : mentionPair.object.gloss;
+RelationLabel.prototype.renderTemplate = function(mentionPair, useLink) {
+    if (useLink == undefined){
+        useLink = false;
+    }
+    var subject = (useLink && mentionPair.subject.entity.gloss) ? mentionPair.subject.entity.gloss : mentionPair.subject.gloss;
+    var object = (useLink && mentionPair.object.entity.gloss) ? mentionPair.object.entity.gloss : mentionPair.object.gloss;
     return this.template
         .replaceAll("{subject}", "<span class='subject'>" + subject + "</span>")
         .replaceAll("{object}", "<span class='object'>" + object + "</span>");
@@ -456,7 +459,7 @@ Mention.prototype.levenshtein = function(string){
 };
 
 Mention.prototype.toJSON = function() {
-    return {
+    var val = {
         "gloss": this.gloss,
             "type": this.type,
             "doc_char_begin": this.doc_char_begin,
@@ -466,8 +469,17 @@ Mention.prototype.toJSON = function() {
                 "link": this.entity.link,
                 "doc_char_begin": this.entity.doc_char_begin,
                 "doc_char_end": this.entity.doc_char_end,
+                "canonicalCorrect": this.canonicalCorrect, 
+                "linkCorrect": this.linkCorrect
             } : null
     };
+    if (this.entity.canonicalCorrect != undefined){
+        val.entity.canonicalCorrect = this.entity.canonicalCorrect;
+    }
+    if (this.entity.linkCorrect != undefined){
+        val.entity.linkCorrect = this.entity.linkCorrect;
+    }
+    return val;
 }
 
 // Creates a new entity from a @canonical_mention and @type.

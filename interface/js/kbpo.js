@@ -291,11 +291,180 @@ function getCandidateRelations(mentionPair) {
   });
   return candidates;
 }
+/*
+ * The entity link widget takes a mention and verifies its link (to Wikipedia)
+ */
+var CheckWikiLinkWidget = function(elem){
+    this.elem = elem;
+};
+CheckWikiLinkWidget.prototype.init = function(mention){
+    this.mention = mention;
+    this.entity = this.mention.entity;
+    if (this.entity.linkVerification != undefined){
+        this.done();
+        return;
+    }
+    this.canonicalMention = this.entity.mentions[0];
+    this.elem.find('#mention-gloss').text(this.mention.text());
+    this.elem.find('#canonical-gloss').text(this.canonicalMention.text());
+
+    var self = this;
+    this.elem.find('#correct-wiki-link').on("click.kbpo.checkWikiLinkWidget", function(evt) {
+        self.entity.linkCorrect = "Yes";
+        self.done();
+    });
+    this.elem.find('#wrong-wiki-link').on("click.kbpo.checkWikiLinkWidget", function(evt) {
+        self.entity.linkCorrect = "No";
+        self.done();
+    });
+
+    this.elem.find('#mention-gloss').text(this.mention.text());
+    //TODO: Make sure the wikilink is a valid wikipedia url
+
+    //Do no ask for NIL clusters
+    if(this.entity.link.substring(0, 3) == "NIL"){
+        this.entity.linkCorrect = "NA";
+        this.done();
+        return;
+    }
+    $.ajax({
+        url: 'https://en.wikipedia.org/w/api.php',
+        data: { action: 'query', titles: this.entity.link, format: 'json',prop: 'extracts|pageimages' , exintro:"", pithumbsize: 150},
+        dataType: 'jsonp'
+    }).done(function(response) {
+        var first = null;
+        for(var ids in response.query.pages){
+            first = response.query.pages[ids];
+            break;
+        }
+        if (first != null){
+            console.log(first.extract); 
+            self.elem.find('#wiki-frame>div').html(first.extract);
+            self.elem.find('#wiki-frame>h3>a').html(first.title);
+            self.elem.find('#wiki-frame>h3>a').attr('href', "https://en.wikipedia.org/wiki/"+self.entity.link)
+            if (first.thumbnail != undefined){
+                self.elem.find('#wiki-frame>img').attr('src', first.thumbnail.source);
+            }
+        }else{
+            this.entity.linkCorrect = "invalid_link";
+            this.done();
+            return
+        }
+    });
+
+};
+CheckWikiLinkWidget.prototype.done = function(){
+    this.elem.find('mention-gloss').text("");
+    this.elem.find('canonical-gloss').text("");
+    this.elem.find('#wiki-frame>div').empty();
+    this.elem.find('#wiki-frame>h3>a').empty();
+    this.elem.find('#wiki-frame>h3>a').attr('href', "")
+    this.elem.find('#wiki-frame>img').attr('src', "");
+    this.elem.modal('hide');
+    var self = this;
+    this.elem.on('hidden.bs.modal', function (e) {
+        self.cb();
+    })
+    
+};
+CheckWikiLinkWidget.prototype.show = function(){
+  this.elem.modal('show');
+};
+
+/*
+ * The entity link widget takes a mention and verifies its canonical mention
+ */
+var CheckEntityLinkWidget = function(elem){
+    this.elem = elem;
+    this.linkVerificationWidget = new CheckWikiLinkWidget($("#wiki-verification-modal"));
+}
+CheckEntityLinkWidget.prototype.init = function(mention, cb){
+    this.mention = mention;
+    this.canonicalMention = this.mention.entity.mentions[0];
+    this.linkVerificationWidget.init(mention);
+    this.cb = cb;
+    //Check if canonical mention is the same as this mention
+    if (this.mention.doc_char_begin == this.canonicalMention.doc_char_begin && this.mention.doc_char_end == this.canonicalMention.doc_char_end){
+        this.done('Yes');
+        return;
+    }
+    this.elem.find("#relation-options").empty(); // Clear.
+    this.elem.find("#relation-option-preview").empty(); // Clear.
+    this.elem.find("#relation-examples").empty();
+    var yesDiv = this.makeRelnOption("Yes", "fa-check", "DarkGreen");
+    var noDiv = this.makeRelnOption("No", "fa-times", "coral");
+    if (this.mention.canonicalCorrect != null && this.mention.canonicalCorrect == "Yes") yesDiv.addClass("btn-primary"); 
+    if (this.mention.canonicalCorrect != null && this.mention.canonicalCorrect == "No") noDiv.addClass("btn-primary"); 
+    this.elem.find("#relation-options").append(yesDiv);
+    this.elem.find("#relation-options").append(noDiv);
+    this.updateText(this.renderTemplate(this.mention));
+
+    centerOnMention(this.canonicalMention);
+    //this.mention.tokens.forEach(function(t) {$(t).addClass("subject highlight");});
+    this.canonicalMention.tokens.forEach(function(t) {$(t).addClass("canonical highlight");});
+    $(this.canonicalMention.elem).parent().addClass("highlight");
+}
+CheckEntityLinkWidget.prototype.updateText = function(previewText) {
+    var div = this.elem.find("#relation-option-preview");
+    div.html(previewText || "");
+}
+CheckEntityLinkWidget.prototype.makeRelnOption = function(text, icon, color) {
+  var self = this;
+  var div = $("#relation-option-widget").clone();
+  div.html(div.html().replace("{short}", text));
+  div.find('.icon').removeClass('hidden').addClass(icon).css('color',  color);
+  div.on("click.kbpo.checkEntityLinkWidget", function(evt) {
+      self.done(text)
+  });
+  // Update widget text. 
+  return div;
+}
+
+// The widget selection is done -- send back results.
+CheckEntityLinkWidget.prototype.done = function(correctlyLinked) {
+  // Clear the innards of the html.
+  this.elem.find("#relation-options").empty();
+  this.elem.find("#relation-option-preview").empty();
+  this.elem.find("#relation-examples").empty();
+  this.mention.entity.canonicalCorrect = correctlyLinked;
+  var self = this;
+
+  if (correctlyLinked == "Yes"){
+      //Now verify wiki linking
+      this.linkVerificationWidget.cb = function(){
+          if (self.cb) {
+            self.cb(correctlyLinked);
+          } else {
+            console.log("[Warning] Relation chosen but no callback", chosen_reln);
+          }
+      }
+      this.linkVerificationWidget.show();
+
+      //this.wikiLinkWidget
+  }
+  else{
+      // Send a call back to the interface.
+      if (this.cb) {
+        this.cb(correctlyLinked);
+      } else {
+        console.log("[Warning] Relation chosen but no callback", chosen_reln);
+      }
+  }
+}
+
+CheckEntityLinkWidget.prototype.renderTemplate = function(mention) {
+  var template = "In the sentence you just read (shown below) is <span class='subject'>{mention}</span> referring to <span class='canonical'>{canonical}</span> according to the highlighted sentence?" + $('#sentence-'+mention.sentenceIdx)[0].outerHTML;
+  return template
+    .replace("{mention}", mention.text())
+    .replace("{canonical}", mention.entity.gloss);
+}
 
 /**
  * The relation widget is controlled by the RelationInterface. */
 var RelationWidget = function(elem) {
   this.elem = elem;
+  this.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
+  //this.wikiLinkWidget = CheckEntityLinkWidget(elem)
 };
 
 // initialize the interface using @mentionPair. On completion, call @cb.
@@ -348,12 +517,18 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
   }
   div.attr("id", "relation-option-" + id);
   div.on("click.kbpo.relationWidget", function(evt) {
-      if(this.linkVerify){
+      if(self.linkVerify){
+          self.canonicalLinkWidget.init(self.mentionPair.subject, function(){
+            self.canonicalLinkWidget.init(self.mentionPair.object, function(){self.done(reln);});
+      });
       }
-      self.done(reln)
+      else{
+        self.done(reln)
+      }
   });
   // Update widget text. 
-  div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair))});
+  console.log(self.mentionPair);
+  div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair), this.linkVerify)});
   div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair))});
   return div;
 }
@@ -401,11 +576,17 @@ RelationWidget.prototype.done = function(chosen_reln) {
  * Stores actual relations and iterates through every mention pair in
  * the document, controlling various UI elements.
  */
-var RelationInterface = function(docWidget, relnWidget, listWidget) {
+var RelationInterface = function(docWidget, relnWidget, listWidget, verify) {
   var self = this;
   this.docWidget = docWidget; 
   this.relnWidget = relnWidget; 
   this.listWidget = listWidget; 
+  if(verify != undefined){
+    this.verify = verify;
+  }else{
+      this.verify = false;
+  }
+  
 
   this.listWidget.mouseEnterListeners.push(function(p) {self.highlightExistingMentionPair(p)});
   this.listWidget.mouseLeaveListeners.push(function(p) {self.unhighlightExistingMentionPair(p)});
@@ -421,25 +602,88 @@ var RelationInterface = function(docWidget, relnWidget, listWidget) {
     return false;
   });
 
-  $("#done").on("click.kbpo.interface", function (evt) {
-    var relations = [];
-    self.listWidget.relations().each(function(_, e){
-      e = e.mentionPair;
-      relations.push({
-        "subject": (e.subject).toJSON(),
-        "relation": e.relation.name,
-        "object": (e.object).toJSON(),
+  if (this.verify){
+      $("#done").on("click.kbpo.interface", function (evt) {
+          var relations = [];
+          self.mentionPairs.forEach(function(e){
+              relations.push({
+                  "subject": (e.subject).toJSON(),
+                  "relation": e.relation.name,
+                  "object": (e.object).toJSON(),
+              });
+          });
+          var data = JSON.stringify(relations);
+          $("#relations-output").attr('value', data);
+          alert($("#relations-output")[0].value);
+          self.doneListeners.forEach(function(cb) {cb(data);});
+          return false;
+          //return true;
       });
-    });
-    var data = JSON.stringify(relations);
-    $("#relations-output").attr('value', data);
-    self.doneListeners.forEach(function(cb) {cb(data);});
-    //return true;
-  });
+  }
+  else{
+      $("#done").on("click.kbpo.interface", function (evt) {
+          var relations = [];
+          self.listWidget.relations().each(function(_, e){
+              e = e.mentionPair;
+              relations.push({
+                  "subject": (e.subject).toJSON(),
+                  "relation": e.relation.name,
+                  "object": (e.object).toJSON(),
+              });
+          });
+          var data = JSON.stringify(relations);
+          $("#relations-output").attr('value', data);
+          self.doneListeners.forEach(function(cb) {cb(data);});
+          return false;
+          //return true;
+      });
+  }
 };
 
 RelationInterface.prototype.doneListeners = [];
-// Iterates through the mention pairs provided.
+
+// Iterates through the mention pairs that need to be verified.
+RelationInterface.prototype.runVerify = function(relations) {
+    var self = this;
+    this.mentionPairs = [];
+    relations.forEach(function(rel, idx){
+        rel.subject.tokens = self.docWidget.getTokens(rel.subject.doc_char_begin, rel.subject.doc_char_end);
+        if(rel.subject.tokens.length >0){
+            rel.subject = new Mention(rel.subject);
+            self.docWidget.addMention(rel.subject);
+        }
+        //TODO: Create a mention and add entity 
+        if (rel.subject.entity != undefined){
+            rel.subject.entity['type'] = rel.subject['type'];
+            rel.subject.entity.tokens = self.docWidget.getTokens(rel.subject.entity.doc_char_begin, rel.subject.entity.doc_char_end);
+            var link = rel.subject.entity.link;
+            var canonicalMention = new Mention(rel.subject.entity);
+            self.docWidget.addMention(canonicalMention);
+            rel.subject.entity = new Entity(canonicalMention);
+            rel.subject.entity.link = link;
+        }
+        rel.object.tokens = self.docWidget.getTokens(rel.object.doc_char_begin, rel.object.doc_char_end);
+        if(rel.object.tokens.length >0){
+            rel.object = new Mention(rel.object);
+            self.docWidget.addMention(rel.object);
+            //TODO: Check if entities need to be added as well
+        }
+        //TODO: Create a mention and add entity 
+        if (rel.object.entity != undefined){
+            rel.object.entity['type'] = rel.object['type'];
+            rel.object.entity.tokens = self.docWidget.getTokens(rel.object.entity.doc_char_begin, rel.object.entity.doc_char_end);
+            var link = rel.object.entity.link;
+            var canonicalMention = new Mention(rel.object.entity);
+            self.docWidget.addMention(canonicalMention);
+            rel.object.entity = new Entity(canonicalMention);
+            rel.object.entity.link = link;
+        }
+        self.mentionPairs.push({'subject': rel.subject, 'object': rel.object, 'id': idx, 'relation': null});
+    });
+    this.currentIndex = -1;
+    this.viewStack = [];
+    this.next();
+}
 RelationInterface.prototype.run = function(mentions) {
   var self = this;
   this.mentions = [];
@@ -627,7 +871,7 @@ RelationInterface.prototype.next = function(idx) {
     }
 
     self.next();
-  });
+  }, this.verify);
 }
 
 // Called when the interface is done.
