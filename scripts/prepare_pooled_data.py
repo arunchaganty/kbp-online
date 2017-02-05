@@ -243,7 +243,6 @@ def do_make_task(args):
 
         if relation in TYPES: # new mention!
             assert subj not in mention_map, "Seeing a duplicate mention definition!?: {}".format(row)
-
             doc_id, begin, end = parse_prov(prov)
 
             mention_map[subj] = doc_id
@@ -269,8 +268,8 @@ def do_make_task(args):
                 "id": other["id"],
                 "gloss": other["gloss"],
                 "link": other["link"],
-                "doc_char_begin": begin,
-                "doc_char_end": end
+                "doc_char_begin": other["doc_char_begin"],
+                "doc_char_end": other["doc_char_end"],
                 }
 
         elif relation == "link":
@@ -283,6 +282,7 @@ def do_make_task(args):
 
         else:
             doc_id, begin, end = parse_prov(prov)
+
             mentions = documents[doc_id]["mentions"]
             relations = documents[doc_id]["relations"]
 
