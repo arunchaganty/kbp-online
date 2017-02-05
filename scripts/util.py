@@ -429,7 +429,7 @@ def map_relations(mentions, relations):
         elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
             for reln_ in INVERTED_RELATIONS[reln]:
                 if reln_.startswith(types[obj].lower()):
-                    entry = subj, reln_, obj, prov, confidence, weight
+                    entry = obj, reln_, subj, prov, confidence, weight
                     yield entry
         else:
             logger.warning("Couldn't map relation for %s", entry)
