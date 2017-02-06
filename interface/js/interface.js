@@ -204,6 +204,7 @@ var EntityInterface = function(docWidget, listWidget, addEntityWidget, removeSpa
     }
     var data = JSON.stringify(entities)
     $("#entities-output").attr('value', data);
+    $("#td").attr('value', new Date().getTime() / 1000 - st);
     self.doneListeners.forEach(function(cb) {cb(data);});
     //return true;
   });

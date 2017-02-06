@@ -94,12 +94,16 @@ span.link-marker {
   line-height: 10px;
 }
 
+span.linked-mention {
+  font-weight: bold;
+}
 span.subject {
   color: red;
 }
 
 span.canonical {
   text-decoration: underline;
+  font-weight: bold;
 }
 
 span.object {
