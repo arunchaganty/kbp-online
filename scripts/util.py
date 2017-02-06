@@ -420,16 +420,19 @@ SELECT n.id
 """
     return set(m for m, in query_psql(qry.format(mention=mention_table, mention_ids=make_list(mention_ids))))
 
+def normalize(types, entry):
+    subj, reln, obj = entry[0], entry[1], entry[2]
+    if reln in RELATIONS:
+        return entry
+    elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
+        for reln_ in INVERTED_RELATIONS[reln]:
+            if reln_.startswith(types[obj].lower()):
+                entry = [obj, reln_, subj] + list(entry[3:])
+                return tuple(entry)
+    else:
+        logger.fatal("Couldn't map relation for %s", entry)
+
 def map_relations(mentions, relations):
     types = {r[0]: r[1] for r in mentions}
     for entry in relations:
-        subj, reln, obj, prov, confidence, weight = entry
-        if reln in RELATIONS:
-            yield entry
-        elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
-            for reln_ in INVERTED_RELATIONS[reln]:
-                if reln_.startswith(types[obj].lower()):
-                    entry = obj, reln_, subj, prov, confidence, weight
-                    yield entry
-        else:
-            logger.warning("Couldn't map relation for %s", entry)
+        yield normalize(types, entry)
