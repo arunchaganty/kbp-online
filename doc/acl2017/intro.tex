@@ -4,16 +4,25 @@
 \begin{figure}[t]
   \includegraphics[width=\columnwidth]{figures/overview}
   \caption{\label{fig:task}
-  In knowledge base population (KBP), systems construct a knowledge base (KB) containing \textit{facts} about \textit{entities} 
+  In knowledge base population (KBP), systems construct a knowledge base (KB) containing \textit{relations}. % about \textit{entities} 
   %such as where a person was born or who a company's founder is, 
-  from a large document corpus documents.
+  from a large document corpus.
   \encircle{1}
-  Under the closed-world evaluation methodology, only those facts that intersect with an existing set of annotated facts
+  In closed-world evaluation, %only relations that intersect with an existing set of annotated facts
   %, usually constructed from other output of other systems,
-  are considered to be true and all others are assumed false.
+  all relations ouside an annotated set are incorrectly assumed to be negative.
+  %are considered to be true and all others are assumed false.
   %This can significantly penalize a novel system that predicts new facts outside what has already been annotated.
   \encircle{2}
-  In the on-demand open-world methodology, predicted facts that have never been annotated before are sampled and immediately evaluated through crowd-sourcing to provide an unbiased estimate of performance in an open-world setting.
+  In on-demand open-world evaluation,
+  predicted relations are sampled and immediately evaluated through crowdsourcing
+  to provide an unbiased estimate of open-world performance. % in an open-world setting.
+  \pl{figure is a bit confusing - some icons are too large;
+  I'd have many small circles representing system predictions,
+  some of which are marked green (positive) and some marked red (negative);
+  for closed-world, all circles outside the pool are marked red
+  }
+  \pl{also, 'predicted KB' looks like it's referring only to closed-world}
   }
 \end{figure}
 
