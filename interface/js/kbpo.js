@@ -324,7 +324,10 @@ CheckWikiLinkWidget.prototype.init = function(mention){
     //Do no ask for NIL clusters
     if(this.entity.link.substring(0, 3) == "NIL"){
         this.entity.linkCorrect = "NA";
-        this.done();
+        return;
+    }
+    if(this.mention.type.name == "TITLE" || this.mention.type.name == "DATE"){
+        this.entity.linkCorrect = this.mention.type.name;
         return;
     }
     $.ajax({
@@ -334,6 +337,7 @@ CheckWikiLinkWidget.prototype.init = function(mention){
     }).done(function(response) {
         var first = null;
         for(var ids in response.query.pages){
+            if (ids == "-1" || ids == -1) break;
             first = response.query.pages[ids];
             break;
         }
@@ -346,8 +350,8 @@ CheckWikiLinkWidget.prototype.init = function(mention){
                 self.elem.find('#wiki-frame>img').attr('src', first.thumbnail.source);
             }
         }else{
-            this.entity.linkCorrect = "invalid_link";
-            this.done();
+            self.mention.entity.linkCorrect = "invalid_link";
+            //self.done();
             return;
         }
     });
@@ -360,15 +364,27 @@ CheckWikiLinkWidget.prototype.done = function(){
     this.elem.find('#wiki-frame>h3>a').empty();
     this.elem.find('#wiki-frame>h3>a').attr('href', "")
     this.elem.find('#wiki-frame>img').attr('src', "");
-    this.elem.modal('hide');
-    self.cb();
-    /*#var self = this;
-    this.elem.on('hidden.bs.modal', function (e) {
-    })*/
+    var self = this;
+    if (!this.elem.hasClass('in')){
+	if(self.cb != undefined){
+        	self.cb();
+	}
+        return;
+    }else{
+    	this.elem.modal('hide');
+        this.elem.on('hidden.bs.modal', function (e) {
+	    self.cb();
+        });
+    }
     
 };
 CheckWikiLinkWidget.prototype.show = function(){
-  this.elem.modal('show');
+  if (this.mention.entity.linkCorrect != undefined){
+    this.done();
+    return;
+  }else{
+    this.elem.modal('show');
+  }
 };
 
 /*
@@ -453,7 +469,7 @@ CheckEntityLinkWidget.prototype.done = function(correctlyLinked) {
 }
 
 CheckEntityLinkWidget.prototype.renderTemplate = function(mention) {
-  var template = "In the sentence you just read (shown below) is <span class='subject'>{mention}</span> referring to <span class='canonical'>{canonical}</span> according to the highlighted sentence?" + $('#sentence-'+mention.sentenceIdx)[0].outerHTML;
+  var template = "In the sentence you just read (shown below) does "+$('#mention-'+mention.id)[0].outerHTML+" refer to the <span class='canonical'>{canonical}</span> highlighted above?" + $('#sentence-'+mention.sentenceIdx).clone().addClass('highlight')[0].outerHTML;
   return template
     .replace("{mention}", mention.text())
     .replace("{canonical}", mention.entity.gloss);
@@ -516,8 +532,10 @@ RelationWidget.prototype.makeRelnOption = function(reln, id) {
     div.find('.icon').removeClass('hidden').addClass('fa-question-circle-o').css('color',  'coral');
   }
   div.attr("id", "relation-option-" + id);
+  
   div.on("click.kbpo.relationWidget", function(evt) {
       if(self.linkVerify){
+	    $(self.mentionPair.subject.elem).parent().removeClass("highlight");
           self.canonicalLinkWidget.init(self.mentionPair.subject, function(){
             self.canonicalLinkWidget.init(self.mentionPair.object, function(){self.done(reln);});
       });
@@ -614,9 +632,8 @@ var RelationInterface = function(docWidget, relnWidget, listWidget, verify) {
           });
           var data = JSON.stringify(relations);
           $("#relations-output").attr('value', data);
-          alert($("#relations-output")[0].value);
+          $("#td").attr('value', new Date().getTime() / 1000 - st);
           self.doneListeners.forEach(function(cb) {cb(data);});
-          return false;
           //return true;
       });
   }
@@ -633,8 +650,8 @@ var RelationInterface = function(docWidget, relnWidget, listWidget, verify) {
           });
           var data = JSON.stringify(relations);
           $("#relations-output").attr('value', data);
+          $("#td").attr('value', new Date().getTime() / 1000 - st);
           self.doneListeners.forEach(function(cb) {cb(data);});
-          return false;
           //return true;
       });
   }
@@ -647,6 +664,12 @@ RelationInterface.prototype.runVerify = function(relations) {
     var self = this;
     this.mentionPairs = [];
     relations.forEach(function(rel, idx){
+	//If object is PER, swap with subject
+	if(rel.object.type == 'PER'){
+	    var temp = rel.object;
+	    rel.object = rel.subject;
+	    rel.subject = temp;
+	}
         rel.subject.tokens = self.docWidget.getTokens(rel.subject.doc_char_begin, rel.subject.doc_char_end);
         if(rel.subject.tokens.length >0){
             rel.subject = new Mention(rel.subject);
@@ -775,14 +798,15 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
 
 function centerOnMention(m) {
   var sentence = $(m.elem).parent();
-  var elem = null;
-  if (sentence.prev().length > 0) {
+  var elem = sentence[0]
+  
+  /*if (sentence.prev().length > 0) {
     elem = sentence.prev()[0];
 //.scrollIntoView(true);
   } else {
     elem = sentence[0];
 //.scrollIntoView(true);
-  }
+  }*/
     var topPosRel = elem.offsetTop;
     console.log(topPosRel);
     var parentPosRel = $('#document')[0].offsetTop;

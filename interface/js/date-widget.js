@@ -64,7 +64,8 @@ DateWidget.prototype.refreshDays = function(){
     console.log(this);
     var date = this.getSelectedDate();
     console.log(date);
-    this.daySelect.find('option').not('[value=NA]').remove();
+    this.daySelect.find('option').remove();
+    this.daySelect.append($("<option />").val('NA').text('NA'));
     if (this.monthSelect.val()=='NA' || this.yearSelect.val()=='NA'){
         for(var i=1 ;i<=date.daysInMonth();i++){
             this.daySelect.append($("<option />").val(i).text(date.clone().date(i).format('DD')));

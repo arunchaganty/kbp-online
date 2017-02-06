@@ -1,4 +1,5 @@
 function TurkHelper(){
+    st = new Date().getTime()/1000;
     this.getUrlVars = function()
     {
         var vars = {}, hash;
@@ -41,7 +42,6 @@ function TurkHelper(){
         $('#mturk_form').attr('action', submitUrl);
         $("#assignmentId").attr('value', this.urlVars['assignmentId']);
         $("#docId").attr('value', this.urlVars['doc_id']);
-        alert($('#mturk_form'));
 	console.log('all ready to submit');
     }
 }
