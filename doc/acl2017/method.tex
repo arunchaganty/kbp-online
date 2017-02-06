@@ -49,7 +49,7 @@ We consider 39 binary relations described in the TAC-KBP specifications~\citep{e
   We simplify the set of relations by collapsing distinct location relations like \texttt{per:city\_of\_birth} and \texttt{per:country\_of\_birth} into a single relation, \texttt{per:place\_of\_birth}.
   We also ignore a few rare relations: \texttt{per:age}, \texttt{per:charges}, \texttt{per:cause\_of\_death} and \texttt{org:number\_of\_employees}}
 % Is this needed?
-Finally, when a system predicts a fact, it must also specify the provenance $p$ used to justify the relation, e.g.\ the sentence.
+Finally, when a system predicts a relation, it must also specify the provenance $p$ used to justify it, e.g.\ the sentence.
 
 We call the pair $(m, e)$ a \textit{link} and the tuple $(m_s, r, m_o, p)$ a \textit{relation instance}.
 Formally, the knowledge base outputted by a system consists of all the links and relation instances it could find in the corpus..
@@ -122,13 +122,13 @@ For this reason, entity-level scores are reported in the TAC-KBP evaluations.\fo
 
 The primary source of evaluation data for KBP comes from the annual TAC-KBP competition organized by NIST.\@ % TODO: add links to workshop overview papers
 Each year, participating teams submit their predicted KBs for a provided corpus.
-The organizers then use held-out relational queries that ask for facts that answer specific questions, e.g.\ ``where was Carrie Fisher born?'' or ``what did Carrie Fisher's parents do?'', to select which predicted relation instances to evaluate.\footnote{%
-  Prior to 2015, teams could also participate in a ``slot-filling'' track where the evaluation queries would be provided ahead of time and teams only had to submit predicted facts for query entities.}
+The organizers then use held-out relational queries that ask for relation instances that answer specific questions, e.g.\ ``where was Carrie Fisher born?'' or ``what did Carrie Fisher's parents do?'', to select which predicted relation instances to evaluate.\footnote{%
+  Prior to 2015, teams could also participate in a ``slot-filling'' track where the evaluation queries would be provided ahead of time and teams only had to submit relation instances pertaining to the query entities.}
 Independently, human annotators also search for answers to these queries and submit their results.
 The final evaluation set is thus the union of the evaluation of system predictions and a human search.
 
 While scoring a development system against this evaluation set, only relation instances that match the same set of queries are considered.
-New features in a system may allow it to predict true facts that were previously missed, while at the same predict completely new facts even for these queries that may be true or false.
+New features in a system may allow it to predict true relations that were previously missed, while at the same predict completely new relations even for these queries that may be true or false.
 Unfortunately, there is no way to evaluate these new predictions and they are assumed false under the closed world heuristic.
 We will attempt to quantify the effect of this heuristic next.
-% describe `anydoc'
+% TODO: describe `anydoc'
