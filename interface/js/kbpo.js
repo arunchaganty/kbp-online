@@ -348,7 +348,7 @@ CheckWikiLinkWidget.prototype.init = function(mention){
         }else{
             this.entity.linkCorrect = "invalid_link";
             this.done();
-            return
+            return;
         }
     });
 
@@ -361,10 +361,10 @@ CheckWikiLinkWidget.prototype.done = function(){
     this.elem.find('#wiki-frame>h3>a').attr('href', "")
     this.elem.find('#wiki-frame>img').attr('src', "");
     this.elem.modal('hide');
-    var self = this;
+    self.cb();
+    /*#var self = this;
     this.elem.on('hidden.bs.modal', function (e) {
-        self.cb();
-    })
+    })*/
     
 };
 CheckWikiLinkWidget.prototype.show = function(){
