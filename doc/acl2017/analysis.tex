@@ -1,12 +1,26 @@
-\section{Measuring effects of the closed world assumption}
+\section{Measuring bias due to the closed world assumption}
 \label{sec:analysis}
 %(2 pages)
 
-% What are the different ways that systems predict new facts? -- jkjk
-When systems make new predictions on the evaluation set, they are more often than not wrong.
-While the c
-Recall that under the closed world assumption, all predictions made by development systems outside the evaluation set are assumed to be false.
-While 
+% TODO: Need to state explicitly this is for entity scores.
+
+The closed-world assumption is well understood to provide pessimistic estimates of system performance, but its bias has not been measured before.
+The prevailing intuition is that the evaluation set probably covers most of the correct relations because only instances pertaining to a very specific set of relations are evaluated.
+In this section, we will describe what kinds of predictions are falsely marked negative by the closed world heuristic, how the resulting bias can be measured and finally present results regarding the bias in the context of TAC-KBP.
+
+\paragraph{False negatives.}
+% What are the different ways that systems predict new facts?
+Let's assume that our evaluation set contains only the relation instance shown in \figureref{example}, which identifies Debbie Reynolds as a parent of Carrie Fisher.
+There are few ways that the closed world assumption can falsely predict a relation instance to be wrong.
+First, the instance may state known information but from a different place, e.g.\ from the sentence 
+  ``\textit{Carrie Frances Fisher} was born \ldots to actors and singers Eddie Fisher and \textit{Debbie Reynolds}.''
+% TODO: "object string" is clunky.
+Secondly, a relation instance may state known information but use a different string for the object, e.g.\ a system might use ``Mary Frances Reynolds'' instead of ``Debbie Reynolds'', which is a nickname.
+Finally, a relation instance may express an entirely new relation, e.g.\ that ``Eddie Fisher'' is Carrie's father.
+In all the above cases, the closed world assumption considers the instance to be wrong.
+With the \texttt{anydoc} heuristic, the first instance is correctly marked, but this heuristic also incorrectly marks the instance, ``Bright Lights: Starring Carrie Fisher and Debbie Reynolds'' as being true.
+Consequently, 
+  while the closed world assumption is a strict underestimate of performance, the anydoc heuristic is not guaranteed to be.
 
 % Remind closed world assumption.
 % How do we measure the effects of CWA on development?
@@ -17,53 +31,96 @@ While
 % describe results
 % describe consequences.
 
-\paragraph{Data.}
-We will make use of system submissions released as part of the TAC-KBP Slot Validation tracks in 2013, 2014 and 2015.
-The 2015 dataset contains 70 submissions from 18 teams for 317 queries.
-Considering only the submissions to the first hop of the two-hop \pl{to non-KBP person, don't know what this means} evaluation,
-each submission contains on average about 35,951 predicted slotfills. 
-There are in total 201,332 relations that were predicted, of which only 11,008 of these slotfills have were evaluated.
-
-\subsection{What is the effect of pooling?}
-
-\begin{figure*}
+\paragraph{Measuring bias.}
+\begin{figure*}[t]
   \begin{subfigure}{\columnwidth}
   \includegraphics[width=\columnwidth]{figures/pooling-bias}
-  \caption{\label{fig:pooling-bias} Pooling bias for the macro \fone{} metric.}
+  \caption{Pooling bias for macro \fone{} scores without the \texttt{anydoc} heuristic.}
   \end{subfigure}
   \begin{subfigure}{\columnwidth}
   \includegraphics[width=\columnwidth]{figures/pooling-bias-anydoc}
-  \caption{\label{fig:pooling-bias-anydoc} Pooling bias for the macro \fone{} metric with the `anydoc' heuristic.}
+  \caption{Pooling bias for macro \fone{} scores with the \texttt{anydoc} heuristic.}
   \end{subfigure}
-  \caption{Pooling bias measures how much a system's score is affected by not having its output as part of the pooled evaluation.
+  \caption{\label{fig:pooling-bias} Pooling bias measures how much a system's score is affected by not having its output as part of the pooled evaluation.
   The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 1.98\% when evaluating using the anydoc heuristic.
   Note that the median difference between the anydoc scores and standard scores is 0.74\% points; this difference is caused because the anydoc heuristic erroneously scores fills with incorrect judgements to be correct.}
 \end{figure*}
 
-The ``gold'' labels on relation contexts are collected by a combination of a time-bounded human search in the corpus and a human evaluation of pooled output from participating systems.
-While the human search identifies a significant fraction of relations (\todo{80\%}),
-  it does not sufficiently cover the variety of contexts that are submitted as justifications of the relation. 
-This has two implications on how a development system, \textit{D}, that did not participate in the original evaluation is scored.
-Firstly, it is likely that contexts \pl{I thought the problem with bias was due to the set of relations $D$ returns, not contexts} the system \textit{D} submits has never been seen before and hence can not be evaluated.
-Secondly, it is also likely that relations the system \textit{D} submits have never been seen before, particularly if \textit{D} incorporates a novel method of relation extraction, creating a perverse incentive to ensure that new extraction methods behave similarly to old extraction systems.
-The magnitude of this effect, the pooling bias, is can be quantified by performing a ``leave-one-out'' (``leave-team-out'') experiment on previous years submissions, measuring the difference in metric scores when output unique to a single submission (team) is excluded from the gold data.
-The former is a proxy that measures how much bias development systems of teams that had participated in the KBP evaluation experience and the latter measures the bias development systems of new teams experience.
-\figureref{pooling-bias} shows the pooling bias experienced by teams and systems in the 2015 evaluation;
-  the median bias against an unpooled team is 13.55\% \fone{} points and for an unpooled system is 4.55\% \fone{} points,
-  making it impossible to evaluate against this metric in development (also significantly biasing new entrants to the task).
+Ideally, we would like to measure the difference between performance scores of development systems on the evaluation set and a hypothetical set that includes evaluations of all its relations.
+This difference is often called the ``pooling bias'' in information retrieval literature~\citep{}. % TODO: cite weber and many others.
+As a proxy to development systems, we will make use of system submissions to the TAC-KBP 2015 competition, made available through the TAC-KBP Slot Validation Tracks~\citep{}.
+There are 70 submissions from 18 teams for 317 queries and the evaluation set consists of 11,008 assessed relation instances.\footnote{%
+  The evaluation set is actually constructed from compositional queries like, ``what does Carrie Fisher's parents do?'':
+  these queries select relation instances that answer the question ``who are Carrie Fisher's parents?'', and then use those answers (e.g.\ ``Debbie Reynolds'') to select relation instances that answer ``what does Debbie Reynolds do?''.
+  We only consider instances selected in the first part of this process.
+}
+Adopting the methodology of \citet{weber2010measurement},
+we construct a hypothetical evaluation set for each submission to simulate what the evaluation set would look like if the corresponding team did not submit its results.
+This hypothetical evaluation set contains only those relations that were predicted by at least one other system or the human annotators.
+We then measure the difference between performance scores on the original evaluation set and on the hypothetical evaluation set with and without the \texttt{anydoc} heuristic. 
 
-To mitigate this unreasonable bias, teams typically adopt an `anydoc' heuristic during evaluation, which ignores the justification of a context while evaluating a relation.
-\pl{hard for me to get intuition for implications of anydoc}
-With this heuristic (\figureref{pooling-bias-anydoc}), the pooling bias decreases considerably, with 
-  the median bias against an unpooled team being 1.98\% \fone{} points and unpooled system is 0.0\% \fone{} points.
-However, it should also be noted that scores under the `anydoc' heuristics are on average 0.74\% higher than the standard scores due to erroneously labeling entries to be correct.
-This analysis confirms the necessity of the `anydoc' heuristic on the current evaluations, but regardless, the bias is large enough to wash out the effect of the typical improvement a development makes.
+\paragraph{Results.}
+\figureref{pooling-bias} summarizes our results on pooling bias for the macro \fone{} metric.
+The effect of bias is truncated on systems that performed very poorly.
+Consequently, we report median results on the top 40 systems (which corresponding to a sharp drop in performance).
+The outlier in the graph at rank 36 corresponds to a submission from University of Texas, Austin that only filtered outputs from other systems: this submission does not suffer any pooling bias because all of its outputs are included in the hypothetical evaluation set.
+
+Without the \texttt{anydoc} heuristic, pooling bias is 15.51\% \fone{} points and with the heuristic it is 1.98\% \fone{} points.
+We note that the \texttt{anydoc} heuristic overestimates scores by about 0.74\% \fone{} points.
+The bias affects precision and recall almost equally: 
+  the median bias the without \texttt{anydoc} heuristic being 17.93\% and 17.0\% respectively, and
+  the median bias the with \texttt{anydoc} heuristic being 2.34\% and 1.93\% respectively.
+We also consider the alternate heuristic of ignoring relation instances outside the evaluation set and find that that biases \fone{} scores upwards by \fake{3\%}.
+At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions).
+This analysis confirms the necessity of the \texttt{anydoc} heuristic during development evaluations,
+  but at the same time, even with the heuristic, the bias is much larger than the typical system difference.
+Thus, we conclude that this evaluation is biased against novel system improvements!
+
+%  the median bias against an unpooled team is 13.55\% \fone{} points and for an unpooled system is 4.55\% \fone{} points,
+%  making it impossible to evaluate against this metric in development (also significantly biasing new entrants to the task).
+%The former is a proxy that measures how much bias development systems of teams that had participated in the KBP evaluation experience and the latter measures the bias development systems of new teams experience.
+%\figureref{pooling-bias} shows the pooling bias experienced by teams and systems in the 2015 evaluation;
+%  the median bias against an unpooled team is 13.55\% \fone{} points and for an unpooled system is 4.55\% \fone{} points,
+%  making it impossible to evaluate against this metric in development (also significantly biasing new entrants to the task).
+%
+
+% We will make use of system submissions released as part of the TAC-KBP Slot Validation tracks in 2013, 2014 and 2015.
+% The 2015 dataset contains 70 submissions from 18 teams for 317 queries.
+% Considering only the submissions to the first hop of the two-hop \pl{to non-KBP person, don't know what this means} evaluation,
+% each submission contains on average about 35,951 predicted slotfills. 
+% There are in total 201,332 relations that were predicted, of which only 11,008 of these slotfills have were evaluated.
+
+%  each submission predicts on average
+%We will make use of system submissions released as part of the TAC-KBP Slot Validation tracks in 2013, 2014 and 2015.
+%The 2015 dataset contains 70 submissions from 18 teams for 317 queries.
+%Considering only the submissions to the first hop of the two-hop \pl{to non-KBP person, don't know what this means} evaluation,
+%each submission contains on average about 35,951 predicted slotfills. 
+%There are in total 201,332 relations that were predicted, of which only 11,008 of these slotfills have were evaluated.
+%
+%The ``gold'' labels on relation contexts are collected by a combination of a time-bounded human search in the corpus and a human evaluation of pooled output from participating systems.
+%While the human search identifies a significant fraction of relations (\todo{80\%}),
+%  it does not sufficiently cover the variety of contexts that are submitted as justifications of the relation. 
+%This has two implications on how a development system, \textit{D}, that did not participate in the original evaluation is scored.
+%Firstly, it is likely that contexts \pl{I thought the problem with bias was due to the set of relations $D$ returns, not contexts} the system \textit{D} submits has never been seen before and hence can not be evaluated.
+%Secondly, it is also likely that relations the system \textit{D} submits have never been seen before, particularly if \textit{D} incorporates a novel method of relation extraction, creating a perverse incentive to ensure that new extraction methods behave similarly to old extraction systems.
+%The magnitude of this effect, the pooling bias, is can be quantified by performing a ``leave-one-out'' (``leave-team-out'') experiment on previous years submissions, measuring the difference in metric scores when output unique to a single submission (team) is excluded from the gold data.
+%The former is a proxy that measures how much bias development systems of teams that had participated in the KBP evaluation experience and the latter measures the bias development systems of new teams experience.
+%\figureref{pooling-bias} shows the pooling bias experienced by teams and systems in the 2015 evaluation;
+%  the median bias against an unpooled team is 13.55\% \fone{} points and for an unpooled system is 4.55\% \fone{} points,
+%  making it impossible to evaluate against this metric in development (also significantly biasing new entrants to the task).
+%
+%To mitigate this unreasonable bias, teams typically adopt an `anydoc' heuristic during evaluation, which ignores the justification of a context while evaluating a relation.
+%\pl{hard for me to get intuition for implications of anydoc}
+%With this heuristic (\figureref{pooling-bias-anydoc}), the pooling bias decreases considerably, with 
+%  the median bias against an unpooled team being 1.98\% \fone{} points and unpooled system is 0.0\% \fone{} points.
+%However, it should also be noted that scores under the `anydoc' heuristics are on average 0.74\% higher than the standard scores due to erroneously labeling entries to be correct.
+%This analysis confirms the necessity of the `anydoc' heuristic on the current evaluations, but regardless, the bias is large enough to wash out the effect of the typical improvement a development makes.
 % TAKEAWAY: new entrants are biased against!
 
-In the latter sections of this paper, we eliminate the problem of pooling evaluation all together by proposing an online evaluation methodology where every new submission is considered and selectively evaluated to ensure statistical validity.
+% In the latter sections of this paper, we eliminate the problem of pooling evaluation all together by proposing an online evaluation methodology where every new submission is considered and selectively evaluated to ensure statistical validity.
 
-\paragraph{Evaluating performance across years.}
-\fake{This analysis is incomplete, so omitting for your convenience!}
+% \paragraph{Evaluating performance across years.}
+% \fake{This analysis is incomplete, so omitting for your convenience!}
 % % NOTE: should we describe any more statistics?
 % \paragraph{How informative is \fone{} as a metric?}
 % \ac{Ignore for now!}
