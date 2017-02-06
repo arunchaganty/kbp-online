@@ -31,33 +31,56 @@ The main way performance on the KBP task has been evaluated has been through the
 % TODO: argue the merits of the TAC-KBP challenge and its evaluation.
 The competition has invited more than \fake{300} submissions from at least \fake{40} different teams over the last 7 years (since 2009).
 Each year, teams are provided a document corpus and a list of query entities, for example ``Carrie Fisher'', to find facts for.
-The proposed facts from each participating team is pooled together and evaluated by human annotators.
+The proposed facts from each participating team are \emph{pooled} together and evaluated by human annotators.
 While scores of top performing teams have improved, they remain under \fake{35\% \fone}.
 In contrast, human evaluators provided access to simple text search for \fake{about 10 minutes} per query are able to identify far more facts and score about \fake{70\% \fone}.
 
+% Analysis: biased!
 %A number of confounding factors affect performance, including the performance of other systems, making comparisons difficult.
 This plateau should be alarming for any researcher; if we are to break through this ceiling, we need to understand better what is holding us back.
 Accordingly, we begin with an statistical analysis of the KBP evaluation in \sectionref{analysis}.
-Our key finding is that the evaluation data and methodology that teams use during development is actually biased against new features!
-We estimate that scores for new developments are on average 2\% points lower than they should be, a difference that can mask and even reverse the benefits of a new feature.
+\plg{wouldn't call this key finding - just 'we find';
+I think your key result is that you were able to get this whole system to work
+}
+Our key finding is that the pooling evaluation that teams use during development
+produces scores that are on average 2\% points lower than they should be,
+and therefore, this methodology is actually biased against novel system improvements.
 
-The source of this bias arises because 
+% PL: I merged this paragraph into the paragraph below
+\plg{would be good to merge this paragraph with the one below - because it's about the bias,
+and can be shortened to be somewhat like what's in the abstract - it shouldn't be hard to explain}
+The source of this bias arises because
 the evaluation data only contains assessments for a subset of every candidate fact in the corpus
 and there is no good way to score a predicted fact that is not part of this subset.
-In particular, the evaluation data consists only of the candidate facts ``pooled'' together from systems that participated during the original competition and were subsequently assessed by human annotators.
+In particular, the evaluation data consists only of the candidate facts
+``pooled'' together from systems that participated during the original
+competition and were subsequently assessed by human annotators.
 
-% Goal: Describe solution.
-This ``pooling'' bias has also been identified in the information retrieval community\needcite, which bears many similarities to the knowledge base population task, e.g.\ both tasks seek to find ``relevant'' information from a large document corpus that is infeasible to exhaustively annotate.
+% Describe pooling bias, connect to IR
+This \emph{pooling bias} has been studied in the information retrieval community\needcite,
+%which bears many similarities to the knowledge base population task,
+%e.g.\ both tasks
+which also seeks to find ``relevant'' information from a large document corpus that is infeasible to exhaustively annotate.
+\plg{insert brief description of pooling bias}
 However, assessing the quality of system outputs is relatively objective in the context of knowledge base population.
 This enables us to employ non-expert crowdworkers to accurately judge novel output submitted by teams during development.
+\plg{I'm not sure the 'objective, therefore crowdsourcing' is convincing -
+'relevance' also lends itself to crowdsourcing, which is what is done in IR too;
+need to find something else to contrast, or just say we borrow ideas from IR?
+}
 
+% Better statistics
 Another, perhaps intangible, obstacle in developing better KBP systems is the slow feedback loop that researchers face in testing their developments: they must wait a year for the next TAC-KBP challenge followed by several months to receive their test scores.
 We propose a new online evaluation protocol that automates the process of query selection to provide more precise estimates of instance-level and entity-level evaluation metrics than the current methodology.
 The evaluation protocol uses a clever combination of annotation of pooled output, exhaustive annotation on a subset of documents and correlations between unassessed outputs to produce unbiased estimates of precision and recall.
+\plg{I'd focus this paragraph on the better statistical properties because that's your technical
+contribution; slow feedback should be moved to the next paragraph, which talks about the upshot
+of what you've accomplished}
 
 We simulate this evaluation protocol using the 2015 KBP corpus and find that we are able to confidently evaluate submissions within a budget of \fake{\$100/system} with a fixed cost of \fake{\$1000/corpus}.
 The implementation of the online evaluation platform will be made available for submissions at \url{http://anonymo.us}.
 
+\pl{would probably drop this or fold it in - seems to minor to standalone}
 Of independent interest is a statistical analysis of submissions to past KBP challenges that allows us to make comparisons across years.
 
 %The platform is easy to use and will have a fresh stream of documents.
