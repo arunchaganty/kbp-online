@@ -17,12 +17,12 @@
   In on-demand open-world evaluation,
   predicted relations are sampled and immediately evaluated through crowdsourcing
   to provide an unbiased estimate of open-world performance. % in an open-world setting.
-  \pl{figure is a bit confusing - some icons are too large;
+  \plg{figure is a bit confusing - some icons are too large;
   I'd have many small circles representing system predictions,
   some of which are marked green (positive) and some marked red (negative);
   for closed-world, all circles outside the pool are marked red
   }
-  \pl{also, 'predicted KB' looks like it's referring only to closed-world}
+  \plg{also, 'predicted KB' looks like it's referring only to closed-world}
   }
 \end{figure}
 
@@ -31,6 +31,7 @@
 Harnessing the wealth of information present in unstructured text online has been and continues to be a long standing goal for the natural language processing community.
 In particular, one approach to doing so has been to construct a \textit{knowledge base} storing information in a (possibly weak) relational schema, integrating the output of several information extraction tasks, including entity detection and linking, relation extraction and event extraction.
 Knowledge bases such as YAGO, Freebase and Wikidata have shown immense value for question answering, search relevance, and potential in reasoning systems\needcite.
+\plg{can be shortened and allude more to scale, open-eneded nature}
 
 % TODO: This line would be nice to follow, but it's pending a cross-year evaluation.
 % Significant effort and resources have been invested in improving the performance of knowledge base population (KBP) systems, but have our systems actually gotten better and if so, by how much?
@@ -43,60 +44,69 @@ Each year, teams are provided a document corpus and a list of query entities, fo
 The proposed facts from each participating team are \emph{pooled} together and evaluated by human annotators.
 While scores of top performing teams have improved, they remain under \fake{35\% \fone}.
 In contrast, human evaluators provided access to simple text search for \fake{about 10 minutes} per query are able to identify far more facts and score about \fake{70\% \fone}.
-
-% Analysis: biased!
-%A number of confounding factors affect performance, including the performance of other systems, making comparisons difficult.
 This plateau should be alarming for any researcher; if we are to break through this ceiling, we need to understand better what is holding us back.
-Accordingly, we begin with an statistical analysis of the KBP evaluation in \sectionref{analysis}.
-\plg{wouldn't call this key finding - just 'we find';
-I think your key result is that you were able to get this whole system to work
-}
-Our key finding is that the pooling evaluation that teams use during development
-produces scores that are on average 2\% points lower than they should be,
-and therefore, this methodology is actually biased against novel system improvements.
 
-% PL: I merged this paragraph into the paragraph below
-\plg{would be good to merge this paragraph with the one below - because it's about the bias,
-and can be shortened to be somewhat like what's in the abstract - it shouldn't be hard to explain}
-The source of this bias arises because
-the evaluation data only contains assessments for a subset of every candidate fact in the corpus
-and there is no good way to score a predicted fact that is not part of this subset.
-In particular, the evaluation data consists only of the candidate facts
-``pooled'' together from systems that participated during the original
-competition and were subsequently assessed by human annotators.
+%A number of confounding factors affect performance, including the performance of other systems, making comparisons difficult.
+% Analysis: biased!
+We begin with a statistical analysis of the KBP evaluation in \sectionref{analysis},
+and find that the pooling evaluation that teams use during development
+produces scores that are on average 2\% points lower than they should be.
+The source of this \emph{pooling bias}, also studied in the information retrieval community \needcite,
+is the closed-world nature of the evaluation:
+any predictions that fall outside the previous systems' predictions,
+even correct ones, are incorrectly labeled as negative.
+This evaluation is thus biased against novel system improvements!
+
+% PL: simplified
+%The source of this bias arises because
+%the evaluation data only contains assessments for a subset of every candidate fact in the corpus
+%and there is no good way to score a predicted fact that is not part of this subset.
+%In particular, the evaluation data consists only of the candidate facts
+%``pooled'' together from systems that participated during the original
+%competition and were subsequently assessed by human annotators.
 
 % Describe pooling bias, connect to IR
-This \emph{pooling bias} has been studied in the information retrieval community\needcite,
+%This bias has been studied in the information retrieval community\needcite,
 %which bears many similarities to the knowledge base population task,
 %e.g.\ both tasks
-which also seeks to find ``relevant'' information from a large document corpus that is infeasible to exhaustively annotate.
-\plg{insert brief description of pooling bias}
-However, assessing the quality of system outputs is relatively objective in the context of knowledge base population.
-This enables us to employ non-expert crowdworkers to accurately judge novel output submitted by teams during development.
-\plg{I'm not sure the 'objective, therefore crowdsourcing' is convincing -
-'relevance' also lends itself to crowdsourcing, which is what is done in IR too;
-need to find something else to contrast, or just say we borrow ideas from IR?
-}
+%which also seeks to find ``relevant'' information from a large document corpus that is infeasible to exhaustively annotate.
 
-% Better statistics
-Another, perhaps intangible, obstacle in developing better KBP systems is the slow feedback loop that researchers face in testing their developments: they must wait a year for the next TAC-KBP challenge followed by several months to receive their test scores.
+% Our solution
+To address this bias, we propose a new on-demand evaluation based on crowdsourcing.
+Upon receiving a new system's predictions,
+crowdworkers evaluate a sample of these predictions to provide an unbiased estimate of precision.
+We estimate recall of the system against a carefully-chosen subset of documents in the corpus,
+which has been exhaustively annotated in advance.
+We also perform careful sampling and reweighting to further reduce the variance of our estimates.
+%However, assessing the quality of system outputs is relatively objective in the context of knowledge base population.
+%This enables us to employ non-expert crowdworkers to accurately judge novel output submitted by teams during development.
+% PL: I'm not sure the 'objective, therefore crowdsourcing' is convincing - 'relevance' also lends itself to crowdsourcing, which is what is done in IR too;
+
+% Results
+We simulate this evaluation protocol on the 2015 \plg{abstract says 2016} KBP challenge.
+We find that we are able to confidently evaluate submissions within a budget of \fake{\$100/system} with a fixed cost of \fake{\$1000/corpus} \plg{per document?}.\footnote{The implementation of the online evaluation platform will be made available for submissions at \url{http://anonymo.us}.}
+The practical on-demand evaluation also addresses
+the slow feedback loop that researchers face in testing their developments: they
+must wait a year for the next TAC-KBP challenge followed by several months to
+receive their test scores.  We hope that the immediate, unbiased evaluation
+will help accelerate the development of better information extraction systems.
+
+\plg{might want to incorporate some of this material into the preceding paragraphs}
+(scrap material)
 We propose a new online evaluation protocol that automates the process of query selection to provide more precise estimates of instance-level and entity-level evaluation metrics than the current methodology.
-The evaluation protocol uses a clever combination of annotation of pooled output, exhaustive annotation on a subset of documents and correlations between unassessed outputs to produce unbiased estimates of precision and recall.
-\plg{I'd focus this paragraph on the better statistical properties because that's your technical
-contribution; slow feedback should be moved to the next paragraph, which talks about the upshot
-of what you've accomplished}
+The evaluation protocol uses a careful combination of annotation of pooled output, exhaustive annotation on a subset of documents and correlations between unassessed outputs to produce unbiased estimates of precision and recall.
 
-We simulate this evaluation protocol using the 2015 KBP corpus and find that we are able to confidently evaluate submissions within a budget of \fake{\$100/system} with a fixed cost of \fake{\$1000/corpus}.
-The implementation of the online evaluation platform will be made available for submissions at \url{http://anonymo.us}.
-
-\pl{would probably drop this or fold it in - seems to minor to standalone}
+\plg{would probably drop this or fold it in - seems to minor to standalone}
 Of independent interest is a statistical analysis of submissions to past KBP challenges that allows us to make comparisons across years.
+
+\plg{we had talked about arguing why static datasets don't quite help;
+do we have anything to say there?}
 
 %The platform is easy to use and will have a fresh stream of documents.
 
 %For these reasons, we propose and implement a new evaluation methodology: an online evaluation platform that teams can submit to as they develop their systems (\sectionref{design}).
 %We use a combination of exhaustive, selective and estimative annotations to balance cost, accuracy and guaranteed unbiased estimates of precision, recall and $\fone$ scores at the mention and entity level.
-% \pl{I don't see the 'online evaluation platform' as the immediate solution;
+% \plg{I don't see the 'online evaluation platform' as the immediate solution;
 % what I'd expect is a more technical solution - how to do the crowdsourcing to deal
 % with bias and reweighting to deal with variance;
 % making it online seems to help with more community aspects,
