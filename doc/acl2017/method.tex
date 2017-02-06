@@ -125,6 +125,10 @@ Each year, participating teams submit their predicted KBs for a provided corpus.
 The organizers then use held-out relational queries that ask for facts that answer specific questions, e.g.\ ``where was Carrie Fisher born?'' or ``what did Carrie Fisher's parents do?'', to select which predicted relation instances to evaluate.\footnote{%
   Prior to 2015, teams could also participate in a ``slot-filling'' track where the evaluation queries would be provided ahead of time and teams only had to submit predicted facts for query entities.}
 Independently, human annotators also search for answers to these queries and submit their results.
-The final evaluation dataset is thus the union of an evaluation of system predictions and a human search.
-In 2015, the corpus consisted of 50,000 documents.
-Over 190,000 relation instances matched the 553 queries, of which almost 24,000 evaluated and released as part of the evaluation data.
+The final evaluation set is thus the union of the evaluation of system predictions and a human search.
+
+While scoring a development system against this evaluation set, only relation instances that match the same set of queries are considered.
+New features in a system may allow it to predict true facts that were previously missed, while at the same predict completely new facts even for these queries that may be true or false.
+Unfortunately, there is no way to evaluate these new predictions and they are assumed false under the closed world heuristic.
+We will attempt to quantify the effect of this heuristic next.
+% describe `anydoc'
