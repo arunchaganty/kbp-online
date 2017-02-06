@@ -322,9 +322,11 @@ def reweight(types, entries, new_entries, scheme="entity"):
 
     MW, EW, RW = 5, 6, 7
 
+    new_entries_ = []
     for row in new_entries:
         assert len(row) == 8 # subj, reln, obj, prov, conf, mw, ew, rw
         subj, relation, obj = row[:3]
+
         if is_reln(relation):
             subj_, obj_ = links[subj], links[obj]
 
@@ -343,7 +345,9 @@ def reweight(types, entries, new_entries, scheme="entity"):
                 row[RW] = q_ri / p_ri
             else:
                 raise ValueError("invalid scheme")
-        yield row
+            new_entries_.append(row)
+
+    return new_entries_
 
 def do_sample(args):
     """
@@ -404,10 +408,19 @@ def do_reweight(args):
     else:
         scheme = "entity"
 
+    relations = reweight(types, entries, new_entries, scheme)
+    # Don't need to do map because new_entries is ok
+    mentions = set(m for row in relations for m in [row[0], row[2]])
+    mentions.update(row[2] for row in entries if row[1] == "canonical_mention" and row[0] in mentions)
+    docs = set(parse_prov(row[3])[0] for row in relations)
+    logger.info("Touches %d mentions + canonical-mentions from %d documents", len(mentions), len(docs))
+    # Nones are for sampling weights.
+    mentions = [row + [None, None, None] for row in entries if row[0] in mentions and not is_reln(row[1])]
+
     # Reconstruct output: collect all mentions, links, canonical mentions and relations.
     writer = csv.writer(args.output, delimiter="\t")
-    for row in reweight(types, entries, new_entries, scheme):
-        writer.writerow(row)
+    for entry in mentions + relations:
+        writer.writerow(entry)
 
 def do_make_task(args):
     """
