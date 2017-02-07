@@ -405,7 +405,12 @@ var Mention = function(m) {
     this.id = Mention.count++;
     this.tokens = m.tokens;
     this.sentenceIdx = m.tokens[0].sentenceIdx;
-    this.type = m.type && TYPES[m.type];
+    if(typeof m.type == "string"){
+        this.type = m.type && TYPES[m.type];
+    }
+    else{
+        this.type = m.type && m.type.name && TYPES[m.type.name];
+    }
     this.gloss = m.gloss;
     this.doc_char_begin = m.doc_char_begin;
     this.doc_char_end = m.doc_char_end;

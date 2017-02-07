@@ -798,14 +798,15 @@ RelationInterface.prototype.constructMentionPairs = function(mentions) {
 
 function centerOnMention(m) {
   var sentence = $(m.elem).parent();
-  var elem = null;
-  if (sentence.prev().length > 0) {
+  var elem = sentence[0]
+  
+  /*if (sentence.prev().length > 0) {
     elem = sentence.prev()[0];
 //.scrollIntoView(true);
   } else {
     elem = sentence[0];
 //.scrollIntoView(true);
-  }
+  }*/
     var topPosRel = elem.offsetTop;
     console.log(topPosRel);
     var parentPosRel = $('#document')[0].offsetTop;
