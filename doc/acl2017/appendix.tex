@@ -1,4 +1,7 @@
 \onecolumn
+\section{Annotation interfaces}
+\label{sec:interface}
+
 \section{Power analysis}
 \label{sec:power}
 
@@ -30,7 +33,8 @@ Let $E$ be a randomly drawn subset of $\sC$ with $n_E$ samples for exhaustive an
   \end{subfigure}
 \end{figure}
 
-\begin{lemma}[Relative efficiency of using pooled annotations to compute corpus statistics] 
+\begin{theorem}[Relative efficiency of using pooled annotations to compute corpus statistics] 
+  \label{thm:variance-pooled-recall}
   % Define all the variables
   Let $x$ be a statistic that we wish to compute on $\sC$ (e.g.\ recall),
     $\rh$ be an unbiased estimator of $r$ on $E$ with variance $\sigma_r^2$,
@@ -49,8 +53,7 @@ Let $E$ be a randomly drawn subset of $\sC$ with $n_E$ samples for exhaustive an
       y (1-r) + \frac{n_E}{n_P} r (1-y)
       }.
   \end{align*}
-  \figureref{pool-for-corpus} shows 
-\end{lemma}
+\end{theorem}
 \begin{proof}
   \begin{align*}
     \sigma_e^2 &= \frac{x (1-x)}{n_E + 1} \\
@@ -62,247 +65,246 @@ Let $E$ be a randomly drawn subset of $\sC$ with $n_E$ samples for exhaustive an
   \end{align*}
 \end{proof}
 
-\begin{lemma}[Relative efficiency of using unassessed pooled output to compute corpus statistics]
-  \todo{What about dependencies of $P_i$?}
-  % Define all the variables
-  Let $x$ be a statistic that we wish to compute on $\sC$ (e.g.\ recall) that is $0$ outside of $\sP$,
-    $\rh$ be an unbiased estimator of $r$ on $E$ with variance $\sigma_r^2$,
-    $\sP_1, \dots \sP_m$ be partitions of the pool $\sP$ such that $p_i \eqdef \Pr(c \in \sC \given c \in  \sP_i)$ with $P_1, \dots, P_m$ be corresponding partitions of the sample $P$ with sizes $n_1, \dots, n_m$,
-    $\ph_i, \dots, \ph_m$ be estimates of $p_i$ on $E$ with variances $\pi^2_i$,
-    and $y_1, \dots y_n$ be estimates of the statistic $x$ on $\sP_i$ with variances $\sigma_i^2$.
-    Then, $$\xh_u = \rh \frac{\sum_{i=1}^n \ph_i^2 |P_i| \yh_i}{\sum_{i=1}^n \ph_i |P_i|},$$ is unbiased estimator of $x$ with variance,
-  $$
-  \sigma_u^2 = \sigma_r^2 \sigma_y^2 + y \sigma_r^2 + r \sigma_r^2.
-  $$
+% \begin{lemma}[Relative efficiency of using unassessed pooled output to compute corpus statistics]
+%   \todo{What about dependencies of $P_i$?}
+%   % Define all the variables
+%   Let $x$ be a statistic that we wish to compute on $\sC$ (e.g.\ recall) that is $0$ outside of $\sP$,
+%     $\rh$ be an unbiased estimator of $r$ on $E$ with variance $\sigma_r^2$,
+%     $\sP_1, \dots \sP_m$ be partitions of the pool $\sP$ such that $p_i \eqdef \Pr(c \in \sC \given c \in  \sP_i)$ with $P_1, \dots, P_m$ be corresponding partitions of the sample $P$ with sizes $n_1, \dots, n_m$,
+%     $\ph_i, \dots, \ph_m$ be estimates of $p_i$ on $E$ with variances $\pi^2_i$,
+%     and $y_1, \dots y_n$ be estimates of the statistic $x$ on $\sP_i$ with variances $\sigma_i^2$.
+%     Then, $$\xh_u = \rh \frac{\sum_{i=1}^n \ph_i^2 |P_i| \yh_i}{\sum_{i=1}^n \ph_i |P_i|},$$ is unbiased estimator of $x$ with variance,
+%   $$
+%   \sigma_u^2 = \sigma_r^2 \sigma_y^2 + y \sigma_r^2 + r \sigma_r^2.
+%   $$
+% 
+%   Furthermore, if $\xh_e$ be an unbiased estimator of $x$ on $E$ with variance $\sigma_e^2$,
+%   the relative efficiency of $\xh_p$ with respect to $\xh_e$ is,
+%   \begin{align*}
+%     \frac{\sigma_e^2}{\sigma_u^2}
+%     &\approx \frac{1-x
+%       }{
+%         \frac{9 r(1-p)y}{n_P/n_E}  +
+%         \frac{4 rp(1-y)}{n_U/n_E} +
+%           (1-r)py
+%         }.
+%   \end{align*}
+% \end{lemma}
+% \begin{proof}
+%   We would like to estimate $\E_{\sC}[x]$, which can be expressed as follows,
+%   \begin{align*}
+%     \E_{\sC}[x] 
+%     &= \Pr(c \in \sP \intersection \sC \given c \in \sC) ~ \E_{\sP \intersection \sC}[x] 
+%     + \Pr(c \in \neg\sP \intersection \sC \given c \in \sC) ~ \E_{\neg\sP \intersection \sC }[x] \\
+%     &= r \E_{\sP}[x] + 0.
+%   \end{align*}
+%   $\sP$ can be further partitioned into $(\sP_i)$,
+%   \begin{align*}
+%     \E_{\sC}[x] 
+%     &= r \sum_{i=1}^n \Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) \E_{\sP_i \intersection \sC}[x].
+%   \end{align*}
+% 
+%   We don't know how to sample from $\sP_i \intersection \sC$, but we can use importance reweighting to transform estimates from $\sP_i$:
+%   \begin{align*}
+%     \E_{\sP_i \intersection \sC}[x] 
+%       &= \E_{\sP_i} \left[ \frac{\Pr(x \in \sC)}{x \in \sP_i} x \right] \\
+%       &= \E_{\sP_i}[p_i x] \\
+%       &= p_i y_i.
+%   \end{align*}
+%   Furthermore, $\Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) = \frac{p_i |\sP_i|}{\sum_{j=1}^n p_j |\sP_j|}$, giving us the final result,
+%   \begin{align*}
+%     \E_{\sC}[x] 
+%     &= r \frac{\sum_{i=1}^n p_i^2 |P_i| y_i}{\sum_{i=1}^n p_i |P_i|}.
+%   \end{align*}
+% 
+%   It is easy to see that $\E[\xh_u]$ is equal to the quantity above and hence is an unbiased estimator of $x$.
+% 
+%   Now, let's evaluate what the variance of $\xh_u$ is.
+%   Let $z \eqdef \frac{\sum_{i=1}^n \ph_i^2 |P_i| \yh_i}{\sum_{i=1}^n \ph_i |P_i|}$, the pooled estimate of recall.
+%   Using \reflem{variance-ratio-average}, where our two sequences are $|P_i| \ph_i$ and $\frac{\yh_i}{|P_i|}$, with means $|P_i| p_i$ and $\frac{y_i}{|P_i|}$ and variances $|P_i|^2 \pi_i^2$ and $\frac{\sigma_i^2}{|P_i|^2}$,
+%   \begin{align*}
+%     \sigma_z &\approx 
+%         \frac{p^2 y^2}{m} 
+%         {\left(1 + \frac{\pi^2}{p^2} \right)}^2
+%         \left(
+%           9 \frac{\pi^2}{p^2} +
+%           4 \frac{\sigma^2}{y^2}
+%           \right),
+%   \end{align*}
+%   where we have taken $p = \max_{i}(p_i)$, $y = \max_{i}(y_i)$, $\pi = \max_{i}(\pi_i)$, $\sigma = \max_{i}(\sigma_i)$.
+% 
+%   Using a Bernoulli assumption on $p$ and $y$, i.e., 
+%   \begin{align*}
+%     \pi^2 &= \frac{p (1-p)}{n_P/m} \\
+%     \sigma^2 &= \frac{y (1-y)}{n_U/m},
+%   \end{align*}
+%   we get
+%   \begin{align*}
+%     \sigma_z &\approx 
+%         p^2 y^2
+%         {\left(1 + \frac{{(1-p)}^2}{n_P} \right)}^2
+%         \left(
+%         \frac{9 (1-p)/p}{n_P}  +
+%         \frac{4 (1-y)/y}{n_U}
+%           \right) \\
+%         &\approx
+%         p^2 y^2
+%         \left(
+%         \frac{9 (1-p)/p}{n_P}  +
+%         \frac{4 (1-y)/y}{n_U}
+%           \right).
+%   \end{align*}
+% 
+%   Finally, the variance of $u$ is 
+%   \begin{align*}
+%   \sigma_u^2 &= r^2 \sigma_z^2 + z^2 \sigma_r^2 \\
+%         &\approx r^2 p^2 y^2
+%         \left(
+%         \frac{9 (1-p)/p}{n_P}  +
+%         \frac{4 (1-y)/y}{n_U}
+%           \right) +
+%           p^2 y^2 r^2 \frac{(1-r)/r}{n_E} \\
+%         &= x
+%         \left(
+%         \frac{9 r(1-p)y}{n_P}  +
+%         \frac{4 rp(1-y)}{n_U}
+%           \frac{(1-r)py}{n_E}
+%           \right).
+%   \end{align*}
+% 
+%   Using the same Bernoulli assumption on $\xh_e$, we get that $\sigma^2_e = \frac{x (1-x)}{n_E}$.
+%   The relative efficiency of $\xh_u$ versus $\xh_e$ is approximately,
+%   \begin{align*}
+%     \frac{\sigma_e^2}{\sigma_u^2}
+%     &\approx \frac{1-x
+%       }{
+%         \frac{9 r(1-p)y}{n_P/n_E}  +
+%         \frac{4 rp(1-y)}{n_U/n_E} +
+%           (1-r)py
+%         }.
+%   \end{align*}
+% \end{proof}
 
-  Furthermore, if $\xh_e$ be an unbiased estimator of $x$ on $E$ with variance $\sigma_e^2$,
-  the relative efficiency of $\xh_p$ with respect to $\xh_e$ is,
-  \begin{align*}
-    \frac{\sigma_e^2}{\sigma_u^2}
-    &\approx \frac{1-x
-      }{
-        \frac{9 r(1-p)y}{n_P/n_E}  +
-        \frac{4 rp(1-y)}{n_U/n_E} +
-          (1-r)py
-        }.
-  \end{align*}
-\end{lemma}
-\begin{proof}
-  We would like to estimate $\E_{\sC}[x]$, which can be expressed as follows,
-  \begin{align*}
-    \E_{\sC}[x] 
-    &= \Pr(c \in \sP \intersection \sC \given c \in \sC) ~ \E_{\sP \intersection \sC}[x] 
-    + \Pr(c \in \neg\sP \intersection \sC \given c \in \sC) ~ \E_{\neg\sP \intersection \sC }[x] \\
-    &= r \E_{\sP}[x] + 0.
-  \end{align*}
-  $\sP$ can be further partitioned into $(\sP_i)$,
-  \begin{align*}
-    \E_{\sC}[x] 
-    &= r \sum_{i=1}^n \Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) \E_{\sP_i \intersection \sC}[x].
-  \end{align*}
-
-  We don't know how to sample from $\sP_i \intersection \sC$, but we can use importance reweighting to transform estimates from $\sP_i$:
-  \begin{align*}
-    \E_{\sP_i \intersection \sC}[x] 
-      &= \E_{\sP_i} \left[ \frac{\Pr(x \in \sC)}{x \in \sP_i} x \right] \\
-      &= \E_{\sP_i}[p_i x] \\
-      &= p_i y_i.
-  \end{align*}
-  Furthermore, $\Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) = \frac{p_i |\sP_i|}{\sum_{j=1}^n p_j |\sP_j|}$, giving us the final result,
-  \begin{align*}
-    \E_{\sC}[x] 
-    &= r \frac{\sum_{i=1}^n p_i^2 |P_i| y_i}{\sum_{i=1}^n p_i |P_i|}.
-  \end{align*}
-
-  It is easy to see that $\E[\xh_u]$ is equal to the quantity above and hence is an unbiased estimator of $x$.
-
-  Now, let's evaluate what the variance of $\xh_u$ is.
-  Let $z \eqdef \frac{\sum_{i=1}^n \ph_i^2 |P_i| \yh_i}{\sum_{i=1}^n \ph_i |P_i|}$, the pooled estimate of recall.
-  Using \reflem{variance-ratio-average}, where our two sequences are $|P_i| \ph_i$ and $\frac{\yh_i}{|P_i|}$, with means $|P_i| p_i$ and $\frac{y_i}{|P_i|}$ and variances $|P_i|^2 \pi_i^2$ and $\frac{\sigma_i^2}{|P_i|^2}$,
-  \begin{align*}
-    \sigma_z &\approx 
-        \frac{p^2 y^2}{m} 
-        {\left(1 + \frac{\pi^2}{p^2} \right)}^2
-        \left(
-          9 \frac{\pi^2}{p^2} +
-          4 \frac{\sigma^2}{y^2}
-          \right),
-  \end{align*}
-  where we have taken $p = \max_{i}(p_i)$, $y = \max_{i}(y_i)$, $\pi = \max_{i}(\pi_i)$, $\sigma = \max_{i}(\sigma_i)$.
-
-  Using a Bernoulli assumption on $p$ and $y$, i.e., 
-  \begin{align*}
-    \pi^2 &= \frac{p (1-p)}{n_P/m} \\
-    \sigma^2 &= \frac{y (1-y)}{n_U/m},
-  \end{align*}
-  we get
-  \begin{align*}
-    \sigma_z &\approx 
-        p^2 y^2
-        {\left(1 + \frac{{(1-p)}^2}{n_P} \right)}^2
-        \left(
-        \frac{9 (1-p)/p}{n_P}  +
-        \frac{4 (1-y)/y}{n_U}
-          \right) \\
-        &\approx
-        p^2 y^2
-        \left(
-        \frac{9 (1-p)/p}{n_P}  +
-        \frac{4 (1-y)/y}{n_U}
-          \right).
-  \end{align*}
-
-  Finally, the variance of $u$ is 
-  \begin{align*}
-  \sigma_u^2 &= r^2 \sigma_z^2 + z^2 \sigma_r^2 \\
-        &\approx r^2 p^2 y^2
-        \left(
-        \frac{9 (1-p)/p}{n_P}  +
-        \frac{4 (1-y)/y}{n_U}
-          \right) +
-          p^2 y^2 r^2 \frac{(1-r)/r}{n_E} \\
-        &= x
-        \left(
-        \frac{9 r(1-p)y}{n_P}  +
-        \frac{4 rp(1-y)}{n_U}
-          \frac{(1-r)py}{n_E}
-          \right).
-  \end{align*}
-
-  Using the same Bernoulli assumption on $\xh_e$, we get that $\sigma^2_e = \frac{x (1-x)}{n_E}$.
-  The relative efficiency of $\xh_u$ versus $\xh_e$ is approximately,
-  \begin{align*}
-    \frac{\sigma_e^2}{\sigma_u^2}
-    &\approx \frac{1-x
-      }{
-        \frac{9 r(1-p)y}{n_P/n_E}  +
-        \frac{4 rp(1-y)}{n_U/n_E} +
-          (1-r)py
-        }.
-  \end{align*}
-\end{proof}
-
-\begin{lemma}[Relative efficiency of using unassessed pooled output to compute submission statistics]
-  \todo{Compute! What are dependences of $S_i$?}
-  % Define all the variables
-  Let $x$ be a statistic that we wish to compute on $\sS$ (e.g.\ precision) that is $0$ outside of $\sS$,
-    $\sP_1, \dots \sP_m$ be partitions of the pool $\sP$ such that $p_i \eqdef \Pr(c \in \sC \given c \in  \sP_i)$ with $S_1, \dots, S_m$ be corresponding partitions of the sample $S$ with sizes $n_1, \dots, n_m$,
-    $\ph_i, \dots, \ph_m$ be estimates of $p_i$ on $E$ with variances $\pi^2_i$,
-    and $y_1, \dots y_n$ be estimates of the statistic $x$ on $\sP_i$ with variances $\sigma_i^2$.
-    Then, $$\xh_u = \sum_{i=1}^n \ph_i \frac{|S_i|^2}{|S|^2},$$ is unbiased estimator of $x$ with variance,
-  $$
-  \sigma_u^2 
-        = \sum_{i=1}^n \frac{|S_i|^4}{|S|^4} \pi_i^2 \\
-        \le \pi^2.
-  $$
-
-  Furthermore, if $\xh_s$ be an unbiased estimator of $x$ on $S$ with variance $\sigma_s^2$,
-  the relative efficiency of $\xh_u$ with respect to $\xh_s$ is,
-  \begin{align*}
-    \frac{\sigma_u^2}{\sigma_s^2}
-    &\approx \frac{1-x
-      }{
-        \frac{9 r(1-p)y}{n_P/n_E}  +
-        \frac{4 rp(1-y)}{n_U/n_E}
-          \frac{(1-r)py}{n_E}
-        }.
-  \end{align*}
-\end{lemma}
-\begin{proof}
-  We would like to estimate $\E_{\sC}[x]$, which can be expressed as follows,
-  \begin{align*}
-    \E_{\sC}[x] 
-    &= \Pr(c \in \sP \intersection \sC \given c \in \sC) ~ \E_{\sP \intersection \sC}[x] 
-    + \Pr(c \in \neg\sP \intersection \sC \given c \in \sC) ~ \E_{\neg\sP \intersection \sC }[x] \\
-    &= r \E_{\sP}[x] + 0.
-  \end{align*}
-  $\sP$ can be further partitioned into $(\sP_i)$,
-  \begin{align*}
-    \E_{\sC}[x] 
-    &= r \sum_{i=1}^n \Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) \E_{\sP_i \intersection \sC}[x].
-  \end{align*}
-
-  We don't know how to sample from $\sP_i \intersection \sC$, but we can use importance reweighting to transform estimates from $\sP_i$:
-  \begin{align*}
-    \E_{\sP_i \intersection \sC}[x] 
-      &= \E_{\sP_i} \left[ \frac{\Pr(x \in \sC)}{x \in \sP_i} x \right] \\
-      &= \E_{\sP_i}[p_i x] \\
-      &= p_i y_i.
-  \end{align*}
-  Furthermore, $\Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) = \frac{p_i |\sP_i|}{\sum_{j=1}^n p_j |\sP_j|}$, giving us the final result,
-  \begin{align*}
-    \E_{\sC}[x] 
-    &= r \frac{\sum_{i=1}^n p_i^2 |P_i| y_i}{\sum_{i=1}^n p_i |P_i|}.
-  \end{align*}
-
-  It is easy to see that $\E[\xh_u]$ is equal to the quantity above and hence is an unbiased estimator of $x$.
-
-  Now, let's evaluate what the variance of $\xh_u$ is.
-  Let $z \eqdef \frac{\sum_{i=1}^n \ph_i^2 |P_i| \yh_i}{\sum_{i=1}^n \ph_i |P_i|}$, the pooled estimate of recall.
-  Using \reflem{variance-ratio-average}, where our two sequences are $|P_i| \ph_i$ and $\frac{\yh_i}{|P_i|}$, with means $|P_i| p_i$ and $\frac{y_i}{|P_i|}$ and variances $|P_i|^2 \pi_i^2$ and $\frac{\sigma_i^2}{|P_i|^2}$,
-  \begin{align*}
-    \sigma_z &\approx 
-        \frac{p^2 y^2}{m} 
-        {\left(1 + \frac{\pi^2}{p^2} \right)}^2
-        \left(
-          9 \frac{\pi^2}{p^2} +
-          4 \frac{\sigma^2}{y^2}
-          \right),
-  \end{align*}
-  where we have taken $p = \max_{i}(p_i)$, $y = \max_{i}(y_i)$, $\pi = \max_{i}(\pi_i)$, $\sigma = \max_{i}(\sigma_i)$.
-
-  Using a Bernoulli assumption on $p$ and $y$, i.e., 
-  \begin{align*}
-    \pi^2 &= \frac{p (1-p)}{n_P/m} \\
-    \sigma^2 &= \frac{y (1-y)}{n_U/m},
-  \end{align*}
-  we get
-  \begin{align*}
-    \sigma_z &\approx 
-        p^2 y^2
-        {\left(1 + \frac{{(1-p)}^2}{n_P} \right)}^2
-        \left(
-        \frac{9 (1-p)/p}{n_P}  +
-        \frac{4 (1-y)/y}{n_U}
-          \right) \\
-        &\approx
-        p^2 y^2
-        \left(
-        \frac{9 (1-p)/p}{n_P}  +
-        \frac{4 (1-y)/y}{n_U}
-          \right).
-  \end{align*}
-
-  Finally, the variance of $u$ is 
-  \begin{align*}
-  \sigma_u^2 &= r^2 \sigma_z^2 + z^2 \sigma_r^2 \\
-        &\approx r^2 p^2 y^2
-        \left(
-        \frac{9 (1-p)/p}{n_P}  +
-        \frac{4 (1-y)/y}{n_U}
-          \right) +
-          p^2 y^2 r^2 \frac{(1-r)/r}{n_E} \\
-        &= x
-        \left(
-        \frac{9 r(1-p)y}{n_P}  +
-        \frac{4 rp(1-y)}{n_U}
-          \frac{(1-r)py}{n_E}
-          \right).
-  \end{align*}
-
-  Using the same Bernoulli assumption on $\xh_e$, we get that $\sigma^2_e = \frac{x (1-x)}{n_E}$.
-  The relative efficiency of $\xh_u$ versus $\xh_e$ is approximately,
-  \begin{align*}
-    \frac{\sigma_e^2}{\sigma_u^2}
-    &\approx \frac{1-x
-      }{
-        \frac{9 r(1-p)y}{n_P/n_E}  +
-        \frac{4 rp(1-y)}{n_U/n_E}
-          \frac{(1-r)py}{n_E}
-        }.
-  \end{align*}
-\end{proof}
-
+% \begin{lemma}[Relative efficiency of using unassessed pooled output to compute submission statistics]
+%   \todo{Compute! What are dependences of $S_i$?}
+%   % Define all the variables
+%   Let $x$ be a statistic that we wish to compute on $\sS$ (e.g.\ precision) that is $0$ outside of $\sS$,
+%     $\sP_1, \dots \sP_m$ be partitions of the pool $\sP$ such that $p_i \eqdef \Pr(c \in \sC \given c \in  \sP_i)$ with $S_1, \dots, S_m$ be corresponding partitions of the sample $S$ with sizes $n_1, \dots, n_m$,
+%     $\ph_i, \dots, \ph_m$ be estimates of $p_i$ on $E$ with variances $\pi^2_i$,
+%     and $y_1, \dots y_n$ be estimates of the statistic $x$ on $\sP_i$ with variances $\sigma_i^2$.
+%     Then, $$\xh_u = \sum_{i=1}^n \ph_i \frac{|S_i|^2}{|S|^2},$$ is unbiased estimator of $x$ with variance,
+%   $$
+%   \sigma_u^2 
+%         = \sum_{i=1}^n \frac{|S_i|^4}{|S|^4} \pi_i^2 \\
+%         \le \pi^2.
+%   $$
+% 
+%   Furthermore, if $\xh_s$ be an unbiased estimator of $x$ on $S$ with variance $\sigma_s^2$,
+%   the relative efficiency of $\xh_u$ with respect to $\xh_s$ is,
+%   \begin{align*}
+%     \frac{\sigma_u^2}{\sigma_s^2}
+%     &\approx \frac{1-x
+%       }{
+%         \frac{9 r(1-p)y}{n_P/n_E}  +
+%         \frac{4 rp(1-y)}{n_U/n_E}
+%           \frac{(1-r)py}{n_E}
+%         }.
+%   \end{align*}
+% \end{lemma}
+% \begin{proof}
+%   We would like to estimate $\E_{\sC}[x]$, which can be expressed as follows,
+%   \begin{align*}
+%     \E_{\sC}[x] 
+%     &= \Pr(c \in \sP \intersection \sC \given c \in \sC) ~ \E_{\sP \intersection \sC}[x] 
+%     + \Pr(c \in \neg\sP \intersection \sC \given c \in \sC) ~ \E_{\neg\sP \intersection \sC }[x] \\
+%     &= r \E_{\sP}[x] + 0.
+%   \end{align*}
+%   $\sP$ can be further partitioned into $(\sP_i)$,
+%   \begin{align*}
+%     \E_{\sC}[x] 
+%     &= r \sum_{i=1}^n \Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) \E_{\sP_i \intersection \sC}[x].
+%   \end{align*}
+% 
+%   We don't know how to sample from $\sP_i \intersection \sC$, but we can use importance reweighting to transform estimates from $\sP_i$:
+%   \begin{align*}
+%     \E_{\sP_i \intersection \sC}[x] 
+%       &= \E_{\sP_i} \left[ \frac{\Pr(x \in \sC)}{x \in \sP_i} x \right] \\
+%       &= \E_{\sP_i}[p_i x] \\
+%       &= p_i y_i.
+%   \end{align*}
+%   Furthermore, $\Pr(c \in \sP_i \intersection C \given c \in \sP \intersection C) = \frac{p_i |\sP_i|}{\sum_{j=1}^n p_j |\sP_j|}$, giving us the final result,
+%   \begin{align*}
+%     \E_{\sC}[x] 
+%     &= r \frac{\sum_{i=1}^n p_i^2 |P_i| y_i}{\sum_{i=1}^n p_i |P_i|}.
+%   \end{align*}
+% 
+%   It is easy to see that $\E[\xh_u]$ is equal to the quantity above and hence is an unbiased estimator of $x$.
+% 
+%   Now, let's evaluate what the variance of $\xh_u$ is.
+%   Let $z \eqdef \frac{\sum_{i=1}^n \ph_i^2 |P_i| \yh_i}{\sum_{i=1}^n \ph_i |P_i|}$, the pooled estimate of recall.
+%   Using \reflem{variance-ratio-average}, where our two sequences are $|P_i| \ph_i$ and $\frac{\yh_i}{|P_i|}$, with means $|P_i| p_i$ and $\frac{y_i}{|P_i|}$ and variances $|P_i|^2 \pi_i^2$ and $\frac{\sigma_i^2}{|P_i|^2}$,
+%   \begin{align*}
+%     \sigma_z &\approx 
+%         \frac{p^2 y^2}{m} 
+%         {\left(1 + \frac{\pi^2}{p^2} \right)}^2
+%         \left(
+%           9 \frac{\pi^2}{p^2} +
+%           4 \frac{\sigma^2}{y^2}
+%           \right),
+%   \end{align*}
+%   where we have taken $p = \max_{i}(p_i)$, $y = \max_{i}(y_i)$, $\pi = \max_{i}(\pi_i)$, $\sigma = \max_{i}(\sigma_i)$.
+% 
+%   Using a Bernoulli assumption on $p$ and $y$, i.e., 
+%   \begin{align*}
+%     \pi^2 &= \frac{p (1-p)}{n_P/m} \\
+%     \sigma^2 &= \frac{y (1-y)}{n_U/m},
+%   \end{align*}
+%   we get
+%   \begin{align*}
+%     \sigma_z &\approx 
+%         p^2 y^2
+%         {\left(1 + \frac{{(1-p)}^2}{n_P} \right)}^2
+%         \left(
+%         \frac{9 (1-p)/p}{n_P}  +
+%         \frac{4 (1-y)/y}{n_U}
+%           \right) \\
+%         &\approx
+%         p^2 y^2
+%         \left(
+%         \frac{9 (1-p)/p}{n_P}  +
+%         \frac{4 (1-y)/y}{n_U}
+%           \right).
+%   \end{align*}
+% 
+%   Finally, the variance of $u$ is 
+%   \begin{align*}
+%   \sigma_u^2 &= r^2 \sigma_z^2 + z^2 \sigma_r^2 \\
+%         &\approx r^2 p^2 y^2
+%         \left(
+%         \frac{9 (1-p)/p}{n_P}  +
+%         \frac{4 (1-y)/y}{n_U}
+%           \right) +
+%           p^2 y^2 r^2 \frac{(1-r)/r}{n_E} \\
+%         &= x
+%         \left(
+%         \frac{9 r(1-p)y}{n_P}  +
+%         \frac{4 rp(1-y)}{n_U}
+%           \frac{(1-r)py}{n_E}
+%           \right).
+%   \end{align*}
+% 
+%   Using the same Bernoulli assumption on $\xh_e$, we get that $\sigma^2_e = \frac{x (1-x)}{n_E}$.
+%   The relative efficiency of $\xh_u$ versus $\xh_e$ is approximately,
+%   \begin{align*}
+%     \frac{\sigma_e^2}{\sigma_u^2}
+%     &\approx \frac{1-x
+%       }{
+%         \frac{9 r(1-p)y}{n_P/n_E}  +
+%         \frac{4 rp(1-y)}{n_U/n_E}
+%           \frac{(1-r)py}{n_E}
+%         }.
+%   \end{align*}
+% \end{proof}
 
 \begin{lemma}[Benefit of combining estimators]
   Let $x_1, \dots, x_n$ be independent and unbiased estimators for a statistic $x$ with variances $\sigma_1^2, \dots \sigma_n^2$.

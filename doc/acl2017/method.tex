@@ -130,7 +130,8 @@ The final evaluation set is thus the union of the evaluation of system predictio
 While scoring a development system against this evaluation set, only relation instances that match the same set of queries are considered.
 New features in a system may allow it to predict true relations that were previously missed, while at the same predict completely new relations even for these queries that may be true or false.
 Unfortunately, there is no way to evaluate these new predictions and they are assumed false under the closed world heuristic.
-We will attempt to quantify the effect of this heuristic next.
 
-describe \anydoc.
+Another common heuristic used by teams developing systems for TAC-KBP is the \anydoc{} heuristic which treats any relation whose object string (e.g.\ ``Debbie Reynolds'' in \figureref{example}) exactly matches that of a correct relation instance in the evaluation set.
+Under this heuristic, predicting the \texttt{per:parents} relation between Carrie Fisher and Debbie Reynolds for the sentence ``\textit{Carrie Frances Fisher} was born \ldots to actors and singers Eddie Fisher and \textit{Debbie Reynolds}'' or the sentence ``Bright Lights: Starring \textit{Carrie Fisher} and \textit{Debbie Reynolds}'' would both be considered correct, even though latter is incorrect.
+
 % TODO: describe `anydoc'

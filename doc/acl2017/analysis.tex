@@ -6,21 +6,22 @@
 
 The closed-world assumption is well understood to provide pessimistic estimates of system performance, but its bias has not been measured before.
 The prevailing intuition is that the evaluation set probably covers most of the correct relations because only instances pertaining to a very specific set of relations are evaluated.
-In this section, we will describe what kinds of predictions are falsely marked negative by the closed world heuristic, how the resulting bias can be measured and finally present results regarding the bias in the context of TAC-KBP.
+%In this section, we will describe what kinds of predictions are falsely marked negative by the closed world heuristic, how the resulting bias can be measured and finally present results regarding the bias in the context of TAC-KBP.
+In this section, we will describe how the resulting bias can be measured and discuss results regarding the bias in the context of TAC-KBP.\@
 
-\paragraph{False negatives.}
-% What are the different ways that systems predict new facts?
-Let's assume that our evaluation set contains only the relation instance shown in \figureref{example}, which identifies Debbie Reynolds as a parent of Carrie Fisher.
-There are few ways that the closed world assumption can falsely predict a relation instance to be wrong.
-First, the instance may state known information but from a different place, e.g.\ from the sentence 
-  ``\textit{Carrie Frances Fisher} was born \ldots to actors and singers Eddie Fisher and \textit{Debbie Reynolds}.''
-% TODO: "object string" is clunky.
-Secondly, a relation instance may state known information but use a different string for the object, e.g.\ a system might use ``Mary Frances Reynolds'' instead of ``Debbie Reynolds'', which is a nickname.
-Finally, a relation instance may express an entirely new relation, e.g.\ that ``Eddie Fisher'' is Carrie's father.
-In all the above cases, the closed world assumption considers the instance to be wrong.
-With the \anydoc heuristic, the first instance is correctly marked, but this heuristic also incorrectly marks the instance, ``Bright Lights: Starring Carrie Fisher and Debbie Reynolds'' as being true.
-Consequently, 
-  while the closed world assumption is a strict underestimate of performance, the \anydoc heuristic is not guaranteed to be.
+%\paragraph{False negatives.}
+%% What are the different ways that systems predict new facts?
+%Let's assume that our evaluation set contains only the relation instance shown in \figureref{example}, which identifies Debbie Reynolds as a parent of Carrie Fisher.
+%There are few ways that the closed world assumption can falsely predict a relation instance to be wrong.
+%First, the instance may state known information but from a different place, e.g.\ from the sentence 
+%  ``\textit{Carrie Frances Fisher} was born \ldots to actors and singers Eddie Fisher and \textit{Debbie Reynolds}.''
+%% TODO: "object string" is clunky.
+%Secondly, a relation instance may state known information but use a different string for the object, e.g.\ a system might use ``Mary Frances Reynolds'' instead of ``Debbie Reynolds'', which is a nickname.
+%Finally, a relation instance may express an entirely new relation, e.g.\ that ``Eddie Fisher'' is Carrie's father.
+%In all the above cases, the closed world assumption considers the instance to be wrong.
+%With the \anydoc heuristic, the first instance is correctly marked, but this heuristic also incorrectly marks the instance, ``Bright Lights: Starring Carrie Fisher and Debbie Reynolds'' as being true.
+%Consequently, 
+%  while the closed world assumption is a strict underestimate of performance, the \anydoc heuristic is not guaranteed to be.
 
 % Remind closed world assumption.
 % How do we measure the effects of CWA on development?
