@@ -1,9 +1,37 @@
-\section{Discussion}
-\label{sec:discussion}
+\section{Related Work}
+\label{sec:related}
 
-\fake{This section is also currently incoherent, so omitted.}
-% %(1 page)
-% 
+One of the main contributions of this work has been to measure the pooling bias in KBP evaluation resulting from the closed world assumption.
+%K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
+%an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
+The subject of pooling bias has been extensively studied in the information retrieval community.
+\citep{zobel1998reliable} was the first to examine the effects of pooling bias on the TREC AdHoc task, but 
+both \citet{zobel1998reliable} and \citet{voorhees199overview} conclude that the effects of pooling bias was not significant.
+However, \citet{buckley2007bias} later identified that this is because submissions were very similar; when repeating the experiment using more different systems as part of the TREC robust track, they identify a 23\% point drop in AP scores!
+
+solutions provided:
+condensed list -- but shown to only have the reverse effect.
+
+Yilmaz and Aslam 2006 propose randomly sampling documents sampling -- say scores are random estimates.
+however, this sampling is simply used to construct the evaluatoin set, not eliminating bias
+
+
+\citet{weber2010measurement} surveys literature pertaining to pooling bias and proposes score adjustments with using reference systems.
+
+Our own analysis of pooling bias is heavily inspired from the methodology described in 
+
+%K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
+%an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
+
+%Incomplete: Buckley and Voorhees 2004
+%Zobel 1998 -- identifies pooling bias.
+%estimated 50 - 70\% of documents found by pooling.
+%Zobel 1998 and Voorhees and Harman 1999 -- concluded not significant
+%Only looked at systems within the submissions which were similar.
+%Buckley et al 2007 repeated experiments on Robust track and found a 23\% drop!
+
+
+
 % \paragraph{Related work.}
 % 
 % Cite a bunch of IR evaluation related work on estimation, pooling bias and variance reduction. Weber's thesis for score standardization and pooling bias.
@@ -14,7 +42,15 @@
 % 
 % Cite Dan Klein's paper on statistical significance for NLP.
 
+% KBP evaluation papers
+
 % Cite paper 
+
+\section{Discussion}
+\label{sec:discussion}
+
+% %(1 page)
+% 
 % 
 % \paragraph{Discussion.}
 % 
