@@ -10,6 +10,7 @@ import random
 import shlex
 import subprocess
 import logging
+from collections import defaultdict, Counter, namedtuple
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -245,6 +246,8 @@ def make_nlist(lst):
     """
     return ",".join("{}".format(d) for d in lst)
 
+Entry = namedtuple('Entry', ['subj', 'reln', 'obj', 'prov', 'score', 'iw', 'ew', 'rw'])
+
 def parse_input(stream):
     """
     Reorder input to always have mention defintions first, followed by
@@ -256,7 +259,10 @@ def parse_input(stream):
     relations = []
 
     for row in stream:
-        relation = row[1]
+        assert len(row) <= 8
+        row = row + [None] * (8-len(row))
+        row = Entry(*row)
+        relation = row.reln
         if relation in TYPES:
             mentions.append(row)
         elif relation == "link":
