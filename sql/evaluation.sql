@@ -2,6 +2,8 @@
 -- For the crowdsourcing evaluation pipeline
 --
 
+BEGIN TRANSACTION;
+
 CREATE SEQUENCE evaluation_batch_id_seq;
 CREATE TABLE IF NOT EXISTS evaluation_batch (
   id INTEGER PRIMARY KEY DEFAULT nextval('evaluation_batch_id_seq'),
@@ -18,7 +20,7 @@ CREATE TABLE IF NOT EXISTS evaluation_question (
   batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
 
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
-  params JSON NOT NULL, -- the parameters used for this question
+  params JSON NOT NULL -- the parameters used for this question
 );
 COMMENT ON TABLE evaluation_question IS 'Keeps track of an individual question part of an evaluation batch';
 
@@ -35,7 +37,7 @@ COMMENT ON TABLE mturk_batch IS 'Keeps track of each distinct batch of mturk HIT
 CREATE TABLE IF NOT EXISTS mturk_hit (
   id TEXT PRIMARY KEY, -- provided by mturk
   batch_id INTEGER NOT NULL REFERENCES mturk_batch,
-  question_id INTEGER NOT NULL REFERENCES evaluation_question,
+  question_id TEXT NOT NULL REFERENCES evaluation_question,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   type_id TEXT, -- provided by mturk
@@ -51,7 +53,7 @@ CREATE TABLE IF NOT EXISTS mturk_assignment (
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   worker_id TEXT NOT NULL, -- provided by mturk
-  worker_time DURATION NOT NULL, -- provided by mturk
+  worker_time INTEGER NOT NULL, -- provided by mturk (in seconds)
   status HIT_STATUS NOT NULL, -- Have we paid the turker?
   response JSON NOT NULL, -- the raw response by the worker.
   ignored BOOLEAN NOT NULL DEFAULT FALSE -- Should we ignore this entry for some reason?
@@ -60,7 +62,7 @@ COMMENT ON TABLE mturk_assignment IS 'Keeps track HIT responses from turkers';
 
 -- evaluation_mention_response
 CREATE TABLE IF NOT EXISTS evaluation_mention_response (
-  assignment_id INTEGER NOT NULL REFERENCES mturk_assignment,
+  assignment_id TEXT NOT NULL REFERENCES mturk_assignment,
   question_id TEXT NOT NULL REFERENCES evaluation_question,
 
   doc_id TEXT NOT NULL REFERENCES document,
@@ -105,7 +107,7 @@ COMMENT ON TABLE evaluation_mention IS 'Table containing mentions within a docum
 
 -- evaluation_link_response
 CREATE TABLE IF NOT EXISTS evaluation_link_response (
-  assignment_id INTEGER NOT NULL REFERENCES mturk_assignment,
+  assignment_id TEXT NOT NULL REFERENCES mturk_assignment,
   question_id TEXT NOT NULL REFERENCES evaluation_question,
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN NOT NULL,
@@ -117,7 +119,7 @@ CREATE TABLE IF NOT EXISTS evaluation_link_response (
   PRIMARY KEY (assignment_id, mention_id),
   CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
+  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id)
 ); -- DISTRIBUTED BY doc_id;
 COMMENT ON TABLE evaluation_link_response IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX ON evaluation_link_response(mention_id);
@@ -135,14 +137,14 @@ CREATE TABLE IF NOT EXISTS evaluation_link (
 
   CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
+  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id)
 ); -- DISTRIBUTED BY doc_id;
 COMMENT ON TABLE evaluation_link IS 'Table containing mentions within a document, aggregated from all the responses';
 
 -- evaluation_relation_response
 -- evaluation_relation
 CREATE TABLE IF NOT EXISTS evaluation_relation_response (
-  assignment_id INTEGER NOT NULL REFERENCES mturk_assignment,
+  assignment_id TEXT NOT NULL REFERENCES mturk_assignment,
   question_id TEXT NOT NULL REFERENCES evaluation_question,
   doc_id TEXT NOT NULL REFERENCES document,
   subject_id SPAN NOT NULL,
@@ -160,7 +162,7 @@ CREATE TABLE IF NOT EXISTS evaluation_relation_response (
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0)
 ); -- DISTRIBUTED BY doc_id;
 COMMENT ON TABLE evaluation_relation_response IS 'Table containing mentions within a document, as specified by CoreNLP';
-CREATE INDEX ON evaluation_relation_response(mention_id);
+CREATE INDEX ON evaluation_relation_response(subject_id, object_id);
 
 -- evaluation_relation
 CREATE TABLE IF NOT EXISTS evaluation_relation (
@@ -182,3 +184,5 @@ CREATE TABLE IF NOT EXISTS evaluation_relation (
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0)
 ); -- DISTRIBUTED BY doc_id;
 COMMENT ON TABLE evaluation_relation IS 'Table containing mentions within a document, aggregated from all the responses';
+
+COMMIT;
