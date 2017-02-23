@@ -77,4 +77,15 @@ CREATE INDEX ON submission_relation(subject_id);
 CREATE INDEX ON submission_relation(object_id);
 CREATE INDEX ON submission_relation(subject_id, object_id);
 
+-- submission_score 
+CREATE TABLE IF NOT EXISTS submission_score (
+  submission_id INTEGER NOT NULL REFERENCES submission,
+  updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
+  score_type SCORE_TYPE NOT NULL,
+  score SCORE,
+  PRIMARY KEY (submission_id, score_type)
+);
+COMMENT ON TABLE submission_score IS 'Summary of scores for a system.';
+CREATE INDEX ON submission_score(submission_id);
+
 COMMIT;

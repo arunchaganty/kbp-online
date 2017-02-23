@@ -24,3 +24,10 @@ CREATE TYPE SCORE_TYPE AS ENUM (
     'instance_micro'
 );
 COMMENT ON TYPE SCORE_TYPE IS 'The precise mode in which scores have been generated.';
+
+CREATE TYPE EVALUATION_TYPE AS ENUM (
+    'exhaustive_document',
+    'exhaustive_relations',
+    'selective_relations'
+);
+COMMENT ON TYPE EVALUATION_TYPE IS 'The type of evaluation we are using.';
