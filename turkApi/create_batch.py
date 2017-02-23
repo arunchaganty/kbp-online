@@ -18,6 +18,24 @@ args = parser.parse_args()
 config = ConfigParser.ConfigParser()
 config.read(args.config_file)
 mtc = connect(config.get('default', 'target'))
+if config.get('default', 'target') == 'actual':
+    try:
+        # Note: Python 2.x users should use raw_input, the equivalent of 3.x's input
+        print "This will cost money on actual MTurk"
+        response = raw_input("Proceed (y/n)?")
+    except ValueError:
+        print("Sorry, I didn't understand that.")
+        #better try again... Return to the start of the loop
+    else:
+        if response == 'y' or response == 'Y':
+            print "Proceeding"
+        elif response == 'n' or response == 'N':
+            exit()
+            print "Aborted"
+        else:
+            exit()
+            print "Aborted"
+
 params = {'target': config.get('default', 'target')}
 base_url = config.get('default', 'interface')+'?'
 batch_info = []
@@ -36,26 +54,27 @@ for doc_id in args.doc_paths_file[0]:
         print length,  reward, params
     else:
         reward = config.getfloat('default', 'doc_reward')
+        length = 1
         print reward, params
     url = base_url + urllib.urlencode(params)
     question = ExternalQuestion(url, config.get('default', 'frame_height'))
     total_cost += reward
-    response = mtc.create_hit(
-            question=question,
-            title=config.get('default', 'title'),
-            description = config.get('default', 'description'),
-            max_assignments = config.get('default', 'max_assignments'), 
-            duration = config.get('default', 'duration'), 
-            annotation = params['doc_id'], 
-            lifetime = config.get('default', 'lifetime'), 
-            reward = reward)
-    batch_info.append({'docId': params['doc_id'], 'HITTypeId': response[0].HITTypeId, 'HITId': response[0].HITId, })
-metadata_dir = './batch/'
-if not os.path.exists(metadata_dir):
-    os.makedirs(metadata_dir) 
-timestr = time.strftime("%Y%m%d-%H%M%S")
-metadata_filepath = metadata_dir+args.config_file.split('/')[-1]+'.'+timestr+'.csv'
-pd.DataFrame(batch_info).to_csv(path_or_buf = metadata_filepath, sep = '\t', index=False)
+#    response = mtc.create_hit(
+#            question=question,
+#            title=config.get('default', 'title'),
+#            description = config.get('default', 'description'),
+#            max_assignments = config.get('default', 'max_assignments'), 
+#            duration = config.get('default', 'duration'), 
+#            annotation = params['doc_id'], 
+#            lifetime = config.get('default', 'lifetime'), 
+#            reward = reward)
+#    batch_info.append({'docId': params['doc_id'], 'HITTypeId': response[0].HITTypeId, 'HITId': response[0].HITId, 'reward': reward, 'length': length})
+#metadata_dir = './batch/'
+#if not os.path.exists(metadata_dir):
+#    os.makedirs(metadata_dir) 
+#timestr = time.strftime("%Y%m%d-%H%M%S")
+#metadata_filepath = metadata_dir+args.config_file.split('/')[-1]+'.'+timestr+'.csv'
+#pd.DataFrame(batch_info).to_csv(path_or_buf = metadata_filepath, sep = '\t', index=False)
 print "Total cost for all assignments", total_cost * config.getint('default', 'max_assignments')
 
  

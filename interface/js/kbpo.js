@@ -640,8 +640,7 @@ var RelationInterface = function(docWidget, relnWidget, listWidget, verify) {
   else{
       $("#done").on("click.kbpo.interface", function (evt) {
           var relations = [];
-          self.listWidget.relations().each(function(_, e){
-              e = e.mentionPair;
+          self.mentionPairs.forEach(function(e){
               relations.push({
                   "subject": (e.subject).toJSON(),
                   "relation": e.relation.name,
