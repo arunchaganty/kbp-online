@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS submission (
     details TEXT -- A more detailed description of the submission.
     -- NOTE: add a user_id field in the future.
 );    
-COMMENT ON submission 'Summary of a submission';
+COMMENT ON TABLE submission IS 'Summary of a submission';
 
 -- submission_mention
 CREATE TABLE IF NOT EXISTS submission_mention (
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS submission_mention (
   CONSTRAINT valid_doc FOREIGN KEY mention_id.doc_id REFERENCES document(id),
   CONSTRAINT valid_canonical CHECK (mention_id.doc_id == canonical_id.doc_id)
 ) DISTRIBUTED BY doc_id;
-COMMENT ON submission_mention 'Table containing mentions within a document, as specified by CoreNLP';
+COMMENT ON TABLE submission_mention IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX ON submission_mention(mention_id);
 CREATE INDEX ON submission_mention(mention_id.doc_id);
 
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS submission_link (
   PRIMARY KEY (submission_id, mention_id),
   CONSTRAINT mention_exists FOREIGN KEY (submission_id, mention_id) REFERENCES submission_mention(submission_id, mention_id)
 ) DISTRIBUTED BY doc_id;
-COMMENT ON submission_link 'Table containing mentions within a document, as specified by CoreNLP';
+COMMENT ON TABLE submission_link IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX ON submission_link(doc_id);
 CREATE INDEX ON submission_link(mention_id);
 
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS submission_relation (
   CONSTRAINT subject_exists FOREIGN KEY (submission_id, subject_id) REFERENCES submission_mention(submission_id, subject_id),
   CONSTRAINT object_exists FOREIGN KEY (submission_id, object_id) REFERENCES submission_mention(submission_id, object_id)
 ) DISTRIBUTED BY doc_id;
-COMMENT ON submission_relation 'Table containing mentions within a document, as specified by CoreNLP';
+COMMENT ON TABLE submission_relation IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX ON submission_relation(subject_id.doc_id);
 CREATE INDEX ON submission_relation(subject_id);
 CREATE INDEX ON submission_relation(object_id);
