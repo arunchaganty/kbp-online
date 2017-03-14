@@ -25,7 +25,7 @@ def process_nw(f):
     tree.parse(f)
 
     doc_id = tree.getroot().get("id")
-    if tree.find("DATE_TIME"):
+    if tree.find("DATE_TIME") is not None:
         date, time = tree.find("DATE_TIME").text.split("T")
     else:
         # Get the date from the doc_id.
