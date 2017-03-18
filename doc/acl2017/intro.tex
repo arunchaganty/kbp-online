@@ -46,21 +46,27 @@ In this work, we empirically show that the closed-world assumption can discourag
 % 1. KBP as case study -- what is KBP?
 % TODO: is this too much detail?
 %Before elaborating, let's look at how knowledge base population (KBP) is evaluated.
+\pl{found this transition jarring - we already talked about evaluation, only now defining KBP;
+define KBP first?}
+\pl{Can we use 'relation instance' from the get go?
+The problem is so clear and simple when described in terms of intersections of sets of relation instances
+in a way that it's not when talking about KBs, corpuses, entities, relations, etc.
+}
 In KBP, a system is given a large document corpus and must output a knowledge base (KB) consisting of entities and relations mentioned in the corpus, e.g.\ ``Carrie Fisher's mother is Debbie Reynolds'' or ``Carrie Fisher was born in Los Angeles'' (\figureref{task}). % according to a specified schema.
-These predicted KBs are evaluated on how accurately they predict relations for an entity (precision) and how many of these relations they are able to correctly predict (recall), using an evaluation set and the closed-world assumption. %TODO: need a name for this set.
+These predicted KBs are evaluated on how accurately they predict relations for an entity (precision) \pl{define this more precisely} and how many of these relations they are able to correctly predict (recall), using an evaluation set and the closed-world assumption. %TODO: need a name for this set.
 
 % III.
 % 2. How is KBP evaluated? -- pooled eval, closed world assumption, output evaluated for a window.
 The primary source of evaluation data for KBP comes from the annual TAC-KBP competition organized by NIST.\@ %~\citep{}. % TODO: add links to workshop overview papers
 Each year, teams submit their predicted KBs for a given document corpus.
-Selected output is annotated by the organizers and released to help researchers develop better systems.
+Selected output \pl{use something more specific than 'output' - 'relations'} is annotated by the organizers and released to help researchers develop better systems.
 % TODO: while not biased for entrants in the competition, development sucks.
 % - we measure pooling bias
 Unfortunately, under the closed world assumption, new predictions that development systems make are not part of this evaluation data and are assumed to be wrong.\footnote{%
 It is also possible to simply ignore new predictions during evaluation, but this has the reverse effect of gratuitously inflating scores by about \fake{3\%} on average according to our analysis.}
 % - why it matters: effect on novel predictions -- hurts new ideas!
 We estimate that this bias causes development \fone{} scores to be on average 2\% points lower than they should be, while significant improvements usually increase scores by less than 1\% \fone{}.
-Worse yet, the more novel a system is, the stronger the bias against it will be, potentially even causing scores to drop.
+Worse yet, the more novel a system is \pl{claim warrants elaboration - say system predicts qualitatively different things that were systematically missed before}, the stronger the bias against it will be, potentially even causing scores to drop.
 % - while rule-based systems are robust because of human guidance -- empirically driven -- directs any output to what is already
 While designers of rule-based systems can still look to their intuition for guidance, those who rely on empirical tuning and machine learning are, at best, left in the dark, and more likely to be directed towards only predicting what others have predicted and no more.
 
