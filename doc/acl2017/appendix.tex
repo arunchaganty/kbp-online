@@ -2,6 +2,21 @@
 \section{Annotation interfaces}
 \label{sec:interface}
 
+\section{Sampling scheme}
+\label{sec:sampling}
+
+Let $(A_i)_{1}^{m}$ be a sequence of subsets of a population $\sA$: $A_i \subset \sA$.
+
+Further, let $\hat{A}_i$ be a set of $n_i$ elements drawn from $A_i \setdifference \Union_{j < i} \hat{A}_j$, where each element $a \in A_i$ is drawn with probability proportional to $w_a\oft{i}$.
+
+For a given $a \in \sA$, we like to estimate the probability that $a \in \Union{j \le m} \hat{A_j}$.
+
+\subsection{Method 1: assume that sampling without replacement is equivalent to sampling with replacement.}
+
+\subsection{Method 2: Monte-Carlo estimation.}
+
+
+
 \section{Power analysis}
 \label{sec:power}
 
