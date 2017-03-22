@@ -17,10 +17,19 @@ CREATE TABLE document (
 ) DISTRIBUTED BY (id);
 COMMENT ON TABLE document IS 'Original documents, dates, titles';
 
+-- document tags (to just help us)
+CREATE TABLE document_tag (
+  doc_id TEXT REFERENCES document,
+  tag TEXT,
+  UNIQUE (doc_id, tag)
+) DISTRIBUTED BY (doc_id);
+COMMENT ON TABLE document_tag IS 'Tags for documents';
+CREATE INDEX document_tag_doc_id_idx ON document_tag(doc_id);
+
 -- sentence
 CREATE SEQUENCE sentence_id_seq;
 CREATE TABLE sentence (
-  id INTEGER DEFAULT nextval('sentence_id_seq'),
+  id INTEGER NOT NULL DEFAULT nextval('sentence_id_seq'),
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   doc_id TEXT NOT NULL REFERENCES document(id), -- Reference to document
@@ -54,7 +63,7 @@ CREATE INDEX sentence_id_idx ON sentence(id);
 CREATE TABLE suggested_mention (
   id SPAN NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
-  updated TIMESTAMP NOT NULL,
+  updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   sentence_id INTEGER NOT NULL,
 

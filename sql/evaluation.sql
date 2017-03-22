@@ -77,7 +77,7 @@ CREATE TABLE  evaluation_mention_response (
 
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN NOT NULL,
-  created TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   canonical_id SPAN NOT NULL,
   mention_type TEXT NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE  evaluation_mention (
 
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN,
-  created TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   canonical_id SPAN NOT NULL,
   mention_type TEXT NOT NULL,
@@ -127,7 +127,7 @@ CREATE TABLE  evaluation_link_response (
   question_id TEXT NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN NOT NULL,
-  created TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
@@ -148,7 +148,7 @@ CREATE TABLE  evaluation_link (
 
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN,
-  created TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
@@ -195,7 +195,7 @@ CREATE TABLE  evaluation_relation (
   doc_id TEXT NOT NULL REFERENCES document,
   subject_id SPAN NOT NULL,
   object_id SPAN NOT NULL,
-  created TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   relation TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
