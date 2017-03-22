@@ -36,15 +36,15 @@ In this section, we will describe how the resulting bias can be measured and dis
 \begin{figure*}[t]
   \begin{subfigure}{\columnwidth}
   \includegraphics[width=\columnwidth]{figures/pooling-bias}
-  \caption{Pooling bias for macro \fone{} scores without the \anydoc heuristic.}
+  \caption{Pooling bias for macro \fone{} scores without the \anydoc{} heuristic.}
   \end{subfigure}
   \begin{subfigure}{\columnwidth}
   \includegraphics[width=\columnwidth]{figures/pooling-bias-anydoc}
-  \caption{Pooling bias for macro \fone{} scores with the \anydoc heuristic.}
+  \caption{Pooling bias for macro \fone{} scores with the \anydoc{} heuristic.}
   \end{subfigure}
   \caption{\label{fig:pooling-bias} Pooling bias measures how much a system's score is affected by not having its output as part of the pooled evaluation.
-  The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 1.98\% when evaluating using the \anydoc heuristic.
-  Note that the median difference between the \anydoc scores and standard scores is 0.74\% points; this difference is caused because the \anydoc heuristic erroneously scores fills with incorrect judgements to be correct.}
+  The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 1.98\% when evaluating using the \anydoc{} heuristic.
+  Note that the median difference between the \anydoc{} scores and standard scores is 0.74\% points; this difference is caused because the \anydoc{} heuristic erroneously scores fills with incorrect judgements to be correct.}
 \end{figure*}
 
 Ideally, we would like to measure the difference between performance scores of development systems on the evaluation set and a hypothetical set that includes evaluations of all its relations.
@@ -58,7 +58,7 @@ There are 70 submissions from 18 teams for 317 queries and the evaluation set co
 Adopting the methodology of \citet{weber2010measurement},
 we construct a hypothetical evaluation set for each submission to simulate what the evaluation set would look like if the corresponding team did not submit its results.
 This hypothetical evaluation set contains only those relations that were predicted by at least one other system or the human annotators.
-We then measure the difference between performance scores on the original evaluation set and on the hypothetical evaluation set with and without the \anydoc heuristic. 
+We then measure the difference between performance scores on the original evaluation set and on the hypothetical evaluation set with and without the \anydoc{} heuristic. 
 
 \paragraph{Results.}
 \figureref{pooling-bias} summarizes our results on pooling bias for the macro \fone{} metric.
@@ -66,14 +66,14 @@ The effect of bias is truncated on systems that performed very poorly.
 Consequently, we report median results on the top 40 systems (which corresponding to a sharp drop in performance).
 The outlier in the graph at rank 36 corresponds to a submission from University of Texas, Austin that only filtered outputs from other systems: this submission does not suffer any pooling bias because all of its outputs are included in the hypothetical evaluation set.
 
-Without the \anydoc heuristic, pooling bias is 15.51\% \fone{} points and with the heuristic it is 1.98\% \fone{} points.
-We note that the \anydoc heuristic overestimates scores by about 0.74\% \fone{} points.
+Without the \anydoc{} heuristic, pooling bias is 15.51\% \fone{} points and with the heuristic it is 1.98\% \fone{} points.
+We note that the \anydoc{} heuristic overestimates scores by about 0.74\% \fone{} points.
 The bias affects precision and recall almost equally: 
-  the median bias the without \anydoc heuristic being 17.93\% and 17.0\% respectively, and
-  the median bias the with \anydoc heuristic being 2.34\% and 1.93\% respectively.
+the median bias the without \anydoc{} heuristic being 17.93\% and 17.0\% respectively, and
+the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
 We also consider the alternate heuristic of ignoring relation instances outside the evaluation set and find that that biases \fone{} scores upwards by \fake{3\%}.
 At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions).
-This analysis confirms the necessity of the \anydoc heuristic during development evaluations,
+This analysis confirms the necessity of the \anydoc{} heuristic during development evaluations,
   but at the same time, even with the heuristic, the bias is much larger than the typical system difference.
 Thus, we conclude that this evaluation is biased against novel system improvements!
 
