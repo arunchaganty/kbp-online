@@ -4,6 +4,8 @@
 We have shown that the bias in a closed-world evaluation poses an obstacle to innovating new systems.
 We could eliminate the bias if we had exhaustively annotated the entire document corpus so that any relations predicted by systems would already be annotated.
 Unfortunately, this would be a laborious and expensive task: for a collection of 10,000 documents, we estimate that it would cost at least \$300,000 if non-expert annotators were employed.
+\pl{even more for LDC-style annotation!}
+\pl{but this warrants justification: where did you get this number from?}
 
 In on-demand open-world evaluation, the evaluation process is automated so that new relations can be annotated on-demand.
 Once a new system or feature has been developed, its predictions can be submitted to an evaluation portal.
@@ -26,6 +28,8 @@ We discuss our solutions to these problems next.
 
 \subsection{Ensuring open-world recall with exhaustive annotations}
 % A line about pooled recall
+\pl{I think we should use more formal notation from before to be more precise}
+
 The pooled collection of evaluated relations in the evaluation set is unlikely to be an accurate estimate for all the true relations in the corpus and thus the pooled recall would be a biased estimate.
 At the same time, it is impossible to know how many true relations there are in the corpus without annotating it in its entirety.
 We address this problem by obtaining exhaustive annotations on a few documents to correct for the bias in using pooled recall.
@@ -44,6 +48,10 @@ We address this problem by obtaining exhaustive annotations on a few documents t
 
 Then, when evaluating recall, we first estimate recall of the entire evaluation set on the exhaustively annotated documents, and multiply that by the recall of the system on the evaluation set. Through this two-step process we exploit the fact that it is easier to reduce variance by increasing the size of the evaluation set than it is to increase the size of the exhaustive annotation. \refsec{power} provides more details about this variance reduction.
 
+\pl{Sounds too much like an ad-hoc side note;
+this should be part of the problem definition (desired evaluation metric that we're trying to estimate),
+not part of our solution; in other words, should be moved to a previous section
+}
 A final issue to discuss is how documents should be sampled to capture diverse entities that span documents. % to provide better entity-level scores.
 When considering uniformly sampled documents, we that find that only extremely frequent entities like the United States or Barack Obama appear across documents.
 Unfortunately, we do not know which entities are present in which documents to construct a fairer sampling scheme.

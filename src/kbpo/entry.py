@@ -1,17 +1,76 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Performs sanity checks on mentions data.
+Classes and functions to process entry files.
 """
 
-import csv
-import sys
 import logging
+from collections import namedtuple
 
-from util import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS, parse_input
+from .defs import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+_MFile = namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relations'])
+class MFile(_MFile):
+    def __new__(cls, types, links, cmentions, relations):
+        self = super(MFile, cls).__new__(cls, types, links, cmentions, relations)
+        self._type_map = {row.subj: row.reln for row in types}
+        self._mention_map = {row.subj: row.obj for row in types}
+        self._link_map = {row.subj: row.obj for row in links}
+        self._cmention_map = {row.subj: row.obj for row in cmentions}
+        return self
+
+    def get_mention(self, m_id):
+        return self._mention_map[m_id]
+    def get_type(self, m_id):
+        return self._type_map[m_id]
+    def get_link(self, m_id):
+        return self._link_map.get(self._cmention_map[m_id])
+
+    def normalize_relation(self, entry):
+        subj, reln, obj = entry.subj, entry.reln, entry.obj
+        if reln in RELATIONS:
+            return entry
+        elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
+            for reln_ in INVERTED_RELATIONS[reln]:
+                if reln_.startswith(self.get_type(obj).lower()):
+                    return entry._replace(subj = obj, reln = reln_, obj = subj)
+        else:
+            raise ValueError("Couldn't map relation for {}".format(entry))
+
+    @classmethod
+    def from_stream(cls, stream):
+        """
+        Split input into type, link, canonical_mention and relation definitions.
+        """
+        mentions = []
+        links = []
+        canonical_mentions = []
+        relations = []
+
+        for row in stream:
+            assert len(row) <= 6, "Invalid number of columns, %d instead of %d"%(len(row), 6)
+            row = row + [None] * (6-len(row))
+            row = Entry(*row)
+
+            if row.reln in TYPES:
+                mentions.append(row)
+            elif row.reln == "link":
+                links.append(row)
+            elif row.reln == "canonical_mention":
+                canonical_mentions.append(row)
+            else:
+                relations.append(row)
+        return cls(mentions, links, canonical_mentions, relations)
+
+class Entry(namedtuple('Entry', ['subj', 'reln', 'obj', 'prov', 'score', 'weight',])):
+    @property
+    def pair(self):
+        return (self.subj, self.obj)
+
+    @property
+    def inv_pair(self):
+        return (self.obj, self.subj)
 
 def verify_mention_ids(mentions, canonical_mentions, links, relations):
     # Construct definitions of mentions.
@@ -103,31 +162,3 @@ def verify_relations(mentions, canonical_mentions, links, relations):
                         relations_.add(r_)
     logger.info("End with %d relations", len(relations_))
     return sorted(relations_)
-
-def do_command(args):
-    reader = csv.reader(args.input, delimiter='\t')
-    mentions, links, canonical_mentions, relations = parse_input(reader)
-
-    # Verify that canonical mentions are correctly linked.
-    verify_mention_ids(mentions, canonical_mentions, links, relations)
-    verify_canonical_mentions(mentions, canonical_mentions, links, relations)
-    relations = verify_relations(mentions, canonical_mentions, links, relations)
-
-    entries = mentions + links + canonical_mentions + relations
-    writer = csv.writer(args.output, delimiter='\t')
-    for row in entries:
-        writer.writerow(row)
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description='Performs sanity checks and corrects simple mistakes')
-    parser.add_argument('-i', '--input', type=argparse.FileType('r'), default=sys.stdin, help="")
-    parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="")
-    parser.set_defaults(func=do_command)
-
-    #subparsers = parser.add_subparsers()
-    #command_parser = subparsers.add_parser('command', help='' )
-    #command_parser.set_defaults(func=do_command)
-
-    ARGS = parser.parse_args()
-    ARGS.func(ARGS)

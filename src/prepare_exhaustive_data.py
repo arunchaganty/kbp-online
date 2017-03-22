@@ -5,15 +5,19 @@ Prepare data for exhaustive evaluation.
 """
 
 import os
+import csv
 import random
 import json
 import sys
 import logging
-from collections import defaultdict
+from collections import defaultdict, Counter
 
-from util import ensure_dir, sample, query_docs, query_wikilinks, query_entities, query_dates, query_doc, query_mentions
+import psycopg2
+import numpy as np
 
-logging.basicConfig(level=logging.DEBUG)
+from util import ensure_dir, sample, query_docs, query_wikilinks, query_entities, query_dates, query_doc, query_mentions, raw_psql, query_psql, sanitize
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -130,29 +134,7 @@ def make_date_map(fstream):
     return ret
 
 def collect_sample(corpus_id, num_docs, per_entity, sentence_table, mention_table):
-    # Sample 0.2 * n documents.
-    docs = (d for d, in query_docs(corpus_id, sentence_table=sentence_table))
-
-    doc_collection = set(sample(docs, int(.2 * num_docs)))
-    logger.info("Seeding with %d documents", len(doc_collection))
-
-    # Find all mentions and hence links in these documents.
-    seed_entities = list(query_entities(sorted(doc_collection), mention_table=mention_table))
-    logger.info("Found %d entities", len(seed_entities))
-    random.shuffle(seed_entities)
-
-    # Proceed to incrementally add documents to the collection using the
-    # canonical glosses of entities.
-    for entity_gloss, _ in seed_entities:
-        logger.info("Searching for %s", entity_gloss)
-        docs_ = set(d for d, in query_docs(corpus_id, [entity_gloss], sentence_table=sentence_table))
-        docs_.difference_update(doc_collection)
-        # Measure how many to sample.
-        m = min(num_docs - len(doc_collection), per_entity)
-        doc_collection.update(sample(docs_, m))
-        logger.info("Now at %s", len(doc_collection))
-        if len(doc_collection) >= num_docs: break
-    assert len(doc_collection) == num_docs, "Couldn't find 'n' documents!"
+    doc_collection = sample_docs_entity(corpus_id, num_docs, per_entity, sentence_table, mention_table)
 
     date_map = dict(query_dates(sorted(doc_collection)))
 
@@ -179,6 +161,109 @@ def do_sample(args):
         with open(os.path.join(args.output, doc['doc_id'] + ".json"), 'w') as f:
             json.dump(doc, f)
 
+def compute_entropy(entity_list, frequencies):
+    """
+    Compute entropy of the entity list.
+    """
+    total = sum(frequencies.values())
+
+    ret, cnt = 0., 0.
+    for entity, _ in entity_list:
+        # Ignore these.
+        if entity not in frequencies: continue
+        cnt += 1
+        ret += (np.log(frequencies[entity]) - ret)/cnt
+    return np.log(total) - ret # normalizing.
+
+def get_binned_frequencies(entity_list, frequencies, n_bins=3):
+    max_freq = np.log(max(frequencies.values()))
+    logger.info("Using bin size: {0:.3f}".format(max_freq/n_bins))
+
+    counts = [0] * n_bins
+    for entity, count in entity_list:
+        if entity not in frequencies: continue
+        bin_idx = min(int(np.floor(np.log(frequencies[entity])/max_freq * n_bins)), n_bins-1)
+        counts[bin_idx] += 1
+
+    # Normalize into frequencies.
+    return counts
+
+def compute_stats(entity_list, mention_freqs, doc_freqs):
+    entropy = compute_entropy(entity_list, mention_freqs)
+    mention_counts = get_binned_frequencies(entity_list, mention_freqs)
+    doc_counts = get_binned_frequencies(entity_list, doc_freqs)
+
+    return entropy, mention_counts, doc_counts
+
+def get_document_links(docs, entities):
+    conn = psycopg2.connect("dbname=kbp user=kbp host=localhost port=4242")
+    cur = conn.cursor()
+    cur.execute("CREATE TEMPORARY TABLE _query_entities(gloss TEXT);")
+    psycopg2.extras.execute_values(cur, "INSERT INTO _query_entities(gloss) VALUES %s", [(entity,) for entity, _ in entities])
+    cur.execute("CREATE TEMPORARY TABLE _query_docs(doc_id TEXT);")
+    psycopg2.extras.execute_values(cur, "INSERT INTO _query_docs(doc_id) VALUES %s", docs)
+
+    cur.execute("""
+SELECT q.gloss, COUNT(DISTINCT m.doc_id)
+FROM mention m, _query_entities q, _query_docs d
+WHERE m.gloss = q.gloss
+  AND m.doc_id = d.doc_id
+GROUP BY q.gloss
+""")
+    counts = {entity: count for entity, count in cur.fetchall()}
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return counts
+
+def do_stats(args):
+    obj = {}
+    # Load list of entity counts
+    mention_counts = load_counts(args.counts_mentions)
+    # Load list of entity doc_counts
+    doc_counts = load_counts(args.counts_docs)
+    queries = [(e, 0) for e in mention_counts.keys()]
+    keys = ["entropy", "mention_counts", "doc_counts", "doc_links"]
+
+    for key, stat in zip(keys, compute_stats(queries, mention_counts, doc_counts)):
+        key = "baseline_"+key
+        obj[key] = stat
+
+    if args.mode == "query":
+        queries = [(line.strip(), 0) for line in args.queries]
+        stats = [compute_stats(queries, mention_counts, doc_counts)]
+    elif args.mode == "baseline":
+        stats = []
+        for i in range(10):
+            docs = sample_docs_baseline(args.corpus, args.num_docs, args.sentence_table)
+            queries = list((normalize_entity(entity), int(count)) for entity, count in query_entities(sorted(docs), mention_table=args.mention_table))
+            stats_ = compute_stats(queries, mention_counts, doc_counts)
+            stats.append()
+            logger.info("stats: %s", stats[-1][:2])
+    elif args.mode == "entity":
+        stats = []
+        for i in range(10):
+            docs = sample_docs_entity(args.corpus, args.num_docs, args.per_entity, args.sentence_table, args.mention_table)
+            queries = list((normalize_entity(entity), int(count)) for entity, count in query_entities(sorted(docs), mention_table=args.mention_table))
+            stats.append(compute_stats(queries, mention_counts, doc_counts))
+            logger.info("stats: %s", stats[-1][:2])
+    else:
+        raise NotImplementedError()
+
+    # Combine the outputs.
+    obj["query_entropy"] = np.mean([stat[0] for stat in stats]).tolist()
+    obj["query_mention_counts"] = np.mean([stat[1] for stat in stats], axis=0).tolist()
+    obj["query_mention_links"] = np.vstack(np.array(stat[2]) for stat in stats).tolist()
+    obj["query_doc_counts"] = np.mean([stat[3] for stat in stats], axis=0).tolist()
+    obj["query_doc_links"] = np.vstack(np.array(stat[4]) for stat in stats).tolist()
+
+    for key, stat in obj.items():
+        if "links" not in key:
+            logger.info("%s=%s", key, stat)
+    json.dump(obj, args.output)
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Saves document to file in json format.')
@@ -199,6 +284,19 @@ if __name__ == "__main__":
     command_parser.add_argument('-st', '--sentence-table', type=str, default="sentence_8_30_16", help="Sentence table")
     command_parser.add_argument('-o', '--output', type=str, default="data/exhaustive/", help="A path to a folder to save documents.")
     command_parser.set_defaults(func=do_sample)
+
+    command_parser = subparsers.add_parser('stats', help='Plot statistics from sampling scheme for entities')
+    command_parser.add_argument('-m', '--mode', choices=["query", "baseline", "entity"], default="query", help="Which sampling scheme?")
+    command_parser.add_argument('-c', '--corpus', type=str, default="2015", help="Corpus to select documents from.")
+    command_parser.add_argument('-n', '--num-docs', type=int, default=200, help="Number of documents to exhaustively sample")
+    command_parser.add_argument('-p', '--per-entity', type=int, default=4, help="Number of documents to sample per entity")
+    command_parser.add_argument('-mt', '--mention-table', type=str, default="mention", help="Mention table to use")
+    command_parser.add_argument('-st', '--sentence-table', type=str, default="sentence", help="Sentence table")
+    command_parser.add_argument('-iq', '--queries', type=argparse.FileType('r'), default="data/query_entities_2015.tsv", help="Path to counts of entity mentions")
+    command_parser.add_argument('-cm', '--counts-mentions', type=argparse.FileType('r'), default="data/entity_counts.tsv", help="Path to counts of entity mentions")
+    command_parser.add_argument('-cd', '--counts-docs', type=argparse.FileType('r'), default="data/entity_doc_counts.tsv", help="Path to counts of entity doc mentions")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default="entity_stats.json", help="A path to a folder to save documents.")
+    command_parser.set_defaults(func=do_stats)
 
     ARGS = parser.parse_args()
     if ARGS.func is None:
