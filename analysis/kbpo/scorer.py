@@ -53,7 +53,7 @@ def load_output(fstream, Q):
     logger.info("Loaded %d output entries.", len(output))
     return output
 
-def compute_entity_scores(gold, output, Q, key=k):
+def compute_entity_scores(gold, output, Q, mode="closed-world"):
     """
     @gold is a dictionary of {s: F*_s}.
     F*_s = {f: [m]}
@@ -66,16 +66,28 @@ def compute_entity_scores(gold, output, Q, key=k):
         R = {s: R_s}; R_s = F_s ^ F*_s / F*_s
         F1 = {s: F1_s}; F1_s = 2 P_s R_s / (P_s + R_s)
     """
+    if mode == "closed-world" or mode == "condensed":
+        key = k
+    elif mode == "anydoc" or mode == "condensed-anydoc":
+        key = kn
+    else:
+        raise ValueError("Unsupported mode: " + mode)
+
+
     G = defaultdict(lambda: defaultdict(set)) # Gold data
     Gr = {} # maps from entry to (s, f)
     for entry in gold:
-        s = Q[entry.query_id]
-        # Considering inexact queries as correct because these are
+        s = Q[entry.query_id] # Canonical query id.
+        # NOTE: Considering inexact queries as correct because these are
         # considered correct as per recall computations.
         f = entry.eq # if (entry.slot_value_label == "C") else 0
+
+        # If this is the first time this (subject, provenance)  pair has
+        # been seen, then place it in Gr
         if (s, key(entry)) not in Gr:
             G[s][f].add(key(entry)) # Make a key out of this entry.
             Gr[s, key(entry)] = f
+        # Else, resolve conflicting labels.
         else:
             # Remove any conflicting entries in 0 because of inexactness.
             f_ = Gr[s, key(entry)]
@@ -92,6 +104,10 @@ def compute_entity_scores(gold, output, Q, key=k):
     O = defaultdict(lambda: defaultdict(set)) # Gold data
     for entry in output:
         s = Q[entry.query_id]
+        # If we are doing condensed lists, then do not add anything to
+        # the output that isn't part of the evaluation data.
+        if mode.startwith("condensed") and (s, key(entry)) not in Gr: continue
+
         f = Gr.get((s, key(entry)), 0)
         O[s][f].add(key(entry))
 
@@ -144,11 +160,10 @@ def compute_mention_scores(gold, output, key=k):
 
 def do_entity_evaluation(args):
     Q = load_queries(args.queries)
-    key = kn if args.anydoc else k
     gold = load_gold(args.gold, Q)
     output = load_output(args.pred, Q)
 
-    S, C, T = compute_entity_scores(gold, output, Q, key)
+    S, C, T = compute_entity_scores(gold, output, Q, args.mode)
 
     for s in sorted(S):
         args.output.write("{} {:.04f} {:.04f} {:.04f}\n".format(s, *micro({s:S[s]}, {s:C[s]}, {s:T[s]})))
@@ -218,7 +233,7 @@ def standardize_scores(X_st):
     S[S == 0] = 1. #
     return ((X_st - X_st.mean(0))/S).mean(1)
 
-def do_experiment1(args):
+def do_compute_intervals(args):
     assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
 
     Q = load_queries(args.queries)
@@ -280,10 +295,17 @@ def do_pooling_bias(args):
             outputs[runid] = load_output(f, Q)
     logger.info("Loaded output for %d systems", len(outputs))
 
-    def make_loo_pool(gold, outputs, runid, key=k):
+    def make_loo_pool(gold, outputs, runid, mode="closed-world"):
         """
         Create a new gold set which includes only the inputs from all other systems.
         """
+        if mode == "closed-world" or "condensed":
+            key = k
+        elif mode == "anydoc" or "condensed-anydoc":
+            key = kn
+        else:
+            raise ValueError("Unsupported mode: " + mode)
+
         valid_entries = set([])
         for runid_, output in outputs.items():
             if runid == runid_: continue
@@ -292,10 +314,17 @@ def do_pooling_bias(args):
         logger.info("loo pool for %s contains %d entries", runid, len(gold_))
         return gold_
 
-    def make_lto_pool(gold, outputs, runid, key=k):
+    def make_lto_pool(gold, outputs, runid, mode="closed-world"):
         """
         Create a new gold set which includes only the inputs from all other systems.
         """
+        if mode == "closed-world" or "condensed":
+            key = k
+        elif mode == "anydoc" or "condensed-anydoc":
+            key = kn
+        else:
+            raise ValueError("Unsupported mode: " + mode)
+
         valid_entries = set([])
         for runid_, output in outputs.items():
             if teamid(runid) == teamid(runid_): continue
@@ -310,30 +339,18 @@ def do_pooling_bias(args):
         "micro-p", "micro-r", "micro-f1", "macro-p", "macro-r", "macro-f1",
         "micro-p-loo", "micro-r-loo", "micro-f1-loo", "macro-p-loo", "macro-r-loo", "macro-f1-loo",
         "micro-p-lto", "micro-r-lto", "micro-f1-lto", "macro-p-lto", "macro-r-lto", "macro-f1-lto",
-        "micro-p-anydoc", "micro-r-anydoc", "micro-f1-anydoc", "macro-p-anydoc", "macro-r-anydoc", "macro-f1-anydoc",
-        "micro-p-loo-anydoc", "micro-r-loo-anydoc", "micro-f1-loo-anydoc", "macro-p-loo-anydoc", "macro-r-loo-anydoc", "macro-f1-loo-anydoc",
-        "micro-p-lto-anydoc", "micro-r-lto-anydoc", "micro-f1-lto-anydoc", "macro-p-lto-anydoc", "macro-r-lto-anydoc", "macro-f1-lto-anydoc",
         ])
 
     rows = []
     for runid, output in tqdm(outputs.items()):
         row = []
-        S, C, T = compute_entity_scores(gold, output, Q)
+        S, C, T = compute_entity_scores(gold, output, Q, args.mode)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid), output, Q)
+        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid, args.mode), output, Q, args.mode)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid), output, Q)
-        row += micro(S, C, T) + macro(S,C,T)
-
-        S, C, T = compute_entity_scores(gold, output, Q, k)
-        row += micro(S, C, T) + macro(S,C,T)
-
-        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid, kn), output, Q, k)
-        row += micro(S, C, T) + macro(S,C,T)
-
-        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid, kn), output, Q, k)
+        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid, args.mode), output, Q, args.mode)
         row += micro(S, C, T) + macro(S,C,T)
 
         writer.writerow([runid,] + row)
@@ -344,7 +361,7 @@ def do_pooling_bias(args):
 
     args.output.flush()
 
-def do_experiment3(args):
+def do_standardized_evaluation(args):
     assert os.path.exists(args.preds) and os.path.isdir(args.preds), "{} does not exist or is not a directory".format(args.preds)
 
     Q = load_queries(args.queries)
@@ -404,7 +421,7 @@ if __name__ == "__main__":
     command_parser = subparsers.add_parser('entity-evaluation', help='Evaluate a single entry (entity)')
     command_parser.add_argument('-p', '--pred', type=argparse.FileType('r'), required=True, help="A list of predicted entries")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
-    command_parser.add_argument('-a', '--anydoc', action='store_true', default=False, help="Use anydoc?")
+    command_parser.add_argument('-m', '--mode', choices=["anydoc", "condensed", "condensed-anydoc", "closed-world"], default="closed-world", help="Which mode of scoring to use")
     command_parser.set_defaults(func=do_entity_evaluation)
 
     command_parser = subparsers.add_parser('mention-evaluation', help='Evaluate a single entry (mention)')
@@ -412,25 +429,26 @@ if __name__ == "__main__":
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_mention_evaluation)
 
-    command_parser = subparsers.add_parser('experiment1', help='Evaluate P/R/F1 (entity) scores for every entity with 95% confidence thresholds')
+    command_parser = subparsers.add_parser('compute-intervals', help='Evaluate P/R/F1 (entity) scores for every entity with 95%% confidence thresholds')
     command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
     command_parser.add_argument('-c', '--confidence', type=float, default=.95, help="Confidence threshold")
     command_parser.add_argument('-s', '--samples', type=int, default=5000, help="Confidence threshold")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
-    command_parser.set_defaults(func=do_experiment1)
+    command_parser.set_defaults(func=do_compute_intervals)
 
     command_parser = subparsers.add_parser('pooling-bias', help='Evaluate pooling bias')
     command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
+    command_parser.add_argument('-m', '--mode', choices=["anydoc", "condensed", "condensed-anydoc", "closed-world"], default="closed-world", help="Which mode of scoring to use")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.set_defaults(func=do_pooling_bias)
 
-    command_parser = subparsers.add_parser('experiment3', help='Evaluate standardized micro/macro F1 (entity) scores for every entity with 95% confidence thresholds')
+    command_parser = subparsers.add_parser('standardized-evaluation', help='Evaluate standardized micro/macro F1 (entity) scores for every entity with 95%% confidence thresholds')
     command_parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
     command_parser.add_argument('-c', '--confidence', type=float, default=.95, help="Confidence threshold")
     command_parser.add_argument('-s', '--samples', type=int, default=5000, help="Confidence threshold")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output.")
     command_parser.add_argument('-ov', '--output-vis', type=argparse.FileType('w'), default="vis.tsv", help="Where to write visualization output.")
-    command_parser.set_defaults(func=do_experiment3)
+    command_parser.set_defaults(func=do_standardized_evaluation)
 
     # TODO: measurement of pairwise significance and diagrams.
 
