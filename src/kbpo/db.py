@@ -4,22 +4,28 @@
 Database utilities.
 """
 
+import re
 import psycopg2 as db
-from psycopg2.extras import execute_values
+from psycopg2.extras import execute_values, NamedTupleCursor
 
 from .defs import ner_map
 
 # File wide connection.
-_PARAMS = "dbname=kbp user=kbp host=localhost port=4242"
-_CONN = db.connect(_PARAMS)
+_PARAMS = {
+    'dbname':'kbp',
+    'user':'kbp',
+    'host':'localhost',
+    'port':4242,
+    'cursor_factory': NamedTupleCursor,
+    }
+_CONN = db.connect(**_PARAMS)
+with _CONN.cursor() as _cur:
+    _cur.execute("SET search_path TO kbpo;")
 
 def pg_select(sql, **kwargs):
-    cur = _CONN.cursor()
-    cur.execute(sql, kwargs)
-    ret = cur.fetchall()
-    _CONN.commit()
-    cur.close()
-    return ret
+    with _CONN.cursor() as cur:
+        cur.execute(sql, kwargs)
+        yield from cur
 
 def sanitize(word):
     """
