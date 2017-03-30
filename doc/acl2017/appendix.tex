@@ -2,14 +2,46 @@
 \section{Annotation interfaces}
 \label{sec:interface}
 
-\section{Sampling scheme}
+\section{How to sample your dragon.}
 \label{sec:sampling}
 
-Let $(A_i)_{1}^{m}$ be a sequence of subsets of a population $\sA$: $A_i \subset \sA$.
+\newcommand{\Xh}{{\hat{X}}}
 
-Further, let $\hat{A}_i$ be a set of $n_i$ elements drawn from $A_i \setdifference \Union_{j < i} \hat{A}_j$, where each element $a \in A_i$ is drawn with probability proportional to $w_a\oft{i}$.
+One of the core challenges to being able to evaluate data on-demand is to be able to (a) sample specific to a systems output and (b) be able to fuse information collected from other systems. In this section we will address how we can achieve (b) for cheap.
 
-For a given $a \in \sA$, we like to estimate the probability that $a \in \Union{j \le m} \hat{A_j}$.
+Let $\sX$ be the universe of objects we wish to sample from (e.g.\ relation instances).
+Let $X_1, X_2, X_3, \ldots \subseteq \sX$ be subsets of these items (corresponding to the output from different systems),
+and let $p_1$, $p_2$, \ldots be distributions corresponding to each set of items, i.e. $p_i$ has support $X_i$.
+We would like to evaluate the expectation of a metric $f$: $\E_{p_i(x)}[f(x)]$ using samples of each $X_i$.
+
+If we didn't care about reusing samples, we would simply draw some $n$ samples, $\Xh_i$, from $X_i$ using $p_i$.
+One common approach for adapting samples that came from a different distribution is the use importance reweighing.
+Under this scheme, if samples from a distribution $q(x)$ are used to estimate a metric over $p(x)$, the samples are reweighed as follows: $\frac{1}{n} \sum_{i=1}^n \frac{p(x_i)}{q(x_i)} f(x_i)$. It is easy to see that this estimator is unbiased as long as the support of $q$ contains the support of $p$.
+Unfortunately, this does not hold in our scenario and in general it is impossible to sample a metric using samples from a different support without potentially significant bias.
+
+Instead, we will include some samples from the target set to guarantee support coverage.
+In doing so, we may complicate our estimation of the importance sampling distributions. 
+We propose two sampling procedures:
+
+%\begin{algorithm}
+%\begin{algorithmic}
+%  % For i in sets:
+%  % sample m samples for X_i independently.
+%  % combine in the pool Y.
+%  % can use Y_i = Y \intersect X_i to estimate p(x).
+%  % Here q(x) = 1 - \prod(1-p_i(x))
+%\end{algorithmic}
+%\end{algorithm}
+%
+%
+%\begin{algorithm}
+%\begin{algorithmic}
+%  % For i in sets:
+%  % sample m samples from X_i / Y without replacement.
+%  % combine into pool Y.
+%  % can't derive q(x) = 1 - \prod(1-p_i(x)) independently.
+%\end{algorithmic}
+%\end{algorithm}
 
 \subsection{Method 1: assume that sampling without replacement is equivalent to sampling with replacement.}
 

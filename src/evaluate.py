@@ -5,7 +5,7 @@ Routines to test the unbiasedness and variance of our sampling routines.
 """
 import csv
 import sys
-from collections import namedtuple
+from collections import namedtuple, Counter
 from functools import reduce
 import logging
 
@@ -75,70 +75,58 @@ def sample_without_replacement(X, num_samples=200, Y=None):
         X_ = [(x,(1.0, l)) for x, (_, l) in X[:num_samples]]
         return X_
 
-def importance_reweight(X, Y, Y_):
+def sample_sets_with_replacement(Xs, num_samples=200):
+    Xs_ = []
+    for X in Xs:
+        X_= sample_with_replacement(X, num_samples)
+        Xs_ += X_
+    return Xs_
+
+#def distribution_with_replacement(Xs):
+#    r"""
+#    Returns the distribution of samples under the above sampling scheme.
+#    Pr(x) = 1 - \prod_{i} (1-pi(x))
+#    """
+#    Ps = np.zeros(
+#    # Pivot the distribution.
+#    Xs = [{i:w}
+
+def sample_sets_without_replacement(Xs, num_samples=200):
+    Xs_, seen = [], set([])
+    for X in Xs:
+        X = [(x, wl) for x, wl in X if x not in seen]
+        X_= sample_without_replacement(X, num_samples)
+        seen.update(x for x, _ in X_)
+        Xs_ += X_
+    return Xs_
+
+def importance_reweight(X, P, Q):
     """
-    Use samples from Y_ to estimate metrics on X.
+    Reweight samples of X as if it were sampled from Q for P.
     """
-    X = {x: wl for x, wl in X}
-    Wx = sum(w for w, _ in X.values())
-    Y = {y: wl for y, wl in Y}
-    Wy = sum(w for w, _ in Y.values())
+    return [(x, (P[x]/Q[x], l)) for x, (_, l) in X]
 
-    X_ = []
-    # For every element of Y_
-    for y, (w,l) in Y_:
-        if y not in X: continue
-        # compute p(x) and q(x) and add them up
-
-        p = X[y][0]/Wx
-        q = Y[y][0]/Wy
-
-        # Note, that this estimation is *STILL* biased because support of X
-        # and support of Y are different.
-        X_.append((y, (p/q * w, l)))
-    return X_
-
-def sample_with_importance(X, Y, sampler, **kwargs):
+def restriction(X, R):
     """
-    Sample for X using samples from Y
+    Restricts the values in X to those in R.
     """
-    Y_ = sampler(Y, **kwargs)
-    return importance_reweight(X, Y, Y_)
+    seen = set(x for x, _ in R)
+    return [(x, wl) for x, wl in X if x in seen]
 
+def p(X):
+    P = Counter()
+    for x, (w,_) in X:
+        P[x] = w
+    return P
 
-def cross_importance_reweight(X_x, X_y, X, Y):
+def cross_sample(X, Xs, Q, set_sampler, **kwargs):
     """
-    Use samples from Y_ to estimate metrics on X.
+    Basically create a sample for X using the set_sampler.
     """
-    X = {x: wl for x, wl in X}
-    Wx = sum(w for w, _ in X.values())
-    Y = {y: wl for y, wl in Y}
-    Wy = sum(w for w, _ in Y.values())
+    Xs_ = set_sampler(Xs, **kwargs)
+    X_ = restriction(Xs_, X)
+    return importance_reweight(X_, p(X), Q)
 
-    # Get weight of partitions.
-    Wxx = sum(X[x][0] for x in set(X.keys()).difference(Y.keys()))/Wx
-    Wxy = sum(X[x][0] for x in set(X.keys()).intersection(Y.keys()))/Wx
-
-    X_ = [] # consolidated list.
-    for x, (_,l) in X_x:
-        X_.append((x, (Wxx, l)))
-    for x, (_,l) in X_y:
-        p = X[x][0]/Wx
-        q = Y[x][0]/Wy
-        X_.append((x, (p/q * Wxy, l)))
-    return X_
-
-def cross_sample(X, Y, sampler, **kwargs):
-    """
-    Sample for X using samples from Y
-    """
-    Xk = set(x for x, _ in X)
-    Yk = set(y for y, _ in Y)
-
-    Y_ = sampler(Y, **kwargs)
-    X_y = [(y, wl) for y, wl in Y_ if y in Xk]
-    X_x = sampler([(x, wl) for x, wl in X if x not in Yk], **kwargs)
-    return cross_importance_reweight(X_x, X_y, X, Y)
 
 def statistical_estimate(f, X, sampler, n_repeats=1000, correction=False, **kwargs):
     fXs = []
@@ -160,28 +148,28 @@ def do_test(args):
     population = list(range(1000))
     Ls = np.random.rand(len(population)) > (1-0.3) # More are false than true.
 
-    # Create sets X_i
-    Xs = np.random.rand(args.num_sets, len(population)) < 0.6 # recall of 0.4
+    # Create support sets X_i
+    Ss = np.random.rand(args.num_sets, len(population)) < 0.6 # recall of 0.4
 
     # Create p_i
     Ps = np.random.rand(args.num_sets, len(population))
-    Ps[Xs] = 0. # Blot out non-zeros
+    Ps[Ss] = 0. # Blot out non-zeros
     Ps = (Ps.T/Ps.sum(1)).T # Normalize
+    Q = Ps.sum(0)/len(Ps)
 
-    sets = [{i: (p[i], l[i]) for i in population if p[i] > 0.}  for p, l in zip(Ps, Ls)]
-    sample_stats(sets)
+    Xs = [[(i, (p[i], Ls[i])) for i in population if p[i] > 0.]  for p in Ps]
+    sample_stats(Xs)
 
     f = int
-    for i, X in enumerate(sets):
+    for i, X in enumerate(Xs):
         print("Metric over {} is: {:.3f}".format(i, evaluate_metric(f, X)))
-        print("w/ replacement: {:.3f} (± {:.3f})".format(*statistical_estimate(f, X, sample_with_replacement)))
-        print("w/o replacement: {:.3f} (± {:.3f})".format(*statistical_estimate(f, X, sample_without_replacement, correction=True)))
+        print("w/ replacement: {:.3f} (± {:.3f})".format(*statistical_estimate(f, X, sample_with_replacement, num_samples=200)))
+        print("w/o replacement: {:.3f} (± {:.3f})".format(*statistical_estimate(f, X, sample_without_replacement, correction=True, num_samples=200)))
 
     # Importance reweighting
-    for i, X in enumerate(sets):
-        for j, Y in enumerate(sets):
-            print("{} for {} w/ replacement: {:.3f} (± {:.3f})".format(j, i, *statistical_estimate(f, X, lambda X_, **kwargs: cross_sample(X_, Y, sample_with_replacement, **kwargs))))
-            print("{} for {} w/o replacement: {:.3f} (± {:.3f})".format(j, i, *statistical_estimate(f, X, lambda X_, **kwargs: cross_sample(X_, Y, sample_without_replacement, **kwargs), correction=True)))
+    for i, X in enumerate(Xs):
+        print("Scheme estimate w/ replacement for {}: {:.3f} (± {:.3f})".format(i, *statistical_estimate(f, X, lambda X_, **kwargs: cross_sample(X_, Xs, Q, sample_sets_with_replacement, **kwargs), num_samples=200)))
+        print("Scheme estimate w/o replacement for {}: {:.3f} (± {:.3f})".format(i, *statistical_estimate(f, X, lambda X_, **kwargs: cross_sample(X_, Xs, Q, sample_sets_without_replacement, **kwargs), num_samples=200)))
 
 if __name__ == "__main__":
     import argparse
