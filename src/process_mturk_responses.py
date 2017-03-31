@@ -4,17 +4,19 @@
 Processes mturk responses to load into the appropriate evaluation_?_response tables.
 """
 
-import json
 import sys
-from collections import namedtuple
-
+import logging
 from kbpo import web_data
+logger = logging.getLogger("kbpo")
 
 def do_command(args):
     web_data.parse_responses()
 
 if __name__ == "__main__":
     import argparse
+    logging.basicConfig(level=logging.DEBUG)
+    logger.addHandler(logging.FileHandler("kbpo.log"))
+
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-i', '--input', type=argparse.FileType('r'), default=sys.stdin, help="")
     parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="")

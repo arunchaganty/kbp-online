@@ -1,8 +1,6 @@
 """
 Definitions for the KBPO task.
 """
-from collections import namedtuple
-
 ner_map = {
     "PERSON": "PER",
     "ORGANIZATION": "ORG",
@@ -158,9 +156,3 @@ INVERTED_RELATIONS = {
     "gpe:member_of":["org:members"],
     "gpe:headquarters_in_place":["org:place_of_headquarters"],
     }
-
-Provenance = namedtuple("Provenance", ["doc_id", "begin", "end"])
-MentionInstance = namedtuple("MentionInstance", ["id", "type", "gloss"]) # Capture canonical mentions
-CanonicalMentionInstance = namedtuple("CanonicalMentionInstance", ["id", "canonical_id", "confidence"])
-LinkInstance = namedtuple("LinkInstance", ["id", "link_name", "confidence"])
-RelationInstance = namedtuple("RelationInstance", ["subject_id", "object_id", "relation", "confidence"])
