@@ -162,5 +162,5 @@ INVERTED_RELATIONS = {
 Provenance = namedtuple("Provenance", ["doc_id", "begin", "end"])
 MentionInstance = namedtuple("MentionInstance", ["id", "type", "gloss"]) # Capture canonical mentions
 CanonicalMentionInstance = namedtuple("CanonicalMentionInstance", ["id", "canonical_id", "confidence"])
-LinkInstance = namedtuple("LinkInstance", ["id", "link", "confidence"])
+LinkInstance = namedtuple("LinkInstance", ["id", "link_name", "confidence"])
 RelationInstance = namedtuple("RelationInstance", ["subject_id", "object_id", "relation", "confidence"])
