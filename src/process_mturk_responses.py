@@ -11,6 +11,7 @@ logger = logging.getLogger("kbpo")
 
 def do_command(args):
     web_data.parse_responses()
+    web_data.update_summary()
 
 if __name__ == "__main__":
     import argparse

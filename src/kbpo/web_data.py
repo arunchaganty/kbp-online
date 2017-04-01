@@ -5,6 +5,7 @@ Utilities to handle conversion and interaction of data in JSON
 """
 import json
 import logging
+from collections import Counter
 
 from . import db
 from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance, EvaluationMentionResponse, EvaluationLinkResponse, EvaluationRelationResponse
@@ -17,13 +18,13 @@ def parse_selective_relations_response(question, responses):
         doc_id = question["doc_id"]
         subject_id = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
         subject_canonical_id = Provenance(doc_id, response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
-        subject_type = response["subject"]["type"]["name"]
-        subject_gloss = response["subject"]["gloss"]
+        subject_type = response["subject"]["type"]["name"].strip()
+        subject_gloss = response["subject"]["gloss"].strip()
 
         object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         object_canonical_id = Provenance(doc_id, response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
-        object_type = response["object"]["type"]["name"]
-        object_gloss = response["object"]["gloss"]
+        object_type = response["object"]["type"]["name"].strip()
+        object_gloss = response["object"]["gloss"].strip()
 
         if "canonicalCorrect" in response["subject"]["entity"]:
             mentions.append(MentionInstance(subject_id, subject_canonical_id, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] == "Yes" else 0.0))
@@ -84,8 +85,8 @@ def parse_exhaustive_entities_response(question, response):
     for entity in response:
         try:
             id_ = Provenance(doc_id, entity["doc_char_begin"], entity["doc_char_end"])
-            type_ = entity["type"]["name"]
-            gloss = entity["gloss"]
+            type_ = entity["type"]["name"].strip()
+            gloss = entity["gloss"].strip()
 
             canonical_id = Provenance(doc_id, entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
             mention = MentionInstance(id_, canonical_id, type_, gloss, 1.0)
@@ -116,8 +117,8 @@ def test_parse_exhaustive_entities_response():
     assert links[0].id == Provenance("NYT_ENG_20130911.0085", 101, 106)
     assert links[0].link_name == "China"
 
-# TODO: Include some awareness of timestamps
 def parse_responses():
+# TODO: Include some awareness of timestamps
     evaluation_mentions = []
     evaluation_links = []
     evaluation_relations = []
@@ -190,6 +191,72 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
 
     with db.CONN:
         with db.CONN.cursor() as cur:
+            cur.execute("""TRUNCATE evaluation_mention_response;""")
+            cur.execute("""TRUNCATE evaluation_link_response;""")
+            cur.execute("""TRUNCATE evaluation_relation_response;""")
             db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
             db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, mention_id, link_name, weight) VALUES %s""", evaluation_links)
             db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject_id, object_id, relation, weight) VALUES %s""", evaluation_relations)
+
+def majority_element(lst):
+    return Counter(lst).most_common(1)[0][0]
+
+def merge_evaluation_mentions(row):
+    # Choose the most frequent char_begin and char_end.
+    canonical_begin, canonical_end = majority_element(zip(row.canonical_char_begins, row.canonical_char_ends))
+    mention_type = majority_element(row.mention_types)
+    gloss = majority_element(row.glosses)
+    weight = sum(weight for weight, canonical_begin_, canonical_end_ in zip(row.weights, row.canonical_char_begins, row.canonical_char_ends) if canonical_begin_ == canonical_begin and canonical_end_ == canonical_end)/len(row.weights)
+
+    return row.doc_id, row.mention_id, (row.doc_id, canonical_begin, canonical_end), mention_type, gloss, weight
+
+def merge_evaluation_links(row):
+    link_name = majority_element(row.link_names)
+    weight = sum(weight for weight, link_name_ in zip(row.weights, row.link_names) if link_name_ == link_name)/len(row.weights)
+
+    return row.doc_id, row.mention_id, link_name, weight
+
+def merge_evaluation_relations(row):
+    # Choose the most frequent char_begin and char_end.
+    relation = majority_element(row.relations)
+    weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/len(row.weights)
+
+    return row.doc_id, row.subject_id, row.object_id, relation, weight
+
+def update_evaluation_mention():
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""TRUNCATE evaluation_mention;""")
+            # For evaluation_mention, we want to aggregate both types and canonical_ids.
+            cur.execute("""SELECT doc_id, mention_id, array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends, array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses, array_agg(weight) as weights FROM evaluation_mention_response GROUP BY doc_id, mention_id""")
+            # Take the majority vote on this mention iff count > 1.
+            values = [merge_evaluation_mentions(row) for row in cur]
+            db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
+
+def update_evaluation_link():
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""TRUNCATE evaluation_link;""")
+            # For evaluation_mention, we want to aggregate both types and canonical_ids.
+            cur.execute("""SELECT doc_id, mention_id, array_agg(link_name) AS link_names, array_agg(weight) AS weights FROM evaluation_link_response GROUP BY doc_id, mention_id""")
+            # Take the majority vote on this mention iff count > 1.
+            values = [merge_evaluation_links(row) for row in cur]
+            db.execute_values(cur, """INSERT INTO evaluation_link(doc_id, mention_id, link_name, weight) VALUES %s""", values)
+
+def update_evaluation_relation():
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""TRUNCATE evaluation_relation;""")
+            # For evaluation_mention, we want to aggregate both types and canonical_ids.
+            cur.execute("""SELECT doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights FROM evaluation_relation_response GROUP BY doc_id, subject_id, object_id""")
+            # Take the majority vote on this mention iff count > 1.
+            values = [merge_evaluation_relations(row) for row in cur]
+            db.execute_values(cur, """INSERT INTO evaluation_relation(doc_id, subject_id, object_id, relation, weight) VALUES %s""", values)
+
+def update_summary():
+    """
+    Updates the evaluation_mention, evaluation_link and evaluation_relation tables.
+    """
+    update_evaluation_mention()
+    update_evaluation_link()
+    update_evaluation_relation()
