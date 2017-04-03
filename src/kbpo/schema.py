@@ -12,7 +12,6 @@ class Provenance(_Provenance):
     def __new__(cls, doc_id, begin, end):
         assert begin < end, "Invalid span, expected begin {} < end {}".format(begin, end)
         return super(Provenance, cls).__new__(cls, doc_id, begin, end)
-
 MentionInstance = namedtuple("MentionInstance", ["id", "canonical_id", "type", "gloss", "weight"])
 LinkInstance = namedtuple("LinkInstance", ["id", "link_name", "weight"])
 RelationInstance = namedtuple("RelationInstance", ["subject_id", "object_id", "relation", "weight"])

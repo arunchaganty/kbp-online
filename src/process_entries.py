@@ -8,23 +8,28 @@ import csv
 import sys
 import logging
 
-from kbpo.entry import parse_input, verify_mention_ids, verify_canonical_mentions, verify_relations
+from kbpo.entry import MFile, verify_mention_ids, verify_canonical_mentions, verify_relations
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def do_validate(args):
     reader = csv.reader(args.input, delimiter='\t')
-    mentions, links, canonical_mentions, relations = parse_input(reader)
+    mfile = MFile.from_stream(reader)
 
     # Verify that canonical mentions are correctly linked.
-    verify_mention_ids(mentions, canonical_mentions, links, relations)
-    verify_canonical_mentions(mentions, canonical_mentions, links, relations)
-    relations = verify_relations(mentions, canonical_mentions, links, relations)
+    mfile = verify_mention_ids(mfile)
+    mfile = verify_canonical_mentions(mfile)
+    mfile = verify_relations(mfile)
 
-    entries = mentions + links + canonical_mentions + relations
     writer = csv.writer(args.output, delimiter='\t')
-    for row in entries:
+    for row in mfile.types:
+        writer.writerow(row)
+    for row in mfile.links:
+        writer.writerow(row)
+    for row in mfile.canonical_mentions:
+        writer.writerow(row)
+    for row in mfile.relations:
         writer.writerow(row)
 
 if __name__ == "__main__":
