@@ -13,6 +13,7 @@ import logging
 from collections import namedtuple
 
 from .defs import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS
+from .schema import Provenance
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,7 +57,8 @@ class MFile(_MFile):
 
     @classmethod
     def parse_prov(cls, prov):
-        return re.match(r"([A-Za-z0-9]+):([0-9]+)-([0-9]+)", prov).groups()
+        doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
+        return Provenance(doc_id, int(beg), int(end))
 
     @classmethod
     def to_prov(cls, prov):
@@ -156,6 +158,7 @@ def verify_relations(mfile):
     """
     symmetrize relations
     """
+    keys = set()
     relations_ = set()
     for r in mfile.relations:
         subj, reln, obj = r.subj, r.reln, r.obj
@@ -163,6 +166,10 @@ def verify_relations(mfile):
         if reln not in ALL_RELATIONS:
             logger.warning("Ignoring relation %s: %s", reln, r)
             continue
+        if (subj, obj) in keys:
+            logger.warning("Already have a relation between %s and %s", subj, obj)
+            continue
+        keys.add((subj, obj))
         relations_.add(r._replace(reln=RELATION_MAP[reln]))
     logger.info("Found %d relations", len(relations_))
 
@@ -176,8 +183,9 @@ def verify_relations(mfile):
             for reln_ in INVERTED_RELATIONS[reln]:
                 if reln_.startswith(mfile.get_type(obj).lower()):
                     r_ = r._replace(subj=obj, reln=reln_, obj=subj)
-                    if r_ not in relations_:
+                    if (obj, subj) not in keys:
                         logger.warning("Adding symmetrized relation %s: %s", r_, r)
+                        keys.add((obj,subj))
                         relations_.add(r_)
     logger.info("End with %d relations", len(relations_))
     return mfile._replace(relations=relations_)

@@ -7,47 +7,54 @@
 
 \newcommand{\Xh}{{\hat{X}}}
 
-One of the core challenges to being able to evaluate data on-demand is to be able to (a) sample specific to a systems output and (b) be able to fuse information collected from other systems. In this section we will address how we can achieve (b) for cheap.
+The core challenge of evaluating data on-demand is to be able to be able to reuse information collected when evaluating one system for other systems without introducing bias.
+In this section, we will address this problem in a general setting.
 
 Let $\sX$ be the universe of objects we wish to sample from (e.g.\ relation instances).
 Let $X_1, X_2, X_3, \ldots \subseteq \sX$ be subsets of these items (corresponding to the output from different systems),
 and let $p_1$, $p_2$, \ldots be distributions corresponding to each set of items, i.e. $p_i$ has support $X_i$.
-We would like to evaluate the expectation of a metric $f$: $\E_{p_i(x)}[f(x)]$ using samples of each $X_i$.
+We would like to evaluate the expectation of a metric $f$: $\E_{p_i(x)}[f(x)]$ using samples from each $X_i$. We further assume that $f(x)$ is bounded between $0$ and $1$.
 
 If we didn't care about reusing samples, we would simply draw some $n$ samples, $\Xh_i$, from $X_i$ using $p_i$.
-One common approach for adapting samples that came from a different distribution is the use importance reweighing.
-Under this scheme, if samples from a distribution $q(x)$ are used to estimate a metric over $p(x)$, the samples are reweighed as follows: $\frac{1}{n} \sum_{i=1}^n \frac{p(x_i)}{q(x_i)} f(x_i)$. It is easy to see that this estimator is unbiased as long as the support of $q$ contains the support of $p$.
+One common approach for adapting samples that came from a different distribution is importance reweighing.
+Under this scheme, if samples from a distribution $q(x)$ are used to estimate a metric over $p(x)$, the samples are reweighed as follows: $\frac{1}{n} \sum_{i=1}^n \frac{p(x_i)}{q(x_i)} f(x_i)$.
+It is easy to see that this estimator is unbiased as long as the support of $q$ contains the support of $p$.
 Unfortunately, this does not hold in our scenario and in general it is impossible to sample a metric using samples from a different support without potentially significant bias.
 
-Instead, we will include some samples from the target set to guarantee support coverage.
-In doing so, we may complicate our estimation of the importance sampling distributions. 
-We propose two sampling procedures:
+To address this, we will (a) include some samples from the target set to guarantee support coverage, (b) bound the bias.
 
-%\begin{algorithm}
-%\begin{algorithmic}
-%  % For i in sets:
-%  % sample m samples for X_i independently.
-%  % combine in the pool Y.
-%  % can use Y_i = Y \intersect X_i to estimate p(x).
-%  % Here q(x) = 1 - \prod(1-p_i(x))
-%\end{algorithmic}
-%\end{algorithm}
-%
-%
-%\begin{algorithm}
-%\begin{algorithmic}
-%  % For i in sets:
-%  % sample m samples from X_i / Y without replacement.
-%  % combine into pool Y.
-%  % can't derive q(x) = 1 - \prod(1-p_i(x)) independently.
-%\end{algorithmic}
-%\end{algorithm}
+\paragraph{Proposal distribution}
+We simply sample $n$ elements from each submission without replacement according to the distribution $p_i(x)$:
+\begin{algorithm}
+\begin{algorithmic}
+  \REQUIRE{Sets $X_1, \ldots, X_m$ and distributions $p_1, \ldots, p_m$}
+  \ENSURE{A set of sampled elements, $Y$.}
+  \STATE{$Y \gets \emptyset$.}
+  \FOR{$i=1$ \TO{} $i=m$}
+  \STATE{$Y_i = $ sample without replacement from $X_i \setminus Y$.}
+  \STATE{$Y \gets$ $Y \union Y_i$.}
+\ENDFOR{}
+\end{algorithmic}
+\end{algorithm}
 
-\subsection{Method 1: assume that sampling without replacement is equivalent to sampling with replacement.}
+Unfortunately, computing the exact weighing distribution $\Pr(x \in Y)$ is difficult to calculate in closed form because we are sampling without replacement.
+Instead, we approximate the distribution assuming that the samples were drawn at random from one of the submissions \textit{with replacement}, giving 
+\[
+q(x) = \Pr(x \in Y) = \frac{1}{m}{\sum_{i=1}^m p_i(x)}.
+\]
 
-\subsection{Method 2: Monte-Carlo estimation.}
+\paragraph{Bias.}
 
-
+We can estimate the bias induced by \textit{not} including a sample set $X_{m+1}$ in the pooling procedure above by considering the remaining mass that would have been present on this portion.
+Let $f(x) = g(x) + h(x)$ where $g(x)$ has support only on $X_{m+1} \intersection X_{1:m}$ and $h(x)$ has support only on $X_{m+1} \setminus X_{1:m}$.
+$g(x)$ can be estimated without bias using importance sampling.
+The value of $h(x)$ is unknown but can be bounded by the mass $p_{m+1}$ places on $X_{m+1} \setminus X_{1:m}$:
+\begin{align*}
+\E_{p_{m+1}}[f(x)] i
+  &= \E_{p_{m+1}}[g(x) + h(x)] \\
+  &= \E_{p_{m+1}}[g(x)] + \E_{p_{m+1}}[h(x)] \\
+  &= \E_{p_{m+1}}[g(x)] + [0, p_{m+1}(X_{m+1} \setminus X_{1:m})].
+\end{align*}
 
 \section{Power analysis}
 \label{sec:power}

@@ -22,10 +22,11 @@ CONN = db.connect(**_PARAMS)
 with CONN.cursor() as _cur:
     _cur.execute("SET search_path TO kbpo;")
 
-def pg_select(sql, **kwargs):
-    with CONN.cursor() as cur:
-        cur.execute(sql, kwargs)
-        yield from cur
+def select(sql, **kwargs):
+    with CONN:
+        with CONN.cursor() as cur:
+            cur.execute(sql, kwargs)
+            yield from cur
 
 def sanitize(word):
     """
@@ -44,11 +45,11 @@ WHERE corpus_id = {corpus_id}
   AND doc_id IN (SELECT doc_id FROM document_date)
 ORDER BY doc_id"""
 
-    return pg_select(qry.format(corpus_id=corpus_id, sentence=sentence_table))
+    return select(qry.format(corpus_id=corpus_id, sentence=sentence_table))
 
 def query_wikilinks(fb_ids):
     qry = "SELECT fb_id, wiki_id FROM fb_to_wiki_map WHERE fb_id IN %(fb_ids)s"
-    return pg_select(qry, fb_ids=fb_ids)
+    return select(qry, fb_ids=fb_ids)
 
 def query_entities(doc_ids, mention_table="mention"):
     """
@@ -61,7 +62,7 @@ WHERE doc_canonical_char_begin = doc_char_begin AND doc_canonical_char_end = doc
 AND is_entity_type(ner)
 AND doc_id IN %(doc_ids)s
 GROUP BY best_entity"""
-    return pg_select(qry.format(mention=mention_table), doc_ids=tuple(doc_ids))
+    return select(qry.format(mention=mention_table), doc_ids=tuple(doc_ids))
 
 def query_dates(doc_ids):
     """
@@ -72,7 +73,7 @@ def query_dates(doc_ids):
 SELECT doc_id, date
 FROM document_date 
 WHERE doc_id IN ({doc_ids})"""
-    return pg_select(qry.format(doc_ids=",".join("'{}'".format(d) for d in doc_ids)))
+    return select(qry.format(doc_ids=",".join("'{}'".format(d) for d in doc_ids)))
 
 def query_doc(docid, sentence_table="sentence"):
     doc = []
@@ -94,7 +95,7 @@ WHERE doc_id = '{}'
 ORDER BY sentence_index
 """
 
-    for row in pg_select(qry.format(docid, sentence=sentence_table)):
+    for row in select(qry.format(docid, sentence=sentence_table)):
         _, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end = row
 
         # Happens in some DF
@@ -114,7 +115,7 @@ def query_mentions(docid, mention_table="mention"):
       AND n.parent_id IS NULL
     ORDER BY m.doc_char_begin"""
     mentions = []
-    for row in pg_select(qry.format(mention=mention_table), doc_id=docid):
+    for row in select(qry.format(mention=mention_table), doc_id=docid):
         gloss, ner, doc_char_begin, doc_char_end, entity_gloss, entity_link, entity_doc_char_begin, entity_doc_char_end = row
         if ner not in NER_MAP: continue
         ner = NER_MAP[ner]
