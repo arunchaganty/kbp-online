@@ -11,6 +11,7 @@ CREATE TABLE  evaluation_batch (
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   batch_type TEXT NOT NULL, -- which type of batch is this?
+  corpus_tag TEXT NOT NULL, -- which corpus.
   params TEXT NOT NULL, -- the parameters used to create this batch the mturk tasks
   description TEXT -- A string blob about what this batch is for.
 ) DISTRIBUTED BY (id);

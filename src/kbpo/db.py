@@ -5,6 +5,7 @@ Database utilities.
 """
 
 import re
+import time
 import psycopg2 as db
 from psycopg2.extras import execute_values, NamedTupleCursor, register_composite
 
@@ -19,8 +20,9 @@ _PARAMS = {
     'cursor_factory': NamedTupleCursor,
     }
 CONN = db.connect(**_PARAMS)
-with CONN.cursor() as _cur:
-    _cur.execute("SET search_path TO kbpo;")
+with CONN:
+    with CONN.cursor() as _cur:
+        _cur.execute("SET search_path TO kbpo;")
 
 def select(sql, **kwargs):
     with CONN:
