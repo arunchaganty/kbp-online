@@ -99,4 +99,3 @@ def test_output_entry():
     assert entry.slot_type == "PER"
     assert entry.slot_provenances == [Provenance("NYT_ENG_20130513.0090", 2476,2500)]
     assert entry.confidence == 0.9
-

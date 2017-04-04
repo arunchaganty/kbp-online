@@ -1,8 +1,7 @@
 """
 Definitions for the KBPO task.
 """
-
-ner_map = {
+NER_MAP = {
     "PERSON": "PER",
     "ORGANIZATION": "ORG",
     "COUNTRY": "GPE",
@@ -13,7 +12,7 @@ ner_map = {
     "TITLE": "TITLE",
     "DATE": "DATE",
     }
-TYPES = list(ner_map.values())
+TYPES = list(NER_MAP.values())
 
 RELATION_MAP = {
     "per:alternate_names":"per:alternate_names",

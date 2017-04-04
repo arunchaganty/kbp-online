@@ -19,9 +19,9 @@ In this section, we will describe how the resulting bias can be measured and dis
 %Secondly, a relation instance may state known information but use a different string for the object, e.g.\ a system might use ``Mary Frances Reynolds'' instead of ``Debbie Reynolds'', which is a nickname.
 %Finally, a relation instance may express an entirely new relation, e.g.\ that ``Eddie Fisher'' is Carrie's father.
 %In all the above cases, the closed world assumption considers the instance to be wrong.
-%With the \anydoc heuristic, the first instance is correctly marked, but this heuristic also incorrectly marks the instance, ``Bright Lights: Starring Carrie Fisher and Debbie Reynolds'' as being true.
+%With the \anydoc{} heuristic, the first instance is correctly marked, but this heuristic also incorrectly marks the instance, ``Bright Lights: Starring Carrie Fisher and Debbie Reynolds'' as being true.
 %Consequently, 
-%  while the closed world assumption is a strict underestimate of performance, the \anydoc heuristic is not guaranteed to be.
+%  while the closed world assumption is a strict underestimate of performance, the \anydoc{} heuristic is not guaranteed to be.
 
 % Remind closed world assumption.
 % How do we measure the effects of CWA on development?
@@ -40,7 +40,7 @@ I bet that there's a figure that someone could look at for 5 seconds and underst
 \paragraph{Measuring bias.}
 \begin{figure*}[t]
   \begin{subfigure}{\columnwidth}
-  \includegraphics[width=\columnwidth]{figures/pooling_bias_closed-world.pdf}
+  \includegraphics[width=\columnwidth]{figures/pooling_bias_closed-world}
   \caption{Pooling bias for macro \fone{} scores without the \anydoc{} heuristic.}
   \end{subfigure}
   \begin{subfigure}{\columnwidth}
@@ -74,8 +74,8 @@ The outlier in the graph at rank 36 corresponds to a submission from University 
 Without the \anydoc{} heuristic, pooling bias is 15.51\% \fone{} points and with the heuristic it is 1.98\% \fone{} points.
 We note that the \anydoc{} heuristic overestimates scores by about 0.74\% \fone{} points.
 The bias affects precision and recall almost equally: 
-the median bias the without \anydoc{} heuristic being 17.93\% and 17.0\% respectively, and
-the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
+  the median bias the without \anydoc{} heuristic being 17.93\% and 17.0\% respectively, and
+  the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
 We also consider the alternate heuristic of ignoring relation instances outside the evaluation set and find that that biases \fone{} scores upwards by \fake{3\%}.
 At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions).
 This analysis confirms the necessity of the \anydoc{} heuristic during development evaluations,

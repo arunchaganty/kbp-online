@@ -9,6 +9,7 @@ CREATE TABLE  submission (
     updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
     name TEXT NOT NULL, -- short textual identifier for this submission.
+    corpus_tag TEXT NOT NULL,
     details TEXT -- A more detailed description of the submission.
     -- NOTE: add a user_id field in the future.
 ) DISTRIBUTED BY (id);    

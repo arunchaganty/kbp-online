@@ -11,6 +11,7 @@ CREATE TABLE  evaluation_batch (
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   batch_type TEXT NOT NULL, -- which type of batch is this?
+  corpus_tag TEXT NOT NULL, -- which corpus.
   params TEXT NOT NULL, -- the parameters used to create this batch the mturk tasks
   description TEXT -- A string blob about what this batch is for.
 ) DISTRIBUTED BY (id);
@@ -97,8 +98,10 @@ CREATE INDEX evaluation_mention_response_mention_idx ON evaluation_mention_respo
 
 -- evaluation_mention
 CREATE TABLE  evaluation_mention (
-  question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  question_id TEXT NOT NULL, -- this can be used to identify responses
+  --(chaganty): This doesn't seem to be important and restricts
+  -- aggregation
+  --question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
+  --question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN,
@@ -143,8 +146,8 @@ CREATE INDEX evaluation_link_response_mention_idx ON evaluation_link_response(me
 
 -- evaluation_link
 CREATE TABLE  evaluation_link (
-  question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  question_id TEXT NOT NULL, -- this can be used to identify responses
+  -- question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
+  -- question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
   mention_id SPAN,
@@ -189,8 +192,8 @@ CREATE INDEX evaluation_relation_response_pair_idx ON evaluation_relation_respon
 
 -- evaluation_relation
 CREATE TABLE  evaluation_relation (
-  question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  question_id TEXT NOT NULL, -- this can be used to identify responses
+  -- question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
+  -- question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
   subject_id SPAN NOT NULL,

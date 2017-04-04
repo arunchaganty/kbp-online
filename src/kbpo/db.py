@@ -4,22 +4,31 @@
 Database utilities.
 """
 
+import re
+import time
 import psycopg2 as db
-from psycopg2.extras import execute_values
+from psycopg2.extras import execute_values, NamedTupleCursor, register_composite
 
-from .defs import ner_map
+from .defs import NER_MAP
 
 # File wide connection.
-_PARAMS = "dbname=kbp user=kbp host=localhost port=4242"
-_CONN = db.connect(_PARAMS)
+_PARAMS = {
+    'dbname':'kbp',
+    'user':'kbp',
+    'host':'localhost',
+    'port':4242,
+    'cursor_factory': NamedTupleCursor,
+    }
+CONN = db.connect(**_PARAMS)
+with CONN:
+    with CONN.cursor() as _cur:
+        _cur.execute("SET search_path TO kbpo;")
 
-def pg_select(sql, **kwargs):
-    cur = _CONN.cursor()
-    cur.execute(sql, kwargs)
-    ret = cur.fetchall()
-    _CONN.commit()
-    cur.close()
-    return ret
+def select(sql, **kwargs):
+    with CONN:
+        with CONN.cursor() as cur:
+            cur.execute(sql, kwargs)
+            yield from cur
 
 def sanitize(word):
     """
@@ -38,11 +47,11 @@ WHERE corpus_id = {corpus_id}
   AND doc_id IN (SELECT doc_id FROM document_date)
 ORDER BY doc_id"""
 
-    return pg_select(qry.format(corpus_id=corpus_id, sentence=sentence_table))
+    return select(qry.format(corpus_id=corpus_id, sentence=sentence_table))
 
 def query_wikilinks(fb_ids):
     qry = "SELECT fb_id, wiki_id FROM fb_to_wiki_map WHERE fb_id IN %(fb_ids)s"
-    return pg_select(qry, fb_ids=fb_ids)
+    return select(qry, fb_ids=fb_ids)
 
 def query_entities(doc_ids, mention_table="mention"):
     """
@@ -55,17 +64,18 @@ WHERE doc_canonical_char_begin = doc_char_begin AND doc_canonical_char_end = doc
 AND is_entity_type(ner)
 AND doc_id IN %(doc_ids)s
 GROUP BY best_entity"""
-    return pg_select(qry.format(mention=mention_table), doc_ids=tuple(doc_ids))
+    return select(qry.format(mention=mention_table), doc_ids=tuple(doc_ids))
 
 def query_dates(doc_ids):
     """
     Get all dates for these @doc_ids.
     """
+    # TODO: I shouldn't be formatting figures.
     qry = """
 SELECT doc_id, date
 FROM document_date 
 WHERE doc_id IN ({doc_ids})"""
-    return pg_select(qry.format(doc_ids=",".join("'{}'".format(d) for d in doc_ids)))
+    return select(qry.format(doc_ids=",".join("'{}'".format(d) for d in doc_ids)))
 
 def query_doc(docid, sentence_table="sentence"):
     doc = []
@@ -87,7 +97,7 @@ WHERE doc_id = '{}'
 ORDER BY sentence_index
 """
 
-    for row in pg_select(qry.format(docid, sentence=sentence_table)):
+    for row in select(qry.format(docid, sentence=sentence_table)):
         _, words, lemmas, pos_tags, ner_tags, doc_char_begin, doc_char_end = row
 
         # Happens in some DF
@@ -102,15 +112,15 @@ ORDER BY sentence_index
 def query_mentions(docid, mention_table="mention"):
     qry = """SELECT m.gloss, n.ner, m.doc_char_begin, m.doc_char_end, n.gloss AS canonical_gloss, m.best_entity, m.doc_canonical_char_begin, m.doc_canonical_char_end
     FROM {mention} m, {mention} n 
-    WHERE m.doc_id = '{doc_id}' AND n.doc_id = m.doc_id 
+    WHERE m.doc_id = %(doc_id)s AND n.doc_id = m.doc_id 
       AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end 
       AND n.parent_id IS NULL
     ORDER BY m.doc_char_begin"""
     mentions = []
-    for row in pg_select(qry.format(doc_id=docid, mention=mention_table)):
+    for row in select(qry.format(mention=mention_table), doc_id=docid):
         gloss, ner, doc_char_begin, doc_char_end, entity_gloss, entity_link, entity_doc_char_begin, entity_doc_char_end = row
-        if ner not in ner_map: continue
-        ner = ner_map[ner]
+        if ner not in NER_MAP: continue
+        ner = NER_MAP[ner]
 
         mentions.append({
             "gloss": gloss,
@@ -127,37 +137,51 @@ def query_mentions(docid, mention_table="mention"):
     return mentions
 
 def query_mentions_by_id(mention_ids, mention_table="mention"):
-    qry = """
-SELECT DISTINCT ON(doc_id, doc_char_begin, doc_char_end) m.id, n.ner, m.gloss, m.doc_id, m.doc_char_begin, m.doc_char_end, m.best_entity, n.id
-FROM {mention} m, {mention} n
-WHERE m.id IN %s
+    with CONN.cursor() as cur:
+        cur.execute("""
+        CREATE TEMPORARY TABLE _mentions (doc_id TEXT, id INTEGER);
+        """)
+        execute_values(cur, """INSERT INTO _mentions VALUES %s""", mention_ids)
+        cur.execute("""
+SELECT DISTINCT ON(m.doc_id, m.doc_char_begin, m.doc_char_end) m.id, n.ner, m.gloss, m.doc_id, m.doc_char_begin, m.doc_char_end, m.best_entity, n.id AS canonical_id, n.canonical_doc_char_begin, n.canonical_doc_char_end
+FROM {mention} m, {mention} n, _mentions o
+WHERE m.id = o.id AND m.doc_id = o.doc_id
   AND m.doc_id = n.doc_id AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
   AND m.parent_id IS NULL
   AND n.parent_id IS NULL
-ORDER BY doc_id, doc_char_begin, doc_char_end
-"""
-    return pg_select(qry.format(mention=mention_table), mention_ids)
+ORDER BY m.doc_id, m.doc_char_begin, m.doc_char_end
+""".format(mention=mention_table))
+        ret = list(cur)
+        cur.execute("""DROP TABLE _mentions""")
+    return ret
 
 def query_mention_ids(mention_ids, mention_table="mention"):
-    qry = """
-SELECT m.id
-  FROM {mention} m, {mention} n
- WHERE m.id IN %s
-   AND m.doc_id = n.doc_id AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
-   AND m.parent_id IS NULL
-   AND n.parent_id IS NULL
-UNION
-SELECT n.id
-  FROM {mention} m, {mention} n
- WHERE m.id IN %s
-   AND m.doc_id = n.doc_id AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
-   AND m.parent_id IS NULL
-   AND n.parent_id IS NULL
-"""
-    return set(m for m, in pg_select(qry.format(mention=mention_table), mention_ids))
+    with CONN.cursor() as cur:
+        cur.execute("""
+        CREATE TEMPORARY TABLE _mentions (id INTEGER);
+        """)
+        execute_values(cur, """INSERT INTO _mentions VALUES %s""", mention_ids)
+        cur.execute("""
+    SELECT m.doc_id, m.id
+      FROM {mention} m, {mention} n, _mentions o
+     WHERE m.id = o.id
+       AND m.doc_id = n.doc_id AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
+       AND m.parent_id IS NULL
+       AND n.parent_id IS NULL
+    UNION
+    SELECT n.doc_id, n.id
+      FROM {mention} m, {mention} n, _mentions o
+     WHERE m.id = o.id
+       AND m.doc_id = n.doc_id AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
+       AND m.parent_id IS NULL
+       AND n.parent_id IS NULL
+    """.format(mention=mention_table))
+        ret = set(cur)
+        cur.execute("""DROP TABLE _mentions""")
+    return ret
 
 def query_entity_docs(entities):
-    cur = _CONN.cursor()
+    cur = CONN.cursor()
     cur.execute("DROP TABLE IF EXISTS _query_entities;")
     cur.execute("CREATE TEMPORARY TABLE _query_entities(gloss TEXT);")
     execute_values(cur, "INSERT INTO _query_entities(gloss) VALUES %s", [(entity,) for entity, _ in entities])
@@ -169,7 +193,7 @@ GROUP BY q.gloss
 """)
     docs = {k: vs for k, vs in cur.fetchall()}
 
-    _CONN.commit()
+    CONN.commit()
     cur.close()
 
     return docs
