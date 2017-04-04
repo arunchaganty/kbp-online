@@ -26,15 +26,15 @@ CREATE TYPE SCORE_TYPE AS ENUM (
 COMMENT ON TYPE SCORE_TYPE IS 'The precise mode in which scores have been generated.';
 
 CREATE TYPE EVALUATION_TYPE AS ENUM (
-    'exhaustive_document',
+    'exhaustive_entities',
     'exhaustive_relations',
     'selective_relations'
 );
 COMMENT ON TYPE EVALUATION_TYPE IS 'The type of evaluation we are using.';
 
 CREATE TYPE HIT_STATUS AS ENUM (
-    'pending',
-    'accepted',
-    'rejected'
+    'Submitted' , 
+    'Approved' , 
+    'Rejected'
 );
 COMMENT ON TYPE HIT_STATUS IS 'The payment status for a HIT.';

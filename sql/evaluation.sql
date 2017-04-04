@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS mturk_assignment (
   worker_time INTEGER NOT NULL, -- provided by mturk (in seconds)
   status HIT_STATUS NOT NULL, -- Have we paid the turker?
   response JSON NOT NULL, -- the raw response by the worker.
+  comments TEXT, -- comments provided by the turker 
   ignored BOOLEAN NOT NULL DEFAULT FALSE -- Should we ignore this entry for some reason?
 );
 COMMENT ON TABLE mturk_assignment IS 'Keeps track HIT responses from turkers';
