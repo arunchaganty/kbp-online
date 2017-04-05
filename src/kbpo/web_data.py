@@ -26,6 +26,7 @@ def parse_selective_relations_response(question, responses):
         object_type = response["object"]["type"]["name"].strip()
         object_gloss = response["object"]["gloss"].strip()
 
+        assert "canonicalCorrect" in response["subject"]["entity"]
         if "canonicalCorrect" in response["subject"]["entity"]:
             mentions.append(MentionInstance(subject_id, subject_canonical_id, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] == "Yes" else 0.0))
         if "canonicalCorrect" in response["object"]["entity"]:
@@ -147,6 +148,8 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
         else:
             raise ValueError("Unexpected batch type: " + row.batch_type)
 
+        raise Exception()
+
         # evaluation_mention_response
         for mention in mentions:
             response = EvaluationMentionResponse(
@@ -203,7 +206,8 @@ def majority_element(lst):
 
 def merge_evaluation_mentions(row):
     # Choose the most frequent char_begin and char_end.
-    canonical_begin, canonical_end = majority_element(zip(row.canonical_char_begins, row.canonical_char_ends))
+    #TODO: the elements in lst should be weighed by the weight of their vote (e.g. canonical_mention if wrong)
+    canonical_begin, canonical_end = majority_element((b,e) for b,e,w in zip(row.canonical_char_begins, row.canonical_char_ends, row.weights) if w > 0.5)
     mention_type = majority_element(row.mention_types)
     gloss = majority_element(row.glosses)
     weight = sum(weight for weight, canonical_begin_, canonical_end_ in zip(row.weights, row.canonical_char_begins, row.canonical_char_ends) if canonical_begin_ == canonical_begin and canonical_end_ == canonical_end)/len(row.weights)
@@ -228,7 +232,10 @@ def update_evaluation_mention():
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_mention;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT doc_id, mention_id, array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends, array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses, array_agg(weight) as weights FROM evaluation_mention_response GROUP BY doc_id, mention_id""")
+            cur.execute("""SELECT doc_id, mention_id, 
+                    array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends,
+                    array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses,
+                    array_agg(weight) as weights FROM evaluation_mention_response GROUP BY doc_id, mention_id""")
             # Take the majority vote on this mention iff count > 1.
             values = [merge_evaluation_mentions(row) for row in cur]
             db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)

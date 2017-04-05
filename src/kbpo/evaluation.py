@@ -62,9 +62,8 @@ WITH _relations AS (SELECT submission_id, COUNT(DISTINCT relation) FROM submissi
      _counts AS (SELECT submission_id, relation, COUNT(*) FROM submission_relation s GROUP BY submission_id, relation)
 SELECT s.submission_id, s.doc_id, s.subject_id, s.object_id, (1./c.count)/(r.count) AS prob
 FROM submission_relation s, _counts c, _relations r, submission s_
-WHERE s.submission_id = c.submission_id AND r.submission_id = s.submission_id AND s.submission_id = s_.id
-  AND c.relation = s.relation
-  AND s_.corpus_tag = %(tag)s
+WHERE s.submission_id = r.submission_id AND s.submission_id = c.submission_id AND s.relation = c.relation
+  AND s.submission_id = s_.id AND s_.corpus_tag = %(tag)s
 """, tag=corpus_tag):
         distribution[row.submission_id, row.doc_id, row.subject_id, row.object_id] = float(row.prob)
     return distribution
@@ -81,13 +80,21 @@ def test_compute_relation_distribution():
 def compute_entity_distribution(corpus_tag):
     distribution = Counter()
     for row in db.select("""
-WITH _entities AS (SELECT submission_id, COUNT(DISTINCT hashspan(subject_id)) FROM submission_relation s GROUP BY submission_id),
-     _counts AS (SELECT submission_id, subject_id, COUNT(*) FROM submission_relation s GROUP BY submission_id, subject_id)
-SELECT s.submission_id, s.doc_id, s.subject_id, s.object_id, (1./c.count)/(e.count) AS prob
-FROM submission_relation s, _counts c, _entities e, submission s_
-WHERE s.submission_id = c.submission_id AND e.submission_id = s.submission_id AND s_.id = s.submission_id
-  AND c.subject_id = s.subject_id
-  AND s_.corpus_tag = %(tag)s
+WITH _entities AS (
+        SELECT s.submission_id, COUNT(DISTINCT link_name) 
+        FROM submission_relation s, submission_link l 
+        WHERE s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND  s.subject_id = l.mention_id
+        GROUP BY s.submission_id),
+     _counts AS (
+        SELECT s.submission_id, link_name, COUNT(*) 
+        FROM submission_relation s, submission_link l
+        WHERE s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND  s.subject_id = l.mention_id
+        GROUP BY s.submission_id, link_name)
+SELECT s.submission_id, s.doc_id, s.subject_id, s.object_id, l.link_name, (1./c.count)/(e.count) AS prob
+FROM submission_relation s, submission_link l, _counts c, _entities e, submission s_
+WHERE s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND  s.subject_id = l.mention_id
+  AND s.submission_id = e.submission_id AND s.submission_id = c.submission_id AND c.link_name = l.link_name
+  AND s_.id = s.submission_id AND s_.corpus_tag = %(tag)s
 """, tag=corpus_tag):
         distribution[row.submission_id, row.doc_id, row.subject_id, row.object_id] = float(row.prob)
     return distribution
@@ -120,7 +127,7 @@ WHERE r.doc_id = e.doc_id AND r.subject_id = e.subject_id AND r.object_id = e.ob
         key = row.doc_id, row.subject_id, row.object_id
         if row.predicted_relation == row.gold_relation:
             correct += P[(submission_id,) + key]/Q[key]
-        predicted += 1
+        predicted += P[(submission_id,) + key]/Q[key] # self-normalizes the result
     return correct/predicted
 
 def entity_precision(submission_id, P, Q):
@@ -146,7 +153,7 @@ WHERE r.doc_id = e.doc_id AND r.subject_id = e.subject_id AND r.object_id = e.ob
         key = row.doc_id, row.subject_id, row.object_id
         if row.predicted_relation == row.gold_relation:
             correct += P[(submission_id,) + key]/Q[key]
-        predicted += 1
+        predicted += P[(submission_id,) + key]/Q[key] # self-normalizes the result
     return correct/predicted
 
 
@@ -213,16 +220,20 @@ WHERE e.weight > 0.5 AND e.relation <> 'no_relation'
 def score(submission_id, mode="instance"):
     corpus_tag, = next(db.select("""SELECT corpus_tag FROM submission WHERE id = %(submission_id)s""", submission_id=submission_id))
 
-    PE = compute_exhaustive_distribution(corpus_tag)
     Pi = compute_instance_distribution(corpus_tag)
     Pr = compute_relation_distribution(corpus_tag)
     Pe = compute_entity_distribution(corpus_tag)
+    PE = compute_exhaustive_distribution(corpus_tag)
 
+    # TODO: fix weights to be proportional to how often they appear 
+    n_systems = 3
+    z = 2*3 + 1
     Q = Counter()
-    for k, v in PE.items(): Q[k] += v/4
-    for k, v in Pi.items(): Q[k[1:]] += v/4
-    for k, v in Pr.items(): Q[k[1:]] += v/4
-    for k, v in Pe.items(): Q[k[1:]] += v/4
+    for k, v in PE.items(): Q[k] += v/z 
+    #for k, v in Pi.items(): Q[k[1:]] += v/(4*3)
+    for k, v in Pr.items(): Q[k[1:]] += v/z
+    for k, v in Pe.items(): Q[k[1:]] += v/z
+    print(sum(Q.values()))
 
     if mode == "instance":
         P = Pi
