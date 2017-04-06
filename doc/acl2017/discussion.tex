@@ -1,26 +1,35 @@
 \section{Related Work}
 \label{sec:related}
 
-One of the main contributions of this work has been to measure the pooling bias in KBP evaluation resulting from the closed world assumption.
-%K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
+% Axes of comparison:
+% - identifying and measuring pooling bias
+% Origin of pooling: K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
 %an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
 The subject of pooling bias has been extensively studied in the information retrieval community.
 \citep{zobel1998reliable} was the first to examine the effects of pooling bias on the TREC AdHoc task, but 
-both \citet{zobel1998reliable} and \citet{voorhees199overview} conclude that the effects of pooling bias was not significant.
-However, \citet{buckley2007bias} later identified that this is because submissions were very similar; when repeating the experiment using more different systems as part of the TREC robust track, they identify a 23\% point drop in AP scores!
+both \citet{zobel1998reliable} and \citet{voorhees199overview} concluded that the effects of pooling bias were not significant in information retrieval evaluation.
+However, \citet{buckley2007bias} later identified that the small effect of pooling bias can be explained because all the leading submissions were very similar in methods-- they found that a novel system they had proposed would have experienced a 23\% point drop in scores were it not part of the pool!
+We adapt the leave-one-out methodology to measure pooling bias from \citep{zobel1998reliable}.
+An excellent survey of literature pertaining to pooling bias in information retrieval evaluation can be found in \citet{weber2010measurement}.
 
-solutions provided:
-condensed list -- but shown to only have the reverse effect.
+% - solutions to pooling bias 
+Likewise, many solutions to the pooling bias problem have been studied in the context of information retrieval,
+  from modified scoring metrics that exploit the ranking-based view of relevance~\cite{buckley2004incomplete},
+  to adaptive sampling schemes that increase the amount of data that can be collected for the same budget~\cite{}.
+Few of these ideas carry over to the KBP setting: 
+  performance in KBP is not easily reflected by a pairwise ranking judgement as it is in the relevance setting. It is also arguable if this is an approach one wants to take. 
+  The pooling bias persists in KBP evaluations despite the fact that \textit{all answers} reported by systems for a given set of entities are evaluated for correctness; the only way this could be changed is if systems are no longer required to produce a unique evidence for a extracted relation-- approximated by anydoc, our results show that it is still insufficient.
 
-Yilmaz and Aslam 2006 propose randomly sampling documents sampling -- say scores are random estimates.
-however, this sampling is simply used to construct the evaluatoin set, not eliminating bias
+The sampling based approach we've taken to estimating performance measures is very similar to~\cite{aslam2006statistical}, where the authors derive an appropriate sampling distribution for several popular measures including mean-average precision. The paper also approximates an optimal sampling distribution based on the set of submissions; in our setting, we do not have the set of all submissions before hand.
 
+While pooling bias hasn't been studied on KBP before, \cite{surdeanau} does study the effect of incomplete labels on distant supervision.
 
-\citet{weber2010measurement} surveys literature pertaining to pooling bias and proposes score adjustments with using reference systems.
+% - crowdsourcing kbp and nlp
+Several authors have successfully used crowdsourcing for information extraction, e.g.\ for semantic role labeling~\cite{zettlemoyer}, building semantic databases~\cite{} and most recently creating a knowledge base for gun-violence related events~\cite{pavlick}.
+While we also use crowdsourcing in our experiments, our focus is on \textit{evaluating systems}, not necessarily collecting an exhaustive dataset. As a result, we are able to integrate the systems we are evaluating into our data collection process.
 
-Our own analysis of pooling bias is heavily inspired from the methodology described in 
-%K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
-%an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
+% - online evaluation methodology?
+
 
 %Incomplete: Buckley and Voorhees 2004
 %Zobel 1998 -- identifies pooling bias.
