@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Prepare data for pooled evaluation.
+Score data
 
 Output format:
 mention_id type gloss provenance _
@@ -16,9 +16,11 @@ import random
 import json
 import sys
 import logging
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, namedtuple
 
 from util import normalize, map_relations, make_list, query_psql, query_doc, query_mention_ids, query_mentions_by_id, ensure_dir, sample, ner_map, TYPES, ALL_RELATIONS, RELATIONS, INVERTED_RELATIONS, parse_input
+
+KnowledgeBase = namedtuple('KnowledgeBase', ['mentions', 'links', 'canonical_mentions', 'relations'])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,108 +36,6 @@ def parse_prov(prov):
     doc_id, begin_end = prov.split(":")
     begin, end = begin_end.split("-")
     return doc_id, int(begin), int(end)
-
-def query_eval(writer, year=2015):
-    """
-    Grabs data from the kb_evaluation table.
-    """
-
-    # First, grab all the mentions in the eval.
-    qry = """
-SELECT subject_id FROM kb_evaluation e WHERE year={year}
-UNION
-SELECT object_id FROM kb_evaluation e WHERE year={year}
-"""
-    mention_ids = set(m for m, in query_psql(qry.format(year=year)))
-    mention_ids = query_mention_ids(mention_ids)
-
-    logger.info("Found %d mentions", len(mention_ids))
-
-    for mention in query_mentions_by_id(mention_ids):
-        id_, ner, gloss, doc_id, doc_char_begin, doc_char_end, link, canonical_id = mention
-        if "_ENG_" not in doc_id: continue
-
-        assert canonical_id in mention_ids, "couldn't find canonical mention {} for {}".format(canonical_id, id_)
-
-        # a mention line
-        if ner in ner_map:
-            writer.writerow([id_, ner_map[ner], gloss, as_prov(doc_id, doc_char_begin, doc_char_end), None])
-            # a canonical mention line
-            writer.writerow([id_, "canonical_mention", canonical_id, "", 1.0])
-            # a link line (only for canonical mentions
-            if id_ == canonical_id:
-                writer.writerow([id_, "link", link, "", 1.0])
-
-    relations = query_psql("""
-SELECT DISTINCT ON (subject_id, relation, object_id) subject_id, relation, object_id, s.doc_id, s.doc_char_begin[1], s.doc_char_end[array_length(s.doc_char_end)], is_correct
-FROM kb_evaluation e, mention m, sentence s
-WHERE year = {year}
-  AND m.id = e.subject_id
-  AND s.id = m.sentence_id
-  AND s.doc_id = m.doc_id
-ORDER BY subject_id, relation, object_id, doc_id, doc_char_begin
-""".format(year=year, mention_ids=make_list(mention_ids)))
-    for row in relations:
-        subject_id, relation, object_id, doc_id, doc_char_begin, doc_char_end, is_correct = row
-        if "_ENG_" not in doc_id or relation not in ALL_RELATIONS: continue
-        if subject_id not in mention_ids or object_id not in mention_ids: continue
-
-        writer.writerow([subject_id, relation, object_id, as_prov(doc_id, doc_char_begin, doc_char_end), 0.0 if is_correct == "W" else 1.0])
-
-def query_submission(writer, kb_table, mention_table="mention", sentence_table="sentence"):
-    """
-    Grabs data from the kb_evaluation table.
-    """
-    # First, grab all the mentions in the eval.
-    qry = """
-SELECT subject_id FROM {kb} k
-UNION
-SELECT object_id FROM {kb} k
-"""
-    mention_ids = set(m for m, in query_psql(qry.format(kb=kb_table)))
-    mention_ids = query_mention_ids(mention_ids, mention_table)
-    logger.info("Found %d mentions", len(mention_ids))
-
-    mention_ids_ = set()
-    for mention in query_mentions_by_id(mention_ids, mention_table=mention_table):
-        id_, ner, gloss, doc_id, doc_char_begin, doc_char_end, link, canonical_id = mention
-        if "_ENG_" not in doc_id: continue
-        assert canonical_id in mention_ids, "couldn't find canonical mention {} for {}".format(canonical_id, id_)
-        # a mention line
-        if ner in ner_map:
-            mention_ids_.add(id_)
-            writer.writerow([id_, ner_map[ner], gloss, as_prov(doc_id, doc_char_begin, doc_char_end), None])
-            # a canonical mention line
-            writer.writerow([id_, "canonical_mention", canonical_id, "", 1.0])
-            # a link line (only for canonical mention
-            if id_ == canonical_id:
-                writer.writerow([id_, "link", link, "", 1.0])
-    mention_ids = mention_ids_
-    logger.info("Kept %d mentions", len(mention_ids))
-
-    qry = """
-SELECT DISTINCT ON (subject_id, relation, object_id) subject_id, relation, object_id, s.doc_id, s.doc_char_begin[1], s.doc_char_end[array_length(s.doc_char_end)], confidence
-FROM {kb} e, {mention} m, {sentence} s
-WHERE m.id = e.subject_id
-  AND s.id = m.sentence_id
-  AND s.doc_id = m.doc_id
-ORDER BY subject_id, relation, object_id, doc_id, doc_char_begin
-"""
-    relations = query_psql(qry.format(kb=kb_table, mention=mention_table, sentence=sentence_table))
-    for row in relations:
-        subject_id, relation, object_id, doc_id, doc_char_begin, doc_char_end, confidence = row
-        if "_ENG_" not in doc_id or relation not in ALL_RELATIONS: continue
-        if subject_id not in mention_ids or object_id not in mention_ids: continue
-
-        writer.writerow([subject_id, relation, object_id, as_prov(doc_id, doc_char_begin, doc_char_end), confidence])
-
-def do_eval(args):
-    writer = csv.writer(args.output, delimiter="\t")
-    query_eval(writer, args.year)
-
-def do_submission(args):
-    writer = csv.writer(args.output, delimiter="\t")
-    query_submission(writer, args.kb_table, args.mention_table, args.sentence_table)
 
 def sample_by_relation(types, entries, num_entries, old_entries):
     # Construct an entity-centric table to sample from.
@@ -511,48 +411,132 @@ def do_make_task(args):
             with open(os.path.join(args.output, "{}-{}-{}-{}-{}.json".format(doc['doc_id'], b1, e1, b2, e2)), 'w') as f:
                 json.dump(doc, f)
 
+def score_instance(ref_kb, input_kb):
+    """
+    Score instance level scores.
+    """
+    input_mentions = {r.subj: r.prov for r in input_kb.mentions}
+    ref_mentions = {r.subj: r.prov for r in ref_kb.mentions}
+
+    I = {(input_mentions[r.subj], r.reln, input_mentions[r.obj]): r for r in input_kb.relations}
+    Ic = {(ref_mentions[r.subj], r.reln, ref_mentions[r.obj]): r for r in ref_kb.relations if float(r.score) == 1.}
+
+    correct = sum(sum((r.iw or 1.0) / (s.iw or 1.0) for r in [I[k]]) for k, s in Ic.items()  if k in I)
+    guessed = sum((r.iw or 1.0) for r in I.values())
+    total = sum((s.iw or 1.0) for s in Ic.values())
+
+    P = correct / guessed
+    R = correct / total
+    F1 = 2 * P * R / (P + R)
+
+    return P, R, F1
+
+def score_relation(ref_kb, input_kb):
+    """
+    Score entity level scores.
+    """
+    ref_provs = set(r.prov for r in ref_kb.mentions)
+    ref_mentions = {r.subj: r.prov for r in ref_kb.mentions}
+    input_mentions = {r.subj: r.prov for r in input_kb.mentions if r.prov in ref_provs}
+
+    # Create a relation table
+    I, Ic = defaultdict(dict), defaultdict(dict)
+    for r in input_kb.relations:
+        if r.prov in ref_provs:
+            I[r.reln][(input_mentions[r.subj], r.reln, input_mentions[r.obj])] = r
+    for s in ref_kb.relations:
+        if float(s.score) == 1.:
+            Ic[s.reln][(ref_mentions[s.subj], s.reln, ref_mentions[s.obj])] = s
+
+    P, R, F1 = {}, {}, {}
+    for reln in I:
+        i = I[reln]
+        ic = Ic[reln]
+
+        correct = sum( sum((r.rw or 1.0) / (s.rw or 1.0) for r in [i[k]]) for k, s in ic.items()  if k in i)
+        guessed = sum((r.rw or 1.0) for r in i.values())
+        total = sum((s.rw or 1.0) for s in ic.values())
+
+        P[reln] = (correct / guessed) if (correct > 0.) else 0.
+        R[reln] = (correct / total) if (correct > 0.) else 0.
+        F1[reln] = 2 * P[reln] * R[reln] / (P[reln] + R[reln]) if (correct > 0.) else 0.
+
+        print(reln, P[reln], R[reln], F1[reln],)
+
+    mP = sum(P.values())/len(P)
+    mR = sum(R.values())/len(R)
+    mF1 = sum(F1.values())/len(F1)
+
+    return mP, mR, mF1
+
+def score_entity(ref_kb, input_kb):
+    """
+    Score entity level scores.
+    """
+    input_links = {r.subj: r.obj for r in input_kb.links}
+    ref_links = {r.subj: r.obj for r in ref_kb.links}
+    for r in input_kb.canonical_mentions:
+        input_links[r.subj] = input_links[r.obj]
+    for r in ref_kb.canonical_mentions:
+        ref_links[r.subj] = ref_links[r.obj]
+    input_links = {r.subj: r.obj for r in input_kb.links}
+    ref_links = {r.subj: r.obj for r in ref_kb.links}
+
+
+    input_mentions = {r.subj: input_links[r.subj] for r in input_kb.mentions}
+    ref_mentions = {r.subj: ref_links[r.subj] for r in ref_kb.mentions}
+
+    # Create a relation table
+    I, Ic = defaultdict(dict), defaultdict(dict)
+    for r in input_kb.relations:
+        I[input_mentions[r.subj]][r.reln, input_mentions[r.obj]] = r
+    for s in ref_kb.relations:
+        I[ref_mentions[s.subj]][s.seln, ref_mentions[s.obj]] = s
+
+    P, R, F1 = {}, {}, {}
+    for entity in I:
+        i = I[entity]
+        ic = Ic[entity]
+
+        correct = sum( sum((r.ew or 1.0) / (s.ew or 1.0) for r in [i[k]]) for k, s in ic.items()  if k in i)
+        guessed = sum((r.ew or 1.0) for r in i.values())
+        total = sum((s.ew or 1.0) for s in ic.values())
+
+        P[entity] = (correct / guessed) if (correct > 0.) else 0.
+        R[entity] = (correct / total) if (correct > 0.) else 0.
+        F1[entity] = 2 * P[entity] * R[entity] / (P[entity] + R[entity]) if (correct > 0.) else 0.
+
+        print(entity, P[entity], R[entity], F1[entity],)
+
+    mP = sum(P.values())/len(P)
+    mR = sum(R.values())/len(R)
+    mF1 = sum(F1.values())/len(F1)
+
+    return mP, mR, mF1
+
+def do_score(args):
+    # Read input
+    input_kb = KnowledgeBase(*parse_input(csv.reader(args.input, delimiter = "\t")))
+    ref_kb = KnowledgeBase(*parse_input(csv.reader(args.refs, delimiter = "\t")))
+
+    if args.mode == "instance":
+        print(score_instance(ref_kb, input_kb))
+    elif args.mode == "relation":
+        print(score_relation(ref_kb, input_kb))
+    elif args.mode == "entity":
+        print(score_entity(ref_kb, input_kb))
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Saves document to file in json format.')
 
     subparsers = parser.add_subparsers()
-    command_parser = subparsers.add_parser('eval', help='Grab labelled instances from evaluation data.')
-    command_parser.add_argument('-y', '--year', type=str, default="2015", help="Year for which to get evaluations")
+    command_parser = subparsers.add_parser('score', help='Score instances')
+    command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), help="Input M-file")
+    command_parser.add_argument('-r', '--refs', type=argparse.FileType('r'), help="Input M-file")
+    command_parser.add_argument('-m', '--mode', choices=["entity", "relation", "instance"], help="Input M-file")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default="data/pooled-eval.tsv", help="A path to a folder to save output.")
-    command_parser.set_defaults(func=do_eval)
-
-    command_parser = subparsers.add_parser('submission', help='Export mentions from database')
-    command_parser.add_argument('-k', '--kb-table', type=str, default="kb_patterns_2016_8_28_16", help="KB table")
-    command_parser.add_argument('-m', '--mention-table', type=str, default="mention_8_30_16", help="Mention table to use")
-    command_parser.add_argument('-s', '--sentence-table', type=str, default="sentence_8_30_16", help="Sentence table")
-    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default="data/pooled-submission.tsv", help="A path to a folder to save output.")
-    command_parser.set_defaults(func=do_submission)
-
-    command_parser = subparsers.add_parser('sample', help='Sample entities')
-    command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), default="data/pooled-eval.tsv", help="Input")
-    command_parser.add_argument('-s', '--seed', type=int, default=42, help="Random seed")
-    command_parser.add_argument('-n', '--num-entries', type=int, default=1000, help="Number of relation entries")
-    command_parser.add_argument('-p', '--per-entity', type=int, default=10, help="Number of mentions to pick per entity")
-    command_parser.add_argument('-m', '--by-mention', action='store_true', default=False, help="Sample entries by mentions instead of entities")
-    command_parser.add_argument('-r', '--by-relation', action='store_true', default=False, help="Sample entries by relations instead of entities")
-    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default="data/pooled-eval-sample.tsv", help="A path to a folder to save output.")
-    command_parser.add_argument('old_entries', type=argparse.FileType('r'), nargs="*", help="A path to a folder to save output.")
-    command_parser.set_defaults(func=do_sample)
-
-    command_parser = subparsers.add_parser('reweight', help='Sample entities')
-    command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), help="Input")
-    command_parser.add_argument('-j', '--reference', type=argparse.FileType('r'), help="Original file that would be used to compute weights")
-    command_parser.add_argument('-m', '--by-mention', action='store_true', default=False, help="Sample entries by mentions instead of entities")
-    command_parser.add_argument('-r', '--by-relation', action='store_true', default=False, help="Sample entries by relations instead of entities")
-    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default="data/pooled-eval-sample.tsv", help="A path to a folder to save output.")
-    command_parser.set_defaults(func=do_reweight)
-
-    command_parser = subparsers.add_parser('make', help='Make output jsons from a submissions file')
-    command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), help="KB table")
-    command_parser.add_argument('-m', '--mention-table', type=str, default="mention_8_30_16", help="Mention table to use")
-    command_parser.add_argument('-s', '--sentence-table', type=str, default="sentence_8_30_16", help="Sentence table")
-    command_parser.add_argument('-o', '--output', type=str, default="data/pooled-eval", help="A path to a folder to save output.")
-    command_parser.set_defaults(func=do_make_task)
+    command_parser.set_defaults(func=do_score)
 
     ARGS = parser.parse_args()
     if ARGS.func is None:

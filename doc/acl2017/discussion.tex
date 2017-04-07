@@ -1,65 +1,59 @@
 \section{Related Work}
 \label{sec:related}
 
-One of the main contributions of this work has been to measure the pooling bias in KBP evaluation resulting from the closed world assumption.
-%K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
+%Knowledge base population bears several similarities with information retrieval: we are also interested in answering a specific information need, a relation, from a large document corpus.
+%It follows that research into information retrieval evaluation is extremely relevant.
+% Axes of comparison:
+% - identifying and measuring pooling bias
+% Origin of pooling: K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
 %an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
-The subject of pooling bias has been extensively studied in the information retrieval community.
-\citep{zobel1998reliable} was the first to examine the effects of pooling bias on the TREC AdHoc task, but 
-both \citet{zobel1998reliable} and \citet{voorhees199overview} conclude that the effects of pooling bias was not significant.
-However, \citet{buckley2007bias} later identified that this is because submissions were very similar; when repeating the experiment using more different systems as part of the TREC robust track, they identify a 23\% point drop in AP scores!
+The subject of pooling bias has been extensively studied in the information retrieval community starting with \citet{zobel1998reliable}, which examined the effects of pooling bias on the TREC AdHoc task, but concluded that pooling bias was not a significant problem for the TREC AdHoc tasks, as did a later study \citep{voorhees1999overview}.
+% zobel also mentions a reinforcing effect, but the dynamics are perhaps more dependent on the IR evaluation setup.
+However, when the topic was revisited after several years, \citet{buckley2004incomplete} found that pooling bias could significantly change system ranking and \citet{buckley2007bias} identified that the reason for the small measured bias was because the submissions to the task were very similar; on repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in AP scores!%
+\footnote{For the interested reader, \citet{weber2010measurement} presents an excellent survey of the literature on pooling bias.}
+We adapt the leave-one-out methodology of \citet{zobel1998reliable} to measure pooling bias in KBP, however, unlike in the information retrieval setting, we find a very strong effect.
+One explanation for this difference is that the popular information retrieval metrics are rank-weighted, and unassessed documents typically tend to be lower in the ranking and hence contribute less to the evaluation score.
 
-solutions provided:
-condensed list -- but shown to only have the reverse effect.
+% - solutions to pooling bias 
+Likewise, many solutions to the pooling bias problem have been proposed in the context of information retrieval, from 
+  changing the queries to be more specific \citep{buckley2007bias}, 
+  adaptively constructing the pool to collect relevant data more cost-effectively \citep{zobel1998reliable,cormack1998efficient,aslam2006statistical}, or
+  modifying the scoring metrics to be less sensitive to unassessed data \citep{buckley2004incomplete,sakai2008information,aslam2006statistical}.
+Many of these ideas exploit rank-weighted metrics and the rankings reported by systems, neither of which apply in the KBP setting. Furthermore, the pooling bias persists in KBP evaluations despite the fact that \textit{all answers} reported by systems for a given set of entities are assessed for correctness.%
+While both \citet{aslam2006statistical} and \citet{yilmaz2008simple} estimate evaluation metrics by carefully sampling system output for assessment and using importance reweighing to correct for sampling bias,
+  the techniques they propose require knowing the set of all submissions beforehand.
+In contrast, our on-demand methodology can produce unbiased evaluation scores for new development systems too.
 
-Yilmaz and Aslam 2006 propose randomly sampling documents sampling -- say scores are random estimates.
-however, this sampling is simply used to construct the evaluatoin set, not eliminating bias
-
-
-\citet{weber2010measurement} surveys literature pertaining to pooling bias and proposes score adjustments with using reference systems.
-
-Our own analysis of pooling bias is heavily inspired from the methodology described in 
-
-%K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
-%an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
-
-%Incomplete: Buckley and Voorhees 2004
-%Zobel 1998 -- identifies pooling bias.
-%estimated 50 - 70\% of documents found by pooling.
-%Zobel 1998 and Voorhees and Harman 1999 -- concluded not significant
-%Only looked at systems within the submissions which were similar.
-%Buckley et al 2007 repeated experiments on Robust track and found a 23\% drop!
-
-
-
-% \paragraph{Related work.}
-% 
-% Cite a bunch of IR evaluation related work on estimation, pooling bias and variance reduction. Weber's thesis for score standardization and pooling bias.
-% 
-% Cite ACE tasks -- KBP system papers for evaluation methodology. 
-% 
-% Cite Ellie Pavlick's gun violence database -- also say that KBP is a whole-body workout for NLP -- main distinction is that we care about rigorous evaluation of submissions -- set up for helping development -- plan to do event extraction at a later point in time.
-% 
-% Cite Dan Klein's paper on statistical significance for NLP.
-
-% KBP evaluation papers
-
-% Cite paper 
+%While pooling bias hasn't been studied on KBP before, \cite{surdeanau} does study the effect of incomplete labels on distant supervision.
+% - crowdsourcing kbp and nlp
+Crowdsourcing has become common place in the NLP community and there has been prior work in using crowdsourcing for semantic role labeling \citep{he2015question}, building semantic ontologies \citep{vannella2014validating} and building a knowledge base for gun-violence related events~\cite{pavlick2016gun}.
+The main focus of our work is on \textit{evaluating systems}, not necessarily collecting an exhaustive dataset. As a result, we are able to integrate the systems we are evaluating into our data collection process.
 
 \section{Discussion}
 \label{sec:discussion}
 
-% %(1 page)
-% 
-% 
-% \paragraph{Discussion.}
-% 
-% We started this work by challenging what was needed to improve on KBP.
-% Identified the difficulty of evaluating development as a cause.
-% Online platform as a solution.
-% 
+% Something about how we are stuck with KBP.
+% No doubt that we have a lot to improve on in methods, but it is important to also step back and study what is holding us back. We feel the lack of guidance from an evaluation score is one of them.
+% We feel our solution will help -- in its incarnation as an actual evaluation server.
+% Radically different approach -- different from online leaderboards --  
 % Some caveats of this platform -- the scores are not stable --  statistically within confidence interval, thus scores should not change much; furthermore, we believe results should be quoted with confidence intervals anyways.
-% 
-% Only part of the problem.
-% A large dataset is equally important.
+Over the last ten years of the TAC-KBP competition, the gap between human and system performance has barely narrowed, despite the community's best efforts.
+% Cite Weber -- IR has much still to progress, hidden by variability in scores, etc.
+% Prevalence of patterns based systems.
+In this paper, we've shown that the existing evaluation methodology may be a contributing factor because of its bias against novel system improvements.
+The new on-demand open-world framework proposed in this work addresses this problem by obtaining human assessments of novel, unseen, system output through crowdsourcing.
+The framework is made economically feasible by carefully sampling output to be assessed and correcting for sample bias through importance reweighing.
+
 % Presence of this platform allows us to decouple dataset creation from task. -- e.g. can use and evaluate distantly supervised datasets more easily.
+Of course, simply providing a higher fidelity evaluation signal is only part of the solution and it is clear that better datasets are also necessary.
+However, the very same difficulties in scale that make evaluating KBP difficult also make it hard to collect a high quality dataset for the task.
+As a result, existing datasets \citep{angeli2014combining,adel2016comparing} have relied on the output of existing systems, making it likely that they exhibit the same biases against novel systems that we've discussed in this paper.
+We believe that providing a fair and standardized evaluation platform as a service\footnote{We plan to host this platform publicly at \url{http://anonymo.us}} 
+allows researchers to incorporate such datasets and while still being able to accurately measure their performance on the knowledge base population task.
+
+% There are tasks that are much harder to evaluate in NLP -- generation tasks like summarization and dialogue. Much more important to do so as current metrics are even more unsatisfying.
+% Poses a new challenge to be tackled -- being able to reuse assessments in KBP.
+% would be valuable and hope that ideas of sampling and sample reuse will help.
+Finally, despite the challenges in evaluating knowledge base population we've described in this work, there are many other tasks in NLP that are even harder to evaluate.
+In particular, we think that the community would be greatly aided by a better evaluation methodology for generation tasks like summarization or dialog.
+We believe the sampling ideas presented in this work will still be relevant in such a setting, but the challenge to tackle is in being able to reuse assessments obtained on one summary for another.

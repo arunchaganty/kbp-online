@@ -1,12 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Read LDC's output format
+Utilities to manage different data input files.
 """
-
-from collections import defaultdict, namedtuple
-import numpy as np
-from tqdm import tqdm
+from collections import namedtuple
 
 class Provenance(namedtuple("Provenance", ["doc_id", "start", "end"])):
     @classmethod
@@ -104,55 +99,3 @@ def test_output_entry():
     assert entry.slot_type == "PER"
     assert entry.slot_provenances == [Provenance("NYT_ENG_20130513.0090", 2476,2500)]
     assert entry.confidence == 0.9
-
-def invert_dict(dct):
-    """Inverts a dictionary from A -> B into one from B -> [A]"""
-    ret = defaultdict(list)
-    for k, v in dct.items():
-        ret[v].append(k)
-    return ret
-
-def micro(S, C, T):
-    """
-    Computes micro-average over @elems
-    """
-    S, C, T = sum(S.values()), sum(C.values()), sum(T.values())
-    P = C/S if S > 0. else 0.
-    R = C/T if T > 0. else 0.
-    F1 = 2 * P * R /(P + R) if C > 0. else 0.
-    return P, R, F1
-
-def macro(S, C, T):
-    """
-    Computes macro-average over @elems
-    """
-    P, R, F1 = 0., 0., 0.
-    for i, s in enumerate(S):
-        p = C[s]/S[s] if S[s] > 0. else 0.
-        r = C[s]/T[s] if T[s] > 0. else 0.
-        f1 = 2 * p * r /(p + r) if C[s] > 0. else 0.
-
-        P  += (p  -  P)/(i+1)
-        R  += (r  -  R)/(i+1)
-        F1 += (f1 - F1)/(i+1)
-    return P, R, F1
-
-
-def bootstrap(xs, fn, samples=5000):
-    """
-    Return an array of statistics computed using a boostrap over xs
-    """
-    ys = []
-    for xs_ in tqdm(np.random.choice(np.array(xs), (samples, len(xs)))):
-        ys.append(fn(xs_))
-    return np.array(ys)
-
-def confidence_intervals(xs, fn, samples=5000, interval=0.95):
-    """
-    Compute confidence intervals for data.
-    """
-    ys = bootstrap(xs, fn, samples)
-
-    mu = np.mean(ys, 0)
-    lr = np.percentile(ys, [100*(1-interval)/2, 100*(interval + (1-interval)/2)], 0)
-    return np.vstack((mu, lr))
