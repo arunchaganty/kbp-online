@@ -61,7 +61,7 @@ This last condition is easy to guarantee by setting $w_{ii} > 0$.
 In \appendixref{sampling} we prove that $\pih_i$ is an unbiased estimator of $\pi_i$ and also work out an expression for its variance. 
 This expression of course depends on $f(x)$, but the general intuition is that 
 $\pih_i$ will have high variance if $q_i(x) \ll p_i(x)$.
-Consequently, we propose choosing $w_{ij} \propto \sum_{x} p_i(x) p_j(x)$, the shared probability mass between $X_i$ and $X_j$.
+Consequently, we propose choosing $w_{ij} \propto \sqrt{n_j} \sum_{x} p_i(x) p_j(x)$, the shared probability mass between $X_i$ and $X_j$.
 
 % TODO: Figure that compares our scheme with equivalent of pooling.
 \fake{On simulated experiments on the TAC-KBP dataset, we find a 4-fold decrease in variance using the proposed $\pih$ 
@@ -85,7 +85,12 @@ when compared to estimating $\rho_i$ solely using $\Yh_0$}.
 
 \subsection{Adaptively drawing samples for new sets}
 A desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.
+We formalize this statement by requesting for a target variance $\epsilon$.
+The variance of $\pih_m$ is a complex non-convex function, but we know that it is monotonically decreasing in $n_m$, the number of samples drawn from the new output, $X_m$.
+Consequently it is quite easy to solve for the number of samples needed to achieve a target variance of $\epsilon$ using line search.
 
+% TODO: figure
+\fake{Simulated experiment of how many samples are required}.
 
 \subsection{Application to evaluating KBP}
 % TODO: include specific details to evaluating on KBP.
