@@ -5,11 +5,10 @@
 \section{Sampling procedure.}
 \label{sec:sampling}
 
-\newcommand{\Xh}{{\hat{X}}}
-\newcommand{\fh}{{\hat{f}}}
-\newcommand{\muh}{{\hat{\mu}}}
+\subsection{Problem statement}
 
 The core challenge of evaluating data on-demand is to be able to be able to reuse information collected when evaluating one system for other systems without introducing bias.
+Let's begin by proposing a 
 In this section, we will address this problem in a general setting.
 
 Let $\sX$ be the universe of objects we wish to sample from (e.g.\ relation instances).
@@ -65,7 +64,19 @@ because each set $\Xh_i$ is independent.
 
 Some takeaways are that $\pi_{j} \propto \sigma_{ij}^{-2}$ and that $\sigma_{ij}$ depends on the difference in how much mass $p_j$ places on $f(x)$.
 
+Q. Can I quantify the mass to place on a particular thing based on set overlap? That's one obvious way of doing it with set sizes.
+
 \paragraph{Estimating recall}
+
+Estimating recall poses a different challenge than estimating precision because we simply don't know the set of all true relation instances.
+Let $p(x)$ be a uniform distribution over $\sY$, the set of true instances, but we simply can't sample from $p(x)$.
+% NOTE: it doesn't make any sense to have anything but uniform distribution over true relation instaces -- how we ould define a relation instance version of this? We can only stratify our metrics by relation or entity.
+
+% CHALLENGE is using the pooled samples in estimating.
+We would like to measure $\E_{p(x)}[]$.
+
+
+
 
 Just use $p*q$ trick, but keep track of which distribution we are using.
 

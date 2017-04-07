@@ -2,29 +2,124 @@
 \label{sec:methodology}
 
 We have shown that the bias in a closed-world evaluation poses an obstacle to innovating new systems.
-We could eliminate the bias if we had exhaustively annotated the entire document corpus so that any relations predicted by systems would already be annotated.
-Unfortunately, this would be a laborious and expensive task: for a collection of 10,000 documents, we estimate that it would cost at least \$300,000 if non-expert annotators were employed.
-\pl{even more for LDC-style annotation!}
-\pl{but this warrants justification: where did you get this number from?}
+We could eliminate the bias if we had exhaustively annotated the entire document corpus so that any relations predicted by systems would already be labeled.
+Unfortunately, this would be a laborious and expensive task:
+  using the interfaces we developed (described in detail in \refsec{evaluation}), it costs about \$30 to annotate a single document with crowdworkers, leading to an estimated cost of at least \$300,000 for a reasonably large corpus of 10,000 documents.
+The annotation effort would cost significantly more with expert LDC-style annotation.
 
-In on-demand open-world evaluation, the evaluation process is automated so that new relations can be annotated on-demand.
-Once a new system or feature has been developed, its predictions can be submitted to an evaluation portal.
-Behind the scenes, the predicted relations are sampled to be evaluated.
-If the relation is outside the current evaluation set, annotations are immediately obtained through crowd-sourcing and added into the evaluation set.
-Thus, we push the hard work of finding candidate relations to automated systems and instead focus annotation effort on the much easier task of verifying relation predictions.
-At the end of this process, systems obtain fair instance-level, relation-level and entity-level scores.
+In on-demand open-world evaluation, the annotation process is automated so that new predictions can be labeled \textit{when necessary}.
+When a new system or feature has been developed, its predictions are submitted to an evaluation portal.
+If the submitted predictions can not be fairly and accurately evaluated with the data obtained so far,
+  annotations are immediately obtained for a sample of the predicted relations through crowd-sourcing and added into the evaluation set.
+In this way, we push the hard work of finding candidate relations to automated systems and instead focus annotation effort on the much easier task of verifying relation predictions.
+At the end of this process, systems are guaranteed to obtain fair instance-level, relation-level and entity-level scores.
+
+\subsection{Problem statement}
+
+Let us define the task formally.
+Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
+  $X \subseteq \sX$ be a known subset that corresponds to the predicted output from a system,
+  and $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$.
+In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ or for samples from $\sY$ for a certain cost and must estimate the precision, $\pi$, and recall, $\rho$, of the predictions $X$ within a certain confidence interval $\epsilon$.
+
+Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g(x) = \I[x \in X]$, then:
+\begin{align*}
+  \pi  &\eqdef \E_{x \sim X}[f(x)] &
+  \rho &\eqdef \E_{x \sim \sY}[g(x)],
+\end{align*}
+where $x$ is sampled from $X$ and $\sY$ according to distributions $p(x)$ and $p'(x)$ respectively.
+We assume that $p(x)$ is known, e.g.\ the uniform distribution over $X$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
+
+Finally, to make evaluation cost-effective, we would like to reduce the combined cost of evaluating $m$ sets of predictions from different systems, $X_1, \ldots X_m \subseteq \sX$, with corresponding distributions $p_1, \ldots p_m$.
+
+\paragraph{Estimation via sampling.}
+
+By expressing precision and recall as expectations above, we can evaluate these metrics by sampling from $X$ and $\sY$ and evaluating $f(x)$ and $g(x)$ respectively.
+Indeed, it is hard to do better for a single $X$ without additional information regarding $X$ or the system that produced it.
+However, standard statistics tells us that to estimate $\pi$ and $\rho$ to within $\epsilon$ requires about $1/\epsilon^2$ samples.
+If we want $\epsilon$ to be less than $0.01$ (1\%), we need at least 10,000 samples which can be quite costly to obtain on a per-system basis.
+On the other hand, if all the sets and distributions were identical, than the individual costs could be amortized by a factor of $1/m$ by using the same samples across all the $X_i$.
+In the next two parts we discuss how we can reuse samples when all the $X_i$ are different.
+
+\subsection{Importance reweighting in estimating precision}
+\newcommand{\Xh}{{\hat{X}}}
+\newcommand{\fh}{{\hat{f}}}
+\newcommand{\muh}{{\hat{\mu}}}
+
+Let us suppose we have collected samples $\Xh_i$ from the sets $X_i$ according to the distribution $p_i(x)$ for each $i$.
+Clearly each $\Xh_i$ can be used to estimate $\pi_i$, but can we use the samples obtained from $X_i$ when estimating $\pi_j$?
+To do so, we'll exploit importance reweighing that allows us to estimate $\E_{p_1}[f(x)]$ using samples from $p_2(x)$ by using the estimator: $\frac{1}{n}\sum_{i=1}^n \frac{p_1(x_i)}{p_2(x_i)} f(x_i)$ 
+
+
+% TODO: Figure that compares our scheme with equivalent of pooling.
+We would like to combine the different 
+Let us start by estimating precision.
+
+To address this, we will consider the distribution that is a \textit{mixture} of existing distributions and some samples from the target set to guarantee support coverage.
+Let $\pi = (\pi_1, \ldots, \pi_m)$ be a valid mixture distribution (i.e. $\pi_i \ge 0, \sum_{i} \pi_i = 1$),
+and let the proposal distribution be $q(x) = \sum_i \pi_i p_i(x)$.
+The sample set we are estimating from is $Y = (\Xh_1, \ldots, \Xh_m)$, which consists of samples drawn from every $X_i$.
+We would like to find the optimal $\pi$ for a $\mu_i$.
+Note that we have sampled our sets $X_i$ before hand and would like to fuse them together optimally.
+This is different than if we were considering sampling from $q(x)$: the optimal distribution to estimate $\mu_i$ would of course be $p_i$.
+
+Our proposed estimator is $\muh_i = \sum_{j=1}^m \frac{\pi_j}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x)}{q(x)} f(x)$.
+First, let's confirm that this estimator is unbiased:
+\begin{align*}
+  \E_{Y}[\muh_i] 
+  &= \sum_{j=1}^m \frac{\pi_j}{|\Xh_j|} |\Xh_j| \E_{p_j}[\frac{p_i(x)}{q(x)} f(x)] \\
+  &= \sum_{j=1}^m \pi_j \sum_{x \in \sX} p_j(x) \frac{p_i(x)}{q(x)} f(x) \\
+  &= \sum_{x \in \sX} (\sum_{j=1}^m \pi_j p_j(x)) \frac{p_i(x)}{q(x)} f(x) \\
+  &= \sum_{x \in \sX} q(x) \frac{p_i(x)}{q(x)} f(x) \\
+  &= \sum_{x \in \sX} p_i(x) f(x) \\
+  &= \mu.
+\end{align*}
+
+Now let's compute the variance.
+Let  $\mu_{ij} = \E_{p_j}[\frac{p_i(x)}{q(x)} f(x)]$, so that $\mu_i = \sum_i \pi_i \mu_{ij}$.
+First of all, let's consider the variance in estimating a single pair: 
+\begin{align*}
+  \Var_{p_j}[\frac{p_i(x)}{q(x)} f(x)]
+  &= \sum_{x \in \sX} p_j(x) \frac{{(p_i(x) f(x))}^2}{{q(x)}^2} - \mu_{ij}^2 \\
+  &= \sigma_{ij}^2.
+\end{align*}
+
+Now, we also know that $\frac{1}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x)}{q(x)} f(x)$ will have variance $\frac{\sigma_{ij}^2}{|\Xh_j|}$; to keep expressions simple, we'll roll in this scaling factor into $\sigma_{ij}^2$.
+Note that both $\mu_{ij}$ and $\sigma_{ij}^2$ depend on $\pi$ through $q(x)$.
+
+The variance of $\muh_i$ is now:
+\begin{align*}
+  \Var_{Y}[\muh_i]
+  &= \sum_{j=1}^m \pi_j^2 \sigma_{ij}^2,
+\end{align*}
+because each set $\Xh_i$ is independent.
+
+Some takeaways are that $\pi_{j} \propto \sigma_{ij}^{-2}$ and that $\sigma_{ij}$ depends on the difference in how much mass $p_j$ places on $f(x)$.
+
+
+
+\subsection{Unbiased estimation of recall}
+% TODO: Figure that compares our scheme with equivalent of pooling.
+
+\subsection{Application to evaluating KBP}
+% TODO: include specific details to evaluating on KBP.
+
+%There are two key problems to address in on-demand open-world evaluation.
+%%There are two further problems we must address. %three inter-related challenges that we must tackle.
+%First, we must ensure that our estimates of recall accurately reflect open world recall despite us not knowing the complete set of true relations.
+%% being evaluating on an evaluation set constructed from system predictions.
+%% We achieve this by calibrating our scores on a small set of exhaustively annotated documents.
+%Secondly, we must ensure that the relations we sample allow us to compute unbiased precision scores.
+%%entity-level and relation-level precision scores.
+%%  We achieve this through structured sampling.
+%%$Finally, we would to implement our evaluation framework cost-effectively.
+%%  We achieve this by combining annotations across systems and sampling schemes through importance reweighing.
+%We discuss our solutions to these problems next.
 
 %On the other hand, it is much easier to verify a relation instance predicted by a system.
 % TODO: outline the structure of the framework better.
 % TODO: this should mention pooled annotations, etc.
-There are two further problems we must address. %three inter-related challenges that we must tackle.
-First, we must ensure that our estimates of recall accurately reflects open world scores despite being evaluating on an evaluation set constructed from system predictions.
-%  We achieve this by calibrating our scores on a small set of exhaustively annotated documents.
-Secondly, we must ensure that the relations we sample allow us to compute unbiased entity-level and relation-level precision scores.
-%  We achieve this through structured sampling.
-%$Finally, we would to implement our evaluation framework cost-effectively.
-%  We achieve this by combining annotations across systems and sampling schemes through importance reweighing.
-We discuss our solutions to these problems next.
+
 
 \subsection{Ensuring open-world recall with exhaustive annotations}
 % A line about pooled recall
@@ -72,204 +167,3 @@ For each such entity, we draw several samples.
 % TODO: show a diagram.
 
 Similarly, the distribution over relation instances for each system and scoring scheme (i.e.\ entity-level and relation-level) will be quite different. We correct for bias through importance reweighing~\citep{}.
-
-%In \sectionref{analysis} we identified two main problems with the current evaluation methodology:
-%\begin{enumerate}
-%  \item A closed-window pooling evaluation is significantly biased
-%    against development systems, particularly those of new teams.
-%  \item Existing evaluation metrics have too much variance on the
-%    evaluation data to be a measure of performance that will generalize
-%    to new documents and queries.
-%\end{enumerate}
-%
-%At the same time, we would like to capture some of the defining aspects of the original TAC-KBP evaluation:
-%\begin{enumerate}
-%  \item The evaluation should allow comparisons against human effort on the task. %TODO: reason?
-%  \item Scores should be aggregated over entities, because entity-level scores are a more natural measure of knowledge base quality.
-%  \item Teams should be required to submit justifications for relations they predict, because this makes it possible to interpret and verify system output.
-%\end{enumerate}
-%
-%Our goal in this section is to propose a new methodology that maintains the above elements while addressing the mentioned problems head on 
-%  by indefinitely opening the pooling evaluation window by making the evaluation online \pl{not sure what this means}
-%  and by combining evaluation data for each team in statistically optimal fashion.
-%Before we describe the overview of our proposed evaluation platform, we take a brief detour to answer an important question.
-%
-%\paragraph{Would a larger human-annotated dataset suffice?}
-%A natural question to ask before embarking on the significant effort of an online evaluation is whether a large-enough dataset could be reliably collected by spending a little more money. 
-%
-%An important part of the KBP evaluation is to test on an unseen document collection.
-%
-%A number of datasets for relation extraction, even on the TAC-KBP task, have been collected in the past, for example in the work of \citet{angeli2014combining}.
-%This dataset is very small \pl{quantify} and does not have sufficient coverage, but is useful for training \pl{strange - usually test set is smaller than training}.
-%Unfortunately, these datasets have also been collected by pooling responses. \pl{clarify what this means}
-%
-%Another way of empirically answering this question is to see how many contexts need be evaluated to reduce pooling bias sufficiently. We can extrapolate this number by studying how the pooling bias varies by the number of systems.
-%Using the 2015 evaluation data, we find that we would need to pool the output of \fake{100} systems with \fake{$10^6$} lines of output \pl{what is line of output?} evaluated.
-%\pl{not clear what is being computed or how to think about this}
-%With the `anydoc' heuristic, this number is far less, but the error introduced by the heuristic also increases.
-%%TODO: graph.
-%
-%We can estimate the cost of annotating such a large corpus by calculating how many documents need be exhaustively annotated by humans-- it comes out to \fake{\$100,000}. 
-%We believe this is reasonable justification to discard the static dataset approach and embrace an online evaluation wherein systems are continuously evaluated.
-
-% \paragraph{Overview of the evaluation platform.}
-% The interface to our proposed evaluation platform is very similar to that of the TAC-KBP competition:
-% % input?
-%   participating teams are provided a document corpus with about $10,000$ documents
-% % output?
-%   and asked to submit a knowledge base consisting of every entity mention in the document along with links to canonical entity ids and relations between these entity mentions.
-% However, unlike the TAC-KBP competition, the submitted knowledge base is immediately evaluated for correctness and coverage by crowdworkers.
-% % metrics?
-% Teams obtain mention-level and entity-level scores within hours of their submission, allowing them to improve their systems immediately.
-% After several months of submissions, we plan to release the data annotated during this evaluation period and move on to a new evaluation corpus. 
-% 
-% There are two other significant departures from the current KBP specification.
-% First, we ask teams to submit every relation context justifying a predicted relation between two entities instead of just one:
-%   this additional output will be valuable in measuring the relation extraction quality independent of entity linking performance.
-% % queries?
-% Secondly, we evaluate entity-level scores on randomly sampled entities from documents instead of manually constructed queries.
-% The queries developed by the LDC were explicitly designed to be challenging, but unfortunately this is a subjective criterion that is hard to automate-- \fake{we show later that queries that are randomly sampled are still quite challenging to state of the art systems.}
-% Recent editions of the competition have included `two-hop' scores that evaluate how well the constructed knowledge base can answer queries that traverse two relational edges, e.g.\ ``What was Carrie Fisher's mother professional title?''
-% Evaluation using these two hop queries is currently out of scope for this work.
-% 
-% Next, we will describe how crowdworkers evaluate the submitted output, starting first with precision and followed by recall.
-% 
-% \begin{figure*}
-% \begin{subfigure}{0.31\textwidth}
-%   \includegraphics[width=\textwidth]{figures/extraction-interface}
-%   \caption{\label{fig:entity-interface} Entity detection and linking.}
-% \end{subfigure}
-% \hfill
-% \begin{subfigure}{0.31\textwidth}
-%   \includegraphics[width=\textwidth]{figures/relation-interface}
-%   \caption{\label{fig:relation-interface} Relation extraction.}
-% \end{subfigure}
-% \hfill
-% \begin{subfigure}{0.31\textwidth}
-%   \includegraphics[width=\textwidth]{figures/relation-interface}
-%   \caption{\label{fig:linking-interface} Cross-document linking.}
-% \end{subfigure}
-% \caption{\label{fig:interfaces} Screenshots of the annotation interfaces.}
-% \end{figure*}
-% 
-% % TODO: Report entropy of our entity selection?
-% 
-% % Basically, why do it document based versus query based?
-% % TODO: Report recall of our entity annotation
-% % TODO: Report "entropy" of our entity annotations -- are they more "diverse" than LDC's?
-% 
-% \paragraph{Evaluating precision with pooled annotation.}
-% % Actual interface to verify turker output.
-% Entries in the submitted knowledge base are verified by crowdworkers using the context provided.   
-% Using an annotation interface shown in \figureref{relation-interface},
-% crowdworkers are asked to verify 
-%   whether the participating mentions in the relation are valid entities,
-%   whether the predicted relation holds between the two mentions and
-%   whether the mentions are correctly linked if the mention is linked to a Wikipedia entry.
-% If the participating mention is not linked to a Wikipedia entry,
-% then we ask crowdworkers to resolve cluster assignments using a separate interface (\figureref{linking-interface}).
-% On average, we find that crowdworkers are able to perform this task at about 10 seconds an entry, corresponding to about \$0.03 per entry, and we need about \fake{3 workers per entry} to achieve an inter annotator agreement of \fake{0.90}.
-% 
-% % We need to sample output.
-% Each system may output many thousands of relations-- evaluating every one of these relations would be prohibitively expensive
-%   and ultimately unnecessary if we are willing to only provide metric scores up to a certain degree of confidence.
-% % How much output to sample?
-% We propose instead to sample predicted relations and their contexts from each system's output to achieve a desired confidence interval.
-% % how to extend to entities?
-% However, uniformly sampling over entries would cause popular entities to be overrepresented in our entity-level scores.
-% Instead, we first uniformly sample entities from the output, then sample fills from each entity and mentions for each fill (see \figureref{evaluation-table} for a visual representation of this clustering).
-% Precision scores of each fill (measured over its mentions) are aggregated to compute the precision score of that entity.
-% It is easy to reuse these stratified samples to evaluate mention-level metric scores using importance reweighing. 
-% Annotating 1,000 contexts is sufficient for a confidence interval of about 3\% points and comes at a much more reasonable cost of about \$100 for a submission. 
-% % how to reuse labels and amortize costs?
-% Furthermore, we can reuse annotations on entries from previous submissions\footnote{
-% These annotations must be importance reweighed to eliminate bias.},
-%   allowing the cost per submission to decrease with increasing numbers of submissions.
-% 
-% \paragraph{Evaluating recall with exhaustive annotation.}
-% The pooled collection of relations from submissions is unfortunately still a very poor proxy for the set of all possible relations in the document corpus.
-% Consequently, we propose having crowdworkers attempt to exhaustively annotate entities and relations on a random sample of about 100 documents.
-% Crowdworkers begin by identifying every mention span in a document and specifying its type using the interface shown in \figureref{entity-interface}. For each mention, they are also asked to identify the canonical mention (i.e.\ perform coreference) within the document and identify links to Wikipedia pages.
-% Every pair of mentions within a sentence\footnote{
-%   We found that an overwhelming majority of relations were expressed in a single sentence.
-%   The quadratic blowup in overhead of considering mentions across two sentences is simply not worth it.}
-%   with compatible types is then shown to a crowdworker, who is then requested identify the relation between the two mentions using the relation identification interface (\figureref{relation-interface}).
-%   Finally, we ask crowdworkers to cluster entities that could not be linked to Wikipedia using the clustering interface (\figureref{linking-interface}).
-%   In this interface, crowdworkers are shown canonical mentions for every unlinked entity cluster from the small document corpus.
-% 
-% These interface are far more involved and consequently take longer for crowdworkers to complete.
-% The entity annotation interface takes on average about 10 minutes per document, corresponding to about \$2.00 a document, and 
-% again required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
-% The relation annotation interface takes on average about 3 minutes per document, corresponding to about \$0.60 a document, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
-% Finally, the clustering interface takes on average about \fake{6 minutes for 100 documents}, corresponding to about \fake{\$1.20 a document}, and required \fake{3 annotators} to get to an inter-annotator agreement of \fake{0.90}.
-% On average, there are about \fake{10 relations a document} and it costs about \fake{\$0.36 a relation} through the exhaustive interface.
-% 
-% There are two simplifications we adopt in our interfaces.
-% Firstly, we exclude the extremely rare relations corresponding to ``cause of death'', ``has criminal charge'', ``age'' and ``number of employees'' and correspondingly their slot types.
-% In total, annotators specify one of five types, ``Person'', ``Organization'', ``City, State or Country'', ``Date'' and ``Title'', with the latter being a very common example of an open-category non-named type.
-% Secondly, we do not allow crowdworkers to annotate nested spans, preventing them from identifying both the organization and the city in \textit{``[University of [Chicago]]''}. 
-% 
-% Unfortunately, a uniformly random sample of documents from the corpus is unlikely to contain any cross-document links for any but the most popular of entities.
-% Consequently, while constructing the document collection, we first randomly sample about 20 documents and annotate them.
-% From the set of named entities identified, we uniformly sample (without replacement) an entity and then uniformly sample up to 4 additional documents that mention this entity by name and annotate them.
-% We repeat this procedure until we have 100 documents.
-% While this sampling procedure is not representative of the whole corpus, it does increase the probability of having cross-document links for less popular entities, capturing that criteria from the TAC-KBP evaluation queries.
-% 
-% \paragraph{Reducing variance by incorporating pooled and unassessed output.}
-% We have just seen that identifying a relation through exhaustive annotation scheme costs about 10 times as much as it does to verify a predicted relation.
-% Given this price differential, it is tempting to consider using the recall of a system measured against the pooled output instead of measuring the true recall.
-% However, if use the exhaustive annotation to compute the \textit{recall of the entire pool}, we can in fact use \textit{pooled annotations} and the \textit{unassessed output} to better estimate \textit{true recall}.
-% 
-% \begin{figure*}
-%   \begin{subfigure}{0.49\textwidth}
-%     \caption{\label{fig:variance-reduction}}
-%   \end{subfigure}
-%   \begin{subfigure}{0.49\textwidth}
-%     \begin{tabular}{l r r r r} \toprule
-%       Scheme     & Cost   & $E\oft{p}$ & $E\oft{e}$ & Total cost \\ \midrule
-%       Exhaustive & \$0.36 &   & 1 & \$1000 \\
-%       Pooled     & \$0.03 & 1 &\fake{3} & \$1000 \\
-%       Unassessed & \$0.00 & \fake{0.5} & \fake{0.5} & \$0 \\
-%       Hybrid     & \fake{\$0.10} & \fake{1.5} & \fake{4.5} & \$1000 \\ \bottomrule
-%     \end{tabular}
-%     \caption{\label{tbl:variance-reduction}}
-%   \end{subfigure}
-%   \caption{(a) A schematic to show how pooled and unassessed annotations can decrease the variance of predicting recall when combined with exhaustive annotations (see text). Green and red identify correct and incorrect contexts. 
-%   (b) A summary of cost-accuracy tradeoffs of different annotation schemes described in the text.
-%   The hybrid annotation scheme uses an optimal combination of the exhaustive, pooled and unassessed schemes.
-%   The middle two columns describe estimated relative efficiencies of using the specified scheme versus only the pooled annotation scheme for precision ($E\oft{p}$) and versus only the exhaustive annotation scheme for recall ($E\oft{e}$).
-%   The last column estimates the cost of using the specified scheme to annotate \fake{the entire document corpus}.
-%   }
-% \end{figure*}
-% 
-% Consider the following example for intuition (see \figureref{variance-reduction}).
-% Let $E$ be the set of contexts that are exhaustively annotated,
-%   $P$ the pooled set of contexts that have been annotated and 
-% %  $U$ the pooled set of unassessed contexts and 
-%   $S$ is the set of contexts submitted by a system.
-% As earlier, let $C^*$ be the set of correct contexts (shown in green) and $\bar{C}^*$ be the set of incorrect contexts (shown in red).
-% The recall of a system $A$ is the proportion of correct contexts it predicts, i.e. $R_A = \frac{|S \intersection C^*|}{|C^*|}$.
-% However, because $S \subseteq P$, we can also describe its recall to be the product of the recall of $A$ within the pool and recall of the pool itself: 
-%   $R_A = \frac{|S \intersection P^*|}{|P^*|} \frac{|P^*|}{|C^*|}$, where $P^* \eqdef P \intersection C^*$ is the set of correct entries within the pool, identified by pooled annotation.
-% 
-% Both these methods of computing recall have the same value in expectation, but may differ in variance; let's compare these now.
-% Let $\hat{R}_A\oft{e}$ be an estimator of $R_A$ using only exhaustive annotations, 
-%   $\hat{R}_P\oft{e}$ be an estimator of the recall of the pool, $R_P$, using only exhaustive annotations, 
-%   $\hat{S}_A\oft{p}$ be an estimator of the pooled recall of $A$, $S_A$, using pooled annotations and 
-%   $\hat{R}_A\oft{p} = \hat{R}_P\oft{e} \hat{S}_A\oft{p}$ be an estimator of $R_A$ that combines exhaustive and pooling annotations.
-%   To first order, the variance of recall is determined only by the number of contexts annotated and thus the variance of $\hat{R}_A\oft{e}$ and $\hat{R}_P\oft{e}$ are about the same.
-%   Also, given that it is very easy to annotate many more contexts with a pooled scheme, let us assume that the variance of $\hat{S}_A\oft{p}$ is practically zero.
-%   Then, the variance of $\hat{R}_A\oft{p}$ is (again, to first order) basically $(\hat{S}_A\oft{p})^2$ times the variance of $\hat{R}_P\oft{e}$-- in other words $\hat{R}_A\oft{p}$ is less than $\hat{R}_A\oft{e}$ by a factor of $(\hat{S}_A\oft{p})^2$!
-% Intuitively, if the recall of a system is very small compared to its pool we should hope to reliably estimate its recall using the pool.
-% On the other hand, if it is large relative to the pool, the pooling annotation is unlikely to help.
-% % TODO: address concern of valuating the recall of a perfect system poorly.
-% In a similar way, we can also use agreements between the unassessed output of different systems to estimate recall within the unassessed pool, $U$.
-% %For example, let us assume that, on average, half of the unassessed output is predicted by only one system and is true only 10\% of the time and that the other half of the unassessed output is predicted by at least 2 systems and is true 20\% of the time-- both these numbers can be estimated using the pooled annotations.
-% %If our system only predicts half of the first part and two-thirds of the second, we can estimate that our system identifies $\frac{1}{10} \times \frac{1}{3}$ of the correct entries in the first part and $\frac{2}{10} \times \frac{2}{3}$ of correct entries in the second part. Furthermore, we can estimate that there are $\frac{1}{2} \times \frac{1}{10} \times U$ correct entries in the first part and $\frac{1}{2} \times \frac{2}{10} \times U$ correct entries in the second part.
-% %Thus, our estimate of recall within this unassessed pool work out to be $\frac{1}{10}$.
-% %Note that the variance of both of this recall prediction can be quite large, but can still nominally decrease variance of our predictions.
-% 
-% \tableref{variance-reduction} summarizes the variance reductions to be expected by combining pooled and unassessed annotations over using just exhaustive annotations, measured as relative efficiency.
-% Note that the two estimators can always be combined so that the variance of the combination is less than the variance of each and that relative efficiency of the optimal combination of two or more estimators is simply the sum of their relative efficiencies.
-% As a result, we can combine both pooled and unassessed annotations.
-% The exact details are worked out in \sectionref{power}.
