@@ -20,13 +20,13 @@ In this section, we cover the technical details that allow us to accurately esti
 
 \subsection{Problem statement}
 
-Let us define the task formally.
+Let us define the task of on-demand open-world evaluation formally and independent of KBP;\@ we'll instantiate the framework for KBP in \refsec{application}.
 Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
   $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
   $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems.
 Furthermore, let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
-Our goal is estimate the precision, $\pi_i$, and recall, $\rho_i$, of the set of predictions $X_i$ within a certain confidence interval $\epsilon$.
-To do so, in on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (by having crowdworkers validate a system's prediction) or for samples from $\sY$ (by exhaustively annotating a document) at a certain (monetary) cost.
+Our goal is estimate the precision, $\pi_i$, and recall, $\rho_i$, of the set of predictions $X_i$ to within a certain confidence interval $\epsilon$.
+In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (by having crowdworkers validate a system's prediction) or for samples from $\sY$ (by exhaustively annotating a document) at a certain (monetary) cost.
 
 Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then:
 \begin{align*}
@@ -37,8 +37,8 @@ where $x$ is sampled from $X_i$ and $\sY$ according to distributions $p_i(x)$ an
 We assume that $p_i(x)$ is known, e.g.\ the uniform distribution over $X_i$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
 
 Clearly, $\pi_i$ and $\rho_i$ can both be estimated by sampling from $X_i$ and $\sY$ respectively.
-However, simple statistics tell us that we would require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$ point, which can be quite costly on a per-system basis.
-We'd like be able to reuse the samples we've collected to evaluate, say $\pi_i$ when evaluating $\pi_j$.
+However, simple statistics tell us that we would require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$, which would be quite costly on a per-system basis.
+Instead, we'd like be able to reuse the samples we've collected and only spend money to annotate data when absolutely necessary.
 In the rest of this section, we'll see how to do this by answering the following three key questions:
 \begin{enumerate}
   \item Suppose we have evaluated $f(x)$ on samples $\Xh_1, \ldots, \Xh_m$ from $X_1, \ldots, X_m$ respectively. How should we best use all of these samples when estimating $\pi_i$?
@@ -50,106 +50,81 @@ In the rest of this section, we'll see how to do this by answering the following
 
 Intuitively, if a set $X_j$ has a significant overlap with $X_i$, we expect that we should be able to its samples when estimating $\pi_i$.
 However, it might be case that $X_j$ overlaps with $X_i$ only when $p_i(x)$ is relatively small, in which case the sample $\Xh_j$ is not representative of $X_i$ and a naive combination could lead to the wrong estimate of $\pi_i$.
-We address this problem by using ideas from importance sampling \citep{owen}.
+We address this problem by using importance sampling \citep{owen2013monte}.
 
 In particular, the estimator that we propose is:
 \begin{align*}
-  \pih_i &= \sum_{j=1}^m w_{ij} \frac{1}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
+  \pih_i &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j \intersection X_i} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align*}
-where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
+where $n_{j} = |X_j|$, $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
 This last condition is easy to guarantee by setting $w_{ii} > 0$.
+
 In \appendixref{sampling} we prove that $\pih_i$ is an unbiased estimator of $\pi_i$ and also work out an expression for its variance. 
-This expression of course depends on $f(x)$, but the general intuition is that 
+The variance of course depends on $f(x)$, but the general intuition is that 
 $\pih_i$ will have high variance if $q_i(x) \ll p_i(x)$.
-Consequently, we propose choosing $w_{ij} \propto \sum_{x} p_i(x) p_j(x)$, the shared probability mass between $X_i$ and $X_j$.
+This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$, which assigns $0$ weight to any set $X_j$ that has no overlap with $X_i$ and also has the optimal choice of weights if all the sets are identical, i.e.\ $p_j = p_i$ for all $j$.
 
 % TODO: Figure that compares our scheme with equivalent of pooling.
 \fake{On simulated experiments on the TAC-KBP dataset, we find a 4-fold decrease in variance using the proposed $\pih$ 
 when compared to estimating $\pi_i$ solely using $\Xh_i$}.
 
 \subsection{Amortizing costs when estimating recall}
-When estimating recall, we must square the reality that drawing samples from $\sY$ is very expensive because it requires exhaustive annotation: in our experiments we found that it cost roughly 10 times as much to sample from $\sY$ as it does to evaluate $f(x)$.
-In contrast, it is very easy to estimate the recall of a system $i$ relative to all the pool of all other submitted systems.
-We exploit the fact that the recall of a system $i$, $\rho_i$ can also be expressed as the recall of the system \textit{relative} to the pool, $\nu_i$ and the recall of the pool itself $\theta$: $\rho_i = \theta \nu_i$.
+When estimating recall, we ideally would like to compare the performance of the system on samples drawn from $\sY$.
+Unfortunately, in practice, it is typically much harder to sample $\sY$ than it is to evaluate $f(x)$, because the former needs us to exhaustively annotate a document.
+In contrast, it is very easy to compare a system's recall relative to \textit{other} systems by using the samples $\Xh_i$ we've already collected.
+This mode of computing recall, called pooled recall, can be biased and typically overestimates recall on the universe of relations.
+However, we know that if a system represents only a fraction $\nu_i$ of the pool of all systems and that the pool represents a fraction $\theta$ of $\sY$, $\rho_i$ must equal $\theta \nu_i$.
+
+%However, the recall of the system $\rho_i$, pooled recall $\nu_i$ and the recall of the pool $\theta$ share a simple relationship.
+%estimate the recall of a system $i$ relative to all the pool of all other submitted systems.
+%We exploit the fact that the recall of a system $i$, $\rho_i$ can also be expressed as the recall of the system \textit{relative} to the pool, $\nu_i$ and the recall of the pool itself $\theta$: $\rho_i = \theta \nu_i$.
 
 With this in mind, we use a smaller sample $\Yh_0$ from $\sY$ to estimate $\theta$ and then use the rest of $\Xh$ to estimate $\nu_i$.
 In \appendixref{sampling} we show that the final estimator, $\rhoh_i \eqdef \thetah \nuh_i$, is unbiased and has a variance of,
 \begin{align*}
   \sigma^2_\rho &= \theta \sigma^2_\nu + \nu_i \sigma^2_\theta + \sigma^2_\nu \sigma^2_\theta.
 \end{align*}
-With sufficient samples, $\sigma^2_\nu$ can be made quite small, so that the leading term in the variance is $\nu_i \sigma^2_\theta$: because typically $\nu_i < 0.5$, we expect the variance of our proposed estimator to be less than that of the estimator constructed by using $\Yh_0$ alone.
+With sufficient samples, $\sigma^2_\nu$ can be made quite small, so that the leading term in the variance is $\nu_i \sigma^2_\theta$ and because typically $\nu_i \ll 1$, we expect the variance of our proposed estimator to be less than that of the estimator constructed by using $\Yh_0$ alone.
 
 % TODO: figure
 \fake{On simulated experiments on the TAC-KBP dataset, we find a 2-fold decrease in variance using the proposed estimator $\rhoh$ 
 when compared to estimating $\rho_i$ solely using $\Yh_0$}.
 
 \subsection{Adaptively drawing samples for new sets}
-A desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.
+Finally, the desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.
+We formalize this statement by requesting for a target variance $\epsilon$.
+The variance of $\pih_m$ is a complex non-convex function, but we know that it is monotonically decreasing in $n_m$, the number of samples drawn from the new output, $X_m$.
+Consequently it is quite easy to solve for the number of samples needed to achieve a target variance of $\epsilon$ using a bisection method.
+% TODO: figure
+\fake{Simulated experiment of how many samples are required}.
 
+\begin{algorithm}
+  \caption{\label{alg:on-demand-sampling} The on-demand open-world evaluation methodology}
+\begin{algorithmic}
+  \REQUIRE{
+  A sequence of predicted output sets $X_1, \ldots X_m \subseteq \sX$,
+  a method of evaluating $f(x) = \I[x \in \sY]$ and a method of sampling $x \sim \sY$,
+  desired confidence intervals $\epsilon_\pi$ and $\epsilon_\rho$.
+  }
+  \ENSURE{Unbiased predictions of precision, $\pih_1, \ldots, \pih_m$ and recall $\rhoh_1, \ldots \rhoh_m$.}
 
-\subsection{Application to evaluating KBP}
-% TODO: include specific details to evaluating on KBP.
+  % Collect a dataset Y_0
+  \STATE{Sample a set $\Yh_0$ from $\sY$ based on $\epsilon_\rho$.}
+  % For each sample X_i, 
+  \FOR{$i = 0$ \TO{} $i = m$}
+  % compute the optimal number of samples $n_i$ required to estimate $\pih_i$ to within $\epsilon$ given $\Xh_{1} - \Xh_{i-1}.
+  \STATE{Compute the minimum number of samples $n_i$ required to estimate $\pi_i$ within $\epsilon_\pi$.}
+  % Draw $n_i$ samples from $X_i$ and evaluate $f(x)$ on these samples.
+  \STATE{Evaluate $f(x)$ on $n_i$ samples drawn from $X_i$.}
 
-%There are two key problems to address in on-demand open-world evaluation.
-%%There are two further problems we must address. %three inter-related challenges that we must tackle.
-%First, we must ensure that our estimates of recall accurately reflect open world recall despite us not knowing the complete set of true relations.
-%% being evaluating on an evaluation set constructed from system predictions.
-%% We achieve this by calibrating our scores on a small set of exhaustively annotated documents.
-%Secondly, we must ensure that the relations we sample allow us to compute unbiased precision scores.
-%%entity-level and relation-level precision scores.
-%%  We achieve this through structured sampling.
-%%$Finally, we would to implement our evaluation framework cost-effectively.
-%%  We achieve this by combining annotations across systems and sampling schemes through importance reweighing.
-%We discuss our solutions to these problems next.
+  \FOR{$j = 0$ \TO{} $j = i$}
+    % For j,
+    % Use $\Xh_1 ... \Xh_m$ to evaluate or update $\pih_j$.
+    % Use $\Xh_1 ... \Xh_m$ to evaluate or update $\rhoh_j$.
+    \STATE{Use $\Xh_1, \ldots \Xh_i$ to update estimates for $\pi_j$ and $\rho_j$.}
+  \ENDFOR{}
+  \ENDFOR{}
+\end{algorithmic}
+\end{algorithm}
 
-%On the other hand, it is much easier to verify a relation instance predicted by a system.
-% TODO: outline the structure of the framework better.
-% TODO: this should mention pooled annotations, etc.
-
-
-\subsection{Ensuring open-world recall with exhaustive annotations}
-% A line about pooled recall
-\pl{I think we should use more formal notation from before to be more precise}
-
-The pooled collection of evaluated relations in the evaluation set is unlikely to be an accurate estimate for all the true relations in the corpus and thus the pooled recall would be a biased estimate.
-At the same time, it is impossible to know how many true relations there are in the corpus without annotating it in its entirety.
-We address this problem by obtaining exhaustive annotations on a few documents to correct for the bias in using pooled recall.
-% vv is possibly too much detail.
-%For each sampled document, a crowdworker annotates any entities he/she can find.
-%In a separate task, crowdworkers are then asked to identify relations between every pair of mentions in a single sentence.
-%%\footnote{%
-%%While there certainly are relations across sentences, this requires crowdworkers to evaluate many more mention pairs for relations.}
-%During entity annotation, crowdworkers also link entities to Wikipedia pages if possible, allowing us to perform entity-level evaluation.
-
-%We first evaluate whether exhaustive annotations can be reliably performed by crowdworkers.
-%To do so, we compare crowdsourced annotations against those of expert annotators using data from the TAC-KBP 2015 EDL task~\citep{}.\footnote{%
-%Further details regarding the annotation interface and experiment can be found in \refsec{turk}.
-%}
-%We find that crowdworkers identify 90\% of the entity spans identified by expert annotators and have significant token-level inter-annotator agreement (\fake{$\kappa = 0.8$}), validating the hypothesis that exhaustive annotation crowdsourced.
-
-Then, when evaluating recall, we first estimate recall of the entire evaluation set on the exhaustively annotated documents, and multiply that by the recall of the system on the evaluation set. Through this two-step process we exploit the fact that it is easier to reduce variance by increasing the size of the evaluation set than it is to increase the size of the exhaustive annotation. \refsec{power} provides more details about this variance reduction.
-
-\pl{Sounds too much like an ad-hoc side note;
-this should be part of the problem definition (desired evaluation metric that we're trying to estimate),
-not part of our solution; in other words, should be moved to a previous section
-}
-A final issue to discuss is how documents should be sampled to capture diverse entities that span documents. % to provide better entity-level scores.
-When considering uniformly sampled documents, we that find that only extremely frequent entities like the United States or Barack Obama appear across documents.
-Unfortunately, we do not know which entities are present in which documents to construct a fairer sampling scheme.
-As a heuristic, the 20\% of our exhaustive document collection is sampled uniformly and annotated.
-We then uniformly sample the entities annotated to create a collection of ``query entities''.
-Finally, we construct the remaining 80\% of our document collection by searching for documents that contain the query entities according to an exact string match.
-% TODO: would be nice to quantify 
-
-\subsection{Structured sampling for entity-level and relation-level precision}
-Estimation of relation-level and entity-level scores respectively assumes that relation types and entities are sampled uniformly.
-However, if we were to uniformly sample relations from a typical system's predictions, 
-  we would get a very skewed distribution over relation types and entities and thus bias our estimates.
-We address this problem through two structured sampling schemes.
-
-First, for relation-level scores, we stratify the predicted instances by relation and collect the same number of samples from each relation.
-Secondly, for entity-level scores,  we first sample subject entities uniformly from the predicted KB, then sample fills for that entity, followed by instances for the fill.
-For each such entity, we draw several samples.
-% TODO: show a diagram.
-
-Similarly, the distribution over relation instances for each system and scoring scheme (i.e.\ entity-level and relation-level) will be quite different. We correct for bias through importance reweighing~\citep{}.
+\algorithmref{on-demand-sampling} summarizes the whole approach. 
