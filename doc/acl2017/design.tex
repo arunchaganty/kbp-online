@@ -1,105 +1,91 @@
 \section{On-demand open-world evaluation}
 \label{sec:methodology}
 
-We have shown that the bias in a closed-world evaluation poses an obstacle to innovating new systems.
-We could eliminate the bias if we had exhaustively annotated the entire document corpus so that any relations predicted by systems would already be labeled.
-Unfortunately, this would be a laborious and expensive task:
-  using the interfaces we developed (described in detail in \refsec{evaluation}), it costs about \$30 to annotate a single document with crowdworkers, leading to an estimated cost of at least \$300,000 for a reasonably large corpus of 10,000 documents.
+We have just seen that the bias in closed-world evaluation poses an obstacle to innovating new systems.
+The fundamental problem was a sampling bias towards relation instances from existing systems.
+We could of course completely eliminate the bias by exhaustively annotating the entire document corpus.
+Unfortunately, this would be a laborious and prohibitively expensive task:
+  using the interfaces we developed (described in detail in \refsec{evaluation}), it costs about \$30 to annotate a single document by non-expert crowdworkers, leading to an estimated cost of at least \$300,000 for a reasonably large corpus of 10,000 documents.
 The annotation effort would cost significantly more with expert LDC-style annotation.
 
-In on-demand open-world evaluation, the annotation process is automated so that new predictions can be labeled \textit{when necessary}.
-When a new system or feature has been developed, its predictions are submitted to an evaluation portal.
-If the submitted predictions can not be fairly and accurately evaluated with the data obtained so far,
-  annotations are immediately obtained for a sample of the predicted relations through crowd-sourcing and added into the evaluation set.
-In this way, we push the hard work of finding candidate relations to automated systems and instead focus annotation effort on the much easier task of verifying relation predictions.
-At the end of this process, systems are guaranteed to obtain fair instance-level, relation-level and entity-level scores.
+In constrast, with on-demand open-world evaluation, we take a lazy approach by annotating underrepresented data \textit{only when required}.
+In this section, we cover the technical details that allow us to accurately estimate evaluation metrics without bias in a cost-effective manner. 
+
+% Move to a KBP centric section.
+%When a new system or feature has been developed, its predictions are submitted to an evaluation portal.
+%If the submitted predictions can not be fairly and accurately evaluated with the data obtained so far,
+%  annotations are immediately obtained for a sample of the predicted relations through crowd-sourcing and added into the evaluation set.
+%In this way, we push the hard work of finding candidate relations to automated systems and instead focus annotation effort on the much easier task of verifying relation predictions.
+%At the end of this process, systems are guaranteed to obtain fair instance-level, relation-level and entity-level scores.
 
 \subsection{Problem statement}
 
 Let us define the task formally.
 Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
-  $X \subseteq \sX$ be a known subset that corresponds to the predicted output from a system,
-  and $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$.
-In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ or for samples from $\sY$ for a certain cost and must estimate the precision, $\pi$, and recall, $\rho$, of the predictions $X$ within a certain confidence interval $\epsilon$.
+  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
+  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems.
+Furthermore, let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Our goal is estimate the precision, $\pi_i$, and recall, $\rho_i$, of the set of predictions $X_i$ within a certain confidence interval $\epsilon$.
+To do so, in on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (by having crowdworkers validate a system's prediction) or for samples from $\sY$ (by exhaustively annotating a document) at a certain (monetary) cost.
 
-Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g(x) = \I[x \in X]$, then:
+Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then:
 \begin{align*}
-  \pi  &\eqdef \E_{x \sim X}[f(x)] &
-  \rho &\eqdef \E_{x \sim \sY}[g(x)],
+  \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
+  \rho_i &\eqdef \E_{x \sim \sY}[g_i(x)],
 \end{align*}
-where $x$ is sampled from $X$ and $\sY$ according to distributions $p(x)$ and $p'(x)$ respectively.
-We assume that $p(x)$ is known, e.g.\ the uniform distribution over $X$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
+where $x$ is sampled from $X_i$ and $\sY$ according to distributions $p_i(x)$ and $p'(x)$ respectively.
+We assume that $p_i(x)$ is known, e.g.\ the uniform distribution over $X_i$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
 
-Finally, to make evaluation cost-effective, we would like to reduce the combined cost of evaluating $m$ sets of predictions from different systems, $X_1, \ldots X_m \subseteq \sX$, with corresponding distributions $p_1, \ldots p_m$.
+Clearly, $\pi_i$ and $\rho_i$ can both be estimated by sampling from $X_i$ and $\sY$ respectively.
+However, simple statistics tell us that we would require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$ point, which can be quite costly on a per-system basis.
+We'd like be able to reuse the samples we've collected to evaluate, say $\pi_i$ when evaluating $\pi_j$.
+In the rest of this section, we'll see how to do this by answering the following three key questions:
+\begin{enumerate}
+  \item Suppose we have evaluated $f(x)$ on samples $\Xh_1, \ldots, \Xh_m$ from $X_1, \ldots, X_m$ respectively. How should we best use all of these samples when estimating $\pi_i$?
+  \item Can we use the samples $\Xh_1, \ldots, \Xh_m$ when estimating $\rho_i$ in conjunction with samples $\Yh_0$ from $\sY$?
+  \item Finally, in practice, we only see the sets $X_1, \ldots, X_m$ sequentially, as they are submitted to the evaluation platform. In this case, how many samples should we draw from $X_m$, given existing samples $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$?
+\end{enumerate}
 
-\paragraph{Estimation via sampling.}
+\subsection{Amortizing costs when estimating precision}
 
-By expressing precision and recall as expectations above, we can evaluate these metrics by sampling from $X$ and $\sY$ and evaluating $f(x)$ and $g(x)$ respectively.
-Indeed, it is hard to do better for a single $X$ without additional information regarding $X$ or the system that produced it.
-However, standard statistics tells us that to estimate $\pi$ and $\rho$ to within $\epsilon$ requires about $1/\epsilon^2$ samples.
-If we want $\epsilon$ to be less than $0.01$ (1\%), we need at least 10,000 samples which can be quite costly to obtain on a per-system basis.
-On the other hand, if all the sets and distributions were identical, than the individual costs could be amortized by a factor of $1/m$ by using the same samples across all the $X_i$.
-In the next two parts we discuss how we can reuse samples when all the $X_i$ are different.
+Intuitively, if a set $X_j$ has a significant overlap with $X_i$, we expect that we should be able to its samples when estimating $\pi_i$.
+However, it might be case that $X_j$ overlaps with $X_i$ only when $p_i(x)$ is relatively small, in which case the sample $\Xh_j$ is not representative of $X_i$ and a naive combination could lead to the wrong estimate of $\pi_i$.
+We address this problem by using ideas from importance sampling \citep{owen}.
 
-\subsection{Importance reweighting in estimating precision}
-\newcommand{\Xh}{{\hat{X}}}
-\newcommand{\fh}{{\hat{f}}}
-\newcommand{\muh}{{\hat{\mu}}}
-
-Let us suppose we have collected samples $\Xh_i$ from the sets $X_i$ according to the distribution $p_i(x)$ for each $i$.
-Clearly each $\Xh_i$ can be used to estimate $\pi_i$, but can we use the samples obtained from $X_i$ when estimating $\pi_j$?
-To do so, we'll exploit importance reweighing that allows us to estimate $\E_{p_1}[f(x)]$ using samples from $p_2(x)$ by using the estimator: $\frac{1}{n}\sum_{i=1}^n \frac{p_1(x_i)}{p_2(x_i)} f(x_i)$ 
-
+In particular, the estimator that we propose is:
+\begin{align*}
+  \pih_i &= \sum_{j=1}^m w_{ij} \frac{1}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
+\end{align*}
+where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
+This last condition is easy to guarantee by setting $w_{ii} > 0$.
+In \appendixref{sampling} we prove that $\pih_i$ is an unbiased estimator of $\pi_i$ and also work out an expression for its variance. 
+This expression of course depends on $f(x)$, but the general intuition is that 
+$\pih_i$ will have high variance if $q_i(x) \ll p_i(x)$.
+Consequently, we propose choosing $w_{ij} \propto \sum_{x} p_i(x) p_j(x)$, the shared probability mass between $X_i$ and $X_j$.
 
 % TODO: Figure that compares our scheme with equivalent of pooling.
-We would like to combine the different 
-Let us start by estimating precision.
+\fake{On simulated experiments on the TAC-KBP dataset, we find a 4-fold decrease in variance using the proposed $\pih$ 
+when compared to estimating $\pi_i$ solely using $\Xh_i$}.
 
-To address this, we will consider the distribution that is a \textit{mixture} of existing distributions and some samples from the target set to guarantee support coverage.
-Let $\pi = (\pi_1, \ldots, \pi_m)$ be a valid mixture distribution (i.e. $\pi_i \ge 0, \sum_{i} \pi_i = 1$),
-and let the proposal distribution be $q(x) = \sum_i \pi_i p_i(x)$.
-The sample set we are estimating from is $Y = (\Xh_1, \ldots, \Xh_m)$, which consists of samples drawn from every $X_i$.
-We would like to find the optimal $\pi$ for a $\mu_i$.
-Note that we have sampled our sets $X_i$ before hand and would like to fuse them together optimally.
-This is different than if we were considering sampling from $q(x)$: the optimal distribution to estimate $\mu_i$ would of course be $p_i$.
+\subsection{Amortizing costs when estimating recall}
+When estimating recall, we must square the reality that drawing samples from $\sY$ is very expensive because it requires exhaustive annotation: in our experiments we found that it cost roughly 10 times as much to sample from $\sY$ as it does to evaluate $f(x)$.
+In contrast, it is very easy to estimate the recall of a system $i$ relative to all the pool of all other submitted systems.
+We exploit the fact that the recall of a system $i$, $\rho_i$ can also be expressed as the recall of the system \textit{relative} to the pool, $\nu_i$ and the recall of the pool itself $\theta$: $\rho_i = \theta \nu_i$.
 
-Our proposed estimator is $\muh_i = \sum_{j=1}^m \frac{\pi_j}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x)}{q(x)} f(x)$.
-First, let's confirm that this estimator is unbiased:
+With this in mind, we use a smaller sample $\Yh_0$ from $\sY$ to estimate $\theta$ and then use the rest of $\Xh$ to estimate $\nu_i$.
+In \appendixref{sampling} we show that the final estimator, $\rhoh_i \eqdef \thetah \nuh_i$, is unbiased and has a variance of,
 \begin{align*}
-  \E_{Y}[\muh_i] 
-  &= \sum_{j=1}^m \frac{\pi_j}{|\Xh_j|} |\Xh_j| \E_{p_j}[\frac{p_i(x)}{q(x)} f(x)] \\
-  &= \sum_{j=1}^m \pi_j \sum_{x \in \sX} p_j(x) \frac{p_i(x)}{q(x)} f(x) \\
-  &= \sum_{x \in \sX} (\sum_{j=1}^m \pi_j p_j(x)) \frac{p_i(x)}{q(x)} f(x) \\
-  &= \sum_{x \in \sX} q(x) \frac{p_i(x)}{q(x)} f(x) \\
-  &= \sum_{x \in \sX} p_i(x) f(x) \\
-  &= \mu.
+  \sigma^2_\rho &= \theta \sigma^2_\nu + \nu_i \sigma^2_\theta + \sigma^2_\nu \sigma^2_\theta.
 \end{align*}
+With sufficient samples, $\sigma^2_\nu$ can be made quite small, so that the leading term in the variance is $\nu_i \sigma^2_\theta$: because typically $\nu_i < 0.5$, we expect the variance of our proposed estimator to be less than that of the estimator constructed by using $\Yh_0$ alone.
 
-Now let's compute the variance.
-Let  $\mu_{ij} = \E_{p_j}[\frac{p_i(x)}{q(x)} f(x)]$, so that $\mu_i = \sum_i \pi_i \mu_{ij}$.
-First of all, let's consider the variance in estimating a single pair: 
-\begin{align*}
-  \Var_{p_j}[\frac{p_i(x)}{q(x)} f(x)]
-  &= \sum_{x \in \sX} p_j(x) \frac{{(p_i(x) f(x))}^2}{{q(x)}^2} - \mu_{ij}^2 \\
-  &= \sigma_{ij}^2.
-\end{align*}
+% TODO: figure
+\fake{On simulated experiments on the TAC-KBP dataset, we find a 2-fold decrease in variance using the proposed estimator $\rhoh$ 
+when compared to estimating $\rho_i$ solely using $\Yh_0$}.
 
-Now, we also know that $\frac{1}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x)}{q(x)} f(x)$ will have variance $\frac{\sigma_{ij}^2}{|\Xh_j|}$; to keep expressions simple, we'll roll in this scaling factor into $\sigma_{ij}^2$.
-Note that both $\mu_{ij}$ and $\sigma_{ij}^2$ depend on $\pi$ through $q(x)$.
+\subsection{Adaptively drawing samples for new sets}
+A desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.
 
-The variance of $\muh_i$ is now:
-\begin{align*}
-  \Var_{Y}[\muh_i]
-  &= \sum_{j=1}^m \pi_j^2 \sigma_{ij}^2,
-\end{align*}
-because each set $\Xh_i$ is independent.
-
-Some takeaways are that $\pi_{j} \propto \sigma_{ij}^{-2}$ and that $\sigma_{ij}$ depends on the difference in how much mass $p_j$ places on $f(x)$.
-
-
-
-\subsection{Unbiased estimation of recall}
-% TODO: Figure that compares our scheme with equivalent of pooling.
 
 \subsection{Application to evaluating KBP}
 % TODO: include specific details to evaluating on KBP.

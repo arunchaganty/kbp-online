@@ -2,69 +2,68 @@
 \section{Annotation interfaces}
 \label{sec:interface}
 
-\section{Sampling procedure.}
+\section{Theoretical proofs for the sampling procedures}
 \label{sec:sampling}
 
-\subsection{Problem statement}
+Let's recall the notation from \refsec{design}.
 
-The core challenge of evaluating data on-demand is to be able to be able to reuse information collected when evaluating one system for other systems without introducing bias.
-Let's begin by proposing a 
-In this section, we will address this problem in a general setting.
+Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
+  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
+  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems,
+  and $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Furthermore, 
+  let $\Xh_i$ be independent samples of $n_i$ elements drawn from $X_i$ with the distribution $p_i$,
+  $\Yh_i$ be the intersection of these sets with $\sY$, and
+  $\Yh_0$ be a sample drawn from $\sY$ according to an unknown distribution $p'(x)$.
 
-Let $\sX$ be the universe of objects we wish to sample from (e.g.\ relation instances).
-Let $X_1, X_2, X_3, \ldots \subseteq \sX$ be subsets of these items (corresponding to the output from different systems),
-and let $p_1$, $p_2$, \ldots be distributions corresponding to each set of items, i.e. $p_i$ has support $X_i$.
-We would like to evaluate the expectation of a metric (e.g.\ precision) $f$: $\E_{p_i(x)}[f(x)]$ using samples from each $X_i$. We further assume that $f(x)$ is bounded between $0$ and $1$.
-Additionally, we would like to evaluate the expectation conditioned on an event $g(x) = 1$ (recall): $\E_{p_i(x)}[f(x) \given g(x)]$.
-
-If we didn't care about reusing samples, we would simply draw some $n$ samples, $\Xh_i$, from $X_i$ using $p_i$.
-One common approach for adapting samples that came from a different distribution is importance reweighing.
-Under this scheme, if samples from a distribution $q(x)$ are used to estimate a metric over $p(x)$, the samples are reweighed as follows: $\frac{1}{n} \sum_{i=1}^n \frac{p(x_i)}{q(x_i)} f(x_i)$.
-It is easy to see that this estimator is unbiased as long as the support of $q$ contains the support of $p$.
-Unfortunately, this does not hold in our scenario and in general it is impossible to sample a metric using samples from a different support without potentially significant bias.
-
-To address this, we will consider the distribution that is a \textit{mixture} of existing distributions and some samples from the target set to guarantee support coverage.
-Let $\pi = (\pi_1, \ldots, \pi_m)$ be a valid mixture distribution (i.e. $\pi_i \ge 0, \sum_{i} \pi_i = 1$),
-and let the proposal distribution be $q(x) = \sum_i \pi_i p_i(x)$.
-The sample set we are estimating from is $Y = (\Xh_1, \ldots, \Xh_m)$, which consists of samples drawn from every $X_i$.
-We would like to find the optimal $\pi$ for a $\mu_i$.
-Note that we have sampled our sets $X_i$ before hand and would like to fuse them together optimally.
-This is different than if we were considering sampling from $q(x)$: the optimal distribution to estimate $\mu_i$ would of course be $p_i$.
-
-Our proposed estimator is $\muh_i = \sum_{j=1}^m \frac{\pi_j}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x)}{q(x)} f(x)$.
-First, let's confirm that this estimator is unbiased:
+We would like to evaluate precision, $\pi_i$, and recall, $\rho_i$:
 \begin{align*}
-  \E_{Y}[\muh_i] 
-  &= \sum_{j=1}^m \frac{\pi_j}{|\Xh_j|} |\Xh_j| \E_{p_j}[\frac{p_i(x)}{q(x)} f(x)] \\
-  &= \sum_{j=1}^m \pi_j \sum_{x \in \sX} p_j(x) \frac{p_i(x)}{q(x)} f(x) \\
-  &= \sum_{x \in \sX} (\sum_{j=1}^m \pi_j p_j(x)) \frac{p_i(x)}{q(x)} f(x) \\
-  &= \sum_{x \in \sX} q(x) \frac{p_i(x)}{q(x)} f(x) \\
-  &= \sum_{x \in \sX} p_i(x) f(x) \\
-  &= \mu.
+  \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
+  \rho_i &\eqdef \E_{x \sim \sY}[g_i(x)],
 \end{align*}
 
-Now let's compute the variance.
-Let  $\mu_{ij} = \E_{p_j}[\frac{p_i(x)}{q(x)} f(x)]$, so that $\mu_i = \sum_i \pi_i \mu_{ij}$.
-First of all, let's consider the variance in estimating a single pair: 
+In \refsec{design}, we proposed the following estimator for $\pi_i$:
 \begin{align*}
-  \Var_{p_j}[\frac{p_i(x)}{q(x)} f(x)]
-  &= \sum_{x \in \sX} p_j(x) \frac{{(p_i(x) f(x))}^2}{{q(x)}^2} - \mu_{ij}^2 \\
-  &= \sigma_{ij}^2.
+  \pih_i &\eqdef \sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align*}
+where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
 
-Now, we also know that $\frac{1}{|\Xh_j|} \sum_{x \in \Xh_j} \frac{p_i(x)}{q(x)} f(x)$ will have variance $\frac{\sigma_{ij}^2}{|\Xh_j|}$; to keep expressions simple, we'll roll in this scaling factor into $\sigma_{ij}^2$.
-Note that both $\mu_{ij}$ and $\sigma_{ij}^2$ depend on $\pi$ through $q(x)$.
+\begin{theorem}[Statistical properties of $\pih_i$]
+  $\pih_i$ is an unbiased estimator of $\pi_i$ and has a variance of:
+  \begin{align*}
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+  \end{align*}
+  where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
+\end{theorem}
+\begin{proof}
+  Let $\Xh = (\Xh_1, \ldots, \Xh_m)$ which is drawn from the product distribution of $p_1 \times p_m$.
+  By independence and the linearity of expectation, 
+  \begin{align*}
+    \E_{\Xh}\left[\sum_{j=1}^m f(\Xh_j) \right] &= \sum_{j=1}^m \E_{\Xh_j}[f(\Xh_j)].
+  \end{align*}
 
-The variance of $\muh_i$ is now:
-\begin{align*}
-  \Var_{Y}[\muh_i]
-  &= \sum_{j=1}^m \pi_j^2 \sigma_{ij}^2,
-\end{align*}
-because each set $\Xh_i$ is independent.
+  First, let's show that $\pih_i$ is unbiased:
+  \begin{align*}
+    \E_{\Xh}[\pih_i] 
+    &= \E_{\Xh}\left[\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j}{n_j} \E_{\Xh_j}\left[\sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j}{n_j} n_j \E_{p_j}\left[\frac{p_i(x) f(x)}{q_i(x)}\right] \\
+    &= \sum_{j=1}^m w_j \sum_{x \in \sX} p_j(x) \frac{p_i(x) f(x) }{q_i(x)}\\
+    &= \sum_{x \in \sX} \sum_{j=1}^m w_j p_j(x) \frac{p_i(x) f(x) }{q_i(x)}\\
+    &= \sum_{x \in \sX} q_i(x) \frac{p_i(x) f(x)}{q_i(x)} \\
+    &= \sum_{x \in \sX} p_i(x) f(x) \\
+    &= \pi_i.
+  \end{align*}
 
-Some takeaways are that $\pi_{j} \propto \sigma_{ij}^{-2}$ and that $\sigma_{ij}$ depends on the difference in how much mass $p_j$ places on $f(x)$.
-
-Q. Can I quantify the mass to place on a particular thing based on set overlap? That's one obvious way of doing it with set sizes.
+  Now let's compute the variance.
+  \begin{align*}
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} \right]
+    - \sum_{j=1}^m \frac{w_j^2}{n_j} {\E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]}^2 \\
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} - \frac{\pi_{ij} p_i(x) f(x)}{q_i(x)} \right] \\
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+  \end{align*}
+  where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
+\end{proof}
 
 \paragraph{Estimating recall}
 
