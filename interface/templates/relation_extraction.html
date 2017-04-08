@@ -1,0 +1,189 @@
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
+<head>
+<title>kbpo -- relation extraction</title>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title></title>
+<meta name="description" content="">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<!-- CDN hosted -->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js" integrity="sha256-0rguYS0qgS6L4qVzANq4kjxPLtvnp5nn2nB5G1lWRv4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js" integrity="sha256-Gn7MUQono8LUxTfRA0WZzJgTua52Udm1Ifrk5421zkA=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js" integrity="sha256-S20kSlaai+/AuQHj3KjoLxmxiOLT5298YvzpaTXtYxE=" crossorigin="anonymous"></script>
+
+<!-- Locally hosted external files-->
+<!--
+        <link rel="stylesheet" href="css/font-awesome.min.css">
+        <script src="js/jquery-3.1.1.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="js/js.cookie.js"></script>-->
+
+<!-- Locally hosted internal files-->
+<link rel="stylesheet" href="css/bootstrap-theme.min.css">
+<link rel="stylesheet" href="css/kbpo.css">
+<script src="js/defs.js"></script>
+<script src="js/kbpo.js"></script>
+<script src="js/instruction-widget.js"></script>
+<script src="js/mturk.js"></script>
+<style>
+span.type-marker{
+    display:none;
+}
+
+</style>
+</head>
+<body>
+
+
+<div class="container">
+    <!-- Example row of columns -->
+    <div class="row">
+        <h1>Identify relationships between entities <small>Use the buttons at the bottom of the screen.</small></h1>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="row">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div class="document short" id="document">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="relation-row">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2 class="panel-title"><b>Pick a relation</b>
+                            <span class="pull-right">
+                            </span>
+                            <div class="clearfix"></div>
+                        </h2>
+                    </div>
+                    <div class="panel-body" id="relations">
+                        <div id="relation-option-preview" class="well">
+                        </div>
+
+                        <div class="btn-group" id="relation-options"  role="group">
+                        </div>
+
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h2 class="panel-title"><b>Examples</b>
+                                </h2>
+                            </div>
+                            <div class="panel-body">
+                                <ul id="relation-examples">
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <form class ='input-group' id='mturk_form' action="" method="POST">
+                <div class="panel panel-default">
+                    <div class="panel-body" style='padding:5px;'>
+                        <p>
+                        <b>Estimated time:</b> <span id="estimated-time">10 minutes</span>
+                        </p>
+                        <p>
+                        <b>Reward:</b> <span id="reward">$6.00</span>
+                        </p>
+
+
+                        <button id="instructions" class="btn btn-default"><span class='fa fa-info-circle fa-lg fa-fw'> </span> Instructions</button>
+                        <button id="back" class="btn navbar-btn btn-warning" disabled><span class="glyphicon glyphicon-chevron-left"></span> Back</button>
+                        <button id="done" class="btn btn-success" disabled type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
+                        <input id="document-input" name="document" value="" type="hidden" />
+                        <input id="relations-output" name="relations" class = 'data' value="" type="hidden" />
+                        <input type="hidden" name="assignmentId" id="assignmentId" value="" />
+                        <input type="hidden" name="docId" id="docId" value="" />
+             		<input type="hidden" name="td" id="td" value="" />
+
+                    </div>
+                </div>
+
+                <h2>Identified relations</h2>
+
+                <div id="relations-list" class="list-group">
+                    <button type="button" id="extraction-empty" class="list-group-item extraction" disabled=true>No relations identified yet</button>
+                    <button type="button" id="extraction-template" class="hidden list-group-item extraction">
+                        <span class="relation-sentence">
+                        </span>
+                        <span class="badge cancel">
+                            <span class="glyphicon glyphicon-pencil"></span>
+                        </span>
+                    </button>
+                </div>
+                    <div class="panel panel-default">
+                        <div class="panel-body" style='padding:5px;'>
+                            <textarea name="comment" form="mturk_form" placeholder="Any comments, suggestions, improvements, questions?" style='width:100%; height:100px;'></textarea>
+                        </div>
+                    </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<div id="widgets" class="hidden">
+    <button id="relation-option-widget" class="relation-option btn btn-default">
+        <img class="hidden" height='30'></img>
+        <span class="hidden icon fa fa-2x fa-fw" style='min-width:30px; min-height:30px;' ></span>
+        <p>{short}</p>
+    </button>
+</div>
+
+
+
+<div id="modals">
+</div>
+<script type="text/javascript">
+var docWidget;
+var relnWidget;
+var mainInterface;
+var instructionWidget = new InstructionWidget('relation_extraction', 'instructions/relation_extraction.html');
+
+function reportCostTime(cost, time) {
+    var time = parseInt(time);
+    var lowerTime = Math.floor(.8 * time / 60);
+    var upperTime = Math.ceil(1.2 * time / 60);
+    $("#reward").text("$" + cost);
+    $("#estimated-time").text(lowerTime + " - " + upperTime + " minutes");
+}
+
+function initialize_interface(data){
+    console.log("loaded document.");
+    docWidget = new DocWidget($("#document"));
+    docWidget.load(data);
+
+    relnWidget = new RelationWidget($("#relations"));
+    listWidget = new RelationListWidget($("#relations-list"));
+    mainInterface = new RelationInterface(docWidget, relnWidget, listWidget);
+
+    mainInterface.run(data.mentions);
+}
+
+//$.getJSON("data/doc1.json", function(data) {
+</script>
+<script src="js/mturk.js"></script>
+<script type="text/javascript">
+var turkHelper = new TurkHelper();
+reportCostTime(turkHelper.getUrlVars()['reward'], turkHelper.getUrlVars()['est_time']);
+turkHelper.initialize_doc(turkHelper.getUrlVars()['doc_id']);
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
+    <head>
+        <title>kbpo -- Entity extraction</title>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <style>
+            body {
+                padding-top: 50px;
+                padding-bottom: 20px;
+            }
+        </style>
+
+        <!-- CDN hosted -->
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js" integrity="sha256-0rguYS0qgS6L4qVzANq4kjxPLtvnp5nn2nB5G1lWRv4=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js" integrity="sha256-Gn7MUQono8LUxTfRA0WZzJgTua52Udm1Ifrk5421zkA=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js" integrity="sha256-S20kSlaai+/AuQHj3KjoLxmxiOLT5298YvzpaTXtYxE=" crossorigin="anonymous"></script>
+
+
+        <!-- Locally hosted external files-->
+        <!--<link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="css/font-awesome.min.css">
+        <script src="js/jquery-3.1.1.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="js/moment.min.js"></script>
+        <script src="js/js.cookie.js"></script>-->
+
+        <!-- Locally hosted internal files-->
+        <script src="js/defs.js"></script>
+        <script src="js/kbpo.js"></script>
+        <script src="js/interface.js"></script>
+        <script src="js/date-widget.js"></script>
+        <script src="js/instruction-widget.js"></script>
+        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="css/interface.css">
+        <link rel="stylesheet" href="css/kbpo.css">
+        <script src="js/levenshtein.min.js"></script>
+
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+
+
+<div class="container">
+  <!-- Example row of columns -->
+  <div class="row">
+    <h1>Identify entities in the article <small>Select words and use the interface on the right.</small></h1>
+  </div>
+  <div class="row">
+    <div class="col-md-9">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <div class="document" id="document">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="entity-pane" class="col-md-3">
+    <form class ='input-group' id='mturk_form' action="" method="POST">
+      <div class = "row">
+        <div class="panel panel-default">
+            <div class="panel-body" style='padding:5px;'>
+              <p>
+              <b>Estimated time:</b> <span id="estimated-time">10 minutes</span>
+              </p>
+              <p>
+              <b>Reward:</b> <span id="reward">$6.00</span>
+              </p>
+
+                    <button type="button" id="instructions" class="btn btn-default" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
+                    <input type="hidden" name="assignmentId" id="assignmentId" value="" />
+                    <input type="hidden" name="docId" id="docId" value="" />
+                    <input id="document-input" name="document" value="" type="hidden" />
+                    <input id="entities-output" name="entities" value="" type="hidden" />
+                    <button id="done" class="btn btn-success" type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
+                    <!--<input id="submitButton" class = 'hidden' type="submit" name="submit" value="Submit" />-->
+             	    <input type="hidden" name="td" id="td" value="" />
+
+            </div>
+        </div>
+    </div>
+    <div class = "row">
+        <div class="panel panel-default">
+          <div id="entity-panel" class="panel-body">
+            <h4>Select Entity to link:</h4>
+
+            <div id="entities" class="list-group">
+              <button type="button" id="entity-empty" class="list-group-item entity" disabled=true>No entities yet</button>
+              <button type="button" id="entity-template" class="btn hidden list-group-item entity"><i class="fa fa-fw {icon}"></i>{gloss}<sup>{id}</sup></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id ="add-entity-widget" class="row">
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <h4> Add New Entity:</h4>
+            <div id='types' class="btn-group" role="group">
+              <button id="type-template" type="button" class="hidden type btn btn-secondary"><span class="fa fa-fw {icon}"></span>{name}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id ="remove-span-widget" class="row hidden">
+        <div class="panel panel-default">
+            <div class="panel-body">
+            <h4> Delete Span:</h4>
+            <button id="remove-span" class="btn btn-danger btn-block" type="button" name=""> Remove Span </button>
+          </div>
+        </div>
+      </div>
+    <div class = "row">
+        <div class="panel panel-default">
+            <div class="panel-body" style='padding:5px;'>
+            <textarea name="comment" form="mturk_form" placeholder="Any comments, suggestions, improvements, questions?" style='width:100%; height:100px;'></textarea>
+            </div>
+        </div>
+    </div>
+                </form>
+    </div>
+  </div>
+
+</div> <!-- /container -->        
+
+<!-- Wikification Modal -->
+<div class="modal fade" id="wiki-linking-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="linkingModalLabel">Link to Wikipedia entry</h4>
+    </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-lg-12">
+		  <h5> Guidelines: </h5>
+		   <ul>
+		  <li> Given below are Wikipedia pages we think might be for the entity you selected.</li>
+		  <li> Click on <button type="button" class="btn btn-success btn-xs disabled" onclick='' ><i class="fa fa-fw fa-check-circle-o"></i>Link</button> for the corresponding entry if you think it is the correct wikipedia page.</li>
+		  <li> Otherwise click on <button type="button" class="btn btn-danger disabled" onclick='' ><i class="fa fa-fw fa-times-circle-o"></i>No Link</button> at the bottom of the list.</li>
+		  <li> If you think this entity has a Wikipedia page that hasn't shown up, you can search for it via the search bar.</li>
+			</ul>
+
+            <form class="input-group">
+                <input type="text" id='wiki-search-input' name='search_input' class="form-control" placeholder="Search for..." onkeydown = "if (event.keyCode == 13){event.preventDefault();
+                document.getElementById('submit-wiki-search').click(); return false;}">
+              <span class="input-group-btn">
+                <button id ="submit-wiki-search" type="button" class="btn btn-default">Search</button>
+              </span>
+            </form><!-- /input-group -->
+            <br>
+            <div id='wiki-search-results' class="list-group">
+              <div  class="list-group-item wiki-entry wiki-entry-template hidden">
+<button type="button" class="btn btn-success btn-xs" style='float:right;' onclick='' ><i class="fa fa-fw fa-check-circle-o"></i>Link</button>
+                <h5 class="list-group-item-heading">
+                </h5>
+                <p class="list-group-item-text"></p>
+              </div>
+              <div  class="list-group-item wiki-entry none-wiki-entry">
+<button type="button" id = 'no-wiki-link' class="btn btn-danger btn-block" style='float:auto;' onclick='' ><i class="fa fa-fw fa-times-circle-o"></i>No Link</button>
+                <p class="list-group-item-text"></p>
+              </div>
+            </div>
+          </div><!-- /.col-lg-6 -->
+        </div><!-- /.row -->
+	</div>
+      </div>
+  </div>
+</div>
+
+<!-- date-widget Modal -->
+<div class="modal fade" id="date-widget-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+          <h4 class="modal-title" id="linkingModalLabel">Ground the date</h4>
+      </div>
+      <div class="modal-body">
+          <p> Document was published on: <span id='doc-date'></span></p>
+          <p> Date to be grounded: <span id='date-gloss'><span></p>
+          <form>
+              <div class="row">
+
+                  <div class="col-lg-9">
+                          <div class="list-group">
+                              <div class="list-group-item">
+                                  <div class="input-group">
+                                      <div class='form-inline'>
+                                          <input type="radio" name = "week-or-date" value = 'day' aria-label="day">
+                                          <div class="form-group">
+                                              <label for="month-select">Month</label>
+                                              <select name="month" class="form-control" id="month-select" placeholder="MM">
+                                                  <!--  <option value="volvo">Volvo</option>-->
+                                              </select>
+                                          </div>
+                                          <div class="form-group">
+                                              <label for="date-select">Day</label>
+                                              <select name="day" class="form-control" id="month-select" placeholder="DD">
+                                                  <!--  <option value="volvo">Volvo</option>-->
+                                              </select>
+                                          </div>
+                                      </div>
+                                  </div><!-- /input-group -->
+
+                              </div>
+                              <div class="list-group-item">
+                                  <div class="input-group">
+                                      <div class='form-inline'>
+                                          <input type="radio" name='week-or-date' value='week' aria-label="week">
+                                          <div class="form-group">
+                                              <label for="week-select">Week</label>
+                                              <select name="week" class="form-control" id="week-select" placeholder="WW" disabled>
+                                                  <!--  <option value="volvo">Volvo</option>-->
+                                              </select>
+
+                                          </div>
+                                      </div>
+                                  </div><!-- /input-group -->
+                              </div>
+                              <div class="list-group-item">
+                                  <div class="input-group">
+                                      <div class='form-inline'>
+                                          <div class="form-group">
+                                              <input type="radio" name = "week-or-date" value = 'neither' aria-label="neither">
+                                              <label for="date-select">Neither applicable</label>
+                                          </div>
+                                      </div>
+                                  </div><!-- /input-group -->
+
+                              </div>
+                          </div>
+                  </div><!-- /.col-lg-6 -->
+                  <div class="col-lg-3">
+                      <div class="form-group">
+                          <label for="year-select">Year</label>
+                          <select name="year" class="form-control" id="year-select" placeholder="YYYY">
+                              <!--  <option value="volvo">Volvo</option>-->
+                          </select>
+                      </div>
+                  </div><!-- /.col-lg-6 -->
+              </div><!-- /.row -->
+          </form>
+          <h4> Guidelines: </h4>
+           <ul>
+          <li> Choose either month-year or week or neither to report </li>
+          <li> Mark only the information that you can deduce </li>
+          <li> Document date and week is shown in bold in the dropdown for reference </li>
+          <li> Use NA option to indicate unknown fields. For instance in "February 2017", date is unknown </li>
+            </ul>
+      </div>
+      <div class="modal-footer">
+        <button id='link-date-submit' type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="modals">
+</div>
+        <script type="text/javascript">
+var docWidget = new DocWidget($("#document"));
+var listWidget = new EntityListWidget($("#entities"));
+var addEntityWidget = new AddEntityWidget($("#add-entity-widget"));
+var removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"));
+var linkWidget = new LinkWidget($("#wiki-linking-modal"));
+var dateWidget = new DateWidget($("#date-widget-modal"));
+var instructionWidget = new InstructionWidget('entity_extraction', 'instructions/entity_extraction.html');
+var mainInterface = new EntityInterface(docWidget, listWidget, addEntityWidget, removeSpanWidget, linkWidget);
+
+function reportCostTime(cost, time) {
+  var time = parseInt(time);
+  var lowerTime = Math.floor(.8 * time / 60);
+  var upperTime = Math.ceil(1.2 * time / 60);
+  $("#reward").text("$" + cost);
+  $("#estimated-time").text(lowerTime + " - " + upperTime + " minutes");
+}
+
+//$.getJSON("data/doc1.json", function(data) {
+function initialize_interface(data){
+  console.log("loaded data.");
+  console.log(data);
+  docWidget.load(data);
+  dateWidget.setDocDate(data.date);
+  if (data["suggested-mentions"]) {
+    docWidget.setSuggestions(data["suggested-mentions"]);
+  }
+}
+        </script>
+        <script src="js/mturk.js"></script>
+        <script type="text/javascript">
+            var turkHelper = new TurkHelper();
+            reportCostTime(turkHelper.getUrlVars()['reward'], turkHelper.getUrlVars()['est_time']);
+            turkHelper.initialize_doc(turkHelper.getUrlVars()['doc_id']);
+        </script>
+        </body>
+
+</html>
