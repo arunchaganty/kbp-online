@@ -1,7 +1,7 @@
 % vim:ft=tex
 % Diagram depciting how mention-level and entity-level scores are
 % computed.
-\documentclass[tikz,convert={outfile=overview.pdf}]{standalone}
+\documentclass[tikz,convert={outfile=evaluation-overview.pdf}]{standalone}
 %\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
 \usepackage{scabby-diag}
 \usetikzlibrary{fit}
