@@ -1,0 +1,78 @@
+% vim:ft=tex
+% Diagram depciting pooling.
+\documentclass[tikz]{standalone}
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+
+\usepackage{amssymb}
+\usepackage{scabby-diag}
+\usetikzlibrary{calc}
+\usetikzlibrary{fit}
+\usetikzlibrary{patterns}
+
+\begin{document}
+
+\newcommand\encircle[1]{%
+\raisebox{.5pt}{\textcircled{\raisebox{-.9pt} {#1}}}}
+
+\begin{tikzpicture}[
+    correct/.style = {fill=green},
+    incorrect/.style = {pattern=north east lines, pattern color=red},
+    node/.style = {circle, minimum size=3em},
+    sysa/.style = {draw, circle, dashed, thick, purple},
+    sysb/.style = {draw, circle, dotted, thick, blue},
+    output/.style = {inner sep=-3pt},
+    duplicate/.style = {draw, rectangle, thick, red},
+    part/.style = {draw, rectangle, dashed, black, thick},
+    ]
+    \newcommand{\spacing}{0.2}
+    \newcommand{\Cross}{\color{red}$\times$}%
+    \newcommand{\Checkmark}{$\color{green}\checkmark$}
+    \newcommand{\Question}{\color{blue}?}
+
+    \point{sys-ref}{(0,0)};
+    \node[anchor=north west] (sys-h) at ($(sys-ref) + (0, -0.2*\spacing)$) {Annotators};
+    \node[anchor=north west] (sys-a) at ($(sys-h.south west) + (0, -2*\spacing)$) {System A};
+    \node[anchor=north west] (sys-b) at ($(sys-a.south west) + (0, -2*\spacing)$) {System B};
+
+    \draw[dashed] ($(sys-b.south west) + (0, -2.5*\spacing)$) -- ++(5.7,0);
+
+    \node[anchor=north west] (sys-c) at ($(sys-b.south west) + (0, -3*\spacing)$) {System C};
+
+
+    \point{tupl-ref}{(3,0)};
+
+    \node[anchor=north west] (tupl-a) at ($(tupl-ref) + (0, 0)$) {$(s_1, r, o_1, p_1)$};
+    \node[anchor=north west] (tupl-b) at ($(tupl-a.south west) + (0, -0*\spacing)$) {$(s_1, r, o_2, p_2)$};
+    \node[anchor=north west] (tupl-c) at ($(tupl-b.south west) + (0, -0*\spacing)$) {$(s_1, r, o_2, p_3)$};
+    \node[anchor=north west] (tupl-d) at ($(tupl-c.south west) + (0, -0*\spacing)$) {$(s_2, r, o_3, p_4)$};
+    \node[anchor=north west] (tupl-e) at ($(tupl-d.south west) + (0, -0*\spacing)$) {$(s_2, r, o_3, p_5)$};
+
+    \node[anchor=north west] (tupl-f) at ($(tupl-a.south west)!(sys-c.north west)!(tupl-b.south west)$) {$(s_2, r, o_4, p_6)$};
+
+    \point{eval-ref}{(5.2,0)};
+    \point{eval-ref-}{(5.2,-1)};
+
+    \node[anchor=west] (eval-a) at ($(eval-ref)!(tupl-a)!(eval-ref-)$) {\Checkmark};
+    \node[anchor=west] (eval-b) at ($(eval-ref)!(tupl-b)!(eval-ref-)$) {\Checkmark};
+    \node[anchor=west] (eval-c) at ($(eval-ref)!(tupl-c)!(eval-ref-)$) {\Cross};
+    \node[anchor=west] (eval-d) at ($(eval-ref)!(tupl-d)!(eval-ref-)$) {\Checkmark};
+    \node[anchor=west] (eval-e) at ($(eval-ref)!(tupl-e)!(eval-ref-)$) {\Checkmark};
+    \node[anchor=west] (eval-f) at ($(eval-ref)!(tupl-f)!(eval-ref-)$) {\Question};
+
+    \draw[-latex,dashed] (sys-h.east) -- (tupl-a.west);
+    \draw[-latex,dashed] (sys-h.east) -- (tupl-b.west);
+    \draw[-latex,dashed] (sys-h.east) -- (tupl-d.west);
+
+    \draw[-latex] (sys-a.east) -- (tupl-b.west);
+    \draw[-latex] (sys-a.east) -- (tupl-d.west);
+
+    \draw[-latex] (sys-b.east) -- (tupl-c.west);
+    \draw[-latex] (sys-b.east) -- (tupl-e.west);
+
+    \draw[-latex] (sys-c.east) -- (tupl-b.west);
+    \draw[-latex] (sys-c.east) -- (tupl-e.west);
+    \draw[-latex] (sys-c.east) -- (tupl-f.west);
+
+\end{tikzpicture}
+
+\end{document}
