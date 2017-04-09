@@ -48,6 +48,10 @@ def do_command(args):
     print("Median bias: {:.2f}%".format(np.median(abs(X - Y)) * 100))
     print("Mean bias (top 40): {:.2f}%".format(np.mean((abs(X - Y))[:40]) * 100))
     print("Median bias (top 40): {:.2f}%".format(np.median((abs(X - Y))[:40]) * 100))
+    print("Mean bias (top 10): {:.2f}%".format(np.mean((abs(X - Y))[:10]) * 100))
+    print("Median bias (top 10): {:.2f}%".format(np.median((abs(X - Y))[:10]) * 100))
+    print("Mean bias (top 3): {:.2f}%".format(np.mean((abs(X - Y))[:3]) * 100))
+    print("Median bias (top 3): {:.2f}%".format(np.median((abs(X - Y))[:3]) * 100))
 
     # Read data
     rc('text', usetex=True)
