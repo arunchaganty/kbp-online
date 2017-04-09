@@ -1,10 +1,10 @@
 %
-% File ACL2017.tex
+% File emnlp2017.tex
 %
 
-\documentclass[11pt]{article}
+\documentclass[11pt,letterpaper]{article}
+\usepackage{emnlp2017}
 \usepackage{hyperref}
-\usepackage{acl2017}
 \usepackage{natbib}
 \usepackage{times}
 \usepackage{latexsym}
@@ -20,6 +20,7 @@
 \usepackage{ifthen}
 \usepackage{color}
 \usepackage[utf8]{inputenc}
+\usepackage{url}
 \usepackage{scabby-lite}
 \usepackage{multicol}
 
@@ -31,8 +32,15 @@
 \input std-macros
 \input macros
 
-%\aclfinalcopy % Uncomment this line for the final submission
-%\def\aclpaperid{706} %  Enter the acl Paper ID here
+% Uncomment this line for the final submission:
+%\emnlpfinalcopy
+
+%  Enter the EMNLP Paper ID here:
+\def\emnlppaperid{***}
+
+% To expand the titlebox for more authors, uncomment
+% below and set accordingly.
+% \addtolength\titlebox{.5in}    
 
 %\title{Learn something new every day: a continuous assessment platform for knowledge base population}
 % AC: This is a bit boring but accurate.
@@ -101,7 +109,7 @@
 % Hoa Deng, folks at NIST.
 % Ed Hovy?
 
-\bibliographystyle{acl_natbib}
+\bibliographystyle{emnlp_natbib}
 \bibliography{refdb/all}
 
 \appendix
