@@ -11,9 +11,9 @@ from collections import defaultdict
 
 import numpy as np
 
-import ipdb
 from tqdm import tqdm
-from .util import EvaluationEntry, OutputEntry, micro, macro, bootstrap, confidence_intervals
+from .util import micro, macro, bootstrap, confidence_intervals
+from .data import EvaluationEntry, OutputEntry
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -308,7 +308,8 @@ def do_pooling_bias(args):
 
         valid_entries = set([])
         for runid_, output in outputs.items():
-            if runid == runid_: continue
+            # Making sure UTAustin doesn't make fudge our results
+            if runid == runid_ or runid == 'SF_UTAustin1': continue
             valid_entries.update(key(entry) for entry in output)
         gold_ = [entry for entry in gold if key(entry) in valid_entries]
         logger.info("loo pool for %s contains %d entries", runid, len(gold_))
@@ -327,7 +328,7 @@ def do_pooling_bias(args):
 
         valid_entries = set([])
         for runid_, output in outputs.items():
-            if teamid(runid) == teamid(runid_): continue
+            if teamid(runid) == teamid(runid_) or runid == 'SF_UTAustin1': continue
             valid_entries.update(key(entry) for entry in output)
         gold_ = [entry for entry in gold if key(entry) in valid_entries]
         logger.info("lto pool for %s contains %d entries", runid, len(gold_))
