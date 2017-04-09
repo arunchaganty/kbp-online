@@ -1,33 +1,22 @@
 \section{On-demand open-world evaluation}
 \label{sec:methodology}
 
-We have just seen that the bias in closed-world evaluation poses an obstacle to innovating new systems.
-The fundamental problem was a sampling bias towards relation instances from existing systems.
-We could of course completely eliminate the bias by exhaustively annotating the entire document corpus.
-Unfortunately, this would be a laborious and prohibitively expensive task:
-  using the interfaces we developed (described in detail in \refsec{evaluation}), it costs about \$30 to annotate a single document by non-expert crowdworkers, leading to an estimated cost of at least \$300,000 for a reasonably large corpus of 10,000 documents.
-The annotation effort would cost significantly more with expert LDC-style annotation.
+Pooling bias is essentially a sampling bias problem where relational tuples from pooled systems are overrepresented and those from new systems are underrepresented in the evaluation dataset.
+We could of course completely eliminate the bias by exhaustively annotating the entire document corpus, but that would be a laborious and prohibitively expensive task:
+  using the interfaces we've developed (described in detail in \refsec{evaluation}), it costs about \$20 to annotate a single document by non-expert crowdworkers, leading to an estimated cost of at least \$200,000 for a reasonably large corpus of 10,000 documents.
+The annotation effort would cost significantly more with expert annotators.
+% TODO: highlight contrast with pooling.
 
-In constrast, with on-demand open-world evaluation, we take a lazy approach by annotating underrepresented data \textit{only when required}.
-In this section, we cover the technical details that allow us to accurately estimate evaluation metrics without bias in a cost-effective manner. 
-
-% Move to a KBP centric section.
-%When a new system or feature has been developed, its predictions are submitted to an evaluation portal.
-%If the submitted predictions can not be fairly and accurately evaluated with the data obtained so far,
-%  annotations are immediately obtained for a sample of the predicted relations through crowd-sourcing and added into the evaluation set.
-%In this way, we push the hard work of finding candidate relations to automated systems and instead focus annotation effort on the much easier task of verifying relation predictions.
-%At the end of this process, systems are guaranteed to obtain fair instance-level, relation-level and entity-level scores.
+In constrast, we propose a new paradigm called on-demand open-world evaluation which takes a lazy approach to dataset construction by annotating predictions from systems \textit{only when they are underrepresented}, thus correcting for pooling bias as it arises.
+In this section, we'll formalize the problem solved by on-demand open world evaluation independent of KBP and describe our solution that allows us to accurately estimate evaluation metrics without bias in a cost-effective manner. 
+We'll then instantiate the framework for KBP in \refsec{application}.
 
 \subsection{Problem statement}
-
-Let us define the task of on-demand open-world evaluation formally and independent of KBP;\@ we'll instantiate the framework for KBP in \refsec{application}.
-Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
-  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
-  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems.
-Furthermore, let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Let $\sX$ be a universe of possible system outputs (e.g.\ relational tuples),
+  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$,
+  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems,
+  and let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
 Our goal is estimate the precision, $\pi_i$, and recall, $\rho_i$, of the set of predictions $X_i$ to within a certain confidence interval $\epsilon$.
-In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (by having crowdworkers validate a system's prediction) or for samples from $\sY$ (by exhaustively annotating a document) at a certain (monetary) cost.
-
 Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then:
 \begin{align*}
   \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
@@ -36,14 +25,18 @@ Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then:
 where $x$ is sampled from $X_i$ and $\sY$ according to distributions $p_i(x)$ and $p'(x)$ respectively.
 We assume that $p_i(x)$ is known, e.g.\ the uniform distribution over $X_i$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
 
+In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (e.g.\ by assessing a system's prediction) or for samples from $\sY$ (e.g.\ by exhaustively annotating a document) at a certain (monetary) cost.
+Typically, checking if $x \in \sY$ can be significantly cheaper than asking for samples from $\sY$.
+
 Clearly, $\pi_i$ and $\rho_i$ can both be estimated by sampling from $X_i$ and $\sY$ respectively.
-However, simple statistics tell us that we would require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$, which would be quite costly on a per-system basis.
-Instead, we'd like be able to reuse the samples we've collected and only spend money to annotate data when absolutely necessary.
+However, simple statistics tell us that we could require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$, which would be quite costly on a per-system basis.
+To make the system practically viable, we'd like be able to reuse the samples we've collected and only spend money to annotate data when absolutely necessary.
 In the rest of this section, we'll see how to do this by answering the following three key questions:
 \begin{enumerate}
   \item Suppose we have evaluated $f(x)$ on samples $\Xh_1, \ldots, \Xh_m$ from $X_1, \ldots, X_m$ respectively. How should we best use all of these samples when estimating $\pi_i$?
-  \item Can we use the samples $\Xh_1, \ldots, \Xh_m$ when estimating $\rho_i$ in conjunction with samples $\Yh_0$ from $\sY$?
-  \item Finally, in practice, we only see the sets $X_1, \ldots, X_m$ sequentially, as they are submitted to the evaluation platform. In this case, how many samples should we draw from $X_m$, given existing samples $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$?
+  \item 
+    Can we use the samples $\Xh_1, \ldots, \Xh_m$ when estimating $\rho_i$ in conjunction with samples $\Yh_0$ from $\sY$?
+  \item Finally, in practice, we only see the sets $X_1, \ldots, X_m$ sequentially, as and when they are submitted to the evaluation platform. How many samples should we draw from $X_m$, given existing samples $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$?
 \end{enumerate}
 
 \subsection{Amortizing costs when estimating precision}
@@ -127,7 +120,8 @@ Consequently it is quite easy to solve for the number of samples needed to achie
 \end{algorithmic}
 \end{algorithm}
 
-\algorithmref{on-demand-sampling} summarizes the whole approach. 
+\refalg{on-demand-sampling} summarizes the whole approach. 
+%TODO: a summary/outline diagram.
 
 \begin{figure}[t]
   \includegraphics[width=\columnwidth]{figures/overview}
@@ -146,13 +140,6 @@ Consequently it is quite easy to solve for the number of samples needed to achie
   predicted relations are sampled and immediately evaluated through crowdsourcing
   to provide an unbiased estimate of open-world performance. % in an open-world setting.
   \todo{fix figure}.
-  % TODO
-  %\plg{figure is a bit confusing - some icons are too large;
-  %I'd have many small circles representing system predictions,
-  %some of which are marked green (positive) and some marked red (negative);
-  %for closed-world, all circles outside the pool are marked red
-  %}
-  %\plg{also, 'predicted KB' looks like it's referring only to closed-world}
   }
 \end{figure}
 
