@@ -1,150 +1,130 @@
-\section{Setup}
-\label{sec:setup}
-% (1 page)
-In this section, we'll review the knowledge base population task, define appropriate notation, describe relevant evaluation metrics and discuss the standard evaluation methodology adopted by the TAC-KBP competition.
+\section{On-demand open-world evaluation}
+\label{sec:methodology}
 
-\subsection{Knowledge base population}
+We have just seen that the bias in closed-world evaluation poses an obstacle to innovating new systems.
+The fundamental problem was a sampling bias towards relation instances from existing systems.
+We could of course completely eliminate the bias by exhaustively annotating the entire document corpus.
+Unfortunately, this would be a laborious and prohibitively expensive task:
+  using the interfaces we developed (described in detail in \refsec{evaluation}), it costs about \$30 to annotate a single document by non-expert crowdworkers, leading to an estimated cost of at least \$300,000 for a reasonably large corpus of 10,000 documents.
+The annotation effort would cost significantly more with expert LDC-style annotation.
 
-% TODO: move to a figure.
-%``[Carrie] Fisher’s mother, entertainer Debbie Reynolds, said on Twitter on Sunday that her daughter was in stable condition.''
-%Teams are then required to identify spans in the text that correspond to entities (e.g. ``\textit{Fisher}'', ``\textit{Debbie Reynolds}''),
-%assign these entities a canonical id (e.g. \texttt{Carrie\_Fisher}, \texttt{Debbie\_Reynolds})
-%  and, finally, identify all facts about mentioned entity expressed in the surrounding context (e.g. \texttt{Carrie\_Fisher per:parents Debbie\_Reynolds} or \texttt{Debbie\_Reynolds per:title entertainer}).
+In constrast, with on-demand open-world evaluation, we take a lazy approach by annotating underrepresented data \textit{only when required}.
+In this section, we cover the technical details that allow us to accurately estimate evaluation metrics without bias in a cost-effective manner. 
 
-\begin{figure}[t]
-  \centering
-%  \begin{subfigure}{0.49\textwidth}
-    [Carrie] \textbf{Fisher}’s mother, \textbf{entertainer} \textbf{Debbie Reynolds}, said on \textbf{Twitter} on \textbf{Sunday} that \textbf{her daughter} was in stable condition.
-    % TODO: example figure.
-  %\includegraphics[width=\columnwidth]{figures/experiment1}
-%  \end{subfigure}
-%  \hfill
-%  \begin{subfigure}{0.49\textwidth}
-%  \input{figures/evaluation-table.table}
-%  \end{subfigure}
-%  \caption{Evaluating KBP \pl{need more explanation}}
-\caption{\label{fig:example} An example describing entities and relations in knowledge base population.}
-\end{figure}
+% Move to a KBP centric section.
+%When a new system or feature has been developed, its predictions are submitted to an evaluation portal.
+%If the submitted predictions can not be fairly and accurately evaluated with the data obtained so far,
+%  annotations are immediately obtained for a sample of the predicted relations through crowd-sourcing and added into the evaluation set.
+%In this way, we push the hard work of finding candidate relations to automated systems and instead focus annotation effort on the much easier task of verifying relation predictions.
+%At the end of this process, systems are guaranteed to obtain fair instance-level, relation-level and entity-level scores.
 
-In the knowledge base population,
- we are given a document corpus and must identify entities and relations mentioned within:
- the task is really a combination of entity detection, entity linking and relation extraction. 
-Let's start with an example to understand how entities and relations are defined: \figureref{example} discusses the late actress Carrie Fisher.
+\subsection{Problem statement}
 
-Primarily, we care about named entities corresponding to people, organizations and places (formally, geo-political entities):\footnote{%
-  The most recent TAC-KBP competition also includes facilities and locations as entity types. We ignore these types in this paper.}
-this sentence mentions three entities,
-  ``\textit{Fisher}'',
-  ``\textit{Debbie Reynolds}'' and
-  ``\textit{Twitter}''.
-  Each \textit{entity mention} is also associated with a \textit{canonical entity}, described by a unique identifier, e.g.\ Wikipedia page titles. % TODO: handle NIL clusters
-In the example, the mention $m$, ``\textit{Fisher}'', is linked to the canonical entity $e$, \texttt{Carrie\_Fisher}.
+Let us define the task of on-demand open-world evaluation formally and independent of KBP;\@ we'll instantiate the framework for KBP in \refsec{application}.
+Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
+  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
+  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems.
+Furthermore, let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Our goal is estimate the precision, $\pi_i$, and recall, $\rho_i$, of the set of predictions $X_i$ to within a certain confidence interval $\epsilon$.
+In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (by having crowdworkers validate a system's prediction) or for samples from $\sY$ (by exhaustively annotating a document) at a certain (monetary) cost.
 
-We also care about the \textit{relations} between entities.
-The subject of a relation is always an entity, while the object
-could be an entity, a number, a date or even an arbitrary string like ``entertainer''. 
-The sentence describes a relation $r$, \texttt{per:parents}, between the mentions $m_s$, ``\textit{Fisher}'', and $m_o$ ``\textit{Debbie Reynolds}'', and consequently a relation between the entities \texttt{Carrie\_Fisher} and \texttt{Debbie\_Reynolds}.
-We consider 39 binary relations described in the TAC-KBP specifications~\citep{ellis2015tackbp}.\footnote{%
-  There are in total 65 relations (including inverse relations) defined in the specifications.
-  We simplify the set of relations by collapsing distinct location relations like \texttt{per:city\_of\_birth} and \texttt{per:country\_of\_birth} into a single relation, \texttt{per:place\_of\_birth}.
-  We also ignore a few rare relations: \texttt{per:age}, \texttt{per:charges}, \texttt{per:cause\_of\_death} and \texttt{org:number\_of\_employees}}
-% Is this needed?
-Finally, when a system predicts a relation, it must also specify the provenance $p$ used to justify it, e.g.\ the sentence.
-
-We call the pair $(m, e)$ a \textit{link} and the tuple $(m_s, r, m_o, p)$ a \textit{relation instance}.
-Formally, the knowledge base outputted by a system consists of all the links and relation instances it could find in the corpus..
-
-%As you \pl{avoid 2nd person} can see, knowledge base population is actually composed of three tasks: entity detection, entity linking, and relation extraction.
-%This coupling allows us to aggregate facts extracted from multiple documents by the canonical entity and ask relational \pl{replace with compositional?} queries of the database so constructed, e.g.\ ``what do Carrie Fisher's parents do?''
-%Accordingly, evaluating the output of a KBP system can be defined at two levels, at the mention-level and at the entity-level.
-%Let us now see an example of how to score the output of two systems $A$ and $B$, summarized in \figureref{evaluation-table}.
-
-\subsection{Evaluation metrics}
-
-The relations predicted by a knowledge base population system can evaluated be on precision, recall and \fone{} solely at the instance-level, the relation-level or the entity-level: each of these levels describes a different type of aggregation.
-
-At the instance-level, we only evaluate whether a system has correctly predicted a relation instance $i = (m_s, r, m_o, p)$, i.e.\ whether two mentions $m_s$ and $m_o$ share a relation $r$ \textit{according the provenance $p$}, irrespective of bad linking decisions (e.g.\ linking the \textit{Fisher} in the text with the mathematician \texttt{Ronald\_Fisher}).
-If $I$ is the set of instances predicted and $I^*$ is the set of true instances in the corpus, precision and recall are simply,
-%In this example, we can compute the \textit{mention-level} precision and recall \pl{of a system $A$} as, \pl{i'd use $P^\text{m}_A$ so that $m$ doesn't seem like an unbound variable}
+Formally, let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then:
 \begin{align*}
-  P^\text{i} &\eqdef \frac{|I \intersection I^*|}{|I|} & %= \frac{|\{c_{11}, c_{14}, c_{21}, c_{31}, c_{32}\}|}{|\{c_{11}, c_{14}, c_{21}, c_{31}, c_{32}\}|} = 1 \\
-  R^\text{i} &\eqdef \frac{|I \intersection I^*|}{|I^*|} &
-  \fone^\text{i} &\eqdef \frac{2 P^\text{i} R^\text{i}}{P^\text{i} + R^\text{i}}.
-  %&= \frac{|\{c_{11}, c_{14}, c_{21}, c_{31}, c_{32}\}|}{|\{c_{11}, c_{14}, c_{21}, c_{31}, c_{32}, c_{13}, {c_{41}}\}|} = \frac{5}{7},
+  \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
+  \rho_i &\eqdef \E_{x \sim \sY}[g_i(x)],
 \end{align*}
-%where $C$ is the set of all contexts predicted to contain relation returned by the system and $C^*$ are the set of all contexts that contain a relation in the corpus.
-Instance-level scores are simply macro-aggregated over each relation to get relation-level precision, recall and \fone{}, $P^\text{i}, R^\text{i}, \fone^\text{i}$.
+where $x$ is sampled from $X_i$ and $\sY$ according to distributions $p_i(x)$ and $p'(x)$ respectively.
+We assume that $p_i(x)$ is known, e.g.\ the uniform distribution over $X_i$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
 
-\pl{I found the text hard to understand; maybe it's better to write down the
-actual general formula?  does that look reasonable?
-Maybe a good way to visualize this as a rooted tree
-where you have the first level split on entity, the second level split on fill,
-and the third level split on instance;
-Then you can just describe entity-level scores as just different averaging at different levels of this tree
-}
-At the entity-level, instances are grouped by \textit{subject entities} and \textit{fills}, i.e.\ relation, object entity pairs, using the predicted links. Precision and recall scores are first averaged over the instances in each fill \pl{and subject, right?}, then over the fills in the subject entity and finally over all entities. For example, let $i_1, i_2, i_3, i_4$ be four relation instances for an entity $e$ where $i_1, i_2$ correspond to fill $f_1$ and $i_3, i_4$ to $f_2$. If a system predicts $I = \{i_1, i_2, i_3\}$ and $I^* = \{i_1, i_3, i_4\}$, its instance-level scores would be
+Clearly, $\pi_i$ and $\rho_i$ can both be estimated by sampling from $X_i$ and $\sY$ respectively.
+However, simple statistics tell us that we would require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$, which would be quite costly on a per-system basis.
+Instead, we'd like be able to reuse the samples we've collected and only spend money to annotate data when absolutely necessary.
+In the rest of this section, we'll see how to do this by answering the following three key questions:
+\begin{enumerate}
+  \item Suppose we have evaluated $f(x)$ on samples $\Xh_1, \ldots, \Xh_m$ from $X_1, \ldots, X_m$ respectively. How should we best use all of these samples when estimating $\pi_i$?
+  \item Can we use the samples $\Xh_1, \ldots, \Xh_m$ when estimating $\rho_i$ in conjunction with samples $\Yh_0$ from $\sY$?
+  \item Finally, in practice, we only see the sets $X_1, \ldots, X_m$ sequentially, as they are submitted to the evaluation platform. In this case, how many samples should we draw from $X_m$, given existing samples $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$?
+\end{enumerate}
+
+\subsection{Amortizing costs when estimating precision}
+
+Intuitively, if a set $X_j$ has a significant overlap with $X_i$, we expect that we should be able to its samples when estimating $\pi_i$.
+However, it might be case that $X_j$ overlaps with $X_i$ only when $p_i(x)$ is relatively small, in which case the sample $\Xh_j$ is not representative of $X_i$ and a naive combination could lead to the wrong estimate of $\pi_i$.
+We address this problem by using importance sampling \citep{owen2013monte}.
+
+In particular, the estimator that we propose is:
 \begin{align*}
-  P^\text{i} &= \frac{|\{i_1, i_3\}|}{|\{i_1, i_2, i_3\}|} = \frac{2}{3} &
-  R^\text{i} &= \frac{|\{i_1, i_3\}|}{|\{i_1, i_3, i_4\}|} = \frac{2}{3},
+  \pih_i &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j \intersection X_i} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align*}
-while its entity-level scores for the entity $e$ would be
+where $n_{j} = |X_j|$, $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
+This last condition is easy to guarantee by setting $w_{ii} > 0$.
+
+In \appendixref{sampling} we prove that $\pih_i$ is an unbiased estimator of $\pi_i$ and also work out an expression for its variance. 
+The variance of course depends on $f(x)$, but the general intuition is that 
+$\pih_i$ will have high variance if $q_i(x) \ll p_i(x)$.
+This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$, which assigns $0$ weight to any set $X_j$ that has no overlap with $X_i$ and also has the optimal choice of weights if all the sets are identical, i.e.\ $p_j = p_i$ for all $j$.
+
+% TODO: Figure that compares our scheme with equivalent of pooling.
+\fake{On simulated experiments on the TAC-KBP dataset, we find a 4-fold decrease in variance using the proposed $\pih$ 
+when compared to estimating $\pi_i$ solely using $\Xh_i$}.
+
+\subsection{Amortizing costs when estimating recall}
+When estimating recall, we ideally would like to compare the performance of the system on samples drawn from $\sY$.
+Unfortunately, in practice, it is typically much harder to sample $\sY$ than it is to evaluate $f(x)$, because the former needs us to exhaustively annotate a document.
+In contrast, it is very easy to compare a system's recall relative to \textit{other} systems by using the samples $\Xh_i$ we've already collected.
+This mode of computing recall, called pooled recall, can be biased and typically overestimates recall on the universe of relations.
+However, we know that if a system represents only a fraction $\nu_i$ of the pool of all systems and that the pool represents a fraction $\theta$ of $\sY$, $\rho_i$ must equal $\theta \nu_i$.
+
+%However, the recall of the system $\rho_i$, pooled recall $\nu_i$ and the recall of the pool $\theta$ share a simple relationship.
+%estimate the recall of a system $i$ relative to all the pool of all other submitted systems.
+%We exploit the fact that the recall of a system $i$, $\rho_i$ can also be expressed as the recall of the system \textit{relative} to the pool, $\nu_i$ and the recall of the pool itself $\theta$: $\rho_i = \theta \nu_i$.
+
+With this in mind, we use a smaller sample $\Yh_0$ from $\sY$ to estimate $\theta$ and then use the rest of $\Xh$ to estimate $\nu_i$.
+In \appendixref{sampling} we show that the final estimator, $\rhoh_i \eqdef \thetah \nuh_i$, is unbiased and has a variance of,
 \begin{align*}
-  P^\text{e} &= \half \left(\frac{|\{i_1\}|}{|\{i_1, i_2\}|} + \frac{|\{i_3\}|}{|\{i_3\}|} \right) = \frac{3}{4} \\
-  R^\text{e} &= \half \left(\frac{|\{i_1\}|}{|\{i_1\}|} + \frac{|\{i_3\}|}{|\{i_3, i_4\}|} \right) = \frac{3}{4}.
+  \sigma^2_\rho &= \theta \sigma^2_\nu + \nu_i \sigma^2_\theta + \sigma^2_\nu \sigma^2_\theta.
 \end{align*}
-While both instance-level and relation-level scores are useful diagnostic metrics, entity-level scores are a better measure of performance for end applications because they measure how accurate and complete a knowledge base entry is.
-For this reason, entity-level scores are reported in the TAC-KBP evaluations.\footnote{%
-  The TAC-KBP evaluation only accepts a single relation instance per fill and hence does not need the additional step of aggregating over relation instances.
-}
+With sufficient samples, $\sigma^2_\nu$ can be made quite small, so that the leading term in the variance is $\nu_i \sigma^2_\theta$ and because typically $\nu_i \ll 1$, we expect the variance of our proposed estimator to be less than that of the estimator constructed by using $\Yh_0$ alone.
 
-%\pl{clarify whether entity-level ground truth is always just a union of the mention-level ground truths? I'm guessing no}
-%At the entity-level, we focus on an entity $e_s$ and ask if the system has correctly identified a relation $r$ with another entity $e_o$ \textit{given some context $c$}, or the fill $f$.
-%Thus, system's A and B both get full credit for identifying the fill $f_1$, even though system A had found two contexts that expressed $f_1$.  
-%On the other hand, if a system falsely reports two distinct fills when there was only one, as was the case with system A and $m_{32}$, only one is considered correct, and the system loses precision for reporting an incorrect answer. 
-%Thus, the entity-level precision and recall scores are,
-%\begin{align*}
-%  P^e_A &\eqdef \frac{|F \intersection F^*|}{|F|} &= \frac{|\{f_{1}, f_{2}, f_{3}\}|}{|\{f_{1}, f_{2}, f_{3}, f_{3}'\}|} &= \frac{3}{4} \\
-%  R^e_A &\eqdef \frac{|F \intersection F^*|}{|F^*|} &= \frac{|\{f_{1}, f_{2}, f_{3}\}|}{|\{f_{1}, f_{2}, f_{3}, f_{4}\}|} &= \frac{3}{4}.
-%\end{align*}
-%where $F$ is the set of all slot fills for the entity $e$ returned by the system and $F^*$ are the set of all slot fills for the entity $e$ in the corpus.
-%
-%The entity-level metrics can be either micro or macro averaged.
-%% TODO: fix notation. handle \fone.
-%The standard metric we will be using in this paper is macro-averaged $\fone^e \eqdef \frac{1}{|E|} \sum_{e \in E} \fone^{e}$.
-%
-%\pl{the concrete example is really nice and clear;
-%I think we'll have to slim it down to make it fit (since it is pretty basic)
-%}
+% TODO: figure
+\fake{On simulated experiments on the TAC-KBP dataset, we find a 2-fold decrease in variance using the proposed estimator $\rhoh$ 
+when compared to estimating $\rho_i$ solely using $\Yh_0$}.
 
-%\paragraph{The TAC-KBP competition.}
-%% TODO provide some details about the competition -- its history. Talk about how slotfilling led to kbc.
-%%
-%
-%\paragraph{Evaluation methodology.}
-%% TODO how is the output evaluated? what are queries (how many)? how much output is evaluated? Human systems? what metrics are used (in relation to math above). Quick note about entry points and how entities are identified as being the same cluster / id as a specified entity.
-%
-%\pl{I guess defining the pooling setup formally is pretty important here}
+\subsection{Adaptively drawing samples for new sets}
+Finally, the desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.
+We formalize this statement by requesting for a target variance $\epsilon$.
+The variance of $\pih_m$ is a complex non-convex function, but we know that it is monotonically decreasing in $n_m$, the number of samples drawn from the new output, $X_m$.
+Consequently it is quite easy to solve for the number of samples needed to achieve a target variance of $\epsilon$ using a bisection method.
+% TODO: figure
+\fake{Simulated experiment of how many samples are required}.
 
-\subsection{Evaluation at TAC-KBP}
+\begin{algorithm}
+  \caption{\label{alg:on-demand-sampling} The on-demand open-world evaluation methodology}
+\begin{algorithmic}
+  \REQUIRE{
+  A sequence of predicted output sets $X_1, \ldots X_m \subseteq \sX$,
+  a method of evaluating $f(x) = \I[x \in \sY]$ and a method of sampling $x \sim \sY$,
+  desired confidence intervals $\epsilon_\pi$ and $\epsilon_\rho$.
+  }
+  \ENSURE{Unbiased predictions of precision, $\pih_1, \ldots, \pih_m$ and recall $\rhoh_1, \ldots \rhoh_m$.}
 
-The primary source of evaluation data for KBP comes from the annual TAC-KBP competition organized by NIST.\@ % TODO: add links to workshop overview papers
-Each year, participating teams submit their predicted KBs for a provided corpus.
-The organizers then use held-out relational queries that ask for relation instances that answer specific questions, e.g.\ ``where was Carrie Fisher born?'' or ``what did Carrie Fisher's parents do?'', to select which predicted relation instances to evaluate.\footnote{%
-  Prior to 2015, teams could also participate in a ``slot-filling'' track where the evaluation queries would be provided ahead of time and teams only had to submit relation instances pertaining to the query entities.}
-Independently, human annotators also search for answers to these queries and submit their results.
-The final evaluation set is thus the union of the evaluation of system predictions and a human search.
+  % Collect a dataset Y_0
+  \STATE{Sample a set $\Yh_0$ from $\sY$ based on $\epsilon_\rho$.}
+  % For each sample X_i, 
+  \FOR{$i = 0$ \TO{} $i = m$}
+  % compute the optimal number of samples $n_i$ required to estimate $\pih_i$ to within $\epsilon$ given $\Xh_{1} - \Xh_{i-1}.
+  \STATE{Compute the minimum number of samples $n_i$ required to estimate $\pi_i$ within $\epsilon_\pi$.}
+  % Draw $n_i$ samples from $X_i$ and evaluate $f(x)$ on these samples.
+  \STATE{Evaluate $f(x)$ on $n_i$ samples drawn from $X_i$.}
 
-While scoring a development system against this evaluation set, only relation instances that match the same set of queries are considered.
-New features in a system may allow it to predict true relations that were previously missed, while at the same predict completely new relations even for these queries that may be true or false.
-Unfortunately, there is no way to evaluate these new predictions and they are assumed false under the closed world heuristic.
+  \FOR{$j = 0$ \TO{} $j = i$}
+    % For j,
+    % Use $\Xh_1 ... \Xh_m$ to evaluate or update $\pih_j$.
+    % Use $\Xh_1 ... \Xh_m$ to evaluate or update $\rhoh_j$.
+    \STATE{Use $\Xh_1, \ldots \Xh_i$ to update estimates for $\pi_j$ and $\rho_j$.}
+  \ENDFOR{}
+  \ENDFOR{}
+\end{algorithmic}
+\end{algorithm}
 
-Another common heuristic used by teams developing systems for TAC-KBP is the \anydoc{} heuristic which treats any relation whose object string (e.g.\ ``Debbie Reynolds'' in \figureref{example}) exactly matches that of a correct relation instance in the evaluation set.
-Under this heuristic, predicting the \texttt{per:parents} relation between Carrie Fisher and Debbie Reynolds for the sentence ``\textit{Carrie Frances Fisher} was born \ldots to actors and singers Eddie Fisher and \textit{Debbie Reynolds}'' or the sentence ``Bright Lights: Starring \textit{Carrie Fisher} and \textit{Debbie Reynolds}'' would both be considered correct, even though latter is incorrect.
-
-\pl{I think a lot of this text should be replaced with a figure / simple example
-of the pooled evaluation.
-It's really important for non-KBP people to know exactly what the evaluation is doing;
-it's a simple idea, but it's too easy to gloss over the text
-}
-
-% TODO: describe `anydoc'
+\algorithmref{on-demand-sampling} summarizes the whole approach. 
