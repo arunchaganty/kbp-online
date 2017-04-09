@@ -55,19 +55,23 @@ def do_command(args):
 
     # Read data
     rc('text', usetex=True)
-    rc('font', family='serif')#, size=22)
+    rc('font', family='serif', size=18)
 
     # Set up plotter.
     plt.subplot(2,1,1)
     plt.ylabel('Macro $F_1$', fontsize=22)
 
-    plt.errorbar(np.arange(1,len(systems)+1), X, yerr=[X - Y, X-X], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7, label="Actual score")
-    plt.plot(np.arange(1,len(systems)+1), Y, color='g', marker='^', linestyle='', alpha=0.9, label="Evaluation score")
-    plt.legend()
+    plt.errorbar(np.arange(1,len(systems)+1), X, yerr=[X - Y, X-X], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7, label="Pooled score")
+    plt.plot(np.arange(1,len(systems)+1), Y, color='g', marker='^', linestyle='', alpha=0.9, label="Unpooled score")
+    legend = plt.legend()
+    legend.set_alpha(0.5)
 
     plt.subplot(2,1,2)
-    plt.ylabel(r'$\Delta$ Macro $F_1$', fontsize=22)
+    plt.ylabel(r'Pooling bias', fontsize=22)
     plt.xlabel('Systems', fontsize=22)
+    plt.ylim((-max(X-Y),0))
+    if max(X-Y) < .04:
+        plt.yticks([-0.00, -0.01, -0.02, -0.03])
     plt.errorbar(np.arange(1,len(systems)+1), X-X, yerr=[X - Y, X-X], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7)
 
     plt.savefig(args.output)
