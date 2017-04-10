@@ -123,23 +123,23 @@ Consequently it is quite easy to solve for the number of samples needed to achie
 \refalg{on-demand-sampling} summarizes the whole approach. 
 %TODO: a summary/outline diagram.
 
-\begin{figure}[t]
-  \includegraphics[width=\columnwidth]{figures/overview}
-  \caption{\label{fig:overview}
-  In knowledge base population (KBP), systems construct a knowledge base (KB) containing \textit{relations}. % about \textit{entities} 
-  %such as where a person was born or who a company's founder is, 
-  from a large document corpus.
-  \encircle{1}
-  In closed-world evaluation, %only relations that intersect with an existing set of annotated facts
-  %, usually constructed from other output of other systems,
-  all relations ouside an annotated set are incorrectly assumed to be negative.
-  %are considered to be true and all others are assumed false.
-  %This can significantly penalize a novel system that predicts new facts outside what has already been annotated.
-  \encircle{2}
-  In on-demand open-world evaluation,
-  predicted relations are sampled and immediately evaluated through crowdsourcing
-  to provide an unbiased estimate of open-world performance. % in an open-world setting.
-  \todo{fix figure}.
-  }
-\end{figure}
-
+%\begin{figure}[t]
+%  \includegraphics[width=\columnwidth]{figures/overview}
+%  \caption{\label{fig:overview}
+%  In knowledge base population (KBP), systems construct a knowledge base (KB) containing \textit{relations}. % about \textit{entities} 
+%  %such as where a person was born or who a company's founder is, 
+%  from a large document corpus.
+%  \encircle{1}
+%  In closed-world evaluation, %only relations that intersect with an existing set of annotated facts
+%  %, usually constructed from other output of other systems,
+%  all relations ouside an annotated set are incorrectly assumed to be negative.
+%  %are considered to be true and all others are assumed false.
+%  %This can significantly penalize a novel system that predicts new facts outside what has already been annotated.
+%  \encircle{2}
+%  In on-demand open-world evaluation,
+%  predicted relations are sampled and immediately evaluated through crowdsourcing
+%  to provide an unbiased estimate of open-world performance. % in an open-world setting.
+%  \todo{fix figure}.
+%  }
+%\end{figure}
+%
