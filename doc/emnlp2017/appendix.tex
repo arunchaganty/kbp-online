@@ -83,9 +83,9 @@ where $x$ is sampled under the distribution $p'(x \given x \in Y)$ and $p'(x)$ r
 Ideally, to estimate the pooled recall, $\nu_i$, we need to take expectations with respect to $x \sim Y$, but have samples drawn from individual $X_i$.
 To correct for this bias, we'll use a self-normalizing estimator for $\nu_i$:
 \begin{align*}
-  \nuh_i &\eqdef \frac{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{w(x) g_i(x)}{q(x)}}{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{w(x)}{q(x)}},
+  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{q(x)}},
 \end{align*}
-where $p'(x) \propto w(x)$, $q(x) = \sum_{j=1}^m w_{j} p_j(x)$ and $w_{j} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{j} = 1$.
+where $p'(x) \propto u(x)$, $q(x) = \sum_{j=1}^m w_{j} p_j(x)$ and $w_{j} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{j} = 1$.
 
 The pool recall $\theta$ can be estimated as follows:
 \begin{align*}
@@ -108,16 +108,16 @@ Let's start by showing that $\nu_i$ is unbiased.
   While we do not know the value of $Z_Y$, we can divide both the numerator and denominator of $\nuh_i$ by this quantity:
   \begin{align*}
     \nuh_i 
-    &= \frac{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{w(x) g_i(x)}{Z_Y q(x)}}{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{w(x)}{Z_Y q(x)}} \\
-    &= \frac{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)}}{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}}.
+    &= \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{Z_Y q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{Z_Y q(x)}} \\
+    &= \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}}.
   \end{align*}
 
   As the number of samples $n_i \to \infty$,
   \begin{align*}
     \E_{X}[\nuh_i] 
-    &= \E_{X}\left[ \frac{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)}}{\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}} \right] \\
-    &= \frac{\E_{X}\left[ \sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)} \right]}
-    {\E_{X}\left[\sum_{j=1}^m w_j \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}\right]}.
+    &= \E_{X}\left[ \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}} \right] \\
+    &= \frac{\E_{X}\left[ \sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)} \right]}
+    {\E_{X}\left[\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}\right]}.
   \end{align*}
 
   Following similar arguments as in the proof of \refthm{pih}, the numerator and denominator are unbiased estimators of $\E_{x \sim \sY \given Y}[g_i(x)]$ and $\E_{x \sim \sY \given Y}[1] = 1$ respectively.

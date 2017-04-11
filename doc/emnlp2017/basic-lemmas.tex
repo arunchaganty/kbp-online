@@ -1,0 +1,227 @@
+\section{Basic probability lemmas}
+\label{sec:probability}
+
+% TODO: include KKT variables.
+\begin{lemma}[Mean and variance of the sum of two random variables]
+\label{lem:combined-variance}
+  Let $x$ and $y$ be two random variables with mean $0$, variances $\sigma^2_x$ and $\sigma^2_y$ and a correlation coefficient of $\rho$.
+  Then, the estimator $z = \alpha x + (1-\alpha) y$, where $0 \le \alpha
+  \le 1$ also has mean $0$ and has minimum variance $\sigma^2_z$ when
+  \begin{align*}
+  \alpha &= 
+  \begin{cases}
+    0 & \rho > \frac{\sigma_x}{\sigma_y} \\
+    1 & \rho > \frac{\sigma_x}{\sigma_y} \\
+    \frac{\sigma_y (\sigma_y - \rho \sigma_x)}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y} & \text{otherwise},
+  \end{cases}
+  &
+  \sigma^2_z &= 
+  \begin{cases}
+    \sigma^2_y & \rho > \frac{\sigma_x}{\sigma_y} \\
+    \sigma^2_x & \rho > \frac{\sigma_x}{\sigma_y} \\
+    \frac{\sigma_x^2 \sigma_y^2 (1 - \rho^2)}{\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x \sigma_y} & \text{otherwise}.
+  \end{cases}
+  \end{align*}
+
+  In general, if $x_i$ are uncorrelated random variables, $z = \sum_{i} \alpha_i x_i$ where $\sum_i \alpha_i = 1$ has mean and optimal variance,
+  $$\frac{1}{\sigma_z^2} = \sum_i \frac{1}{\sigma_i^2}.$$
+\end{lemma}
+\begin{proof}
+  \newcommand{\alphab}{\bar{\alpha}}
+  For notational convenience, let $\alphab \eqdef 1 - \alpha$.
+  That $z$ has mean $0$ follows directly from the linearity of expectations.
+  The variance of $z$ can be calculated as follows:
+  \begin{align*}
+    \sigma^2_z &\eqdef \var(z) 
+    &= \E[z^2] - {\E[z]}^2 \\
+    &= \E[{(\alpha x+ \alphab y)}^2] - 0 \\
+            &= \E[\alpha^2 x^2 + \alphab^2 y^2 + 2 \alpha \alphab x y] \\
+            &= \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \E[x y] \\
+            &= \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \rho \sigma_x \sigma_y,
+  \end{align*}
+  using the fact that $\rho \eqdef \frac{\E[xy]}{\sigma_x \sigma_y}$.
+
+  We introduce Lagrange multipliers $\lambda_1, \lambda_2 \ge 0$ to handle the constraint that $0 \le \alpha \le 1$,
+  \begin{align*}
+    \sL &= 
+    \alpha^2 \sigma_x^2 + \alphab^2 \sigma_y^2 + 2 \alpha \alphab \rho \sigma_x \sigma_y
+    + \lambda_1 \alpha + \lambda_2 \alphab \\
+    \frac{d}{d\alpha} \sL &= 
+    2 \alpha \sigma_x^2 - 2(1 - \alpha) \sigma_y^2 + 2 (1 - 2\alpha) \rho \sigma_x \sigma_y + \lambda_1 - \lambda_2
+&= 
+    2 (\alpha (\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x\sigma_y) - \sigma_y^2 + \rho \sigma_x \sigma_y + \lambda'_1 - \lambda'_2),
+  \end{align*}
+  where $\lambda'_1$ and $\lambda'_2$ are suitably redefined to absorb the constant.
+
+  This quantity is minimized when the gradient with respect $\alpha$ is $0$,
+  \begin{align*}
+    \alpha (\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y) &= \sigma_y^2 - \rho \sigma_x \sigma_y + \lambda'_2 - \lambda'_1 \\
+    \alpha &= \frac{\sigma_y^2 - \rho \sigma_x \sigma_y + \lambda'_2 - \lambda'_1}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y} \\
+    \alphab &= \frac{\sigma_x^2 - \rho \sigma_x \sigma_y - \lambda'_2 + \lambda'_1}{\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y}.
+  \end{align*}
+
+  The KKT conditions give us that $\lambda'_1 \alpha = 0$ and $\lambda'_2 (1-\alpha) = 0$, which implies that only one of $\lambda'_1$ or $\lambda'_2$ are non-zero.
+  We can see that $\alpha = 0$ when $\sigma_y^2 - \rho \sigma_x \sigma_y < 0$, or when $\rho \ge \frac{\sigma_y}{\sigma_x}$.
+  Likewise, $\alpha = 1$ when $\sigma_x^2 - \rho \sigma_x \sigma_y < 0$, or when $\rho \ge \frac{\sigma_x}{\sigma_y}$.
+  This gives us the result on $\alpha$.
+
+  The value of $\sigma_z^2$ when $\alpha = 0$ or $\alpha=1$ is simply $\sigma_y^2$ or $\sigma_x^2$.
+  When $0 < \alpha < 1$, it is,
+  \begin{align*}
+    \sigma_z^2
+            &= \frac{%
+            \sigma_x^2 \sigma_y^2 {(\sigma_y - \rho \sigma_x)}^2
+            + \sigma_x^2 \sigma_y^2 {(\sigma_x - \rho \sigma_y)}^2
+            + 2 \rho \sigma_x^2 \sigma_y^2 (\sigma_y - \rho \sigma_x) (\sigma_x - \rho \sigma_y)}{%
+            {(\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)}^2
+            }\\
+            &= \sigma_x^2 \sigma_y^2 
+            \frac{%
+             \sigma_y^2 + \rho^2 \sigma_x^2 - 2 \rho \sigma_x \sigma_y 
+            + \sigma_x^2 + \rho^2 \sigma_y^2 - 2 \rho \sigma_x \sigma_y 
+            + 2 \rho (\sigma_x \sigma_y - \rho \sigma_y^2 - \rho \sigma_x^2 + \rho^2 \sigma_x \sigma_y)}{%
+            {(\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)}^2
+            }\\
+            &= \sigma_x^2 \sigma_y^2 
+            \frac{%
+             (1 - \rho^2) (\sigma_x^2 + \sigma_y^2 - 2 \rho \sigma_x \sigma_y)}{%
+             {(\sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y)}^2
+            }\\
+            &= 
+            \frac{(1 - \rho^2) \sigma_x^2 \sigma_y^2}{%
+              \sigma_x^2 + \sigma_y^2 - 2\rho \sigma_x \sigma_y
+            }\\
+  \end{align*}
+\end{proof}
+
+\begin{lemma}[Mean and variance of the product of two random variables]
+\label{lem:variance-product}
+  Let $x$ and $y$ be two independent random variables with means $\mu_x$ and $\mu_y$, and variances $\sigma^2_x$ and $\sigma^2_y$.
+  Then, the estimator $z = x y$ has mean $\mu_x \mu_y$ and variance
+  $$\sigma^2_z = \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2.$$
+\end{lemma}
+\begin{proof}
+  If $x$ and $y$ are independent, $\E[xy] = \E[x]\E[y]$. Thus $\E[z] = \mu_x \mu_y$.
+
+  The variance of $z$ can be calculated as follows:
+  \begin{align*}
+    \var(z) &= \E[z^2] - {\E[z]}^2 \\
+    &= \E[{(xy)}^2] - {\E[xy]}^2 \\
+            &= \E[x^2] \E[y^2] - {\E[x]}^2 {\E[y]}^2 \\
+            &= (\sigma^2_x + \mu_x^2)(\sigma^2_y + \mu_y^2) - \mu_x^2 \mu_y^2 \\
+            &= \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2 + \mu_x^2 \mu_y^2 - \mu_x^2 \mu_y^2 \\
+            &= \sigma_x^2 \sigma_y^2 + \mu_x^2 \sigma_y^2 + \sigma_x^2 \mu_y^2.
+  \end{align*}
+\end{proof}
+
+\begin{lemma}[Mean and variance of the ratio of two random variables]
+\label{lem:variance-ratio}
+  Let $x$ and $y$ be two random variables with means $\mu_x$ and $\mu_y$, variances $\sigma^2_x$ and $\sigma^2_y$ and correlation $\rho$. Furthermore, $y$ has positive support (i.e.\ $y > 0$). 
+  Then, $z = x / y$ approximately has mean $\mu_x / \mu_y$ and variance
+  $$\sigma^2_z \approx \frac{\mu^2_x}{\mu_y^2} \left(\frac{\sigma_x^2}{\mu_x^2} 
+    + 2\rho \frac{\sigma_x \sigma_y}{\mu_x \mu_y}
+    + \frac{\sigma_y^2}{\mu_y^2} \right).$$
+
+\end{lemma}
+\begin{proof}
+  Let $f(x,y) = \frac{x}{y}$.
+  Even if $x$ and $y$ are independent, $\E[f(x,y)]$ is not strictly $f(\E[x],\E[y])$.
+  However, taking a first-order Taylor expansion around $(\mu_x, \mu_y)$, we get
+  \begin{align*}
+    \E[f(x,y)] 
+     &\approx f(\mu_x,\mu_y) + f_x'(\mu_x, \mu_y) \E[x - \mu_x] + f'_y(\mu_x, \mu_y) \E[y - \mu_y] \\
+     &= \frac{\mu_x}{\mu_y}.
+  \end{align*}
+
+  Taking a similar approach to calculate variance, we get,
+  \begin{align*}
+    \var(f(x,y)) 
+    &\approx \E[{(f(x,y) - \E[f(x,y)])}^2] \\
+             &= \E[{(f(\mu_x,\mu_y) + f'_x(\mu_x, \mu_y) (x - \mu_x) + f'_y(\mu_x, \mu_y) (y - \mu_y) - f(\mu_x, \mu_y))}^2] \\
+             &= {f'_x(\mu_x, \mu_y)}^2 \E[{(x - \mu_x)}^2] + {f'_y(\mu_x, \mu_y)}^2 \E[{(y - \mu_y)}^2] 
+              + 2 f'_x(\mu_x, \mu_y)f'_y(\mu_x, \mu_y) \E[(x - \mu_x)(y - \mu_y)]\\
+              &= {f'_x(\mu_x, \mu_y)}^2 \sigma_x^2 + {f'_y(\mu_x, \mu_y)}^2 \sigma_y^2
+              + 2 f'_x(\mu_x, \mu_y)f'_y(\mu_x, \mu_y) \rho \sigma_x \sigma_y.
+  \end{align*}
+  Noting that $f'_x(\mu_x, \mu_y) = \frac{1}{\mu_y}$ and that $f'_y(\mu_x, \mu_y) = -\frac{\mu_x}{\mu_y^2}$, we get,
+  \begin{align*}
+    \var(f(x,y)) 
+    &\approx \frac{\sigma_x^2}{\mu_y^2} + \frac{\sigma_y^2 \mu_x^2}{\mu_y^4}
+    + 2 \frac{\mu_x}{\mu_y^3} \rho \sigma_x \sigma_y \\
+    &= \frac{\mu^2_x}{\mu_y^2} \left(\frac{\sigma_x^2}{\mu_x^2} 
+    + 2\rho \frac{\sigma_x \sigma_y}{\mu_x \mu_y}
+    + \frac{\sigma_y^2}{\mu_y^2} \right).
+ \end{align*}
+\end{proof}
+
+\begin{lemma}[Mean and variance of a importance-weighted estimate.]
+\label{lem:variance-ratio-average}
+  Let $p_i$ and $q_i$ be two sets of independent random variables with means $\mu$ and $\xi$ and variances $\sigma^2$ and $\pi^2$ respectively.
+  Then, $z = \frac{\sum_{i=1}^n p^2_i q_i}{\sum_{i=1}^n p_i}$ has mean $\xi$ and variance,
+  $$\sigma^2_z \approx
+  \frac{\mu^2 \xi^2}{n} {\left( 1 + \frac{\sigma^2}{\mu^2} \right)}^2
+             \left(
+                9 \frac{\sigma^2}{\mu^2} + 4 \frac{\pi^2}{\xi^2}
+                \right).$$
+\end{lemma}
+\begin{proof}
+  From \reflem{variance-ratio} we have that
+  $$\sigma^2_z \approx \frac{\mu^2_x}{\mu_y^2} \left(\frac{\sigma_x^2}{\mu_x^2} 
+    + 2\rho \frac{\sigma_x \sigma_y}{\mu_x \mu_y}
+    + \frac{\sigma_y^2}{\mu_y^2} \right),$$
+    where $x = \frac{1}{n}\sum_{i=1}^n p_i^2 q_i$ and $y = \frac{1}{n}\sum_{i=1}^n p_i$.
+
+  In the following, we will make Gaussian assumptions on any moments $>3$ and ignore variance squared terms, e.g. $\sigma^4 \approx 0$.
+  Thus,
+  \begin{align*}
+    \E[x^3] &\approx 3\sigma_x^2 \mu_x + \mu_x^3 \\
+    \E[x^4] &\approx 6\sigma_x^2 \mu_x^2 + \mu_x^4 \\
+    \var[x^2] &= \E[x^4] - {\E[x^2]}^2 \\
+              &\approx 6\sigma_x^2 \mu_x^2 + \mu_x^4 - {(\mu_x^2 + \sigma_x^2)}^2 \\
+              &= 4\sigma_x^2 \mu_x^2 
+  \end{align*}
+  
+  Let us solve for each term independently,
+  \begin{align*}
+    \mu_x &= (\sigma^2 + \mu^2) \xi \\
+          &= \mu^2 \xi (1 + \frac{\sigma^2}{\mu^2}) \\
+    \mu_y &= \mu \\
+    \sigma_x^2 &\approx \frac{1}{n} (\var[{p_i^2}] \xi^2 + {(\sigma^2 + \mu^2)}^2 \pi^2) \\
+               &<  \frac{1}{n} (4 \mu^2 \sigma^2 \xi^2 + 4 \mu^4 \pi^2) \\
+               &= \frac{4}{n} \mu^4 \xi^2 \left( \frac{\sigma^2}{\mu^2}  + \frac{\pi^2}{\xi^2} \right) \\
+    \sigma_y^2 &= \frac{1}{n} \sigma^2.
+  \end{align*}
+
+  Finally, for $\rho \sigma_x \sigma_y = \E[x y] - \mu_x \mu_y$, we get,
+  \begin{align*}
+      \rho \sigma_x \sigma_y &\eqdef \E[(\sum_{i=1}^n p^2_i q_i)(\sum_{j=1}^n p_j)] -  \E[(\sum_{i=1}^n p^2_i q_i)]\E[(\sum_{j=1}^n p_j)]\\
+           &= \sum_{i=1}^n \E[p^3_i] \E[q_i] - \E[p^2_i] \E[q_i] \E[p_i] \\
+           &= \sum_{i=1}^n (\E[p^3_i] - \E[p^2_i] \E[p_i]) \E[q_i] \\
+           &= \frac{1}{n} (3\sigma^2 \mu + \mu^3 - (\sigma^2 + \mu^2) \mu) \xi \\
+           &= \frac{2}{n} \sigma^2 \mu \xi.
+  \end{align*}
+  noting that all other terms are 0.
+
+  Putting all of these together, we get,
+  \begin{align*}
+    \sigma_z^2 &< 
+    \mu^2 \xi^2 {(1 + \frac{\sigma^2}{\mu^2})}^2
+           \left(
+           \frac{4}{n} (\frac{\sigma^2}{\mu^2} + \frac{\pi^2}{\xi^2})
+              +
+              \frac{4}{n} \frac{\sigma^2 \mu \xi}{\mu^2 \xi \mu}
+              +
+              \frac{1}{n} \frac{\sigma^2}{\mu^2}
+              \right) \\
+           &=
+           \frac{\mu^2 \xi^2}{n} {\left( 1 + \frac{\sigma^2}{\mu^2} \right)}^2
+             \left(
+                9 \frac{\sigma^2}{\mu^2} + 4 \frac{\pi^2}{\xi^2}
+                \right).
+  \end{align*}
+
+
+
+\end{proof}
+
+
