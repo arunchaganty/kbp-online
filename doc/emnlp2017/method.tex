@@ -3,10 +3,10 @@
 
 Pooling bias is fundamentally a sampling bias problem where relational tuples from pooled systems are overrepresented and those from new systems are underrepresented in the evaluation dataset.
 We could of course sidestep the problem by exhaustively annotating the entire document corpus, but that would be a laborious and prohibitively expensive task:
-  using the interfaces we've developed (described in detail in \refsec{evaluation}), it costs about \$20 to annotate a single document by non-expert crowdworkers, leading to an estimated cost of at least \$200,000 for a reasonably large corpus of 10,000 documents.
+  using the interfaces we've developed (described in detail in \refsec{evaluation}), it costs about \$15 to annotate a single document by non-expert crowdworkers, leading to an estimated cost of at least \$150,000 for a reasonably large corpus of 10,000 documents.
 The annotation effort would cost significantly more with expert annotators.
 % TODO: highlight contrast with pooling.
-In contrast, annotating data under the pooling methodology can be significantly cheaper because it is much simpler to \textit{verify} relations predicted by a system than to find it in a document: for our interfaces, it costs only about \$0.10 per relation to verify a predicted relational tuple.
+In contrast, annotating data under the pooling methodology can be significantly cheaper because it is much simpler to \textit{verify} relations predicted by a system than to find it in a document: for our interfaces, it costs only about \$0.30 per relation to verify a predicted relational tuple.
 
 We propose a new paradigm called on-demand open-world evaluation which takes a lazy approach to dataset construction by annotating predictions from systems \textit{only when they are underrepresented}, thus correcting for pooling bias as it arises.
 In this section, we'll formalize the problem solved by on-demand open-world evaluation independent of KBP and describe our solution that allows us to accurately estimate evaluation metrics without bias in a cost-effective manner. 
