@@ -36,7 +36,7 @@ Then, a simple estimator for precision and recall is:
 \begin{align*}
   \pih_i^{(s)} &= \sum_{x \in \Xh_i} f(x) & \rhoh_i^{(s)} &= \sum_{x \in \Yh_0} g_i(x).
 \end{align*}
-%However, simple statistics tell us that we could require at least 10,000 samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$, which would be quite costly on a per-system basis.
+%However, simple statistics tell us that we could require at least 10,000 independent samples each to estimate $\pi$ and $\rho$ to $\pm 1\%$, which would be quite costly on a per-system basis.
 To make the system practically viable though, we'd like be able to reuse the samples we've collected and only spend money to annotate data when absolutely necessary.
 In the rest of this section, we'll see how to do this by answering the following three key questions:
 \begin{enumerate}
