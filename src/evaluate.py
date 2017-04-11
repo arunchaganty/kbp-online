@@ -7,7 +7,7 @@ import sys
 import csv
 import logging
 
-from kbpo import evaluation
+from kbpo import db_evaluation
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -16,9 +16,9 @@ logging.basicConfig(level=logging.INFO)
 # Actually call the code.
 def do_evaluate(args):
     for submission_id in range(1,4):
-        logger.info("Instance score of %d is %.3f %.3f %.3f", submission_id, *evaluation.score(submission_id, "instance"))
-        logger.info("Relation score of %d is %.3f %.3f %.3f", submission_id, *evaluation.score(submission_id, "relation"))
-        logger.info("Entity score of %d is %.3f %.3f %.3f", submission_id, *evaluation.score(submission_id, "entity"))
+        logger.info("Instance score of %d is %.3f %.3f %.3f", submission_id, *db_evaluation.score(submission_id, "instance"))
+        logger.info("Relation score of %d is %.3f %.3f %.3f", submission_id, *db_evaluation.score(submission_id, "relation"))
+        logger.info("Entity score of %d is %.3f %.3f %.3f", submission_id, *db_evaluation.score(submission_id, "entity"))
 
 if __name__ == "__main__":
     import argparse
