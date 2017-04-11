@@ -44,9 +44,9 @@ It should be noted that the \anydoc{} heuristic also overestimates scores by abo
 The bias affects precision and recall almost equally: 
   the median bias the without \anydoc{} heuristic being 17.93\% and 17.00\% respectively, and
   the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
-At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions).
+  At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions) \ap{is lesser than the pooling bias with \anydoc{} heuristic}.
 
-We also considered an alternate scoring model of ignoring relational tuples outside the evaluation set during scoring and find that under this model \fone{} scores remain biased by 14.99\% and 0.73\% points on average, with and without the \anydoc{} heuristic respectively.
+  We also considered an alternate scoring model of ignoring relational tuples outside the evaluation set during scoring and find that under this model \fone{} scores remain biased by 14.99\% and 0.73\% points on average, with and without the \anydoc{} heuristic respectively. \ap{Methodology is unclear. We should state what precision and recall mean in a sentence or what the TP/FP values etc are now counting}
 While this scoring model is less biased than assuming unassessed relational tuples to be wrong, combined with the discrepancy of the \anydoc{} score it remains too large a difference to be ignored.
 
 The analysis confirms the necessity of the \anydoc{} heuristic during development evaluations,
