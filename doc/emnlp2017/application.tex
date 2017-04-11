@@ -19,7 +19,7 @@ The traditional solution to this problem is to take the macro average of the met
 We can replicate this behavior with the appropriate choice of a sampling distribution.
 To estimate the macro-average over predicates, we use a predicate-centric distribution $p_i^\text{(p)}$ that first uniformly samples a predicate and then uniformly samples an instances with that predicate.
 Similarly, to estimate the macro-average over subject entities, we use an entity-centric distribution $p_i^\text{(e)}$ that first uniformly samples over the entities in the system's predicted relational tuples and then uniformly samples instances with that entity as its subject.
-\reffig{entity-distribution} plots a histogram of different predicates and entities are represented by the uniform, predicate and subject distributions.
+Detailed histograms comparing different sampling distributions can be found in \appendixref{implementation}.
 
 \begin{figure*}[t]
 \begin{subfigure}{0.49\textwidth}
@@ -36,7 +36,7 @@ Similarly, to estimate the macro-average over subject entities, we use an entity
 
 \subsection{Verifying system predictions}
 When verifying relational tuples predicted by a system, 
-  crowd workers are presented the tuple's provenance and are asked to identify if a relation holds between the identified subject and object mentions (\figureref{relation-interface}). 
+  crowd workers are presented the tuple's provenance and are asked to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
   Crowd workers also link the subject and object mentions to pages on Wikipedia, if possible.
 On average, we find that crowdworkers are able to perform this task in about 30 seconds, corresponding to about \$0.10 per instance.
 We requested 5 crowdworkers to annotate a small set of 200 relation instances from the 2015 TAC-KBP corpus 
@@ -49,7 +49,7 @@ As a proxy, we assume that relations are identically distributed across document
 
 To do so, crowd workers begin by identifying every mention span in a document and specifying its type.
   For each mention, they are also asked to identify the canonical mention within the document
-  and identify links to Wikipedia pages where possible (\figureref{entity-interface}).
+  and identify links to Wikipedia pages where possible (\reffig{entity-interface}).
 Finally, using a separate interface, crowdworkers annotate relations between pair of mentions within a sentence.
 
 These interfaces are far more involved: the entity annotation interface takes on average about 13 minutes per document, corresponding to about \$2.60 per document, while the relation annotation interface takes on average about \$2.25 per document.
@@ -64,7 +64,7 @@ We also measure substantial token-level inter annotator agreement for identifyin
 Based on this analysis, we use token-level majority over 3 workers in subsequent experiments.
 
 A final issue to discuss is how documents themselves should be sampled to capture diverse entities that span documents.
-When considering uniformly sampled documents, we found that a majority of the relations extracted correspond to very rare entities and result in very few entities with more than one relation~\reffig{entity-distribution}.
+When considering uniformly sampled documents, we found that a majority of the relations extracted correspond to very rare entities and result in very few entities with more than one relation (\reffig{entity-distribution}).
 In contrast, the TAC-KBP query are almost evenly split between rare and semi-frequent entities.
 As a heuristic, we adopt the following two-stage sampling procedure:
 First, 20\% of our exhaustive document collection is sampled uniformly and annotated.
