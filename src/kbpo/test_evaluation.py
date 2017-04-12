@@ -3,9 +3,7 @@
 """
 More elaborate tests for evaluation routines.
 """
-import sys
 from collections import Counter
-from functools import reduce
 import logging
 
 import numpy as np
@@ -25,6 +23,27 @@ def generate_true_sample(num_samples, population_size=1000):
     T = [(2*x, 1.0) for x in range(int(np.floor(population_size/2)))]
     np.random.shuffle(T)
     return T[:num_samples]
+
+def bootstrap_sample(estimation_fn, sampling_fn, n_epochs=100, *args, **kwargs):
+    ys = []
+    for _ in range(n_epochs):
+        X = sampling_fn(*args, **kwargs)
+        ys.append(estimation_fn(*X))
+    return np.array(ys)
+
+def stats(estimation_fn, sampling_fn, n_epochs=100, *args, **kwargs):
+    ys = bootstrap_sample(estimation_fn, sampling_fn, n_epochs, *args, **kwargs)
+
+    mu = np.mean(ys, 0)
+    std = np.std(ys, 0)
+    return np.vstack((mu, std))
+
+def confidence_intervals(estimation_fn, sampling_fn, n_epochs=100, interval=0.95, *args, **kwargs):
+    ys = bootstrap_sample(estimation_fn, sampling_fn, n_epochs, *args, **kwargs)
+
+    mu = np.mean(ys, 0)
+    lr = np.percentile(ys, [100*(1-interval)/2, 100*(interval + (1-interval)/2)], 0)
+    return np.vstack((mu, lr))
 
 # Scheme to generate samples:
 # - specify a precision and recall.
@@ -51,7 +70,7 @@ def generate_submission(precision=0.3, recall=0.2, population_size=1000):
 
 def test_generate_submission():
     population, precision, recall = 1000, 0.5, 0.2
-    P, X = generate_submission(population, precision, recall)
+    P, X = generate_submission(precision, recall, population)
     precision_ = sum(P[x] * fx for x, fx in X)
     recall_ = sum(fx for _, fx in X)/(population/2)
     assert np.allclose(precision, precision_)
@@ -161,7 +180,6 @@ def true_pooled_recall(U, P):
         for n, x in enumerate(U):
             gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
             nu_i += (U[x]*gxi - nu_i)/(n+1)
-        print(i, nu_i, Z)
         nus.append(nu_i/Z)
     return nus
 
@@ -225,3 +243,37 @@ def test_recall():
     print("rho_i", recalls)
     print("rhoh_i", recalls_)
     assert np.allclose(recalls, recalls_, atol=1e-1)
+
+def test_precision_statistical():
+    np.random.seed(42)
+    n_samples = 100
+    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
+
+    def _sample():
+        Xhs = [sample_without_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
+        return Ps, Xhs
+
+    def _evaluate(Ps, Xhs):
+        return simple_precision(Ps, Xhs) + pooled_precision(Ps, Xhs)
+
+    print(stats(_evaluate, _sample, 100))
+
+def test_recall_statistical():
+    np.random.seed(42)
+    n_samples = 100
+    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
+    U = true_sample_distribution(population_size)
+
+    def _sample():
+        Xhs = [sample_without_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
+        Y0 = generate_true_sample(n_samples, population_size)
+        return Ps, Y0, Xhs
+
+    def _evaluate(Ps, Y0, Xhs):
+        return simple_recall(U, Ps, Y0) + recall(U, Ps, Y0, Xhs)
+
+    print(stats(_evaluate, _sample, 100))
