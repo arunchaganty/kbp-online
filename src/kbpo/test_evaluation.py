@@ -246,8 +246,8 @@ def test_recall():
 
 def test_precision_statistical():
     np.random.seed(42)
-    n_samples = 100
-    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    n_samples = 1000
+    population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7, 0.6, 0.4, 0.2], [0.2, 0.1, 0.3, 0.3, 0.2, 0.1]
 
     Ps, Xs = generate_submission_set(precisions, recalls, population_size)
 
@@ -262,8 +262,8 @@ def test_precision_statistical():
 
 def test_recall_statistical():
     np.random.seed(42)
-    n_samples = 100
-    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    n_samples = 1000
+    population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7, 0.6, 0.4, 0.2], [0.2, 0.1, 0.3, 0.3, 0.2, 0.1]
 
     Ps, Xs = generate_submission_set(precisions, recalls, population_size)
     U = true_sample_distribution(population_size)

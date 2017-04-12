@@ -161,7 +161,7 @@ def pooled_recall(U, P, Xs):
     w_j \propto n_j?
     """
     m = len(P)
-    W = compute_weights(P, Xs, "uniform")
+    W = compute_weights(P, Xs, "heuristic")
     Q = construct_proposal_distribution(W, P)
 
     nus = []
