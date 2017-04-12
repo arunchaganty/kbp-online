@@ -75,7 +75,14 @@ If $I$ is the set of instances predicted and $I^*$ is the set of true instances 
 %where $C$ is the set of all contexts predicted to contain relation returned by the system and $C^*$ are the set of all contexts that contain a relation in the corpus.
 Instance-level scores are simply macro-aggregated over each relation to get relation-level precision, recall and \fone{}, $P^\text{i}, R^\text{i}, \fone^\text{i}$.
 
-At the entity-level, instances are grouped by \textit{subject entities} and \textit{fills}, i.e.\ relation, object entity pairs, using the predicted links. Precision and recall scores are first averaged over the instances in each fill, then over the fills in the subject entity and finally over all entities. For example, let $i_1, i_2, i_3, i_4$ be four relation instances for an entity $e$ where $i_1, i_2$ correspond to fill $f_1$ and $i_3, i_4$ to $f_2$. If a system predicts $I = \{i_1, i_2, i_3\}$ and $I^* = \{i_1, i_3, i_4\}$, its instance-level scores would be
+\pl{I found the text hard to understand; maybe it's better to write down the
+actual general formula?  does that look reasonable?
+Maybe a good way to visualize this as a rooted tree
+where you have the first level split on entity, the second level split on fill,
+and the third level split on instance;
+Then you can just describe entity-level scores as just different averaging at different levels of this tree
+}
+At the entity-level, instances are grouped by \textit{subject entities} and \textit{fills}, i.e.\ relation, object entity pairs, using the predicted links. Precision and recall scores are first averaged over the instances in each fill \pl{and subject, right?}, then over the fills in the subject entity and finally over all entities. For example, let $i_1, i_2, i_3, i_4$ be four relation instances for an entity $e$ where $i_1, i_2$ correspond to fill $f_1$ and $i_3, i_4$ to $f_2$. If a system predicts $I = \{i_1, i_2, i_3\}$ and $I^* = \{i_1, i_3, i_4\}$, its instance-level scores would be
 \begin{align*}
   P^\text{i} &= \frac{|\{i_1, i_3\}|}{|\{i_1, i_2, i_3\}|} = \frac{2}{3} &
   R^\text{i} &= \frac{|\{i_1, i_3\}|}{|\{i_1, i_3, i_4\}|} = \frac{2}{3},
@@ -133,5 +140,11 @@ Unfortunately, there is no way to evaluate these new predictions and they are as
 
 Another common heuristic used by teams developing systems for TAC-KBP is the \anydoc{} heuristic which treats any relation whose object string (e.g.\ ``Debbie Reynolds'' in \figureref{example}) exactly matches that of a correct relation instance in the evaluation set.
 Under this heuristic, predicting the \texttt{per:parents} relation between Carrie Fisher and Debbie Reynolds for the sentence ``\textit{Carrie Frances Fisher} was born \ldots to actors and singers Eddie Fisher and \textit{Debbie Reynolds}'' or the sentence ``Bright Lights: Starring \textit{Carrie Fisher} and \textit{Debbie Reynolds}'' would both be considered correct, even though latter is incorrect.
+
+\pl{I think a lot of this text should be replaced with a figure / simple example
+of the pooled evaluation.
+It's really important for non-KBP people to know exactly what the evaluation is doing;
+it's a simple idea, but it's too easy to gloss over the text
+}
 
 % TODO: describe `anydoc'

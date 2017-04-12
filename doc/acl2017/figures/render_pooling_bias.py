@@ -6,47 +6,65 @@ Experiment 2: pooling bias
 
 import csv
 import sys
+from collections import namedtuple
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rc
-from collections import Counter
 
 def teamid(runid):
     return runid[3:-1]
 
-def do_command(args):
-    reader = csv.reader(args.input, delimiter='\t')
+def load_data(fstream):
+    reader = csv.reader(fstream, delimiter='\t')
     header = next(reader)
+    Row = namedtuple("Row", [h.replace("-", "_") for h in header])
+    return [Row(*row) for row in reader]
 
-    I = {n: i-1 for i, n in enumerate(header)}
+def do_command(args):
+    root = load_data(args.root)
+    data = load_data(args.input)
 
-    data = np.array([row for row in reader if row[0] != "LDC"])
-    systems = [row[0] for row in data]
-    data = np.array([[float(x) for x in row[1:]] for row in data])
 
-    a = '-anydoc' if args.anydoc else ''
+    systems = [(float(getattr(r, args.root_metric)), r.system) for r in root if r.system != "LDC"]
+    I = {sys: i for i, (_, sys) in enumerate(sorted(systems, reverse=True))}
 
-    # TODO: identify loo teams.
-    # loo_teams = set(t for t, c in Counter(map(teamid, systems)).items() if c > 1)
+    X0 = np.zeros(len(systems)) # Original score
+    for r in root:
+        if r.system == "LDC": continue
+        X0[I[r.system]] = float(getattr(r, args.metric))
+
+    X = np.zeros(len(systems)) # Original score
+    Y = np.zeros(len(systems)) # New score
+    for r in data:
+        if r.system == "LDC": continue
+        X[I[r.system]] = float(getattr(r, args.metric))
+        X[I[r.system]] = float(getattr(r, args.metric))
+        Y[I[r.system]] = float(getattr(r, args.metric + "_lto"))
+
+    # Print statistics.
+    print("Metric bias: {:.2f}%".format(np.mean(abs(X - X0)) * 100))
+    print("Mean bias: {:.2f}%".format(np.mean(abs(X - Y)) * 100))
+    print("Median bias: {:.2f}%".format(np.median(abs(X - Y)) * 100))
+    print("Mean bias (top 40): {:.2f}%".format(np.mean((abs(X - Y))[:40]) * 100))
+    print("Median bias (top 40): {:.2f}%".format(np.median((abs(X - Y))[:40]) * 100))
 
     # Read data
     rc('text', usetex=True)
     rc('font', family='serif')#, size=22)
 
     # Set up plotter.
+    plt.subplot(2,1,1)
     plt.ylabel('Macro $F_1$', fontsize=22)
-    plt.xlabel('Systems', fontsize=22)
 
-    ixs = (-data).argsort(0).T[I[args.metric + a]]
-    data = data[ixs, :]
-
-    p, loo, lto = data.T[I[args.metric + a]], data.T[I[args.metric+'-loo' + a]], data.T[I[args.metric+'-lto' + a]]
-
-    plt.errorbar(np.arange(1,data.shape[0]+1), p, yerr=[p - lto, p - p], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7, label="Pooled score")
-    plt.plot(np.arange(1,data.shape[0]+1), lto, color='g', marker='^', linestyle='', alpha=0.9, label="Leave-team-out pooling bias")
-    plt.plot(np.arange(1,data.shape[0]+1), loo, color='b', marker='d', linestyle='', alpha=0.9, label="Leave-one-out pooling bias")
+    plt.errorbar(np.arange(1,len(systems)+1), X, yerr=[X - Y, X-X], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7, label="Actual score")
+    plt.plot(np.arange(1,len(systems)+1), Y, color='g', marker='^', linestyle='', alpha=0.9, label="Evaluation score")
     plt.legend()
+
+    plt.subplot(2,1,2)
+    plt.ylabel(r'$\Delta$ Macro $F_1$', fontsize=22)
+    plt.xlabel('Systems', fontsize=22)
+    plt.errorbar(np.arange(1,len(systems)+1), X-X, yerr=[X - Y, X-X], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7)
 
     plt.savefig(args.output)
     #plt.show()
@@ -54,10 +72,11 @@ def do_command(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser( description='' )
-    parser.add_argument('-i', '--input', type=argparse.FileType('r'), default='data/pooling_bias.tsv', help="")
-    parser.add_argument('-m', '--metric', type=str, default='macro-f1', help="")
-    parser.add_argument('-a', '--anydoc', action='store_true', default=False, help="")
-    parser.add_argument('-o', '--output', type=str, default='pooling-bias.pdf', help="")
+    parser.add_argument('-r', '--root', type=argparse.FileType('r'), default='data/pooling_bias_closed-world.tsv', help="The closed world scores file that provides ranking, etc.")
+    parser.add_argument('-i', '--input', type=argparse.FileType('r'), default='data/pooling_bias_closed-world.tsv', help="File to plot.")
+    parser.add_argument('-m', '--metric', type=str, default='macro_f1', help="")
+    parser.add_argument('-mr', '--root-metric', type=str, default='macro_f1', help="Metric to use when sorting the root")
+    parser.add_argument('-o', '--output', type=str, default='pooling-bias.pdf', help="Name of file to output to")
     parser.set_defaults(func=do_command)
 
     #subparsers = parser.add_subparsers()

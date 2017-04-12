@@ -2,6 +2,116 @@
 \section{Annotation interfaces}
 \label{sec:interface}
 
+\section{Theoretical proofs for the sampling procedures}
+\label{sec:sampling}
+
+Let's recall the notation from \refsec{design}.
+
+Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
+  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
+  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems,
+  and $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Furthermore, 
+  let $\Xh_i$ be independent samples of $n_i$ elements drawn from $X_i$ with the distribution $p_i$,
+  $\Yh_i$ be the intersection of these sets with $\sY$, and
+  $\Yh_0$ be a sample drawn from $\sY$ according to an unknown distribution $p'(x)$.
+
+We would like to evaluate precision, $\pi_i$, and recall, $\rho_i$:
+\begin{align*}
+  \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
+  \rho_i &\eqdef \E_{x \sim \sY}[g_i(x)],
+\end{align*}
+
+In \refsec{design}, we proposed the following estimator for $\pi_i$:
+\begin{align*}
+  \pih_i &\eqdef \sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
+\end{align*}
+where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
+
+\begin{theorem}[Statistical properties of $\pih_i$]
+  $\pih_i$ is an unbiased estimator of $\pi_i$ and has a variance of:
+  \begin{align*}
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+  \end{align*}
+  where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
+\end{theorem}
+\begin{proof}
+  Let $\Xh = (\Xh_1, \ldots, \Xh_m)$ which is drawn from the product distribution of $p_1 \times p_m$.
+  By independence and the linearity of expectation, 
+  \begin{align*}
+    \E_{\Xh}\left[\sum_{j=1}^m f(\Xh_j) \right] &= \sum_{j=1}^m \E_{\Xh_j}[f(\Xh_j)].
+  \end{align*}
+
+  First, let's show that $\pih_i$ is unbiased:
+  \begin{align*}
+    \E_{\Xh}[\pih_i] 
+    &= \E_{\Xh}\left[\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j}{n_j} \E_{\Xh_j}\left[\sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j}{n_j} n_j \E_{p_j}\left[\frac{p_i(x) f(x)}{q_i(x)}\right] \\
+    &= \sum_{j=1}^m w_j \sum_{x \in \sX} p_j(x) \frac{p_i(x) f(x) }{q_i(x)}\\
+    &= \sum_{x \in \sX} \sum_{j=1}^m w_j p_j(x) \frac{p_i(x) f(x) }{q_i(x)}\\
+    &= \sum_{x \in \sX} q_i(x) \frac{p_i(x) f(x)}{q_i(x)} \\
+    &= \sum_{x \in \sX} p_i(x) f(x) \\
+    &= \pi_i.
+  \end{align*}
+
+  Now let's compute the variance.
+  \begin{align*}
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} \right]
+    - \sum_{j=1}^m \frac{w_j^2}{n_j} {\E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]}^2 \\
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} - \frac{\pi_{ij} p_i(x) f(x)}{q_i(x)} \right] \\
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+  \end{align*}
+  where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
+\end{proof}
+
+\paragraph{Estimating recall}
+
+Estimating recall poses a different challenge than estimating precision because we simply don't know the set of all true relation instances.
+Let $p(x)$ be a uniform distribution over $\sY$, the set of true instances, but we simply can't sample from $p(x)$.
+% NOTE: it doesn't make any sense to have anything but uniform distribution over true relation instaces -- how we ould define a relation instance version of this? We can only stratify our metrics by relation or entity.
+
+% CHALLENGE is using the pooled samples in estimating.
+We would like to measure $\E_{p(x)}[]$.
+
+
+
+
+Just use $p*q$ trick, but keep track of which distribution we are using.
+
+\paragraph{Proposal distribution}
+We simply sample $n$ elements from each submission without replacement according to the distribution $p_i(x)$:
+\begin{algorithm}
+\begin{algorithmic}
+  \REQUIRE{Sets $X_1, \ldots, X_m$ and distributions $p_1, \ldots, p_m$}
+  \ENSURE{A set of sampled elements, $Y$.}
+  \STATE{$Y \gets \emptyset$.}
+  \FOR{$i=1$ \TO{} $i=m$}
+  \STATE{$Y_i = $ sample without replacement from $X_i \setminus Y$.}
+  \STATE{$Y \gets$ $Y \union Y_i$.}
+\ENDFOR{}
+\end{algorithmic}
+\end{algorithm}
+
+Unfortunately, computing the exact weighing distribution $\Pr(x \in Y)$ is difficult to calculate in closed form because we are sampling without replacement.
+Instead, we approximate the distribution assuming that the samples were drawn at random from one of the submissions \textit{with replacement}, giving 
+\[
+q(x) = \Pr(x \in Y) = \frac{1}{m}{\sum_{i=1}^m p_i(x)}.
+\]
+
+\paragraph{Bias.}
+
+We can estimate the bias induced by \textit{not} including a sample set $X_{m+1}$ in the pooling procedure above by considering the remaining mass that would have been present on this portion.
+Let $f(x) = g(x) + h(x)$ where $g(x)$ has support only on $X_{m+1} \intersection X_{1:m}$ and $h(x)$ has support only on $X_{m+1} \setminus X_{1:m}$.
+$g(x)$ can be estimated without bias using importance sampling.
+The value of $h(x)$ is unknown but can be bounded by the mass $p_{m+1}$ places on $X_{m+1} \setminus X_{1:m}$:
+\begin{align*}
+\E_{p_{m+1}}[f(x)] i
+  &= \E_{p_{m+1}}[g(x) + h(x)] \\
+  &= \E_{p_{m+1}}[g(x)] + \E_{p_{m+1}}[h(x)] \\
+  &= \E_{p_{m+1}}[g(x)] + [0, p_{m+1}(X_{m+1} \setminus X_{1:m})].
+\end{align*}
+
 \section{Power analysis}
 \label{sec:power}
 
