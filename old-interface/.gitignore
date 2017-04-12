@@ -1,0 +1,15 @@
+exhaustive-2016/
+exhaustive-recall-2016/
+exhaustive-recall-set2-2016/
+exhaustive/
+pooled-eval/
+pooled-kb_patterns_2016_8_28_16.entities.250/
+pooled-kb_patterns_2016_8_28_16.entities.51.250/
+pooled-kb_patterns_2016_8_28_16.relations.250/
+pooled-kb_patterns_2016_8_28_16.relations.51.250/
+pooled-kb_rnn_unk_2016_8_28_16.entities.51.500/
+pooled-kb_rnn_unk_2016_8_28_16.relations.51.500/
+pooled-kb_supervised_2016_8_28_16.entities.51.500/
+pooled-kb_supervised_2016_8_28_16.relations.51.500/
+verficiation/
+*.tar.gz

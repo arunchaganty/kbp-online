@@ -1,0 +1,171 @@
+\onecolumn
+\section{Implementation details}
+\label{sec:implementation}
+
+\section{Theoretical proofs for the sampling procedures}
+\label{app:sampling}
+
+Let's recall the notation from \refsec{method}.
+
+Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
+  $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
+  $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems,
+  and $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Furthermore, 
+  let $\Xh_i$ be a set of $n_i$ independent samples drawn from $X_i$ with the distribution $p_i$,
+  $\Yh_i$ be the intersection of these sets with $\sY$, and
+  $\Yh_0$ be a sample drawn from $\sY$ according to an unknown distribution $p'(x)$.
+
+We would like to evaluate precision, $\pi_i$, and recall, $\rho_i$:
+\begin{align*}
+  \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
+  \rho_i &\eqdef \E_{x \sim \sY}[g_i(x)],
+\end{align*}
+
+In this section, we'll provide proofs that show that the estimators proposed are indeed unbiased, and we will characterize their variance.
+
+\subsection{Estimating precision}
+
+In \refsec{method}, we proposed the following estimator for $\pi_i$:
+\begin{align*}
+  \pih_i &\eqdef \sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
+\end{align*}
+where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
+
+\begin{theorem}[Statistical properties of $\pih_i$]
+\label{thm:pih}
+  $\pih_i$ is an unbiased estimator of $\pi_i$ and has a variance of:
+  \begin{align*}
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+  \end{align*}
+  where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
+\end{theorem}
+\begin{proof}
+  Let $\Xh = (\Xh_1, \ldots, \Xh_m)$ which is drawn from the product distribution of $p_1 \times p_m$.
+  By independence and the linearity of expectation, 
+  \begin{align*}
+    \E_{\Xh}\left[\sum_{j=1}^m f(\Xh_j) \right] &= \sum_{j=1}^m \E_{\Xh_j}[f(\Xh_j)].
+  \end{align*}
+
+  First, let's show that $\pih_i$ is unbiased:
+  \begin{align*}
+    \E_{\Xh}[\pih_i] 
+    &= \E_{\Xh}\left[\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j}{n_j} \E_{\Xh_j}\left[\sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j}{n_j} n_j \E_{p_j}\left[\frac{p_i(x) f(x)}{q_i(x)}\right] \\
+    &= \sum_{j=1}^m w_j \sum_{x \in \sX} p_j(x) \frac{p_i(x) f(x) }{q_i(x)}\\
+    &= \sum_{x \in \sX} \sum_{j=1}^m w_j p_j(x) \frac{p_i(x) f(x) }{q_i(x)}\\
+    &= \sum_{x \in \sX} q_i(x) \frac{p_i(x) f(x)}{q_i(x)} \\
+    &= \sum_{x \in \sX} p_i(x) f(x) \\
+    &= \pi_i.
+  \end{align*}
+
+  Now let's compute the variance.
+  \begin{align*}
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} \right]
+    - \sum_{j=1}^m \frac{w_j^2}{n_j} {\E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]}^2 \\
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} - \frac{\pi_{ij} p_i(x) f(x)}{q_i(x)} \right] \\
+    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+  \end{align*}
+  where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
+\end{proof}
+
+\subsection{Estimating recall}
+
+In \refsec{method}, we used the fact that the recall of system $i$, $\rho_i$, can be expressed as the recall of $i$ within the pool, $\nu_i$ and the recall of the pool itself $\theta$: $\rho_i = \theta \nu_i$:  
+\begin{align*}
+  \nu_i &= \E_{x \sim \sY \given Y}[g_i(x)] &
+  \theta &= \E_{x \sim \sY}[g(x)],
+\end{align*}
+where $x$ is sampled under the distribution $p'(x \given x \in Y)$ and $p'(x)$ respectively and
+  $g(x) \eqdef \I[x \in \Union_{i=1}^m X_i] = \max_{j \in [1,m]} g_j(x)$ is the indicator function for $x$ belonging to the pool.
+
+Ideally, to estimate the pooled recall, $\nu_i$, we need to take expectations with respect to $x \sim Y$, but have samples drawn from individual $X_i$.
+To correct for this bias, we'll use a self-normalizing estimator for $\nu_i$:
+\begin{align*}
+  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{q(x)}},
+\end{align*}
+where $p'(x) \propto u(x)$, $q(x) = \sum_{j=1}^m w_{j} p_j(x)$ and $w_{j} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{j} = 1$.
+
+The pool recall $\theta$ can be estimated as follows:
+\begin{align*}
+  \thetah &\eqdef \sum_{x \in \Yh_0} g(x),
+\end{align*}
+where $g(x) \eqdef \I\left[ x \in \Union_{i=1}^m X_i \right] = \max_{j \in [1,m]} g_j(x)$.
+
+Finally, we proposed the following estimator for recall $\rho_i$:
+\begin{align*}
+  \rhoh_i &\eqdef \thetah\nuh_i.
+\end{align*}
+
+Let's start by showing that $\nu_i$ is unbiased.
+\begin{theorem}[Statistical properties of $\nuh_i$]
+\label{thm:nuh}
+  $\nuh_i$ is a \textit{consistent} estimator of $\nu_i$.
+\end{theorem}
+\begin{proof}
+  We have that $p'_Y(x) = \frac{w(x)}{Z_Y}$.
+  While we do not know the value of $Z_Y$, we can divide both the numerator and denominator of $\nuh_i$ by this quantity:
+  \begin{align*}
+    \nuh_i 
+    &= \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{Z_Y q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{Z_Y q(x)}} \\
+    &= \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}}.
+  \end{align*}
+
+  As the number of samples $n_i \to \infty$,
+  \begin{align*}
+    \E_{X}[\nuh_i] 
+    &= \E_{X}\left[ \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}} \right] \\
+    &= \frac{\E_{X}\left[ \sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x) g_i(x)}{q(x)} \right]}
+    {\E_{X}\left[\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{p'_Y(x)}{q(x)}\right]}.
+  \end{align*}
+
+  Following similar arguments as in the proof of \refthm{pih}, the numerator and denominator are unbiased estimators of $\E_{x \sim \sY \given Y}[g_i(x)]$ and $\E_{x \sim \sY \given Y}[1] = 1$ respectively.
+  Thus,
+  \begin{align*}
+    \E_{X}[\nuh_i] 
+    &= \E_{x \sim \sY \given Y}[g_i(x)].
+    &= \nu_i.
+  \end{align*}
+  $\nuh_i$ is an unbiased estimator of $\nu_i$.
+
+  % TODO: derive variance which will look ugly as hell.
+\end{proof}
+
+Finally, we turn to studying $\rhoh$:
+\begin{theorem}[Statistical properties of $\rhoh_i$]
+\label{thm:rhoh}
+  $\rhoh_i$ is an unbiased estimator of $\rho_i$ with variance
+  \begin{align*}
+    \Var \rhoh_i &= \theta \Var \nuh_i + \nu_i \Var\thetah + \Var\thetah \Var\nuh_i.
+  \end{align*}
+\end{theorem}
+\begin{proof}
+  First, let's show that $\rho_i = \theta \nu_i$:
+  \begin{align*}
+    \rho_i 
+    &\eqdef= \E_{x \sim \sY}[g_i(x)] \\
+      &= p'(Y_i) \\
+      &= p'(Y \band Y_i) \\
+      &= p'(Y) p'(Y_i \given Y) \\
+      &= \E_{x\sim \sY}[g(x)] \E_{x \sim \sY\given Y}[g_i(x)] \\
+      &= \theta \nu_i.
+  \end{align*}
+
+
+  From \refthm{nuh}, we have that $\nuh_i$ is an unbiased estimator of $\nu_i$.
+  It is evident that $\thetah$ is an unbiased estimator of $\theta$.
+  $\nuh_i$ and $\thetah$ are estimated using independent samples ($\Yh$ and $\Yh_0$ respectively), and hence
+  \begin{align*}
+    \E_{Y_0, Y}[\rhoh] 
+      &= \E_{Y_0, Y}[\thetah \nuh_i] \\
+      &= \E_{Y_0}[\thetah] \E_Y[\nuh_i] \\
+      &= \theta \nu_i \\
+      &= \rhoh.
+  \end{align*}
+
+  By \reflem{variance-product},
+  \begin{align*}
+    \Var \rhoh_i &= \theta \Var\nuh_i + \nu_i \Var\thetah + \Var\thetah \Var\nuh_i.
+  \end{align*}
+\end{proof}

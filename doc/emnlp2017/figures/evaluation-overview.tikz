@@ -1,0 +1,125 @@
+% vim:ft=tex
+% Diagram depciting how mention-level and entity-level scores are
+% computed.
+\documentclass[tikz,convert={outfile=evaluation-overview.pdf}]{standalone}
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+\usepackage{scabby-diag}
+\usetikzlibrary{fit}
+\usetikzlibrary{patterns}
+
+\begin{document}
+
+\newcommand\encircle[1]{%
+\raisebox{.5pt}{\textcircled{\raisebox{-.9pt} {#1}}}}
+
+\begin{tikzpicture}[
+    correct/.style = {fill=green},
+    incorrect/.style = {pattern=north east lines, pattern color=red},
+    node/.style = {circle, minimum size=3em},
+    sysa/.style = {draw, circle, dashed, thick, purple},
+    sysb/.style = {draw, circle, dotted, thick, blue},
+    output/.style = {inner sep=-3pt},
+    duplicate/.style = {draw, rectangle, thick, red},
+    part/.style = {draw, rectangle, dashed, black, thick},
+    ]
+    
+    % Part 1: mention level precision, recall, entity scores.
+    \node (part1) at (0,0) {};
+    \node[anchor=north west] at ($(part1) + (-1,1)$) {$f_1$};
+
+    % sysA gets it right, sysB doesn't.
+    \node[node, correct] (m11) at ($(part1) + (0,0)$) {$m_{11}$};
+    \node[sysa, output, fit=(m11)] (m11A) {};
+
+    % sysB gets it wrong, sysA doesn't predict
+    \node[node, incorrect] (m12) at ($(part1) + (2,0)$) {$m_{12}$};
+    \node[sysb, output, fit=(m12)] (m12A) {};
+
+    % sysA and sysB don't predict
+    \node[node, correct] (m13) at ($(part1) + (0,-2)$) {$m_{13}$};
+
+    % sysA and sysB both predict
+    \node[node, correct] (m14) at ($(part1) + (2,-2)$) {$m_{14}$};
+    \node[sysa, output, fit=(m14)] (m14A) {};
+    \node[sysb, output, fit=(m14A)] (m14B) {};
+    
+    \draw[part] ($(m11) + (-1,1)$) -- ($(m12) + (1,1)$) -- ($(m14) + (1,-1)$) -- ($(m13) + (-1,-1)$) -- cycle;
+
+    %\node[part, fit=(m11A)(m12A)(m13)(m14B)] (part1-border) {};
+    %\node at ($(part1-border.north east) + (.2,.2)$) {$f_1$};
+    % end part 1
+
+    % Part 2: differentiating entity scores.
+    \node (part2) at (4.5,0) {};
+    \node[anchor=north west] at ($(part2) + (-1,1)$) {$f_2$};
+
+    % sysA gets it right, sysB doesn't.
+    \node[node, correct] (m21) at ($(part2) + (0,0)$) {$m_{21}$};
+    \node[sysa, output, fit=(m21)] (m21A) {};
+
+    % sysB gets it wrong, sysA doesn't predict
+    \node[node, incorrect] (m22) at ($(part2) + (0,-2)$) {$m_{22}$};
+    \node[sysb, output, fit=(m22)] (m22B) {};
+
+    \draw[part] ($(m21) + (-1,1)$) -- ($(m21) + (1,1)$) -- ($(m22) + (1,-1)$) -- ($(m22) + (-1,-1)$) -- cycle;
+    % end part 2
+
+    % Part 3: duplicate entities
+    \node (part3) at (0,-4.5) {};
+    \node[anchor=north west] at ($(part3) + (-1,1)$) {$f_3$};
+
+    % sysA gets it right, sysB doesn't.
+    \node[node, correct] (m31) at ($(part3) + (0,0)$) {$m_{31}$};
+    \node[sysa, output, fit=(m31)] (m31A) {};
+
+    % sysA gets it right, but reports it as another entity.
+    \node[node, correct] (m32) at ($(part3) + (2,0)$) {$m_{32}$};
+    \node[sysa, output, fit=(m32)] (m32A) {};
+    \node[duplicate, fit=(m32A)] (m32AD) {};
+
+    \draw[part] ($(m31) + (-1,1)$) -- ($(m32) + (1,1)$) -- ($(m32) + (1,-1)$) -- ($(m31) + (-1,-1)$) -- cycle;
+    % end part 3
+
+    % Part 4: missing entity
+    \node (part4) at (4.5,-4.5) {};
+    \node[anchor=north west] at ($(part4) + (-1,1)$) {$f_4$};
+
+    % neither system gets it
+    \node[node, correct] (m41) at ($(part4) + (0,0)$) {$m_{41}$};
+
+    \draw[part] ($(m41) + (-1,1)$) -- ($(m41) + (1,1)$) -- ($(m41) + (1,-1)$) -- ($(m41) + (-1,-1)$) -- cycle;
+    % end part 4
+
+    % legend
+    \node (legend) at (6, .5) {};
+
+    % correct
+    \node[circle, correct] (l-correct) at ($(legend) + (0,0)$) {};
+    \node[anchor=west] at (l-correct.east) {correct};
+
+    % incorrect
+    \node[circle, incorrect] (l-incorrect) at ($(l-correct) + (0,-1)$) {};
+    \node[anchor=west] at (l-incorrect.east) {incorrect};
+
+    % system A
+    \node[sysa] (l-sysa) at ($(l-incorrect) + (0,-1)$) {};
+    \node[anchor=west] at (l-sysa.east) {System A};
+    % system B
+    \node[sysb] (l-sysb) at ($(l-sysa) + (0,-1)$) {};
+    \node[anchor=west] at (l-sysb.east) {System B};
+
+    % fill
+    \node[part] (l-part) at ($(l-sysb) + (0,-1)$) {};
+    \node[anchor=west] at (l-part.east) {fill};
+
+    % duplicate
+    \node[duplicate] (l-dup) at ($(l-part) + (0,-1)$) {};
+    \node[anchor=west] at (l-dup.east) {duplicate};
+
+    % end legend
+
+
+
+\end{tikzpicture}
+
+\end{document}

@@ -1,0 +1,235 @@
+[
+{
+    "name": "no_relation",
+    "short": "unrelated",
+    "template": "{subject} and {object} are otherwise related or not related.",
+    "image" : "", 
+    "icon": "fa-times",
+    "subject-types": ["PER", "ORG", "GPE"],
+    "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
+}, 
+{
+    "name": "per:age",
+    "short": "age",
+    "image": "age.svg",
+    "icon" : "", 
+    "template": "{subject} is {object} old.",
+    "subject-types": ["PER"],
+    "object-types": ["NUM"]
+},{
+    "name": "per:alternate_names",
+    "short": "alias",
+    "image": "alternate_names.svg",
+    "icon": "",
+    "template": "{subject} is also known as {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["PER"]
+},{
+    "name": "per:place_of_birth",
+    "short": "born at",
+    "image": "born.svg",
+    "icon": "",
+    "template": "{subject} was born at {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["GPE"]
+},{
+    "name": "per:place_of_residence",
+    "short": "lived at",
+    "image": "", 
+    "icon": "fa-home",
+    "template": "{subject} lived at {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["GPE"]
+},{
+    "name": "per:place_of_death",
+    "short": "died at",
+    "image": "Tombstone.svg",
+    "icon": "", 
+    "template": "{subject} died at {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["GPE"]
+},{
+    "name": "per:date_of_birth",
+    "short": "born on",
+    "image": "born.svg",
+    "icon": "",
+    "template": "{subject} was born on {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["DATE"]
+},{
+    "name": "per:date_of_death",
+    "short": "died on",
+    "template": "{subject} died on {object}.",
+    "image": "Tombstone.svg",
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["DATE"]
+},{
+    "name": "per:organizations_founded",
+    "short": "founded",
+    "template": "{subject} founded {object}.",
+    "image": "founder.svg",
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["ORG"]
+},{
+    "name": "per:holds_shares_in",
+    "short": "holds shares in",
+    "template": "{subject} holds shares in {object}.",
+    "image": "shareholders.png", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["ORG"]
+},{
+    "name": "per:schools_attended",
+    "short": "studied at",
+    "template": "{subject} studied at {object}.",
+    "image": "school.svg",
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["ORG"]
+},{
+    "name": "per:employee_or_member_of",
+    "short": "works for",
+    "image": "employee.svg", 
+    "icon": "", 
+    "template": "{subject} works for {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["ORG", "GPE"]
+},{
+    "name": "per:parents",
+    "short": "child of",
+    "template": "{subject} is the child of {object}.",
+    "image": "parents.png", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["PER"]
+},{
+    "name": "per:children",
+    "short": "parent of",
+    "template": "{subject} is the parent of {object}.",
+    "image": "parents.png", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["PER"]
+},{
+    "name": "per:spouse",
+    "short": "spouse",
+    "template": "{subject} is the spouse of {object}.",
+    "image": "spouse.svg", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["PER"]
+},{
+    "name": "per:sibling",
+    "short": "sibling of",
+    "template": "{subject} is the sibling of {object}.",
+    "image": "sibling.png", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["PER"]
+},{
+    "name": "per:other_family",
+    "short": "other family",
+    "template": "{subject} and {object} are otherwise family.",
+    "image": "other_family.png", 
+    "icon": "",
+    "subject-types": ["PER"],
+    "object-types": ["PER"]
+},{
+    "name": "per:title",
+    "short": "professional title",
+    "image": "", 
+    "icon": "fa-id-card-o",
+    "template": "{subject} is a {object}.",
+    "subject-types": ["PER"],
+    "object-types": ["TITLE"]
+},{
+    "name": "org:alternate_names",
+    "short": "alias",
+    "image": "alternate_names.svg", 
+    "icon": "",
+    "template": "{subject} is also known as {object}.",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
+},{
+    "name": "org:place_of_headquarters",
+    "short": "headquartered at",
+    "template": "{subject} is headquartered at {object}.",
+    "image": "", 
+    "icon": "fa-building-o",
+    "subject-types": ["ORG"],
+    "object-types": ["GPE"]
+},{
+    "name": "org:date_founded",
+    "short": "founded on",
+    "template": "{subject} was founded on {object}.",
+    "image": "founder.svg", 
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["DATE"]
+},{
+    "name": "org:date_dissolved",
+    "short": "dissolved on",
+    "template": "{subject} was closed/dissolved on {object}.",
+    "image": "", 
+    "icon": "fa-trash-o",
+    "subject-types": ["ORG"],
+    "object-types": ["DATE"]
+},{
+    "name": "org:founded_by",
+    "short": "founded by",
+    "template": "{subject} was founded by {object}.",
+    "image": "founder.svg", 
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG", "GPE"]
+},{
+    "name": "org:member_of",
+    "short": "member of",
+    "template": "{subject} is a member of {object}.",
+    "image": "members.jpg", 
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG", "GPE"]
+},{
+    "name": "org:members",
+    "short": "has member",
+    "template": "{subject} has {object} as a member.",
+    "image": "members.jpg", 
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG", "GPE"]
+},{
+    "name": "org:subsidiaries",
+    "short": "parent of",
+    "template": "{subject} is a parent organization  of {object}.",
+    "image": "", 
+    "icon": "fa-sitemap",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
+},{
+    "name": "org:parents",
+    "short": "subsidiary of",
+    "template": "{subject} is a subsidiary of {object}.",
+    "image": "", 
+    "icon": "fa-sitemap",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG", "GPE"]
+},{
+    "name": "org:shareholders",
+    "short": "shareholder",
+    "template": "{object} is a shareholder of {subject}.",
+    "image": "shareholders.png", 
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
+},{
+    "name": "org:holds_shares_in",
+    "short": "holds shares in",
+    "template": "{subject} holds shares in {object}.",
+    "image": "shareholders.png", 
+    "icon": "",
+    "subject-types": ["ORG"],
+    "object-types": ["ORG"]
+}]

@@ -1,0 +1,118 @@
+%
+% File emnlp2017.tex
+%
+
+\documentclass[11pt,letterpaper]{article}
+\usepackage{emnlp2017}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{ifthen}
+\usepackage{color}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{scabby-lite}
+\usepackage{multicol}
+
+\usepackage{tikz}
+\usepackage{booktabs}
+\usetikzlibrary{fit}
+\usetikzlibrary{patterns}
+
+\input std-macros
+\input macros
+
+% Uncomment this line for the final submission:
+%\emnlpfinalcopy
+
+%  Enter the EMNLP Paper ID here:
+\def\emnlppaperid{***}
+
+% To expand the titlebox for more authors, uncomment
+% below and set accordingly.
+% \addtolength\titlebox{.5in}    
+
+%\title{Learn something new every day: a continuous assessment platform for knowledge base population}
+% AC: This is a bit boring but accurate.
+%\title{Unbiased cost-effective online evaluation for knowledge base population}
+% AC: too long
+%\title{Breaking open the closed world assumption: lazy evaluation for knowledge base population}
+% AC: Will this get people to read?
+\title{On-demand open-world evaluation for knowledge base population}
+
+\author{%
+  Arun Tejasvi Chaganty$^*$ \\
+  Computer Science Department \\
+  Stanford University \\
+  {\tt chaganty@cs.stanford.edu}
+\And%
+  Ashwin Pradeep Paranjape$^*$ \\
+  Computer Science Department \\
+  Stanford University \\
+  {\tt ashwinpp@cs.stanford.edu}
+% \And%
+%   Yuhao Zhang \\
+%   Computer Science Department \\
+%   Stanford University \\
+%   {\tt zyh@cs.stanford.edu}
+% \And%
+%   Eduard Hovy \\
+%   Computer Science Department \\
+%   Carnegie Mellon University \\
+%   {\tt hovy@cs.cmu.edu}
+\And%
+  Percy Liang \\
+  Computer Science Department \\
+  Stanford University \\
+  {\tt pliang@cs.stanford.edu}
+\And%
+  Christopher D. Manning \\
+  Computer Science Department \\
+  Stanford University \\
+  {\tt manning@cs.stanford.edu}
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input abstract
+\end{abstract}
+
+\input intro
+\input setup
+\input analysis
+\input method
+\input application
+\input evaluation
+\input discussion
+
+%\paragraph{Reproducibility}
+%All code, data, and experiments for this
+%paper are available on the CodaLab platform at
+%{\small \url{}}.
+
+%\section*{Acknowledgments}
+% Hoa Deng, folks at NIST.
+% Ed Hovy?
+
+\bibliographystyle{emnlp_natbib}
+\bibliography{refdb/all}
+
+\appendix
+\input appendix
+\input basic-lemmas
+
+\end{document}
