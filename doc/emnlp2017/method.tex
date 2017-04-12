@@ -26,7 +26,7 @@ where $x$ is sampled from $X_i$ and $\sY$ according to distributions $p_i(x)$ an
 We assume that $p_i(x)$ is known, e.g.\ the uniform distribution over $X_i$, and that samples from $p'(x)$ can be obtained, even if it is unknown.
 
 In on-demand open-world evaluation, we are allowed to ask if $x \in \sY$ (e.g.\ by assessing a system's prediction) or for samples from $\sY$ (e.g.\ by exhaustively annotating a document) at a certain (monetary) cost.
-Typically, checking if $x \in \sY$ can be significantly cheaper than asking for samples from $\sY$.
+Typically, checking if $x \in \sY$ is significantly cheaper than asking for samples from $\sY$.
 We only see the sets $X_1, \ldots, X_m$ sequentially, as and when they are submitted to the evaluation framework, and
   our goal is to estimate $\pi_i$ and $\rho_i$ within a confidence interval of $\epsilon$ at a minimal cost. 
 
@@ -86,7 +86,7 @@ In particular, the estimator that we propose is:
 \end{align*}
 where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
 This last condition is easy to guarantee by setting $w_{ii} > 0$.
-Intuitively, $q(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $(p_i(x))$, with mixture weights $(w_i)$.
+Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_j$.
 
 In \appendixref{sampling} we prove that $\pih_i$ is an unbiased estimator of $\pi_i$ and also work out an expression for its variance. 
 The variance of course depends on $f(x)$, but the general intuition is that 
@@ -98,32 +98,16 @@ This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 Let $\Yh_1, \ldots, \Yh_m$ be the intersection of $\Xh_i$ with $\sY$.
 While $\Yh_i$ form a randomly sampled subset of $\sY$ that we could evaluate recall on, it is a very biased subset.
 To see this, consider the case where the pool $\Yh$ is formed from a single system; here that system would be given a perfect recall score, irrespective of how good it is.
-This magnitude of this bias may decrease with more and more systems, but is it not possible assume that the pool of systems are independent and would sufficiently cover all the elements of $\sY$.\footnote{
+The magnitude of this bias may decrease with more and more systems, but it is unwise to assume that the pool of systems sufficiently covers all the elements of $\sY$.\footnote{
   In particular, for the task of KBP, the recall of systems is bottlenecked by the NER systems they use, etc.
 }
-To unbias these results, we have to use some samples from $\sY$.
-In particular, we can adjust the recall of a system measured against the pool $Y$ (the \textit{pooled recall}), $\nu_i$, by multiplying it by the recall of the pool itself, $\theta$:
-\begin{align*}
-  \rho_i &= \theta \nu_i.
-\end{align*}
-
-Estimating the pooled recall also needs us to correct for sample bias using a self-normalized estimator:
+We correct for the bias by adjusting the recall of a system measured against the pool $Y$ (the \textit{pooled recall}), $\nu_i = \E_{x\sim Y}[g_i(x)]$, by multiplying it by the recall of the pool itself, $\theta = \E_{x\sim\sY}[\I[x \in Y]]$: $\rho_i = \theta \nu_i$.
+Our proposed estimator estimator for recall $\rho_i$ is then $\rhoh_i \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} \I[x \in \Union_{i=1}^m X_i]$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
 \begin{align*}
   \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{q(x)}},
 \end{align*}
 where $p'(x) \propto u(x)$, $q(x) = \sum_{j=1}^m w_{j} p_j(x)$ and $w_{j} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{j} = 1$. We use $w_j \propto n_j$.
-The pool recall $\theta$ can be estimated as follows:
-\begin{align*}
-  \thetah &\eqdef \sum_{x \in \Yh_0} g(x),
-\end{align*}
-where $g(x) \eqdef \I\left[ x \in \Union_{i=1}^m X_i \right] = \max_{j \in [1,m]} g_j(x)$.
-
-Finally, we proposed the following estimator for recall $\rho_i$:
-\begin{align*}
-  \rhoh_i &\eqdef \thetah\nuh_i.
-\end{align*}
-
-In \appendixref{sampling}, we show that $\rhoh_i$ is indeed unbiased.
+In \appendixref{sampling}, we show that $\rhoh_i$ is unbiased.
 
 \subsection{Adaptively drawing samples for new sets}
 Finally, the desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.

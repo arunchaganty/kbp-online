@@ -4,7 +4,7 @@
 
 % Primer
 While it is apparent from the example in \figureref{pooling} that the pooling evaluation methodology could introduce bias, the argument for its use has been that this bias would be insignificant if enough systems were pooled.
-While this was the conclusion drawn during early studies of the pooling methodology in information retrieval \citep{zobel1998reliable,voorhees1999overview}, more recent work has called the pooling argument into question \citep{buckley2004incomplete,buckley2007bias}.
+This was the conclusion drawn during early studies of the pooling methodology in information retrieval \citep{zobel1998reliable,voorhees1999overview}, but more recent work has called the pooling argument into question \citep{buckley2004incomplete,buckley2007bias}.
 In this section, we'll measure pooling bias in KBP evaluation and show that the pooling argument does not presently hold.
 
 % Data and methodology
@@ -25,7 +25,7 @@ In this section, we'll measure pooling bias in KBP evaluation and show that the 
 \paragraph{Measuring bias.}
 To measure pooling bias, we'll need to recreate the conditions shown in \figureref{pooling}: we must be able to measure evaluation metrics for a system before and after its inclusion to the pooled dataset. 
 We simulate this condition using the ``leave-out-unique'' experiment proposed by \citet{zobel1998reliable} to study pooling bias in information retrieval by using relational tuples from the participating systems in the TAC-KBP competition and their labels released as part of the evaluation dataset.
-While the original evaluation dataset contains labels for the relational tuples from all the participating systems, but we can remove any tuples that are unique to a particular system to simulate what the evaluation dataset would be if that system did not participate in the pooling process.
+The original evaluation dataset contains labels for the relational tuples from all the participating systems, so we can remove any tuples that are unique to a particular system to simulate what the evaluation dataset would be if that system did not participate in the pooling process.
 Finally, we can then measure the difference in evaluation scores between the original evaluation dataset and the hypothetical one we've just created.
 
 \paragraph{Results.}
@@ -44,9 +44,10 @@ It should be noted that the \anydoc{} heuristic also overestimates scores by abo
 The bias affects precision and recall almost equally: 
   the median bias the without \anydoc{} heuristic being 17.93\% and 17.00\% respectively, and
   the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
-  At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions) \ap{is lesser than the pooling bias with \anydoc{} heuristic}.
+  At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions), less than the pooling bias with \anydoc{} heuristic.
 
-  We also considered an alternate scoring model of ignoring relational tuples outside the evaluation set during scoring and find that under this model \fone{} scores remain biased by 14.99\% and 0.73\% points on average, with and without the \anydoc{} heuristic respectively. \ap{Methodology is unclear. We should state what precision and recall mean in a sentence or what the TP/FP values etc are now counting}
+  We also considered an alternate scoring model where relational tuples outside the evaluation set were of ignored instead of marked wrong and find that under this model \fone{} scores remain biased by 14.99\% and 0.73\% points on average, with and without the \anydoc{} heuristic respectively.
+% TODO:  \ap{elaborate methodology}
 While this scoring model is less biased than assuming unassessed relational tuples to be wrong, combined with the discrepancy of the \anydoc{} score it remains too large a difference to be ignored.
 
 The analysis confirms the necessity of the \anydoc{} heuristic during development evaluations,

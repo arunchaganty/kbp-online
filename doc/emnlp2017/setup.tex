@@ -27,6 +27,7 @@ dates, numbers and arbitrary string-values like job titles.
   \centering
   \includegraphics[width=0.9\columnwidth]{figures/pooling}
   \caption{\label{fig:pooling}
+  The arrows in the diagram above indicate which systems identify which relational tuples.
   In pooled evaluation, a evaluation dataset is constructed by labeling the relational tuples collected from the pooled systems (A and B) and those identified by a team of human annotators (Annotators).
   However, when a new system (C) is evaluated on this dataset, some of its predictions may not be part of the dataset and these predictions can not be fairly evaluated, leading to a \textit{pooling bias} that unfairly scores new systems.
   }
@@ -41,7 +42,7 @@ The primary source of evaluation data for KBP comes from the annual TAC-KBP comp
 Each year, participating teams submit their predicted knowledge bases on a new document corpus, in the form the relational tuples described above.
 The organizers pool together relational tuples from all the participating systems and pick all tuples with subject entities that belong to a held-out set of evaluation entities to be assessed by trained annotators.
 The annotators judge whether or not the predicted relations are true given the specified provenance.
-A relational tuple for the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) that specifies an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' is considered to be incorrect.
+A relational tuple for the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) that specifies an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered incorrect.
 Separately, a team of annotators identify relations for the same evaluation entities by manually searching the document corpus within a time budget.
 These two sets of labeled relational tuples are combined and released as the evaluation dataset.
 In the example in \figureref{pooling}, systems A and B were used in constructing the pooling dataset, and there are 3 distinct relations in the dataset, between $s_1$ and $o_1$, $o_2$ and $o_3$.
