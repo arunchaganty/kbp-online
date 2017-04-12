@@ -1,63 +1,72 @@
-%\pl{don't like facts since that implies truth - changed to relation, since that's also used later in the paper;
-%be consistent}
-%\pl{added 'pooling bias' to abstract, since that's important!}
-Large-scale information extraction systems for knowledge base population (KBP)
-predict true relations from an unenumerable set of candidate relations from a large document corpus.
-%These predictions have traditionally been evaluated under a closed-world assumption,
-%wherein only a small annotated set of facts are considered to be true and all others false,
-Due to the prohibitive cost of annotating the entire corpus,
-KBP evaluation has been traditionally closed-world,
-wherein only a subset of candidates are annotated, % to be positive or negative,
-and candidates outside this subset are automatically marked negative.
-In the annual TAC-KBP challenge, the subset is constructed from the pooled predictions of previous systems.
-We show that this closed-world evaluation significantly penalizes new system improvements.
-%that make correct predictions outside the reach of previous systems.
-% Using lazy than online evaluation.
-%We break from this paradigm by evaluating newly predicted facts on-demand through crowdsourcing, lazily simulating an open-world.
+Large-scale information extraction systems for knowledge base population (KBP) predict true relations from an unenumerable set of candidate relations within a large document corpus.
+Due to the prohibitive cost of annotating the entire corpus, KBP evaluation has relied on datasets constructed by annotating predictions pooled together from existing systems.
+However, if a newly developed system predicts a relation not previously seen, it can not be evaluated.
+We show that this results in an evaluation score that is significantly biased against novel system predictions.
 To address this bias,
-we introduce a new on-demand evaluation in which a system's predictions are immediately evaluated through crowdsourcing,
-thus lazily simulating an open-world.
-% TODO: Should we mention exhaustive annotation?
-%Moreover, we debias estimates of recall by exhaustively annotating a few randomly sampled documents.
-With additional careful sampling and reweighting,
-%to reduce the cost of evaluation and variance of precision and recall decreases with each additional system evaluated.
-% PL: don't need to talk about variance, since can convert variance reduction into cost reduction
-we are able to produce scores at a fraction of the cost on a mock evaluation of the 2016 TAC-KBP challenge.
+  we introduce on-demand open-world evaluation which continuously expands the evaluation datatest by annotating new system's predictions when necessary through crowdsourcing, while still ensuring that score estimates are unbiased.
+We demonstrate a significant cost savings on simulated experiments from the 2015 TAC-KBP evaluation, and conduct a mock evaluation on the TAC-KBP 2016 document corpus.
 
-%\plg{this is a sentence more for the conclusion}
-%We hope that the combination of a cost-effective automated evaluation with a quick turnaround time along with diverse exhaustive annotations will drive progress in knowledge base population and information extraction as a whole.
-
-%Unfortunately, we find that fixing these problems by constructing a larger ``gold-standard'' dataset is infeasible, costing at least \todo{US\$1,000,000} by our estimates.
-%Instead, we propose and implement a new online evaluation methodology that removes the problem of pooling bias and is able to provide statistically valid results cost effectively through judicious sampling of system submissions and crowdsourcing.
-%A mock evaluation conducted on the 2015 KBP submissions confirms that we are able to provide statistically significant results at about \$100/system.
-%% ARUN: This is getting really wordy.
-%The methodology will be made available as an online evaluation platform that is easy to submit to.
-%%We have implemented this methodology through an online evaluation platform
-%%\todo{sell the benefits of submitting to this challenge?}.
-%We hope this new platform will enable quick progress in the field.
-%\pl{too long}
-
-%We propose opening the closed world for knowledge base populatoin by introducing an online evaluation platform that immediately assesses newly predicted facts through crowdsourcing.
-
-%
-%Large-scale information extraction systems, like knowledge base population, try to predict true facts from a indefinitely large set of candidates in a document corpus.
-%These predictions are typically evaluated under a closed-world assumption, wherein only a small annotated set of facts are considered to be true and all others false, largely due to the prohibitive cost of exhaustively annotating a sufficiently large corpus.
-%%
-%% TODO(DONE?): want to hint that this is a serious problem -- not about "oh, you just have to try harder to get an improvement".
-%% NOTE: I hope that this gets to the point -- new ideas are biased against!
-%We empirically show that the closed world assumption can significantly penalize novel improvements in systems because new predictions are falsely marked negative.
-%% NOTE: The fact that this is TAC-KBP isn't all that important.
-%%using data from the TAC-KBP challenge, an annual competition for knowledge base population.
-%%
-%% TODO: This line is too complex.
-%We break from this paradigm by combining pre-annotated facts with an on-demand sampled evaluation of newly predicted facts through crowdsourcing to provide unbiased estimates of performance in an open-world setting.
-%% TODO: Should we mention exhaustive annotation? (Soln ^^)
-%%NOTE: Eh, both of these are second order points.
+%% OLD  vvv
+%%\pl{don't like facts since that implies truth - changed to relation, since that's also used later in the paper;
+%%be consistent}
+%%\pl{added 'pooling bias' to abstract, since that's important!}
+%Large-scale information extraction systems for knowledge base population (KBP)
+%predict true relations from an unenumerable set of candidate relations from a large document corpus.
+%%These predictions have traditionally been evaluated under a closed-world assumption,
+%%wherein only a small annotated set of facts are considered to be true and all others false,
+%Due to the prohibitive cost of annotating the entire corpus,
+%KBP evaluation has been traditionally closed-world,
+%wherein only a subset of candidates are annotated, % to be positive or negative,
+%and candidates outside this subset are automatically marked negative.
+%In the annual TAC-KBP challenge, the subset is constructed from the pooled predictions of previous systems.
+%We show that this closed-world evaluation significantly penalizes new system improvements.
+%%that make correct predictions outside the reach of previous systems.
+%% Using lazy than online evaluation.
+%%We break from this paradigm by evaluating newly predicted facts on-demand through crowdsourcing, lazily simulating an open-world.
+%To address this bias,
+%we introduce a new on-demand evaluation in which a system's predictions are immediately evaluated through crowdsourcing,
+%thus lazily simulating an open-world.
+%% TODO: Should we mention exhaustive annotation?
 %%Moreover, we debias estimates of recall by exhaustively annotating a few randomly sampled documents.
-%%Through careful sampling, the cost of evaluation and variance of precision and recall decreases with each additional system evaluated.
-%% WHAT ABOUT CHALLENGES?
+%With additional careful sampling and reweighting,
+%%to reduce the cost of evaluation and variance of precision and recall decreases with each additional system evaluated.
+%% PL: don't need to talk about variance, since can convert variance reduction into cost reduction
+%we are able to produce scores at a fraction of the cost on a mock evaluation of the 2016 TAC-KBP challenge.
+%
+%%\plg{this is a sentence more for the conclusion}
+%%We hope that the combination of a cost-effective automated evaluation with a quick turnaround time along with diverse exhaustive annotations will drive progress in knowledge base population and information extraction as a whole.
+%
+%%Unfortunately, we find that fixing these problems by constructing a larger ``gold-standard'' dataset is infeasible, costing at least \todo{US\$1,000,000} by our estimates.
+%%Instead, we propose and implement a new online evaluation methodology that removes the problem of pooling bias and is able to provide statistically valid results cost effectively through judicious sampling of system submissions and crowdsourcing.
+%%A mock evaluation conducted on the 2015 KBP submissions confirms that we are able to provide statistically significant results at about \$100/system.
+%%% ARUN: This is getting really wordy.
+%%The methodology will be made available as an online evaluation platform that is easy to submit to.
+%%%We have implemented this methodology through an online evaluation platform
+%%%\todo{sell the benefits of submitting to this challenge?}.
+%%We hope this new platform will enable quick progress in the field.
+%%\pl{too long}
+%
+%%We propose opening the closed world for knowledge base populatoin by introducing an online evaluation platform that immediately assesses newly predicted facts through crowdsourcing.
+%
 %%
-%We are able to obtain scores at a fraction of the cost of and with half the variance of official scores on the 2016 TAC-KBP corpus in a mock evaluation.
-%%
-%% TODO: This line is a bit self-gloaty?
-%We hope that our quick and cost-effective on-demand open world evaluation platform will drive progress in knowledge base population and information extraction as a whole.
+%%Large-scale information extraction systems, like knowledge base population, try to predict true facts from a indefinitely large set of candidates in a document corpus.
+%%These predictions are typically evaluated under a closed-world assumption, wherein only a small annotated set of facts are considered to be true and all others false, largely due to the prohibitive cost of exhaustively annotating a sufficiently large corpus.
+%%%
+%%% TODO(DONE?): want to hint that this is a serious problem -- not about "oh, you just have to try harder to get an improvement".
+%%% NOTE: I hope that this gets to the point -- new ideas are biased against!
+%%We empirically show that the closed world assumption can significantly penalize novel improvements in systems because new predictions are falsely marked negative.
+%%% NOTE: The fact that this is TAC-KBP isn't all that important.
+%%%using data from the TAC-KBP challenge, an annual competition for knowledge base population.
+%%%
+%%% TODO: This line is too complex.
+%%We break from this paradigm by combining pre-annotated facts with an on-demand sampled evaluation of newly predicted facts through crowdsourcing to provide unbiased estimates of performance in an open-world setting.
+%%% TODO: Should we mention exhaustive annotation? (Soln ^^)
+%%%NOTE: Eh, both of these are second order points.
+%%%Moreover, we debias estimates of recall by exhaustively annotating a few randomly sampled documents.
+%%%Through careful sampling, the cost of evaluation and variance of precision and recall decreases with each additional system evaluated.
+%%% WHAT ABOUT CHALLENGES?
+%%%
+%%We are able to obtain scores at a fraction of the cost of and with half the variance of official scores on the 2016 TAC-KBP corpus in a mock evaluation.
+%%%
+%%% TODO: This line is a bit self-gloaty?
+%%We hope that our quick and cost-effective on-demand open world evaluation platform will drive progress in knowledge base population and information extraction as a whole.
