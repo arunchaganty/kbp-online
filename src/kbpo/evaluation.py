@@ -159,12 +159,17 @@ def pooled_recall(U, P, Xs):
         \sum_{j} w_{j} \sum_{x \in Y_j} u(x)/q(x) g_i(x)/
         (\sum_{j} w_{j} \sum_{x \in Y_j} u(x)/q(x))
     w_j \propto n_j?
-
-TODO: support u(x).
     """
     m = len(P)
     W = compute_weights(P, Xs, "uniform")
+    print(W)
     Q = construct_proposal_distribution(W, P)
+    #U = counter_utils.normalize(U)
+    #U = Counter({x:1.0 for i in range(m) for (x, fx) in Xs[i] if fx == 1.})
+    #print(U)
+    #U = counter_utils.normalize(U)
+
+    Ys = [[(x,fx) for x, fx in Xi if fx == 1.] for Xi in Xs]
 
     nus = []
     for i in range(m):
@@ -173,30 +178,37 @@ TODO: support u(x).
         for j in range(m):
             if W[i][j] == 0.: continue # just ignore this set.
             nu_ij, Z_ij = 0., 0.
-            for n_j, (x, fx) in enumerate(Xs[j]):
-                nu_ij += (U[x]/Q[i][x]*fx - nu_ij)/(n_j+1)
-                Z_ij += (U[x]/Q[i][x]*fx - Z_ij)/(n_j+1)
-            nu_i += (nu_ij - nu_i)/(j+1)
-            Z_i += (Z_ij - Z_i)/(j+1)
-        nu_i = nu_i / Z_i if Z_i > 0 else 0
-        nus.append(nu_i/Z_i)
+            for n_j, (x, fx) in enumerate(Ys[j]):
+                assert fx == 1.0
+                gxi = 1.0 if x in P[i] else 0.0
 
+                nu_ij += (gxi - nu_ij)/(n_j+1)
+                Z_ij += (1 - Z_ij)/(n_j+1)
+                #nu_ij += (U[x]/Q[i][x]*gx - nu_ij)/(n_j+1)
+                #Z_ij += (U[x]/Q[i][x] - Z_ij)/(n_j+1)
+            print(i, j, nu_ij, Z_ij)
+            nu_i += W[i][j] * nu_ij
+            Z_i += W[i][j] * Z_ij
+        print(i, " ", nu_i, Z_i)
+        #nu_i = nu_i / Z_i if Z_i > 0 else 0
+        nu_i = nu_i
+        nus.append(nu_i)
     return nus
 
-# TODO: write a test for pooled_recall_
-
-def pool_recall(U, Y0, X):
+def pool_recall(U, P, Y0):
     r"""
     Estimates the recall of the pool:
     \thetah = \frac{1}{Y0} \sum_{x \in Y_0} U(x) I[x \in X]
     """
+    m = len(P)
     theta = 0.
-    for n, x in enumerate(Y0):
-        gx = 1.0 if any(x in Xi for Xi in X) else 0.0
+    for n, (x, fx) in enumerate(Y0):
+        assert fx == 1.0
+        gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
         theta += (U[x]*gx - theta)/(n+1)
     return theta
 
-def simple_recall(U, P, X, Y0):
+def simple_recall(U, P, Y0):
     m = len(P)
 
     rhos = []
@@ -209,8 +221,8 @@ def simple_recall(U, P, X, Y0):
         rhos.append(rho_i)
     return rhos
 
-def recall(U, P, X, Y0, Xs):
-    theta = pool_recall(U, Y0, X)
+def recall(U, P, Y0, Xs):
+    theta = pool_recall(U, P, Y0)
     nus = pooled_recall(U, P, Xs)
     rhos = [theta * nu_i for nu_i in nus]
     return rhos

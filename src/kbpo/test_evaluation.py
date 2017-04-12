@@ -11,7 +11,7 @@ import logging
 import numpy as np
 
 from . import counter_utils
-from .evaluation import simple_precision, simple_recall, pooled_precision
+from .evaluation import simple_precision, simple_recall, pooled_precision, pooled_recall, pool_recall, recall
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -103,7 +103,7 @@ def test_simple_precision_wr():
     n_samples = 100
     Xh = sample_with_replacement(P, X, n_samples)
     precision_ = simple_precision([P], [Xh])[0]
-    assert np.allclose(precision, precision_, atol=1e-1)
+    assert np.allclose(precision, precision_, atol=5e-2)
 
 def test_simple_precision_wor():
     np.random.seed(42)
@@ -112,7 +112,7 @@ def test_simple_precision_wor():
     n_samples = 100
     Xh = sample_without_replacement(P, X, n_samples)
     precision_ = simple_precision([P], [Xh])[0]
-    assert np.allclose(precision, precision_, atol=1e-1)
+    assert np.allclose(precision, precision_, atol=5e-2)
 
 def test_simple_recall():
     np.random.seed(41)
@@ -122,8 +122,8 @@ def test_simple_recall():
     P, X = generate_submission(precision, recall, population)
     U = true_sample_distribution(population)
     Y0 = generate_true_sample(n_samples, population)
-    recall_ = simple_recall(U, [P], [X], Y0)[0]
-    assert np.allclose(recall, recall_, atol=1e-1)
+    recall_ = simple_recall(U, [P], Y0)[0]
+    assert np.allclose(recall, recall_, atol=5e-2)
 
 def test_pooled_precision_wr():
     np.random.seed(42)
@@ -133,7 +133,7 @@ def test_pooled_precision_wr():
     Xhs = [sample_with_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
     precisions_ = pooled_precision(Ps, Xhs)
     print(precisions_)
-    assert np.allclose(precisions, precisions_, atol=1e-1)
+    assert np.allclose(precisions, precisions_, atol=5e-2)
 
 def test_pooled_precision_wor():
     np.random.seed(42)
@@ -143,13 +143,85 @@ def test_pooled_precision_wor():
     Xhs = [sample_without_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
     precisions_ = pooled_precision(Ps, Xhs)
     print(precisions_)
-    assert np.allclose(precisions, precisions_, atol=1e-1)
+    assert np.allclose(precisions, precisions_, atol=5e-2)
 
-def test_pooled_recall():
-    pass
+def true_pooled_recall(U, P):
+    """
+    Computes Pr(x \in Y_i | x \in Y) = P(Y_i)/P(Y)
+    """
+    m = len(P)
+    Z = 0.
+    for n, x in enumerate(U):
+        gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
+        Z += (U[x]*gx - Z)/(n+1)
+
+    nus = []
+    for i in range(m):
+        nu_i = 0.
+        for n, x in enumerate(U):
+            gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
+            nu_i += (U[x]*gxi - nu_i)/(n+1)
+        print(i, nu_i, Z)
+        nus.append(nu_i/Z)
+    return nus
+
+def test_pooled_recall_wr():
+    np.random.seed(42)
+    n_samples = 100
+    population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population)
+    U = true_sample_distribution(population)
+    pooled_recalls = true_pooled_recall(U, Ps)
+
+    pooled_recalls_ = pooled_recall(U, Ps, Xs)
+    print("nu_i", pooled_recalls)
+    print("nuh_i", pooled_recalls_)
+    assert np.allclose(pooled_recalls, pooled_recalls_, atol=1e-1)
+
+    Xhs = [sample_with_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
+    pooled_recalls_ = pooled_recall(U, Ps, Xhs)
+    print("nu_i", pooled_recalls)
+    print("nuh_i", pooled_recalls_)
+    assert np.allclose(pooled_recalls, pooled_recalls_, atol=1e-1)
 
 def test_pool_recall():
-    pass
+    np.random.seed(42)
+    n_samples = 100
+    population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population)
+    U = true_sample_distribution(population)
+
+    Y = sorted(U.items())
+    pool_recalls = pool_recall(U, Ps, Y)
+
+    Y0 = generate_true_sample(n_samples, population)
+    pool_recalls_ = pool_recall(U, Ps, Y0)
+    print("theta_i", pool_recalls)
+    print("thetah_i", pool_recalls_)
+    assert np.allclose(pool_recalls, pool_recalls_, atol=1e-1)
 
 def test_recall():
-    pass
+    np.random.seed(42)
+    n_samples = 500
+    population, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population)
+    U = true_sample_distribution(population)
+
+    Y = sorted(U.items())
+    recalls_ = recall(U, Ps, Y, Xs)
+    print("rho_i", recalls)
+    print("rhoh_i", recalls_)
+    assert np.allclose(recalls, recalls_, atol=1e-1)
+
+    Y0 = generate_true_sample(n_samples, population)
+    Xhs = [sample_with_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
+
+    recalls_ = simple_recall(U, Ps, Y0)
+    print("rho(s)_i", recalls)
+    print("rhoh(s)_i", recalls_)
+    assert np.allclose(recalls, recalls_, atol=1e-1)
+
+    recalls_ = recall(U, Ps, Y0, Xhs)
+    print("rho_i", recalls)
+    print("rhoh_i", recalls_)
+    assert np.allclose(recalls, recalls_, atol=1e-1)
