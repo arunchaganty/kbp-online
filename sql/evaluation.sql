@@ -192,8 +192,8 @@ CREATE INDEX evaluation_relation_response_pair_idx ON evaluation_relation_respon
 
 -- evaluation_relation
 CREATE TABLE  evaluation_relation (
-  -- question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  -- question_id TEXT NOT NULL, -- this can be used to identify responses
+  question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
+  question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
   subject_id SPAN NOT NULL,
@@ -203,7 +203,7 @@ CREATE TABLE  evaluation_relation (
   relation TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
-  PRIMARY KEY (doc_id, subject_id, object_id),
+  PRIMARY KEY (question_id, question_batch_id, doc_id, subject_id, object_id),
   CONSTRAINT valid_subject CHECK (span_is_valid(subject_id)),
   CONSTRAINT valid_object CHECK (span_is_valid(object_id)),
   CONSTRAINT subject_doc_agrees CHECK((subject_id).doc_id = doc_id),

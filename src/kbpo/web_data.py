@@ -225,7 +225,7 @@ def merge_evaluation_relations(row):
     relation = majority_element(row.relations)
     weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/len(row.weights)
 
-    return row.doc_id, row.subject_id, row.object_id, relation, weight
+    return row.question_id, row.question_batch_id, row.doc_id, row.subject_id, row.object_id, relation, weight
 
 def update_evaluation_mention():
     with db.CONN:
@@ -255,10 +255,10 @@ def update_evaluation_relation():
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_relation;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights FROM evaluation_relation_response GROUP BY doc_id, subject_id, object_id""")
+            cur.execute("""SELECT question_id, question_batch_id, doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights FROM evaluation_relation_response GROUP BY question_id, question_batch_id, doc_id, subject_id, object_id""")
             # Take the majority vote on this mention iff count > 1.
             values = [merge_evaluation_relations(row) for row in cur]
-            db.execute_values(cur, """INSERT INTO evaluation_relation(doc_id, subject_id, object_id, relation, weight) VALUES %s""", values)
+            db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject_id, object_id, relation, weight) VALUES %s""", values)
 
 def update_summary():
     """
