@@ -38,10 +38,10 @@ Detailed histograms comparing different sampling distributions can be found in \
 When verifying relational tuples predicted by a system, 
   crowd workers are presented the tuple's provenance and are asked to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
   Crowd workers also link the subject and object mentions to pages on Wikipedia, if possible.
-On average, we find that crowdworkers are able to perform this task in about 30 seconds, corresponding to about \$0.10 per instance.
+On average, we find that crowdworkers are able to perform this task in about 20 seconds, corresponding to about \$0.05 per instance.
 We requested 5 crowdworkers to annotate a small set of 200 relation instances from the 2015 TAC-KBP corpus 
 and measured an inter-annotator agreement of 0.90 with 3 crowdworkers and 0.95 with 5.
-Consequently, we take a majority vote over 3 workers in subsequent experiments, leading to a total cost of \$0.30 per relation.
+Consequently, we take a majority vote over 3 workers in subsequent experiments, leading to a total cost of \$0.15 per relation.
 
 \subsection{Sampling true instances}
 Sampling from the set of true instances $\sY$ is difficult because we can not even enumerate the elements of $\sY$.
@@ -54,7 +54,7 @@ Finally, using a separate interface, crowdworkers annotate relations between pai
 
 We compare crowdsourced annotations against those of expert annotators using data from the TAC-KBP 2015 EDL task on 100 documents~\citep{}.
 Each document was annotated by at least 7 crowdworkers.
-We find that 3 crowdworkers are together identify 92\% of the entity spans identified by expert annotators,
+We find that 3 crowdworkers together identify 92\% of the entity spans identified by expert annotators,
   and 7 crowdworkers together identify 96\%.
 When using a token-level majority vote to identify entities, crowdworkers identify about 78\% of the entity spans; this number does not change significantly with additional crowdworkers.
 We also measure substantial token-level inter annotator agreement for identifying typed mention spans ($\kappa = 0.83$), canonical mentions ($\kappa = 0.75$) and entity links ($\kappa = 0.75$) with just three workers.
@@ -63,7 +63,7 @@ Based on this analysis, we use token-level majority over 3 workers in subsequent
 These interfaces are far more involved: the entity annotation interface takes on average about 13 minutes per document, corresponding to about \$2.60 per document, while the relation annotation interface takes on average about \$2.25 per document.
 Because documents vary significantly in length and complexity, we set rewards for each document based on the number of tokens (.75c per token) and mention pairs (5c per pair) respectively.
 With 3 workers per document, we paid on average about \$15 per document.
-On average, each document contained 16.8 relations and it cost about \$0.87 per relation about three times as much as verifying a relation.
+On average, each document contained 9.2 relations and it cost about \$1.61 per relation about ten times as much as verifying a relation.
 
 A final issue to discuss is how documents themselves should be sampled to capture diverse entities that span documents.
 When considering uniformly sampled documents, we found that a majority of the relations extracted correspond to very rare entities and result in very few entities with more than one relation (\reffig{entity-distribution}).
