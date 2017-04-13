@@ -67,14 +67,19 @@ def simple_precision(Xhs):
 def simple_recall(U, P, Y0):
     m = len(P)
 
+    Z = 0.
+    for n, (x, fx) in enumerate(Y0):
+        assert fx == 1.
+        Z += (U[x] - Z)/(n+1)
+
     rhos = []
     for i in range(m):
-        rho_i = 0
+        rho_i = 0.
         for n, (x, fx) in enumerate(Y0):
-            assert fx == 1.0
+            assert fx == 1.
             gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
             rho_i += (U[x]*gxi - rho_i)/(n+1)
-        rhos.append(rho_i)
+        rhos.append(rho_i / Z)
     return rhos
 
 def simple_score(U, P, Y0, Xhs):
