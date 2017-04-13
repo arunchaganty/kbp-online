@@ -6,6 +6,22 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+def sample_uniformly_with_replacement(X, num_samples):
+    """
+    Draw num_samples from X using the uniform distribution.
+    @X: is a list of tuples (x, label(x)).
+    @P: is a counter with keys x from X.
+    @returns a list of elements from X.
+    """
+    m = len(X)
+
+    Xh_ = np.random.multinomial(num_samples, np.ones(m)/m)
+    Xh = [X[i] for i, ni in enumerate(Xh_) for _ in range(ni)]
+    assert len(Xh) == num_samples
+    return Xh
+
+
+
 def sample_with_replacement(P, X, num_samples):
     """
     Draw num_samples from X using the distribution P.

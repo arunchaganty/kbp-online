@@ -228,7 +228,9 @@ def do_simulate(args):
             # Draw n_samples from respective distributions
             n_samples = 5000
             per_samples = int(n_samples / (len(Rs_) + 1)) # evenly distributed to estimate precision and recall.
-            Y0 = sample_with_replacement(normalize({x: 1.0 for x in U}), Y, per_samples)
+            Y0 = sample_without_replacement(normalize({x: 1.0 for x in U}), Y, per_samples)
+            # This can increase variance because the sets X can be very
+            # small.
             Xhs = [sample_with_replacement(P, X, per_samples) for P, X in zip(Ps_, Xs_)]
             if args.mode == "simple":
                 ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
