@@ -13,6 +13,77 @@ from . import counter_utils
 
 logger = logging.getLogger(__name__)
 
+# Simplest possible estimation procedures that assume access to the
+# distribution (P) or (U).
+def weighted_precision(P, Xs):
+    """
+    Compute precision without the complex weighting strategy.
+    """
+    m = len(Xs)
+    pis = []
+    for i in range(m):
+        pi_i = 0.
+        for x, fx in Xs[i]:
+            pi_i += P[i][x] * fx
+        pis.append(pi_i)
+    return pis
+
+def weighted_recall(U, P, Y):
+    """
+    Compute precision without the complex weighting strategy.
+    """
+    m = len(P)
+    rhos = []
+    Z = sum(U[x] for x, _ in Y)
+    for i in range(m):
+        rho_i = 0.
+        for x, fx in Y:
+            assert fx == 1.
+            gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
+            rho_i += U[x] * gxi
+        rhos.append(rho_i/Z)
+    return rhos
+
+def weighted_score(U, P, Y0, Xs):
+    ps = weighted_precision(P, Xs)
+    rs = weighted_recall(U, P, Y0)
+    f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
+    return ps, rs, f1s
+
+# Simple sampling based estimators
+def simple_precision(Xhs):
+    """
+    Compute precision without the complex weighting strategy.
+    """
+    m = len(Xhs)
+    pis = []
+    for i in range(m):
+        pi_i = 0.
+        for n_i, (_, fx) in enumerate(Xhs[i]):
+            pi_i += (fx - pi_i)/(n_i+1)
+        pis.append(pi_i)
+    return pis
+
+def simple_recall(U, P, Y0):
+    m = len(P)
+
+    rhos = []
+    for i in range(m):
+        rho_i = 0
+        for n, (x, fx) in enumerate(Y0):
+            assert fx == 1.0
+            gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
+            rho_i += (U[x]*gxi - rho_i)/(n+1)
+        rhos.append(rho_i)
+    return rhos
+
+def simple_score(U, P, Y0, Xhs):
+    ps = simple_precision(Xhs)
+    rs = simple_recall(U, P, Y0)
+    f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
+    return ps, rs, f1s
+
+# Weight matrix computation
 def compute_weights(P, Xs, method="heuristic"):
     r"""
     Computes
@@ -26,7 +97,13 @@ def compute_weights(P, Xs, method="heuristic"):
         W = np.zeros((m,m))
         for i in range(m):
             for j in range(m):
-                W[i,j] = sum(len(Xs[j]) * P[i][x] * P[j][x] for x in P[i])
+                W[i,j] = len(Xs[j]) * sum(P[i][x] * P[j][x] for x in P[i])
+        W = (W.T/W.sum(1)).T
+    elif method == "size":
+        W = np.zeros((m,m))
+        for i in range(m):
+            for j in range(m):
+                W[i,j] = len(Xs[j])
         W = (W.T/W.sum(1)).T
     else:
         raise ValueError("Invalid weighting distribution")
@@ -78,6 +155,7 @@ def test_compute_weights_identical():
         [10./160., 50./160., 100./160.],
         ]))
 
+# Proposal distribution generator
 def construct_proposal_distribution(W, P):
     r"""
     Returns $q_i(x) = \sum_{j=1}^{m} w_{ij} p_{j}(x)$ and
@@ -112,20 +190,7 @@ def test_construct_proposal_distribution():
     for q, q_ in zip(Q, Q_):
         assert counter_utils.equals(q, q_)
 
-def simple_precision(P, Xs):
-    """
-    Compute precision without the complex weighting strategy.
-    """
-    m = len(P)
-    pis = []
-    for i in range(m):
-        pi_i = 0.
-        for n_i, (_, fx) in enumerate(Xs[i]):
-            pi_i += (fx - pi_i)/(n_i+1)
-        pis.append(pi_i)
-    return pis
-
-def pooled_precision(P, Xs, method="heuristic"):
+def joint_precision(P, Xs, Xhs, method="heuristic"):
     r"""
     Compute precision for a collection of samples, where
         P = [Counter], each element of P is a distribution over instances in $\sX$.
@@ -147,13 +212,13 @@ def pooled_precision(P, Xs, method="heuristic"):
         for j in range(m):
             if W[i][j] == 0.: continue # just ignore this set.
             pi_ij = 0.
-            for n_j, (x, fx) in enumerate(Xs[j]):
+            for n_j, (x, fx) in enumerate(Xhs[j]):
                 pi_ij += (P[i][x]/Q[i][x]*fx - pi_ij)/(n_j+1)
             pi_i += W[i][j] * pi_ij
         pis.append(pi_i)
     return pis
 
-def pooled_recall(U, P, Xs):
+def pooled_recall(U, P, Xs, Xhs, method="heuristic"):
     r"""
     \nu_i =
         \sum_{j} w_{j} \sum_{x \in Y_j} u(x)/q(x) g_i(x)/
@@ -161,7 +226,7 @@ def pooled_recall(U, P, Xs):
     w_j \propto n_j?
     """
     m = len(P)
-    W = compute_weights(P, Xs, "heuristic")
+    W = compute_weights(P, Xs, method)
     Q = construct_proposal_distribution(W, P)
 
     nus = []
@@ -171,7 +236,7 @@ def pooled_recall(U, P, Xs):
         for j in range(m):
             if W[i][j] == 0.: continue # just ignore this set.
             nu_ij, Z_ij = 0., 0.
-            for n_j, (x, fx) in enumerate(Xs[j]):
+            for n_j, (x, fx) in enumerate(Xhs[j]):
                 gx = 1.0 if fx > 0. else 0.0
                 gxi = 1.0 if x in P[i] and fx > 0. else 0.0
 
@@ -196,21 +261,14 @@ def pool_recall(U, P, Y0):
         theta += (U[x]*gx - theta)/(n+1)
     return theta
 
-def simple_recall(U, P, Y0):
-    m = len(P)
-
-    rhos = []
-    for i in range(m):
-        rho_i = 0
-        for n, (x, fx) in enumerate(Y0):
-            assert fx == 1.0
-            gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
-            rho_i += (U[x]*gxi - rho_i)/(n+1)
-        rhos.append(rho_i)
-    return rhos
-
-def recall(U, P, Y0, Xs):
+def joint_recall(U, P, Xs, Y0, Xhs):
     theta = pool_recall(U, P, Y0)
-    nus = pooled_recall(U, P, Xs)
+    nus = pooled_recall(U, P, Xs, Xhs)
     rhos = [theta * nu_i for nu_i in nus]
     return rhos
+
+def joint_score(U, P, Xs, Y0, Xhs):
+    ps = joint_precision(P, Xs, Xhs)
+    rs = joint_recall(U, P, Xs, Y0, Xhs)
+    f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
+    return ps, rs, f1s
