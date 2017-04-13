@@ -1,7 +1,13 @@
 """
 Utilities to manage different data input files.
 """
+import logging
 from collections import namedtuple
+
+from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class Provenance(namedtuple("Provenance", ["doc_id", "start", "end"])):
     @classmethod
@@ -35,6 +41,9 @@ class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", 'ldc_id',
 
     def __repr__(self):
         return "<Entry: {}>".format(str(self))
+
+    def is_true(self):
+        return self.eq > 0
 
     @classmethod
     def from_line(cls, line):
@@ -99,3 +108,31 @@ def test_output_entry():
     assert entry.slot_type == "PER"
     assert entry.slot_provenances == [Provenance("NYT_ENG_20130513.0090", 2476,2500)]
     assert entry.confidence == 0.9
+
+def load_queries(fstream):
+    Q = {}
+    for line in fstream:
+        fields = line.split()
+        # NOTE: We are considering partial assessments because that's
+        # what KBP is doing too.
+        ldc_query, cssf_query = fields[:2]
+        Q[cssf_query] = ldc_query
+    return Q
+
+def load_gold(fstream, Q):
+    gold = []
+    for line in tqdm(fstream):
+        entry = EvaluationEntry.from_line(line)
+        if entry.query_id in Q:
+            gold.append(entry._replace(ldc_id=Q[entry.query_id]))
+    logger.info("Loaded %d evaluation entries", len(gold))
+    return gold
+
+def load_output(fstream, Q):
+    output = []
+    for line in tqdm(fstream):
+        entry = OutputEntry.from_line(line)
+        if entry.query_id in Q:
+            output.append(entry._replace(ldc_id=Q[entry.query_id]))
+    logger.info("Loaded %d output entries.", len(output))
+    return output
