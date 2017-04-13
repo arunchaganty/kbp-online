@@ -21,7 +21,7 @@ def do_entity_evaluation(args):
     gold = load_gold(args.gold, Q)
     output = load_output(args.pred, Q)
 
-    S, C, T = compute_entity_scores(gold, output, Q, args.mode)
+    S, C, T = compute_entity_scores(Q, gold, output, args.mode)
 
     for s in sorted(S):
         args.output.write("{} {:.04f} {:.04f} {:.04f}\n".format(s, *micro({s:S[s]}, {s:C[s]}, {s:T[s]})))
@@ -66,7 +66,7 @@ def do_compute_intervals(args):
 
         with open(os.path.join(args.preds, fname)) as f:
             output = load_output(f, Q)
-            S, C, T = compute_entity_scores(gold, output, Q)
+            S, C, T = compute_entity_scores(Q, gold, output)
 
             def compute_metric(E_):
                 S_, C_, T_ = {}, {}, {}
@@ -151,13 +151,13 @@ def do_pooling_bias(args):
     rows = []
     for runid, output in tqdm(outputs.items()):
         row = []
-        S, C, T = compute_entity_scores(gold, output, Q, args.mode)
+        S, C, T = compute_entity_scores(Q, gold, output, args.mode)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(make_loo_pool(gold, outputs, runid, args.mode), output, Q, args.mode)
+        S, C, T = compute_entity_scores(Q, make_loo_pool(gold, outputs, runid, args.mode), output, args.mode)
         row += micro(S, C, T) + macro(S,C,T)
 
-        S, C, T = compute_entity_scores(make_lto_pool(gold, outputs, runid, args.mode), output, Q, args.mode)
+        S, C, T = compute_entity_scores(Q, make_lto_pool(gold, outputs, runid, args.mode), output, args.mode)
         row += micro(S, C, T) + macro(S,C,T)
 
         writer.writerow([runid,] + row)
@@ -186,7 +186,7 @@ def do_standardized_evaluation(args):
 
         with open(os.path.join(args.preds, fname)) as f:
             output = load_output(f, Q)
-            scores[runid] = compute_entity_scores(gold, output, Q)
+            scores[runid] = compute_entity_scores(Q, gold, output)
 
     X_rs = compute_score_matrix(scores, E)
     report_score_matrix(X_rs, args.output_vis, sorted(scores), sorted(Q))

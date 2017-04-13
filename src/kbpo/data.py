@@ -42,6 +42,9 @@ class EvaluationEntry(namedtuple("EvaluationEntry", ["id", "query_id", 'ldc_id',
     def __repr__(self):
         return "<Entry: {}>".format(str(self))
 
+    def is_true(self):
+        return self.eq > 0
+
     @classmethod
     def from_line(cls, line):
         parts = line.split("\t")

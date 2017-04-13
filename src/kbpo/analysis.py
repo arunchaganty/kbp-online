@@ -19,25 +19,17 @@ def k(entry):
 def kn(entry):
     return (entry.ldc_id, entry.slot_value) # A cheap way to also correct for linking errors.
 
-def compute_entity_scores(gold, output, Q, mode="closed-world"):
-    """
-    @gold is a dictionary of {s: F*_s}.
-    F*_s = {f: [m]}
-
-    @pred is dictionary of {s: F_s}.
-    F_s = {f: [m]}
-
-    @returns (P, R, F1):
-        P = {s: P_s}; P_s = F_s ^ F*_s / F_s
-        R = {s: R_s}; R_s = F_s ^ F*_s / F*_s
-        F1 = {s: F1_s}; F1_s = 2 P_s R_s / (P_s + R_s)
-    """
+def get_key(mode):
     if mode == "closed-world" or mode == "condensed":
         key = k
     elif mode == "anydoc" or mode == "condensed-anydoc":
         key = kn
     else:
         raise ValueError("Unsupported mode: " + mode)
+    return key
+
+def project_gold(Q, gold, mode="closed-world"):
+    key = get_key(mode)
 
     G = defaultdict(lambda: defaultdict(set)) # Gold data
     Gr = {} # maps from entry to (s, f)
@@ -65,6 +57,10 @@ def compute_entity_scores(gold, output, Q, mode="closed-world"):
             else:
                 #logger.warning("conflicting labels for %s, %s; not replacing %s with %s (%s)", s, key(entry), f, f_, G[s][f_])
                 pass # do nothing. Do not pass go, do not collect 1 million dollars.
+    return G, Gr
+
+def project_output(Q, Gr, output, mode="closed-world"):
+    key = get_key(mode)
 
     O = defaultdict(lambda: defaultdict(set)) # Gold data
     for entry in output:
@@ -75,6 +71,23 @@ def compute_entity_scores(gold, output, Q, mode="closed-world"):
 
         f = Gr.get((s, key(entry)), 0)
         O[s][f].add(key(entry))
+    return O
+
+def compute_entity_scores(Q, gold, output, mode="closed-world"):
+    """
+    @gold is a dictionary of {s: F*_s}.
+    F*_s = {f: [m]}
+
+    @pred is dictionary of {s: F_s}.
+    F_s = {f: [m]}
+
+    @returns (P, R, F1):
+        P = {s: P_s}; P_s = F_s ^ F*_s / F_s
+        R = {s: R_s}; R_s = F_s ^ F*_s / F*_s
+        F1 = {s: F1_s}; F1_s = 2 P_s R_s / (P_s + R_s)
+    """
+    G, Gr = project_gold(Q, gold, mode)
+    O = project_output(Q, Gr, output, mode)
 
     S, C, T = {}, {}, {} # submitted, correct, total
     for s, Fs in G.items():
