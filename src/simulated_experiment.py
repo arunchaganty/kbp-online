@@ -156,6 +156,25 @@ def teamid(runid):
     """
     return runid.split("_", 1)[-1][:-1]
 
+def create_fudge_distribution(Y):
+    """
+    Create a fudge distribution to make recall problems go away.
+    """
+    Gr = Counter()
+    for x, fx in Y:
+        if fx == 0.: continue
+        # break up x to create a key.
+        s,_,o = x # ignore provenance
+        Gr[s,o] += 1
+    U = Counter()
+    for x, fx in Y:
+        if fx == 0.:
+            U[x] = 1.
+        else:
+            s,_,o = x # ignore provenance
+            U[x] = 1./Gr[s,o]
+    return U
+
 def create_pool(Rs, Ps, Xs, replace_labels=False):
     """
     Set Y to be the union of the output from all the pooled systems.
@@ -174,9 +193,9 @@ def create_pool(Rs, Ps, Xs, replace_labels=False):
     if replace_labels:
         Yx = set(x for x, _ in Y_)
         Xs_ = [[(x, 1.0 if x in Yx else 0.0) for x, _ in X] for X in Xs_]
-    # TODO: should I renormalize U?
+    U_ = create_fudge_distribution(Y_)
 
-    return Rs_, Y_, Ps_, Xs_
+    return Rs_, U_, Y_, Ps_, Xs_
 
 def do_simulate(args):
     # Load the data.
@@ -200,7 +219,7 @@ def do_simulate(args):
     for _ in tqdm(range(args.num_epochs)):
         # Evaluate scores based on the chosen elements.
         # When creating the pool,
-        Rs_, Y_, Ps_, Xs_ = create_pool(Rs, Ps, Xs, args.mode == "pooled") # Last argument changes truth values of elements.
+        Rs_, U_, Y_, Ps_, Xs_ = create_pool(Rs, Ps, Xs, args.mode == "pooled") # Last argument changes truth values of elements.
 
         if args.mode == "pooled":
             n_samples = len(Y_)
@@ -209,13 +228,15 @@ def do_simulate(args):
             # Draw n_samples from respective distributions
             n_samples = 5000
             per_samples = int(n_samples / (len(Rs_) + 1)) # evenly distributed to estimate precision and recall.
-            Y0 = sample_without_replacement(normalize(U), Y, per_samples)
+            Y0 = sample_with_replacement(normalize({x: 1.0 for x in U}), Y, per_samples)
             Xhs = [sample_with_replacement(P, X, per_samples) for P, X in zip(Ps_, Xs_)]
             if args.mode == "simple":
                 ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
             elif args.mode == "joint":
+                #W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
                 W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
                 Q = construct_proposal_distribution(W, Ps_)
+                #pdb.set_trace()
                 ps, rs, f1s = joint_score(U, Ps_, Y0, Xhs, W=W, Q=Q)
 
         for run_id, p, r, f1 in zip(Rs_, ps, rs, f1s):

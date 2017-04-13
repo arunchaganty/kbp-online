@@ -291,14 +291,20 @@ def pool_recall(U, P, Y0):
     \thetah = \frac{1}{Y0} \sum_{x \in Y_0} U(x) I[x \in X]
     """
     m = len(P)
+
+    Z = 0.
+    for n, (x, fx) in enumerate(Y0):
+        assert fx == 1.
+        Z += (U[x] - Z)/(n+1)
+
     theta = 0.
     for n, (x, fx) in enumerate(Y0):
         assert fx == 1.0
         gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
         theta += (U[x]*gx - theta)/(n+1)
-    return theta
+    return theta/Z
 
-def joint_recall(U, P, Y0, Xhs, Q=None, W=None):
+def joint_recall(U, P, Y0, Xhs, W=None, Q=None):
     theta = pool_recall(U, P, Y0)
     nus = pooled_recall(U, P, Xhs, W=W, Q=Q)
     rhos = [theta * nu_i for nu_i in nus]

@@ -234,9 +234,9 @@ def test_joint_recall_statistical():
     def _sample():
         Xhs = [sample_without_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
         Y0 = generate_true_sample(n_samples, population_size)
-        return Ps, Y0, Xhs
+        return Y0, Xhs
 
-    def _evaluate(Ps, Y0, Xhs):
+    def _evaluate(Y0, Xhs):
         return simple_recall(U, Ps, Y0) + joint_recall(U, Ps, Y0, Xhs)
 
     print(stats(_evaluate, _sample, 100))

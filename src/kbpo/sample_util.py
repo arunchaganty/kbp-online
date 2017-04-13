@@ -1,7 +1,10 @@
 """
 Sampling utilities
 """
+import logging
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 def sample_with_replacement(P, X, num_samples):
     """
@@ -25,6 +28,10 @@ def sample_without_replacement(P, X, num_samples):
     @P: is a counter with keys x from X.
     @returns a list of elements from X.
     """
+    if len(X) < num_samples:
+        logger.warning("Not enough elements to meaningfully sample without replacement")
+        return X
+
     P_ = np.array([P[x] for x,_ in X])
     assert abs(sum(P_) - 1.) < 1e-6
 
