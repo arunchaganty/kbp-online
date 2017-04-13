@@ -223,7 +223,10 @@ def merge_evaluation_links(row):
 def merge_evaluation_relations(row):
     # Choose the most frequent char_begin and char_end.
     relation = majority_element(row.relations)
-    weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/len(row.weights)
+    n_assignments = max(max([int(json.loads(params)['max_assignments']) for params in row.params]), len(row.weights))
+
+    param = majority_element(row.params)
+    weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/n_assignments
 
     return row.question_id, row.question_batch_id, row.doc_id, row.subject_id, row.object_id, relation, weight
 
@@ -255,7 +258,7 @@ def update_evaluation_relation():
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_relation;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT question_id, question_batch_id, doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights FROM evaluation_relation_response GROUP BY question_id, question_batch_id, doc_id, subject_id, object_id""")
+            cur.execute("""SELECT question_id, question_batch_id, doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights, array_agg(params) as params FROM evaluation_relation_response as r, mturk_assignment as a, mturk_batch as b WHERE r.assignment_id = a.id AND a.batch_id = b.id GROUP BY question_id, question_batch_id, doc_id, subject_id, object_id""")
             # Take the majority vote on this mention iff count > 1.
             values = [merge_evaluation_relations(row) for row in cur]
             db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject_id, object_id, relation, weight) VALUES %s""", values)

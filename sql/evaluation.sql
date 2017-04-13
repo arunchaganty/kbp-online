@@ -63,8 +63,9 @@ CREATE TABLE  mturk_assignment (
 
   worker_id TEXT NOT NULL, -- provided by mturk
   worker_time INTEGER NOT NULL, -- provided by mturk (in seconds)
-  status TEXT NOT NULL, -- Have we paid the turker?
-  response TEXT NOT NULL, -- the raw response by the worker.
+  status HIT_STATUS NOT NULL, -- Have we paid the turker?
+  response JSON NOT NULL, -- the raw response by the worker.
+  comments TEXT, -- comments provided by the turker 
   ignored BOOLEAN NOT NULL DEFAULT FALSE, -- Should we ignore this entry for some reason?
   CONSTRAINT mturk_hit_exists FOREIGN KEY (batch_id, hit_id) REFERENCES mturk_hit
 ) DISTRIBUTED BY (id);

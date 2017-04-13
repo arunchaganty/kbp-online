@@ -258,12 +258,22 @@ CREATE OPERATOR && (
    restrict = eqsel, join = eqjoinsel
 );
 
+CREATE TYPE EVALUATION_TYPE AS ENUM (
+    'exhaustive_entities',
+    'exhaustive_relations',
+    'selective_relations'
+);
 CREATE OPERATOR @> (
    leftarg = SPAN, rightarg = SPAN, procedure = span_contains,
    commutator = <@,
    restrict = eqsel, join = eqjoinsel
 );
 
+CREATE TYPE HIT_STATUS AS ENUM (
+    'Submitted' , 
+    'Approved' , 
+    'Rejected'
+);
 CREATE OPERATOR <@ (
    leftarg = SPAN, rightarg = SPAN, procedure = span_contained_by,
    commutator = @>,
