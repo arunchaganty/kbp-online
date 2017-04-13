@@ -10,6 +10,7 @@ from kbpo import web_data
 logger = logging.getLogger("kbpo")
 
 def do_command(args):
+    # TODO: symmetrize relations in input.
     web_data.parse_responses()
     web_data.update_summary()
 
