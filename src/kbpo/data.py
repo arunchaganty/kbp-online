@@ -130,9 +130,9 @@ def load_gold(fstream, Q):
 
 def load_output(fstream, Q):
     output = []
-    for line in tqdm(fstream):
+    for line in tqdm(fstream, desc='Loading entries'):
         entry = OutputEntry.from_line(line)
         if entry.query_id in Q:
             output.append(entry._replace(ldc_id=Q[entry.query_id]))
-    logger.info("Loaded %d output entries.", len(output))
+    #logger.info("Loaded %d output entries.", len(output))
     return output

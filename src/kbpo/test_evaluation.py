@@ -10,6 +10,7 @@ import numpy as np
 
 from . import counter_utils
 from .evaluation import simple_precision, simple_recall, joint_precision, pooled_recall, pool_recall, joint_recall
+from .sample_util import sample_with_replacement, sample_without_replacement
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -77,37 +78,6 @@ def generate_submission_set(precisions, recalls, population_size=1000):
         Xs.append(X)
     return Ps, Xs
 
-def sample_with_replacement(P, X, num_samples):
-    """
-    Draw num_samples from X using the distribution P.
-    @X: is a list of tuples (x, label(x)).
-    @P: is a counter with keys x from X.
-    @returns a list of elements from X.
-    """
-    P_ = [P[x] for x, _ in X]
-    assert abs(sum(P_) - 1.) < 1e-6
-
-    Xh_ = np.random.multinomial(num_samples, P_)
-    Xh = [X[i] for i, ni in enumerate(Xh_) for _ in range(ni)]
-    assert len(Xh) == num_samples
-    return Xh
-
-def sample_without_replacement(P, X, num_samples):
-    """
-    Draw num_samples from X using the distribution P without replacement.
-    @X: is a list of tuples (x, label(x)).
-    @P: is a counter with keys x from X.
-    @returns a list of elements from X.
-    """
-    P_ = np.array([P[x] for x,_ in X])
-    assert abs(sum(P_) - 1.) < 1e-6
-
-    U = np.random.rand(len(X))
-    ixs = np.argsort(-P_**U)
-    Xh = [X[i] for i in ixs[:num_samples]]
-    assert len(Xh) == num_samples
-    return Xh
-
 def test_simple_precision_wr():
     np.random.seed(42)
     population, precision, recall = 1000, 0.5, 0.2
@@ -143,7 +113,7 @@ def test_joint_precision_wr():
     population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
     Ps, Xs = generate_submission_set(precisions, recalls, population)
     Xhs = [sample_with_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
-    precisions_ = joint_precision(Ps, Xs, Xhs)
+    precisions_ = joint_precision(Ps, Xhs)
     print(precisions_)
     assert np.allclose(precisions, precisions_, atol=5e-2)
 
@@ -153,7 +123,7 @@ def test_joint_precision_wor():
     population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
     Ps, Xs = generate_submission_set(precisions, recalls, population)
     Xhs = [sample_without_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
-    precisions_ = joint_precision(Ps, Xs, Xhs)
+    precisions_ = joint_precision(Ps, Xhs)
     print(precisions_)
     assert np.allclose(precisions, precisions_, atol=5e-2)
 
@@ -184,13 +154,13 @@ def test_pooled_recall_wr():
     U = true_sample_distribution(population)
     pooled_recalls = true_pooled_recall(U, Ps)
 
-    pooled_recalls_ = pooled_recall(U, Ps, Xs, Xs)
+    pooled_recalls_ = pooled_recall(U, Ps, Xs)
     print("nu_i", pooled_recalls)
     print("nuh_i", pooled_recalls_)
     assert np.allclose(pooled_recalls, pooled_recalls_, atol=1e-1)
 
     Xhs = [sample_with_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
-    pooled_recalls_ = pooled_recall(U, Ps, Xs, Xhs)
+    pooled_recalls_ = pooled_recall(U, Ps, Xhs)
     print("nu_i", pooled_recalls)
     print("nuh_i", pooled_recalls_)
     assert np.allclose(pooled_recalls, pooled_recalls_, atol=1e-1)
@@ -219,7 +189,7 @@ def test_joint_recall():
     U = true_sample_distribution(population)
 
     Y = sorted(U.items())
-    recalls_ = joint_recall(U, Ps, Xs, Y, Xs)
+    recalls_ = joint_recall(U, Ps, Y, Xs)
     print("rho_i", recalls)
     print("rhoh_i", recalls_)
     assert np.allclose(recalls, recalls_, atol=1e-1)
@@ -232,7 +202,7 @@ def test_joint_recall():
     print("rhoh(s)_i", recalls_)
     assert np.allclose(recalls, recalls_, atol=1e-1)
 
-    recalls_ = joint_recall(U, Ps, Xs, Y0, Xhs)
+    recalls_ = joint_recall(U, Ps, Y0, Xhs)
     print("rho_i", recalls)
     print("rhoh_i", recalls_)
     assert np.allclose(recalls, recalls_, atol=1e-1)
@@ -249,7 +219,7 @@ def test_joint_precision_statistical():
         return Ps, Xhs
 
     def _evaluate(Ps, Xhs):
-        return simple_precision(Xhs) + joint_precision(Ps, Xs, Xhs)
+        return simple_precision(Xhs) + joint_precision(Ps, Xhs)
 
     print(stats(_evaluate, _sample, 100))
 
@@ -267,6 +237,6 @@ def test_joint_recall_statistical():
         return Ps, Y0, Xhs
 
     def _evaluate(Ps, Y0, Xhs):
-        return simple_recall(U, Ps, Y0) + joint_recall(U, Ps, Xs, Y0, Xhs)
+        return simple_recall(U, Ps, Y0) + joint_recall(U, Ps, Y0, Xhs)
 
     print(stats(_evaluate, _sample, 100))

@@ -13,6 +13,30 @@ from . import counter_utils
 
 logger = logging.getLogger(__name__)
 
+class MixtureCounter(object):
+    """
+    Presents the mixture of a set of counters.
+    Is readonly
+    """
+
+    def __init__(self, W, P):
+        assert len(W) == len(P)
+        self.m = len(P)
+        self.W = W
+        self.P = P
+        self._keys = set()
+        for i in range(self.m):
+            self._keys.update(P[i].keys())
+
+    def keys(self):
+        return self._keys
+
+    def __iter__(self):
+        return iter(self._keys)
+
+    def __getitem__(self, x):
+        return sum(self.W[i] * self.P[i][x] for i in range(self.m))
+
 # Simplest possible estimation procedures that assume access to the
 # distribution (P) or (U).
 def weighted_precision(P, Xs):
@@ -89,26 +113,31 @@ def simple_score(U, P, Y0, Xhs):
     return ps, rs, f1s
 
 # Weight matrix computation
-def compute_weights(P, Xs, method="heuristic"):
+def compute_weights(P, Xhs, method="heuristic"):
     r"""
     Computes
     $w_{ij} \propto n_j \sum_{x} p_i(x) p_j(x)$
     """
     m = len(P)
+    Ns = np.array([len(Xhs[i]) for i in range(m)])
 
     if method == "uniform":
         W = np.ones((m,m)) / m
     elif method == "heuristic":
         W = np.zeros((m,m))
+
+        _P = [set(P[i]) for i in range(m)]
         for i in range(m):
-            for j in range(m):
-                W[i,j] = len(Xs[j]) * sum(P[i][x] * P[j][x] for x in P[i])
+            for j in range(i, m):
+                W[i,j] = sum(P[i][x] * P[j][x] for x in _P[i].intersection(_P[j]))
+                W[j,i] = W[i,j]
+        W = W * Ns
         W = (W.T/W.sum(1)).T
     elif method == "size":
         W = np.zeros((m,m))
         for i in range(m):
             for j in range(m):
-                W[i,j] = len(Xs[j])
+                W[i,j] = Ns[j]
         W = (W.T/W.sum(1)).T
     else:
         raise ValueError("Invalid weighting distribution")
@@ -120,12 +149,12 @@ def test_compute_weights_uniform():
         {'a': 0.0, 'b': 1.0, 'c': 0.0},
         {'a': 0.0, 'b': 0.0, 'c': 1.0},
         ]
-    Xs = [
+    Xhs = [
         [('a',0.) for _ in range(10)],
         [('b',0.) for _ in range(50)],
         [('c',0.) for _ in range(100)],
         ]
-    W = compute_weights(P, Xs, "uniform")
+    W = compute_weights(P, Xhs, "uniform")
     assert np.allclose(W, np.ones((3,3))/3)
 
 def test_compute_weights_disjoint():
@@ -134,12 +163,12 @@ def test_compute_weights_disjoint():
         {'a': 0.0, 'b': 1.0, 'c': 0.0},
         {'a': 0.0, 'b': 0.0, 'c': 1.0},
         ]
-    Xs = [
+    Xhs = [
         [('a',0.) for _ in range(10)],
         [('b',0.) for _ in range(50)],
         [('c',0.) for _ in range(100)],
         ]
-    W = compute_weights(P, Xs, "heuristic")
+    W = compute_weights(P, Xhs, "heuristic")
     assert np.allclose(W, np.eye(3))
 
 def test_compute_weights_identical():
@@ -148,12 +177,12 @@ def test_compute_weights_identical():
         {'a': 0.3, 'b': 0.2, 'c': 0.5},
         {'a': 0.3, 'b': 0.2, 'c': 0.5},
         ]
-    Xs = [ # these samples don't really matter.
+    Xhs = [
         [('a',0.) for _ in range(10)],
         [('b',0.) for _ in range(50)],
         [('c',0.) for _ in range(100)],
         ]
-    W = compute_weights(P, Xs, "heuristic")
+    W = compute_weights(P, Xhs, "heuristic")
     assert np.allclose(W, np.array([
         [10./160., 50./160., 100./160.],
         [10./160., 50./160., 100./160.],
@@ -167,12 +196,11 @@ def construct_proposal_distribution(W, P):
     """
     m = len(P)
 
-    Q = []
+    Q = [Counter() for i in range(m)]
     for i in range(m):
-        q = Counter()
-        for j in range(m):
-            q.update(counter_utils.scale(P[j], W[i][j]))
-        Q.append(q)
+        for x, v in P[i].items():
+            for j in range(m):
+                Q[j][x] += W[j][i] * v
     return Q
 
 def test_construct_proposal_distribution():
@@ -195,7 +223,7 @@ def test_construct_proposal_distribution():
     for q, q_ in zip(Q, Q_):
         assert counter_utils.equals(q, q_)
 
-def joint_precision(P, Xs, Xhs, method="heuristic"):
+def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
     r"""
     Compute precision for a collection of samples, where
         P = [Counter], each element of P is a distribution over instances in $\sX$.
@@ -207,8 +235,10 @@ def joint_precision(P, Xs, Xhs, method="heuristic"):
     """
     m = len(P)
 
-    W = compute_weights(P, Xs, method)
-    Q = construct_proposal_distribution(W, P)
+    if W is None:
+        W = compute_weights(P, method)
+    if Q is None:
+        Q = construct_proposal_distribution(W, P)
 
     pis = []
     for i in range(m):
@@ -223,7 +253,7 @@ def joint_precision(P, Xs, Xhs, method="heuristic"):
         pis.append(pi_i)
     return pis
 
-def pooled_recall(U, P, Xs, Xhs, method="heuristic"):
+def pooled_recall(U, P, Xhs, W=None, Q=None, method="heuristic"):
     r"""
     \nu_i =
         \sum_{j} w_{j} \sum_{x \in Y_j} u(x)/q(x) g_i(x)/
@@ -231,8 +261,10 @@ def pooled_recall(U, P, Xs, Xhs, method="heuristic"):
     w_j \propto n_j?
     """
     m = len(P)
-    W = compute_weights(P, Xs, method)
-    Q = construct_proposal_distribution(W, P)
+    if W is None:
+        W = compute_weights(P, method)
+    if Q is None:
+        Q = construct_proposal_distribution(W, P)
 
     nus = []
     for i in range(m):
@@ -266,14 +298,14 @@ def pool_recall(U, P, Y0):
         theta += (U[x]*gx - theta)/(n+1)
     return theta
 
-def joint_recall(U, P, Xs, Y0, Xhs):
+def joint_recall(U, P, Y0, Xhs, Q=None, W=None):
     theta = pool_recall(U, P, Y0)
-    nus = pooled_recall(U, P, Xs, Xhs)
+    nus = pooled_recall(U, P, Xhs, W=W, Q=Q)
     rhos = [theta * nu_i for nu_i in nus]
     return rhos
 
-def joint_score(U, P, Xs, Y0, Xhs):
-    ps = joint_precision(P, Xs, Xhs)
-    rs = joint_recall(U, P, Xs, Y0, Xhs)
+def joint_score(U, P, Y0, Xhs, W=None, Q=None):
+    ps = joint_precision(P, Xhs, W=W, Q=Q)
+    rs = joint_recall(U, P, Y0, Xhs, W=W, Q=Q)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s

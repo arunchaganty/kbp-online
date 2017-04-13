@@ -18,27 +18,29 @@ from kbpo.data import load_queries, load_gold, load_output, Provenance, Evaluati
 from kbpo.util import macro, micro
 from kbpo.analysis import k, kn, get_key, project_gold, project_output, compute_entity_scores
 from kbpo.counter_utils import normalize
-from kbpo.test_evaluation import sample_with_replacement, sample_without_replacement
-from kbpo.evaluation import weighted_score, simple_score, joint_score
+from kbpo.sample_util import sample_with_replacement, sample_without_replacement
+from kbpo.evaluation import weighted_score, simple_score, joint_score, compute_weights, construct_proposal_distribution
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def load_data(args, key_fn=k):
+def load_data(args):
     Q = load_queries(args.queries)
     gold = load_gold(args.gold, Q)
     outputs = {}
 
-    for fname in os.listdir(args.preds):
+    for fname in tqdm(os.listdir(args.preds), desc="Loading outputs"):
         if not fname.endswith(".txt"): continue
         runid = fname.split(".")[0]
-        logger.info("Loading output for %s", runid)
+        #logger.info("Loading output for %s", runid)
 
         with open(os.path.join(args.preds, fname)) as f:
-            outputs[runid] = load_output(f, Q)
-        break
+            output = load_output(f, Q)
+            if len(output) > 0:
+                outputs[runid] = output
     logger.info("Loaded output for %d systems", len(outputs))
+    assert "LDC" in outputs
     return Q, gold, outputs
 
 def transform_output(Q, gold, outputs, mode="closed-world"):
@@ -78,7 +80,20 @@ def transform_output(Q, gold, outputs, mode="closed-world"):
         Xs.append(X)
         P = normalize(P)
         Ps.append(normalize(P))
-    return U, Y, Rs, Ps, Xs
+
+    # Just make sure the counts of objects match up
+    gold_count = len(set(x for x, fx in Y if fx == 1.0))
+    pool_count = len(set(x for X in Xs for x, fx in X if fx == 1.0))
+    assert gold_count == pool_count
+
+    # shuffle the output around so that LDC is the first run (makes
+    # things convenient.
+    i = Rs.index("LDC")
+    Ps.insert(0, Ps.pop(i))
+    Xs.insert(0, Xs.pop(i))
+    Rs.insert(0, Rs.pop(i))
+
+    return Rs, U, Y, Ps, Xs
 
 def _test_input():
     Q = {'s1': 's1', 's2': 's2', 's3':'s3'}
@@ -135,35 +150,100 @@ def test_transform_output_sample():
     print("simple", p_, r_, f1_)
     assert np.allclose([p, r, f1], [p_,r_,f1_], 5e-2)
 
-def simulate_pooling(Xs):
-    pass
+def teamid(runid):
+    """
+    SF_UMass_IESL1 -> UMass_IESL
+    """
+    return runid.split("_", 1)[-1][:-1]
+
+def create_pool(Rs, Ps, Xs, replace_labels=False):
+    """
+    Set Y to be the union of the output from all the pooled systems.
+    Then rescore the outputs from _unpooled systems_.
+    """
+    # First compress the list of systems by team id.
+    Ts = sorted(set(teamid(r) for r in Rs[1:]))
+    pool_size = int(len(Ts)/2)
+    np.random.shuffle(Ts)
+    Ts = Ts[:pool_size]
+    pool = Rs[0:1] + [R for R in Rs if teamid(R) in Ts]
+
+    assert "LDC" in pool
+    Y_ = sorted(set((x,fx) for (R, X) in zip(Rs, Xs) for x, fx in X if R in pool and fx == 1.0))
+    Rs_, Ps_, Xs_ = zip(*[(R, P, X) for R, P, X in zip(Rs, Ps, Xs) if R not in pool])
+    if replace_labels:
+        Yx = set(x for x, _ in Y_)
+        Xs_ = [[(x, 1.0 if x in Yx else 0.0) for x, _ in X] for X in Xs_]
+    # TODO: should I renormalize U?
+
+    return Rs_, Y_, Ps_, Xs_
 
 def do_simulate(args):
+    # Load the data.
+    # Handle the LDC -- that shouldn't be part of the output.
     Q, gold, outputs = load_data(args)
-    _, Gr = project_gold(Q, gold, 'closed-world')
-    U, Y, Rs, Ps, Xs = transform_output(Q, gold, outputs)
-    precisions, recalls, f1s = weighted_score(U, Ps, Y, Xs)
 
-    for i in range(len(Ps)):
-        output = outputs[Rs[i]]
-        S, C, T = compute_entity_scores(Q, gold, output)
-        #S_, C_, T_ = compute_stats(Gr, Y, Xs[i], Xs_[i])
-        #def sym(x,y): 
-        #    return "==" if x == y else "<>"
-        #for s in S:
-        #    print("{}: S({} {} {}), C({} {} {}), T({} {} {})".format(s, S[s], sym(S[s],S_[s]), S_[s], C[s], sym(C[s],C_[s]), C_[s], T[s], sym(T[s],T_[s]),T_[s]))
-        #for s in T:
-        #    if s not in S:
-        #        print(s, S[s], S_[s], C[s], C_[s], T[s], T_[s])
-        print("entity score: {:.3f}, {:.3f}, {:.3f}".format(*micro(S, C, T)))
-        print("sample score: {:.3f}, {:.3f}, {:.3f}".format(precisions[i], recalls[i], f1s[i]))
+    logger.info("Transforming data...")
+    Rs, U, Y, Ps, Xs = transform_output(Q, gold, outputs)
 
+    logger.info("Evaluating true scores...")
     # Measure the true precision and recall values on the entire data.
+    precisions, recalls, f1s = weighted_score(U, Ps, Y, Xs)
+    true_scores = {run_id: [p, r, f1] for run_id, p, r, f1 in zip(Rs, precisions, recalls, f1s)}
+
     # TODO: Pick the top 40 teams for the experiment?
-    # Randomly subsample queries to evaluate against
+    # TODO: Randomly subsample queries to evaluate against?
+
+    logger.info("Evaluating estimated scores...")
+    estimated_scores = {run_id: [] for run_id in Rs}
     # For n epochs:
-    #   Create a random pool of $n$ elements, not including this system. 
-    #   Evaluate scores based on the chosen elements.
+    for _ in tqdm(range(args.num_epochs)):
+        # Evaluate scores based on the chosen elements.
+        # When creating the pool,
+        Rs_, Y_, Ps_, Xs_ = create_pool(Rs, Ps, Xs, args.mode == "pooled") # Last argument changes truth values of elements.
+
+        if args.mode == "pooled":
+            n_samples = len(Y_)
+            ps, rs, f1s = weighted_score(U, Ps_, Y_, Xs_)
+        else:
+            # Draw n_samples from respective distributions
+            n_samples = 5000
+            per_samples = int(n_samples / (len(Rs_) + 1)) # evenly distributed to estimate precision and recall.
+            Y0 = sample_without_replacement(normalize(U), Y, per_samples)
+            Xhs = [sample_with_replacement(P, X, per_samples) for P, X in zip(Ps_, Xs_)]
+            if args.mode == "simple":
+                ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
+            elif args.mode == "joint":
+                W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
+                Q = construct_proposal_distribution(W, Ps_)
+                ps, rs, f1s = joint_score(U, Ps_, Y0, Xhs, W=W, Q=Q)
+
+        for run_id, p, r, f1 in zip(Rs_, ps, rs, f1s):
+            estimated_scores[run_id].append([n_samples, p, r, f1])
+
+    logger.info("Printing output...")
+    writer = csv.writer(args.output, delimiter="\t")
+    writer.writerow(["run_id",
+                     "p", "r", "f1", "n_samples",
+                     "delta_p", "delta_r", "delta_f1",
+                     "p_lrange", "r_lrange", "f1_lrange",
+                     "p_rrange", "r_rrange", "f1_rrange",])
+    for run_id in sorted(Rs):
+        if run_id == "LDC": continue
+
+        if len(estimated_scores[run_id]) == 0:
+            logger.warning("Did not sample any experiments for %s; ignoring", run_id)
+            continue
+        p, r, f1 = true_scores[run_id]
+        metrics = np.array(estimated_scores[run_id])
+        n_samples, p_, r_, f1_ = np.mean(metrics, 0)
+        _, p_l, r_l, f1_l = np.percentile(metrics, 5, 0)
+        _, p_r, r_r, f1_r = np.percentile(metrics, 95, 0)
+        writer.writerow([run_id,
+                         p, r, f1, n_samples,
+                         p - p_, r - r_, f1 - f1_,
+                         p_ - p_l, r_ - r_l, f1_ - f1_l,
+                         p_r - p_, r_r - r_, f1_r - f1_])
 
 if __name__ == "__main__":
     import argparse
@@ -173,8 +253,9 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--gold', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_poolc.assessed.fqec"), help="A list of gold entries")
     parser.add_argument('-q', '--queries', type=argparse.FileType('r'), default=(DD + "/SF_aux_files/batch_00_05_queryids.v3.0.txt"), help="A list of queries that were evaluated")
     parser.add_argument('-ps', '--preds', type=str, default=(DD+ "/corrected_runs/"), help="A directory with predicted entries")
-    parser.add_argument('-m', '--mode', choices=["pooled", "simple", "ondemand"], default="pooled", help="How scores should be estimated")
+    parser.add_argument('-m', '--mode', choices=["pooled", "simple", "joint"], default="pooled", help="How scores should be estimated")
     parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Outputs a list of results for every system (true, predicted, stdev)")
+    parser.add_argument('-n', '--num-epochs', type=int, default=1000, help="Number of epochs to average over")
     parser.set_defaults(func=do_simulate)
 
     ARGS = parser.parse_args()
