@@ -1,10 +1,19 @@
-Large-scale information extraction systems for knowledge base population (KBP) predict true relations from an unenumerable set of candidate relations within a large document corpus.
-Due to the prohibitive cost of annotating the entire corpus, KBP evaluation has relied on datasets constructed by judging predictions pooled together from existing systems.
-However, when a newly developed system predicts a relation not previously seen, it can not be accurately evaluated.
-We show that this results in an evaluation score that is significantly biased against novel system predictions.
-To address this bias,
-  we introduce on-demand open-world evaluation which continuously expands the evaluation dataset by annotating new system's predictions when necessary through crowdsourcing, while still ensuring that score estimates are unbiased.
-We demonstrate a significant cost savings on simulated experiments from the 2015 TAC-KBP evaluation, and conduct a mock evaluation on the TAC-KBP 2016 document corpus.
+Knowledge base population (KBP) systems take in a large document corpus and extract all contained entities and relations.
+Thus far, KBP evaluation has relied on datasets constructed by judging predictions pooled together from existing systems. 
+However, when a newly developed system predicts a relation not previously seen, it cannot be accurately evaluated. We show that pooling evaluation  results in a score that is significantly biased against newly developed systems, discouraging innovation and slowing progress in the field.
+Our first contribution is a new importance-sampling based approach to evaluation which actively corrects for bias by annotating new system's predictions when necessary via crowdsourcing.
+On simulated experiments, we use the new approach to eliminate bias and reduce variance on the 2015 TAC KBP task when compared to pooling evaluation.
+Our second contribution is a KBP evaluation service and its annotations which we make available to the community. 
+We use the evaluation service to run three diverse state-of-the-art systems on the TAC KBP 2016 corpus, and demonstrate that the evaluation permits an accurate quantitative and qualitative understanding of system performance.
+We hope that the service will allow the community to get accurate and timely feedback on exciting new directions in KBP.\@
+
+% Large-scale information extraction systems for knowledge base population (KBP) predict true relations from an unenumerable set of candidate relations within a large document corpus.
+% Due to the prohibitive cost of annotating the entire corpus, KBP evaluation has relied on datasets constructed by judging predictions pooled together from existing systems.
+% However, when a newly developed system predicts a relation not previously seen, it can not be accurately evaluated.
+% We show that this results in an evaluation score that is significantly biased against novel system predictions.
+% To address this bias,
+%   we introduce on-demand open-world evaluation which continuously expands the evaluation dataset by annotating new system's predictions when necessary through crowdsourcing, while still ensuring that score estimates are unbiased.
+% We demonstrate a significant cost savings on simulated experiments from the 2015 TAC-KBP evaluation, and conduct a mock evaluation on the TAC-KBP 2016 document corpus.
 
 %% OLD  vvv
 %%\pl{don't like facts since that implies truth - changed to relation, since that's also used later in the paper;
