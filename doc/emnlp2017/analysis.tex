@@ -9,27 +9,43 @@ In this section, we'll measure pooling bias in KBP evaluation and show that the 
 
 % Data and methodology
 \begin{figure*}[t]
+    \centering
   \begin{subfigure}{\columnwidth}
-  \includegraphics[width=\columnwidth]{figures/pooling_bias/pooling_bias_closed-world}
-  \caption{Pooling bias for macro \fone{} scores without the \anydoc{} heuristic.}
+      \includegraphics[width=\columnwidth, trim={0 8cm 0 0},clip]{figures/pooling_bias/pooling_bias_closed-world}
+    \centering
+    \small{\begin{tabular} {r r r } \toprule
+       Median Precision & Median Recall & Median \fone{} \\ \midrule 
+ 17.93\% &  17.00\% & 15.51\% \\ \bottomrule
+   \end{tabular}}
+  \caption{\label{fig:exact-prov-pooling}
+Pooling bias for macro \fone{} scores with exact provenance match.
+   }
+
   \end{subfigure}
   \begin{subfigure}{\columnwidth}
-  \includegraphics[width=\columnwidth]{figures/pooling_bias/pooling_bias_anydoc}
-  \caption{Pooling bias for macro \fone{} scores with the \anydoc{} heuristic.}
+  \includegraphics[width=\columnwidth, trim={0 8cm 0 0},clip]{figures/pooling_bias/pooling_bias_anydoc}
+    \centering
+    \small{
+   \begin{tabular} {r r r } \toprule
+      Median Precision & Median Recall & Median \fone{} \\ \midrule 
+ 2.34\% &  1.93\% & 2.05\% \\ \bottomrule
+   \end{tabular}}
+  \caption{\label{fig:anydoc-pooling}Pooling bias for macro \fone{} scores with the \anydoc{} heuristic.
+  }
   \end{subfigure}
   \caption{\label{fig:pooling-bias} Pooling bias measures how much a system's evaluation score is changed by not having its predictions labeled as part of the pooled evaluation.
   Here, pooling bias is measured for the participating systems at the TAC-KBP 2015 competition.
-  The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 2.05\% when evaluating using the \anydoc{} heuristic.
+  %The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 2.05\% when evaluating using the \anydoc{} heuristic.
   Note that the median difference between the \anydoc{} scores and standard scores is 0.88\% points; this difference is caused because the \anydoc{} heuristic erroneously considers relational tuples with incorrect provenances to be correct.}
 \end{figure*}
 \paragraph{Measuring bias.}
 To measure pooling bias, we'll need to recreate the conditions shown in \figureref{pooling}: we must be able to measure evaluation metrics for a system before and after its inclusion to the pooled dataset. 
 We simulate this condition using the ``leave-out-unique'' experiment proposed by \citet{zobel1998reliable} to study pooling bias in information retrieval by using relational tuples from the participating systems in the TAC-KBP competition and their labels released as part of the evaluation dataset.
-The original evaluation dataset contains labels for the relational tuples from all the participating systems, so we can remove any tuples that are unique to a particular system to simulate what the evaluation dataset would be if that system did not participate in the pooling process.
+The original evaluation dataset contains labels for the relational tuples from all the participating systems, so we can remove any tuples that are unique to a particular system to simulate what the evaluation dataset would be if that system did not participate in the pooling process. \footnote{In practice, we remove tuples unique to all systems submitted by a team as these systems are highly correlated} 
 Finally, we can then measure the difference in evaluation scores between the original evaluation dataset and the hypothetical one we've just created.
 
 \paragraph{Results.}
-\figureref{pooling-bias} shows the results of the leave-out-unique experiment on the TAC-KBP 2015 competition on the \fone{} metric with and without the \anydoc{} heuristic.
+\figureref{pooling-bias} shows the results of the leave-out-unique experiment on the TAC-KBP 2015 competition on the \fone{} metric with exact provenance match (\figureref{exact-prov-pooling}) and with the \anydoc{} heuristic (\figureref{anydoc-pooling}).
 In total, there are 70 system submissions from 18 teams for 317 query entities and the evaluation set consists of 11,008 assessed relational tuples.\footnote{%
   The evaluation set is actually constructed from compositional queries like, ``what does Carrie Fisher's parents do?'':
   these queries select relational tuples that answer the question ``who are Carrie Fisher's parents?'', and then use those answers (e.g.\ ``Debbie Reynolds'') to select relational tuples that answer ``what does Debbie Reynolds do?''.
@@ -39,12 +55,12 @@ The effect of pooling bias is understated on systems that performed very poorly.
 Consequently, we report median results on the top 40 systems (after which there is a sharp drop in performance).
 The outlier in the graph at rank 36 corresponds to a submission from University of Texas, Austin that only filtered predictions from other systems: this submission does not suffer any pooling bias because it has no unique predictions.
 
-Without the \anydoc{} heuristic, the median pooling bias is 15.51\% \fone{} points and with the heuristic it is 2.05\% \fone{} points.
-It should be noted that the \anydoc{} heuristic also overestimates scores by about 0.88\% \fone{} points.
-The bias affects precision and recall almost equally: 
-  the median bias the without \anydoc{} heuristic being 17.93\% and 17.00\% respectively, and
-  the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
-  At the same time, the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions), less than the pooling bias with \anydoc{} heuristic.
+%Without the \anydoc{} heuristic, the median pooling bias is 15.51\% \fone{} points and with the heuristic it is 2.05\% \fone{} points.
+%It should be noted that the \anydoc{} heuristic also overestimates scores by about 0.88\% \fone{} points.
+%The bias affects precision and recall almost equally: 
+%  the median bias the without \anydoc{} heuristic being 17.93\% and 17.00\% respectively, and
+%  the median bias the with \anydoc{} heuristic being 2.34\% and 1.93\% respectively.
+We observe that even with lenient \anydoc{} heuristic the median bias is still a significant 2.05\% \fone{}. In comparison the median difference between two adjacent submissions is only 0.3\%\fone{} with largest difference being 1.5\% \fone{} (between the 26th and 27th ranked submissions), less than the pooling bias with \anydoc{} heuristic.
 
   We also considered an alternate scoring model where relational tuples outside the evaluation set were of ignored instead of marked wrong and find that under this model \fone{} scores remain biased by 14.99\% and 0.73\% points on average, with and without the \anydoc{} heuristic respectively.
 % TODO:  \ap{elaborate methodology}
