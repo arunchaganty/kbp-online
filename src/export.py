@@ -108,6 +108,7 @@ def do_stanford(args):
             WHERE r.doc_id = m.doc_id AND r.doc_id = n.doc_id AND r.sentence_id = m.sentence_id
               AND (r.subject_id = m.id OR r.object_id = m.id)
               AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
+              AND m.ner = n.ner
               AND is_kbpo_type(n.ner)
             """.format(mention=mention_table))
             logger.info("Found %d rows", cur.rowcount)
@@ -132,7 +133,7 @@ def do_stanford(args):
             cur.execute("""
         SELECT subject_span, relation, object_span, s.doc_id, s.doc_char_begin[1], s.doc_char_end[public.array_length(s.doc_char_end)], confidence
         FROM _relation r, {sentence} s
-        WHERE r.doc_id = s.doc_id aND r.sentence_id = s.id
+        WHERE r.doc_id = s.doc_id AND r.sentence_id = s.id
         ORDER BY subject_span, relation, object_span
         """.format(sentence=sentence_table))
             logger.info("Found %d rows", cur.rowcount)
