@@ -53,7 +53,7 @@ def do_command(args):
     autolabel(ax, rects1)
     autolabel(ax, rects2)
     fig.set_tight_layout(True)
-    plt.savefig('kbp2016_precision.pdf', bbox_inches = 'tight')
+    plt.savefig('kbp2016/kbp2016_precision.pdf', bbox_inches = 'tight')
 
     #Recall plot
     simple_filtered = simple[simple['run_id'].str.contains(ARGS.sampling_scheme)]
@@ -70,7 +70,7 @@ def do_command(args):
     autolabel(ax, rects1)
     autolabel(ax, rects2)
     fig.set_tight_layout(True)
-    plt.savefig('kbp2016_recall.pdf', bbox_inches = 'tight')
+    plt.savefig('kbp2016/kbp2016_recall.pdf', bbox_inches = 'tight')
 
     #F1 plot
     simple_filtered = simple[simple['run_id'].str.contains(ARGS.sampling_scheme)]
@@ -87,7 +87,7 @@ def do_command(args):
     autolabel(ax, rects1)
     autolabel(ax, rects2)
     fig.set_tight_layout(True)
-    plt.savefig('kbp2016_f1.pdf', bbox_inches = 'tight')
+    plt.savefig('kbp2016/kbp2016_f1.pdf', bbox_inches = 'tight')
 
 if __name__ == "__main__":
     import argparse

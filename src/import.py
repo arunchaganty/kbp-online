@@ -9,8 +9,8 @@ import sys
 import logging
 
 from kbpo import db
-from kbpo.entry import MFile, Entry
-from kbpo.defs import TYPES,NER_MAP,ALL_RELATIONS
+from kbpo import web_data
+from kbpo.entry import MFile
 
 logger = logging.getLogger('kbpo')
 logging.basicConfig(level=logging.INFO)
@@ -57,16 +57,25 @@ def do_submission(args):
             # relations
             db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject_id, object_id, relation, provenances, confidence) VALUES %s """, relations)
 
+def do_responses(args):
+    # TODO: symmetrize relations in input.
+    web_data.parse_responses()
+    web_data.update_summary()
+
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description='Export data from the database')
+    parser = argparse.ArgumentParser(description='Import data into the database')
 
     subparsers = parser.add_subparsers()
     command_parser = subparsers.add_parser('submission', help='import a submission as an m-file')
     command_parser.add_argument('-n', '--name', type=str, required=True, help="Name of the submission")
     command_parser.add_argument('-d', '--description', type=str, required=True, help="Description")
+    command_parser.add_argument('-t', '--corpus-tag', type=str, required=True, help="Which corpus was this submission run on?")
     command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), default=sys.stdin, help="File to import")
     command_parser.set_defaults(func=do_submission)
+
+    command_parser = subparsers.add_parser('responses', help='Process mturk responses')
+    command_parser.set_defaults(func=do_responses)
 
 
     ARGS = parser.parse_args()
