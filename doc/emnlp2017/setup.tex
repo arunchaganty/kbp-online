@@ -5,14 +5,13 @@
 % 1. Basic output specification of KBP.
 %   - what are types, and entity links
 In knowledge base population,
-  each relation is a triple (\textsc{subject}, \textsc{predicate}, \textsc{object}) where \textsc{subject} and \textsc{object} are some globally unique entity identifiers (e.g.\, Wikipedia page titles), \textsc{predicate} is a relation \pl{can't use relation here!} belonging to a specified schema.\footnote{%
+  each relation is a triple (\textsc{subject}, \textsc{predicate}, \textsc{object}) where \textsc{subject} and \textsc{object} are some globally unique entity identifiers (e.g.\, Wikipedia page titles) and \textsc{predicate} is a belongs to a specified schema.\footnote{%
     The TAC KBP guidelines specify a total of 65 predicates (including inverses) such as 
      \texttt{per:title} or \texttt{org:founded\_on}, etc.
-     etc.
     Subject entities can be people, organizations, geo-political entities, while object entities also include 
     dates, numbers and arbitrary string-values like job titles.
      }
-A KBP system returns an output in the form of \textit{relation instances} (\textsc{subject}, \textsc{predicate}, \textsc{object}, \textsc{provenance}), where \textsc{provenance} is a description of where exactly in the document corpus the subject, object and relation \pl{you mean predicate?} were found. 
+A KBP system returns an output in the form of \textit{relation instances} (\textsc{subject}, \textsc{predicate}, \textsc{object}, \textsc{provenance}), where \textsc{provenance} is a description of where exactly in the document corpus the relation was found. 
 In the example shown in \figureref{example},
 \entity{Carrie Fisher} and \entity{Debbie Reynolds} are identified as the subject and object, respectively, of the predicate \relation{child of}, and the whole sentence is provided as provenance.
 The provenance also identifies that \entity{Carrie Fisher} is referenced by \mention{Fisher} within the sentence.
@@ -27,7 +26,7 @@ Note that the same relation can be expressed in multiple sentences across the do
  % Arrows indicate which systems extract which relation instances.
   However, when a new system (C) is evaluated on this dataset, some of its predictions are previously unseen and can not be fairly evaluated.
   Here, the precision and recall for C should be $\frac{3}{3}$ and $\frac{3}{4}$ respectively, but its evaluation scores are estimated to be $\frac{2}{3}$ and $\frac{2}{3}$.
-  \pl{why isn't the recall $3/5$? because we miss $t_1$ and $t_2$?  This is a nice figure, maybe use as figure 1?}
+%  \pl{why isn't the recall $3/5$? because we miss $t_1$ and $t_2$?  This is a nice figure, maybe use as figure 1?}
   The discrepancy between these two scores is called \textit{pooling bias}.
   }
 \end{figure}
@@ -38,11 +37,11 @@ First, let $E$ be a held-out set of evaluation entities.
 For every participating system, we run it on the document corpus to produce a set of relation instances;
 those whose subjects are in $E$ are labeled as either positive or negative by annotators.
 %A relational tuple for the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) that specifies an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered incorrect.
-Separately, a team of annotators identify relation instances for the same evaluation entities $E$ by manually searching the document corpus within a time budget \pl{these instances are not labeled?}.
+Separately, a team of annotators identify and label correct relation instances for the same evaluation entities $E$ by manually searching the document corpus within a time budget.
 These two sets of labeled relation instances are combined and released as the evaluation dataset.
 In the example in \reffig{pooling}, systems A and B were used in constructing the pooling dataset, and there are 3 distinct relations in the dataset, between $s_1$ and $o_1$, $o_2$ and $o_3$.
 
-A system is evaluated on the precision of its predicted relation instances for the evaluation entities $E$ and on the recall of the \textit{relations} \pl{not relation instances? why asymmetry?} it predicts for the same entities (see \reffig{pooling} for a worked example).
+A system is evaluated on the precision of its predicted relation instances for the evaluation entities $E$ and on the recall of the corresponding predicted \textit{relations} (not instances) for the same entities (see \reffig{pooling} for a worked example).
 When using the evaluation data during system development, it is common practice to use the more lenient \anydoc{} score that ignores the provenance when checking if a relation instance is true.
 Under this metric, predicting the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) from an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered correct even though it would be marked wrong under the official metric.
 
