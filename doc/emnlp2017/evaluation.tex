@@ -41,23 +41,19 @@ We have covered the cost and accuracy running these tasks in that section and wi
 Using the algorithm described in \refalg{on-demand-sampling}, we evaluated three distinct relation extraction systems (a rule-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC-KBP competition.
 Each system uses Stanford CoreNLP~\citep{} to identify entities and the Illinois Wikifier~\citep{} to perform entity linking. 
 In total, 100 documents were exhaustively annotated for about \$2,000, and 1000 of each systems submissions were annotated at about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
-\tableref{evaluation-results} presents the results of these systems on the mock evaluation.
+\reffig{evaluation-results} presents the results of these systems on the mock evaluation.
 
-\begin{table*}
+\begin{figure}[t]
   \centering
-  \begin{tabular}{l l c c c} \toprule
-    Scheme      & System    & $P^e (\pm 95\%)$ & $R^e (\pm 95\%)$ & $\fone{}^e (\pm 95\%)$ \\ \midrule
-\multirow{3}{*}{Uncombined} &
-  Patterns   & \fake{80.4 $\pm$ 3.0}\% & \fake{10.4 $\pm$ 5.0}\% & \fake{18.41 $\pm$ 4.3}\% \\
-& Supervised & \fake{60.4 $\pm$ 3.0}\% & \fake{15.4 $\pm$ 5.0}\% & \fake{24.54 $\pm$ 4.3}\% \\
-& Neural     & \fake{20.4 $\pm$ 3.0}\% & \fake{30.4 $\pm$ 5.0}\% & \fake{24.41 $\pm$ 4.3}\% \\ \midrule
-\multirow{3}{*}{+ Pooling} &
-  Patterns   & \fake{80.4 $\pm$ 3.0}\% & \fake{10.4 $\pm$ 3.0}\% & \fake{18.41 $\pm$ 3.0}\% \\
-& Supervised & \fake{60.4 $\pm$ 3.0}\% & \fake{15.4 $\pm$ 3.0}\% & \fake{24.54 $\pm$ 3.0}\% \\
-& Neural     & \fake{20.4 $\pm$ 2.6}\% & \fake{30.4 $\pm$ 2.7}\% & \fake{24.41 $\pm$ 2.6}\% \\ \bottomrule
-  \end{tabular}
-  \caption{\label{tbl:evaluation-results} Results from a mock evaluation.}
-\end{table*}
+  \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
+  \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
+\end{figure}
+
+%\begin{table*}
+%  \centering
+%  \input{evaluation.table}
+%  \caption{\label{tbl:evaluation-results} Results from a mock evaluation.}
+%\end{table*}
 
 Two immediate takeaways are that the precisions of these systems are \fake{on par with} the precisions reported as part of the official 2016 evaluation but the 95\% confidence interval is \fake{almost three times smaller}.
 The recall scores on this evaluation are a significantly smaller than on the official 2016 evaluation.
