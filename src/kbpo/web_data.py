@@ -124,7 +124,7 @@ def parse_responses():
     evaluation_links = []
     evaluation_relations = []
 
-    for row in db.pg_select("""
+    for row in db.select("""
 SELECT a.id AS assignment_id, b.id AS question_batch_id, q.id AS question_id, b.batch_type, q.params AS question, a.response AS response
 FROM mturk_assignment a,
      mturk_hit h,
@@ -148,7 +148,7 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
         else:
             raise ValueError("Unexpected batch type: " + row.batch_type)
 
-        raise Exception()
+        #raise Exception()
 
         # evaluation_mention_response
         for mention in mentions:
@@ -205,9 +205,10 @@ def majority_element(lst):
     return Counter(lst).most_common(1)[0][0]
 
 def merge_evaluation_mentions(row):
+    # Only merge eval mentions with > 1 response.
     # Choose the most frequent char_begin and char_end.
     #TODO: the elements in lst should be weighed by the weight of their vote (e.g. canonical_mention if wrong)
-    canonical_begin, canonical_end = majority_element((b,e) for b,e,w in zip(row.canonical_char_begins, row.canonical_char_ends, row.weights) if w > 0.5)
+    canonical_begin, canonical_end = majority_element([(b,e) for b,e,w in zip(row.canonical_char_begins, row.canonical_char_ends, row.weights) if w > 0.5])
     mention_type = majority_element(row.mention_types)
     gloss = majority_element(row.glosses)
     weight = sum(weight for weight, canonical_begin_, canonical_end_ in zip(row.weights, row.canonical_char_begins, row.canonical_char_ends) if canonical_begin_ == canonical_begin and canonical_end_ == canonical_end)/len(row.weights)
