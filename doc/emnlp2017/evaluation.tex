@@ -5,6 +5,21 @@ Let us now see how well on-demand open-world evaluation works in practice.
 We begin by empirically studying the statistical properties of the proposed estimators by simulating the evaluation procedure on the TAC-KBP 2015 evaluation data and show that the estimators are indeed unbiased and that pooling does reduce variance.
 We then show that the on-demand open-world evaluation methodology can serve as a practical replacement for the TAC-KBP competitions by actually running a mock evaluation TAC-KBP 2016 competition using our framework and showing that we obtain results of comparable quality at a fraction of the cost.
 
+\begin{figure*}[t]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\textwidth]{figures/simulation/simulation-p}
+  \end{subfigure}
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\textwidth]{figures/simulation/simulation-r}
+  \end{subfigure}
+  \caption{\label{fig:simulation}
+  A comparison of the pooling-based and sampling based estimators on a simulation of the TAC KBP 2015 challenge.
+  While pooling-based estimates are biased, both the simple and importance-sampling based estimators in this work are unbiased.
+  The importance-sampling estimate further has significantly reduced variance. 
+  }
+\end{figure*}
+
 \subsection{Studying statistical properties with simulated experiments}
 The statistical properties we'd like to study, namely bias and variance, require many repeated trials.
 However, because the evaluation data in the TAC-KBP 2015 was collected by completely evaluating all predictions for 317 evaluation entities and 70 systems, we can simulate these trials by imagining that the evaluation data represents the universe of our output and treat a subset of the participating systems as submissions to our framework.
