@@ -1,10 +1,15 @@
-Knowledge base population (KBP) systems take in a large document corpus and extract all contained entities and relations.
-Thus far, KBP evaluation has relied on datasets constructed by judging predictions pooled together from existing systems. 
-However, when a newly developed system predicts a relation not previously seen, it cannot be accurately evaluated. We show that pooling evaluation  results in a score that is significantly biased against newly developed systems, discouraging innovation and slowing progress in the field.
-Our first contribution is a new importance-sampling based approach to evaluation which actively corrects for bias by annotating new system's predictions when necessary via crowdsourcing.
-On simulated experiments, we use the new approach to eliminate bias and reduce variance on the 2015 TAC KBP task when compared to pooling evaluation.
-Our second contribution is a KBP evaluation service and its annotations which we make available to the community. 
-We use the evaluation service to run three diverse state-of-the-art systems on the TAC KBP 2016 corpus, and demonstrate that the evaluation permits an accurate quantitative and qualitative understanding of system performance.
+Knowledge base population (KBP) systems take in a large document corpus and extract entities and their relations.
+Thus far, KBP evaluation has relied on datasets constructed based on predictions of existing systems.
+We show that this evaluation is problematic:
+when a new system predicts a previously unseen relation, it is penalized even if it is correct,  % PL: want to make this stronger, it cannot be accurately evaluated.
+leading to significant bias against new systems, which counterproductively discourages innovation in the field.
+%We show that pooling evaluation results in a score that is significantly biased against newly developed systems, discouraging innovation and slowing progress in the field.
+Our first contribution is a new importance-sampling based evaluation which corrects for bias by annotating new system's predictions on-demand via crowdsourcing.
+We show this eliminates bias and reduces variance on a simulation of the 2015 TAC KBP task. % as compared to standard evaluation.
+% PL: simulation makes it sound artificial...
+Our second contribution is a KBP evaluation service and its annotations, which we make available to the community.
+We use the evaluation service to run three diverse state-of-the-art systems on the TAC KBP 2016 corpus, and demonstrate that the evaluation permits
+an accurate quantitative and qualitative understanding of system performance \pl{can we make this less vague but not longer?}.
 We hope that the service will allow the community to get accurate and timely feedback on exciting new directions in KBP.\@
 
 % Large-scale information extraction systems for knowledge base population (KBP) predict true relations from an unenumerable set of candidate relations within a large document corpus.

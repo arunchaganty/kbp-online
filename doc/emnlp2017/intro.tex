@@ -16,31 +16,38 @@ Knowledge bases have found many applications including question answering~\citep
 % Evaluation @ scale poses problem. -- pooling methodology
 Evaluating these systems remains a challenge as it is not economically feasible to exhaustively annotate every possible candidate relation from a sufficiently large corpus.
 As a result, a pooling-based methodology is used in practice to construct datasets, similar to methodology used in information retrieval \citep{sparck1975report, harman1993trec}.
-For instance, at the annual NIST TAC KBP evaluation, relations predicted by participating systems are pooled together, labeled and released as a dataset for researchers to develop and evaluate their systems on.
-However, during development, if a new system predicts a previously unseen relation it is considered to be wrong by default.
-The discrepancy between a system's true score and the score on pooled dataset is called pooling bias and is typically assumed to be insignificant in practice.
+For instance, at the annual NIST TAC KBP evaluation, all relations predicted by participating systems are pooled together, annotated and released as a dataset for researchers to develop and evaluate their systems on.
+However, during development, if a new system predicts a previously unseen relation it is considered to be wrong even if it is correct.
+The discrepancy between a system's true score and the score on pooled dataset is called pooling bias and is typically assumed to be insignificant in practice \pl{any citations or quotes backing this assumption?}.
 
 % Key finding: pooling bias
-The key finding of this paper contradicts this assumption and shows that the pooling bias is indeed significant, penalizing newly developed systems by 2\% \fone{} on average (\refsec{analysis}). 
-Novel improvements, which typically increase scores by less than 1\% \fone{} on existing datasets, are likely to be subsumed by pooling bias during development. 
-Worse yet, the bias is larger for a system which predicts qualitatively different relations that were systematically missing from the pool.
+The key finding of this paper contradicts this assumption and shows that the pooling bias is actually significant, and it penalizes newly developed systems by 2\% \fone{} on average (\refsec{analysis}).
+Novel improvements, which typically increase scores by less than 1\% \fone{} on existing datasets, are therefore likely to be clouded by pooling bias during development.
+Worse, the bias is larger for a system which predicts qualitatively different relations systematically missing from the pool.
 % anti-solution
 Of course, systems participating in the TAC KBP evaluation do not suffer from pooling bias, but this requires researchers to wait a year to get credible feedback on new ideas.
 % TODO: I would like to add something about how ML methods are hosed, but perhaps for later?
-%This bias is particularly damaging for any machine learning method as it is actively discouraged from predicting unseen relations and learning novel patterns. 
-The net effect is to discourage and disable researchers from developing innovative approaches, slowing progress on the task.
+%This bias is particularly damaging for any machine learning method as it is actively discouraged from predicting unseen relations and learning novel patterns.
+The net effect is that researchers are discouraged from developing innovative approaches, thereby slowing progress on the task.
 %These observations may explain why rule-based systems still play such a significant role in the top submissions at TAC KBP, and why, even after 8 years, top automated systems achieve scores of only about 35\% \fone{} while human annotators score above 60\% \fone{} on the same task.
 
 % Solution: on-demand evaluation.
-Instead, in \refsec{method}, we propose a new evaluation methodology: on-demand evaluation.
-Under this paradigm, we actively correct for pooling bias by expanding our evaluation data when needed.
-As a researcher submits a new system's predictions to our evaluation platform, we sample just enough of its predictions to guarantee accurate scores and have crowdworkers judge them.
-Finally, the system is evaluated on data collected from different systems using an importance-weighted estimator.
-% Experimental results. 
-We simulate our method on evaluation data released through TAC KBP 2015 Slot Validation track and show that we are able to obtain unbiased estimates while reducing variance.
+To address this, in \refsec{method}, we propose a new evaluation methodology, \emph{on-demand evaluation},
+which avoids pooling bias by querying crowdworkers,
+but to minimize cost, we do it selectively, leveraging previous systems' predictions when possible.
+%When a researcher submits a new system's predictions to our evaluation platform,
+%we carefully sample a subset of its predictions and have crowdworkers judge them.
+%just enough of its predictions to guarantee an accurate estimate of scores and have crowdworkers judge them.
+We then compute the new system's score based on the predictions of past systems using importance weighting \pl{optional: say half a sentence more about this}.
+As more systems are evaluated, the marginal cost of evaluating a new system decreases.
+% Experimental results.
+We simulate our method on evaluation data released through the TAC KBP 2015 Slot Validation track and show that we are able to obtain unbiased estimates of system scores while reducing variance.
 
 Our second contribution is an implementation of our framework as a publicly available evaluation service\footnote{\url{https://anonymo.us}} where researchers can have their own KBP systems evaluated.
 We use this service to evaluate three distinct systems on the 2016 TAC KBP corpus for about \$300 a system (a fraction of the cost of official evaluation) \ac{This number is a bit tangential to our contribution: our costs are amortized over time and we aren't able to show that here}. \ac{Also unsure about what else to say about the evaluation.}
+\pl{if this is meant to be a contribution, should say more about what the
+conceptual gap is between coming up with the estimator and creating this
+service...or say something about the intended use case of this service (for development)?}
 %availability of will help accelerate the development of better knowledge base population systems.
 
 %and find that we are able to estimate precision and recall to within about 2\% \fone{} (\fake{a third the variance as official scores}) and within a budget of \$3000 (a fraction of the cost of the official evaluation). 
