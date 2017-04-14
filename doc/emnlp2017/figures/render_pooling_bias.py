@@ -60,13 +60,13 @@ def do_command(args):
 
     # Read data
     rc('text', usetex=True)
-    rc('font', family='serif', size=18)
+    rc('font', family='serif', size=16)
 
     fig, ax = plt.subplots()
     # Set up plotter.
     #plt.subplot(2,1,1)
-    ax.set_ylabel('Macro $F_1$', fontsize=22)
-    ax.set_xlabel('Systems', fontsize=22)
+    ax.set_ylabel('Macro $F_1$')
+    ax.set_xlabel('System')
 
     ax.errorbar(np.arange(1,len(systems)+1), X, yerr=[X - Y, X-X], fmt='o', color='k', linestyle='-', capsize=0, alpha=0.7, label="Pooled score")
     ax.plot(np.arange(1,len(systems)+1), Z, color='r', marker='s', linestyle='', alpha=0.9, label="Unpooled anydoc score")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input', type=argparse.FileType('r'), default='data/pooling_bias/pooling_bias_closed-world.tsv', help="File to plot.")
     parser.add_argument('-a', '--input-anydoc', type=argparse.FileType('r'), default='data/pooling_bias/pooling_bias_anydoc.tsv', help="File to plot.")
     parser.add_argument('-m', '--metric', type=str, default='macro_f1', help="")
-    parser.add_argument('-o', '--output', type=str, default='pooling-bias.pdf', help="Name of file to output to")
+    parser.add_argument('-o', '--output', type=str, default='pooling_bias/pooling_bias.pdf', help="Name of file to output to")
     parser.set_defaults(func=do_command)
 
     #subparsers = parser.add_subparsers()
