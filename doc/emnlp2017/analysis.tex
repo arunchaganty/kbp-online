@@ -8,36 +8,22 @@ This was the conclusion drawn during early studies of the pooling methodology in
 In this section, we'll measure pooling bias in KBP evaluation and show that the pooling argument does not presently hold.
 
 % Data and methodology
-\begin{figure*}[t]
-    \centering
+\begin{figure}[t]
+  \centering
   \begin{subfigure}{\columnwidth}
-      \includegraphics[width=\columnwidth, trim={0 8cm 0 0},clip]{figures/pooling_bias/pooling_bias_closed-world}
+      \includegraphics[width=\columnwidth]{figures/pooling_bias/pooling_bias}
     \centering
-    \small{\begin{tabular} {r r r } \toprule
-       Median Precision & Median Recall & Median \fone{} \\ \midrule 
- 17.93\% &  17.00\% & 15.51\% \\ \bottomrule
+    \small{\begin{tabular} {l r r r} \toprule
+                    & \multicolumn{3}{c}{Median bias} \\
+                    & Precision & Recall & \fone{} \\ \midrule 
+   Official         & 17.93\% &  17.00\% & 15.51\% \\ 
+   \anydoc{}        & 2.34\% &  1.93\% & 2.05\% \\ \bottomrule
    \end{tabular}}
-  \caption{\label{fig:exact-prov-pooling}
-Pooling bias for macro \fone{} scores with exact provenance match.
-   }
-
-  \end{subfigure}
-  \begin{subfigure}{\columnwidth}
-  \includegraphics[width=\columnwidth, trim={0 8cm 0 0},clip]{figures/pooling_bias/pooling_bias_anydoc}
-    \centering
-    \small{
-   \begin{tabular} {r r r } \toprule
-      Median Precision & Median Recall & Median \fone{} \\ \midrule 
- 2.34\% &  1.93\% & 2.05\% \\ \bottomrule
-   \end{tabular}}
-  \caption{\label{fig:anydoc-pooling}Pooling bias for macro \fone{} scores with the \anydoc{} heuristic.
-  }
   \end{subfigure}
   \caption{\label{fig:pooling-bias} Pooling bias measures how much a system's evaluation score is changed by not having its predictions labeled as part of the pooled evaluation.
-  Here, pooling bias is measured for the participating systems at the TAC-KBP 2015 competition.
-  %The median bias on the top 40 teams against an unpooled team is 15.51\% points for the standard macro \fone{} metric and 2.05\% when evaluating using the \anydoc{} heuristic.
-  Note that the median difference between the \anydoc{} scores and standard scores is 0.88\% points; this difference is caused because the \anydoc{} heuristic erroneously considers relational tuples with incorrect provenances to be correct.}
-\end{figure*}
+  Here, pooling bias is measured for the participating systems at the TAC KBP 2015 competition using the official score and with the \anydoc{} heuristic.
+  Note that the median difference between the \anydoc{} scores and standard scores is 0.88\% points; this difference is caused because \anydoc{} considers relational tuples with incorrect provenances to be correct.}
+\end{figure}
 \paragraph{Measuring bias.}
 To measure pooling bias, we'll need to recreate the conditions shown in \figureref{pooling}: we must be able to measure evaluation metrics for a system before and after its inclusion to the pooled dataset. 
 We simulate this condition using the ``leave-out-unique'' experiment proposed by \citet{zobel1998reliable} to study pooling bias in information retrieval by using relational tuples from the participating systems in the TAC-KBP competition and their labels released as part of the evaluation dataset.
