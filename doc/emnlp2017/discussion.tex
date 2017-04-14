@@ -19,7 +19,7 @@ Likewise, many solutions to the pooling bias problem have been proposed in the c
   changing the queries to be more specific \citep{buckley2007bias}, 
   adaptively constructing the pool to collect relevant data more cost-effectively \citep{zobel1998reliable,cormack1998efficient,aslam2006statistical}, or
   modifying the scoring metrics to be less sensitive to unassessed data \citep{buckley2004incomplete,sakai2008information,aslam2006statistical}.
-Many of these ideas exploit rank-weighted metrics and the rankings reported by systems, neither of which apply in the KBP setting. Furthermore, the pooling bias persists in KBP evaluations despite the fact that \textit{all answers} reported by systems for a given set of entities are assessed for correctness.%
+Many of these ideas exploit rank-weighted metrics and the rankings reported by systems, neither of which apply in the KBP setting. Furthermore, the pooling bias persists in KBP evaluations despite the fact that \textit{all answers} reported by systems for a given set of entities are assessed for correctness.
 While both \citet{aslam2006statistical} and \citet{yilmaz2008simple} estimate evaluation metrics by carefully sampling system output for assessment and using importance reweighing to correct for sampling bias,
   the techniques they propose require knowing the set of all submissions beforehand.
 In contrast, our on-demand methodology can produce unbiased evaluation scores for new development systems too.
@@ -41,7 +41,7 @@ Over the last ten years of the TAC-KBP competition, the gap between human and sy
 % Cite Weber -- IR has much still to progress, hidden by variability in scores, etc.
 % Prevalence of patterns based systems.
 In this paper, we've shown that the existing evaluation methodology may be a contributing factor because of its bias against novel system improvements.
-The new on-demand open-world framework proposed in this work addresses this problem by obtaining human assessments of novel, unseen, system output through crowdsourcing.
+The new on-demand framework proposed in this work addresses this problem by obtaining human assessments of novel, unseen, system output through crowdsourcing.
 The framework is made economically feasible by carefully sampling output to be assessed and correcting for sample bias through importance reweighing.
 
 % Presence of this platform allows us to decouple dataset creation from task. -- e.g. can use and evaluate distantly supervised datasets more easily.

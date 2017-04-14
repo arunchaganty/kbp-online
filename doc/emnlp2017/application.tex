@@ -1,6 +1,6 @@
-\section{On-demand open-world evaluation for KBP}
+\section{On-demand evaluation for KBP}
 \label{sec:application}
-Applying the on-demand open-world evaluation framework needs us to define 3 operations:
+Applying the on-demand evaluation framework needs us to define 3 operations:
 \begin{enumerate}
   \item Given some system output $X_i$, how should we sample its elements, i.e.\ what is $p_i(x)$?
   \item How do we verify system output, i.e.\ check if $x \in \sY$?
@@ -11,14 +11,14 @@ In this section, we'll see how each of these operations can be practically imple
 \subsection{Sampling from system predictions}
 % 1. what is the point of this distribution?
 % - prevent over sampling instances.
-Recall that a KBP system predicts relational tuples of the form (\entity{subject}, \relation{predicate}, \entity{object}, \textsc{provenance}).
+Recall that a KBP system predicts relation instances of the form (\entity{subject}, \relation{predicate}, \entity{object}, \textsc{provenance}).
 The choice of distribution over system predictions, $p_i(x)$, allows us to calibrate our precision metric to increase the representation of rare predicates or subject entities in our precision score.
 This can desirable because, in practice, it is common for a system's predictions to be be dominated by a few common predicates (e.g.\ professional titles) or subject entities (like ``the United States of America''), skewing our evaluation metrics towards a particular relation or entity type.
 
 The traditional solution to this problem is to take the macro average of the metric over predicates or subject entities.
 We can replicate this behavior with the appropriate choice of a sampling distribution.
 To estimate the macro-average over predicates, we use a predicate-centric distribution $p_i^\text{(p)}$ that first uniformly samples a predicate and then uniformly samples an instances with that predicate.
-Similarly, to estimate the macro-average over subject entities, we use an entity-centric distribution $p_i^\text{(e)}$ that first uniformly samples over the entities in the system's predicted relational tuples and then uniformly samples instances with that entity as its subject.
+Similarly, to estimate the macro-average over subject entities, we use an entity-centric distribution $p_i^\text{(e)}$ that first uniformly samples over the entities in the system's predicted relation instances and then uniformly samples instances with that entity as its subject.
 Detailed histograms comparing different sampling distributions can be found in \appendixref{implementation}.
 
 \begin{figure*}[t]
@@ -35,8 +35,8 @@ Detailed histograms comparing different sampling distributions can be found in \
 \end{figure*}
 
 \subsection{Verifying system predictions}
-When verifying relational tuples predicted by a system, 
-  crowd workers are presented the tuple's provenance and are asked to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
+When verifying relation instances predicted by a system, 
+  crowd workers are presented the instance's provenance and are asked to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
   Crowd workers also link the subject and object mentions to pages on Wikipedia, if possible.
 On average, we find that crowdworkers are able to perform this task in about 20 seconds, corresponding to about \$0.05 per instance.
 We requested 5 crowdworkers to annotate a small set of 200 relation instances from the 2015 TAC-KBP corpus 

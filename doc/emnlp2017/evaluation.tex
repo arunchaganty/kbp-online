@@ -1,9 +1,9 @@
 \section{Evaluation}
 \label{sec:evaluation}
 
-Let us now see how well on-demand open-world evaluation works in practice.
+Let us now see how well on-demand evaluation works in practice.
 We begin by empirically studying the statistical properties of the proposed estimators by simulating the evaluation procedure on the TAC-KBP 2015 evaluation data and show that the estimators are indeed unbiased and that pooling does reduce variance.
-We then show that the on-demand open-world evaluation methodology can serve as a practical replacement for the TAC-KBP competitions by actually running a mock evaluation TAC-KBP 2016 competition using our framework and showing that we obtain results of comparable quality at a fraction of the cost.
+We then show that the on-demand evaluation methodology can serve as a practical replacement for the TAC-KBP competitions by actually running a mock evaluation TAC-KBP 2016 competition using our framework and showing that we obtain results of comparable quality at a fraction of the cost.
 
 \begin{figure*}[t]
   \centering
@@ -34,8 +34,8 @@ We see from the plots that the pooling-based methodology is significantly biased
 Furthermore, by incorporating samples drawn from other systems, the median variance reduces by a factor of \fake{4.1}, from \fake{0.2} (with the simple estimators) to \fake{0.05} (with the compound estimator).
 
 \subsection{A mock evaluation for TAC-KBP 2016}
-In \refsec{application}, we described the necessary elements required to apply on-demand open-world evaluation to KBP.
-In particular, we needed to implement two crowd-worker interfaces to verify a relation tuple (i.e.\ evaluate $f(x)$) and to exhaustively annotate a document (i.e.\ to sample from $\sY$).
+In \refsec{application}, we described the necessary elements required to apply on-demand evaluation to KBP.
+In particular, we needed to implement two crowd-worker interfaces to verify a relation instance (i.e.\ evaluate $f(x)$) and to exhaustively annotate a document (i.e.\ to sample from $\sY$).
 We have covered the cost and accuracy running these tasks in that section and will now study how well the evaluation framework works end to end. 
 
 Using the algorithm described in \refalg{on-demand-sampling}, we evaluated three distinct relation extraction systems (a rule-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC-KBP competition.

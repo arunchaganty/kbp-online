@@ -43,7 +43,7 @@ Then, a simple baseline estimator for precision and recall is:
 
 \subsection{Joint estimator}
 The simple estimator leaves much wanting: in particular, because it does not use samples collected from other systems, it will have a larger variance and requires us to spend money to collect data for every new system submitted.
-In order to tackle these failings we'll need to answer the following three key questions:
+We'll address these problems by answering the following three key questions:
 \begin{enumerate}
   \item How can we use all the samples $\Xh_1, \ldots \Xh_m$ when estimating $\pi_i$?
   \item How can we combine all the samples $\Xh_1, \ldots, \Xh_m$ with $\Yh_0$ when estimating $\rho_i$?
@@ -103,7 +103,7 @@ During the process of evaluating $f(x)$ on $\Xh_i$, we also are able to identify
 The collection of $\Yh = \Union_{i=1}^m \Yh_i$ forms a random subset of $\sY$ that is much cheaper to obtain than by sampling from $\sY$, but this subset can extremely biased if we were to use it to evaluate recall: 
 If the pool $\Yh$ contained just one system, that system would be given a perfect recall score irrespective of how bad it was.
 We dub this incomplete estimate pooled recall, $\nu_i \eqdef \E_{x \sim Y}[f(x) g_i(x)]$.
-The missing factor must compensate for how much of $\sY$ the pool $Y$ actually covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$.
+The remaining factor must compensate for how much of $\sY$ the pool $Y$ actually covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$.
 Thus, the recall of a system is simply the product: $\rho_i = \theta \nu_i$.\footnote{%
 We present a rigorous proof in \refapp{sampling} of the supplementary material.}
 
