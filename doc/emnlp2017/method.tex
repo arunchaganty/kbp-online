@@ -17,6 +17,7 @@ Let $\sX$ be a universe of candidate predictions (e.g.\, relation instances),
   $\sY \subseteq \sX$ be the unknown subset of correct instances,
   $X_1, \ldots X_m \subseteq \sX$ be the predictions for $m$ systems,
   and let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+Let $X = \Union_{i=1}^m X_i$ and $Y = \Union_{i=1}^m Y_i$.
 Let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then the precision, $\pi_i$, and recall, $\rho_i$, of the set of predictions $X_i$ is
 \begin{align*}
   \pi_i  &\eqdef \E_{x \sim X_i}[f(x)] &
@@ -83,36 +84,36 @@ Intuitively, if two systems have very similar predictions $X_i$ and $X_j$, we sh
 However, it might also be the case that $X_i$ and $X_j$ only overlap on a small region, in which case the samples from $X_j$ do not accurately represent instances in $X_i$ and could lead to a biased estimate.
 We address this problem by using importance sampling \citep{owen2013monte}, a standard statistical technique for estimating properties of one distribution using samples from another distribution by reweighting those samples.
 
+\ac{Other readers have noted that it might be good to give intuition about this estimator. I'm not sure how to do so given space constraints.}
 In particular, we propose the following the joint precision estimator:
 \begin{align}
   \pih_i^{(j)} &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align}
 where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
 This last condition is easy to guarantee by setting $w_{ii} > 0$.
-Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_j$.
+Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_j$.\footnote{%
+We provide rigorous proofs for the unbiasedness of the proposed estimators in \refapp{sampling} of the supplementary material.}
 
-In \refapp{sampling} of the supplementary material, we prove that $\pih_i$ is an unbiased estimator of $\pi_i$ and also work out an expression for its variance. 
-The variance depends on $f(x)$, but the general intuition is that $\pih_i$ will have high variance if $q_i(x) \ll p_i(x)$.
+The variance depends on $f(x)$, but the general intuition is that $\pih_i^{(j)}$ will have high variance if $q_i(x) \ll p_i(x)$.
 In particular, we can show that the ideal choice of $w_{ij}$ for if $X_i$ and $X_j$ are disjoint is $0$, and if $X_i$ and $X_j$ are identical is $w_{ij} \propto n_{j}$.
 This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 
-\subsection{Estimating recall}
-Let $\Yh_1, \ldots, \Yh_m$ be the intersection of $\Xh_i$ with $\sY$.
-While $\Yh_i$ form a randomly sampled subset of $\sY$ that we could evaluate recall on, it is a very biased subset.
-To see this, consider the case where the pool $\Yh$ is formed from a single system; here that system would be given a perfect recall score, irrespective of how good it is.
-The magnitude of this bias may decrease with more and more systems, but it is unwise to assume that the pool of systems sufficiently covers all the elements of $\sY$.\footnote{
-  In particular, for the task of KBP, the recall of systems is bottlenecked by the NER systems they use, etc.
-}
-We correct for the bias by adjusting the recall of a system measured against the pool $Y$ (the \textit{pooled recall}), $\nu_i = \E_{x\sim Y}[g_i(x)]$, by multiplying it by the recall of the pool itself, $\theta = \E_{x\sim\sY}[\I[x \in Y]]$: $\rho_i = \theta \nu_i$.
-Our proposed estimator estimator for recall $\rho_i$ is then $\rhoh_i \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} \I[x \in \Union_{i=1}^m X_i]$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
-\begin{align*}
-  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{q(x)}},
-\end{align*}
-where $p'(x) \propto u(x)$, $q(x) = \sum_{j=1}^m w_{j} p_j(x)$ and $w_{j} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{j} = 1$. We use $w_j \propto n_j$.
-In \appendixref{sampling}, we show that $\rhoh_i$ is unbiased.
+\paragraph{Estimating recall jointly.}
+During the process of evaluating $f(x)$ on $\Xh_i$, we also are able to identify $\Yh_i \eqdef \Xh_i \intersection \sY$.
+The collection of $\Yh = \Union_{i=1}^m \Yh_i$ forms a random subset of $\sY$ that is much cheaper to obtain than by sampling from $\sY$, but this subset can extremely biased if we were to use it to evaluate recall: 
+If the pool $\Yh$ contained just one system, that system would be given a perfect recall score irrespective of how bad it was.
+We dub this incomplete estimate pooled recall, $\nu_i \eqdef \E_{x \sim Y}[f(x) g_i(x)]$.
+The missing factor must compensate for how much of $\sY$ the pool $Y$ actually covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$.
+Thus, the recall of a system is simply the product: $\rho_i = \theta \nu_i$.\footnote{%
+We present a rigorous proof in \refapp{sampling} of the supplementary material.}
 
-\subsection{Adaptively drawing samples for new sets}
-Finally, the desired property for our framework is to annotate new data only when necessary, i.e.\ a new submission $X_m$ contains sufficiently diverse output.
-We formalize this statement by requesting for a target variance $\epsilon$ for our precision estimates.
-The variance of $\pih_m$ is a complex non-convex function, but we know that it is monotonically decreasing in $n_m$, the number of samples drawn from the new output, $X_m$.
-Consequently it is quite easy to solve for the number of samples needed to achieve a target variance of $\epsilon$ using a bisection method.
+The joint estimator for recall is then $\rhoh_i^{(j)} \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} g(x)$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
+\begin{align*}
+  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x)}{q_i(x)}},
+\end{align*}
+where $q_i$ and $w_{ij}$ are the same as defined for $\pih_i^{(j)}$.
+
+\paragraph{Adaptively choosing the number of samples.}
+Finally, a desired property for on-demand evaluation is to annotate new data only when the current evaluation data is unable to do the job, e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
+We can measure how well the current evaluation set is able to estimate $\pih_m^{(j)}$ and $\rhoh_m^{(j)}$ by using upper bounds on these of estimators.\footnote{Details can be found in \refapp{sampling} of the supplementary material.}
+In particular, the variance of both $\pih_m^{(j)}$ and $\rhoh_m^{(j)}$ are monotonically decreasing functions in the number of samples of $X_m$ drawn $n_m$ and we can easily solve for the minimum number of samples required to estimate $\pih_m^{(j)}$ and $\rhoh_m^{(j)}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}.
