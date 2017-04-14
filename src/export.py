@@ -11,18 +11,108 @@ import logging
 from kbpo import db
 from kbpo.entry import MFile, Entry
 from kbpo.defs import TYPES,NER_MAP,ALL_RELATIONS
+import re
 
 logger = logging.getLogger('kbpo')
 logging.basicConfig(level=logging.INFO)
+
+
+regex = re.compile('[^\w]')
+
+def entity_name(link_name, entity_hash):
+    link_name_ = regex.sub('', link_name)
+    return ':'+'_'.join([link_name_, entity_hash[:10]])
+
+def do_submission_to_kb(args):
+    writer = csv.writer(args.output, delimiter="\t",  quoting=csv.QUOTE_NONE, escapechar='', quotechar='')
+    writer.writerow(["submission"+str(args.submission_id)])
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            db.register_composite('kbpo.span', cur)
+            #All entity types
+            #cur.execute("""
+            #             SELECT md5(l.link_name)as entity_hash, wikify(l.link_name) as entity_wikiname, mode(m.mention_type) AS mention_type,  max(confidence) AS confidence 
+            #              FROM submission_mention AS m 
+            #              JOIN submission_mention AS c ON m.canonical_id = c.mention_id 
+            #              JOIN submission_link AS l ON c.mention_id = l.mention_id 
+            #              WHERE m.submission_id = 1 AND c.submission_id = 1 AND l.submission_id = 1
+            #              GROUP BY l.link_name;
+            #""", [args.submission_id]*3)
+            #for row in cur:
+            #    #entity_ids.add(row.mention_id)
+            cur.execute("""
+                         SELECT md5(l.link_name)as entity_hash, wikify(l.link_name) as entity_wikiname,mode(m.mention_type) AS mention_type, mode(as_prov(c.mention_id)) AS canonical_prov, mode(c.gloss) as canonical_gloss, max(confidence) AS confidence 
+                          FROM submission_mention AS m 
+                          JOIN submission_mention AS c ON m.canonical_id = c.mention_id 
+                          JOIN submission_link AS l ON c.mention_id = l.mention_id 
+                          WHERE m.submission_id = 1 AND c.submission_id = 1 AND l.submission_id = 1 AND m.mention_type != 'DATE'
+                          GROUP BY l.link_name, (m.mention_id).doc_id ORDER BY l.link_name;
+            """, [args.submission_id]*3)
+            entity_ids = set()
+            for row in cur:
+                
+                if row.mention_type in TYPES:
+                    type_ = row.mention_type
+                elif row.mention_type in NER_MAP:
+                    type_ = NER_MAP[row.mention_type]
+                else:
+                    logger.debug("skipping %s for invalid type", row)
+                    continue
+                if not row.entity_hash in entity_ids:
+                    writer.writerow([entity_name(row.entity_wikiname, row.entity_hash), 'type', type_, None, None])
+                    entity_ids.add(row.entity_hash)
+                writer.writerow([entity_name(row.entity_wikiname, row.entity_hash), 'canonical_mention', "\""+row.canonical_gloss+"\"", row.canonical_prov, row.confidence])
+
+            #All mentions
+            cur.execute("""SELECT md5(l.link_name) as link_hash, 
+                      wikify(l.link_name) as link_name, 
+                      m.mention_id, 
+                      m.gloss, 
+                      l.confidence
+               FROM submission_mention as m 
+               JOIN submission_link as l ON m.canonical_id = l.mention_id 
+               WHERE m.submission_id = %s AND l.submission_id = %s AND m.mention_type != 'DATE';
+            """, [args.submission_id]*2)
+            for row in cur:
+                writer.writerow([entity_name(row.link_name, row.link_hash), 'mention', "\""+row.gloss+"\"", MFile.to_prov(row.mention_id), row.confidence])
+            #All relations
+            cur.execute("""
+            SELECT 
+            md5(sl.link_name) AS subject_hash,
+            wikify(sl.link_name) AS subject_link_name,
+            s.mention_type AS subject_type,
+            r.relation, 
+            md5(ol.link_name) AS object_hash,
+            wikify(ol.link_name) AS object_link_name,
+            o.mention_type AS object_type,
+            o.gloss AS object_gloss,
+            o.mention_id AS object_id,
+            r.confidence,
+            r.provenances
+            FROM submission_relation AS r 
+            JOIN submission_mention AS s ON r.subject_id = s.mention_id 
+            JOIN submission_link AS sl ON s.canonical_id = sl.mention_id 
+            JOIN submission_mention AS o ON r.object_id = o.mention_id 
+            JOIN submission_link AS ol ON o.canonical_id = ol.mention_id 
+            WHERE r.submission_id = %s AND s.submission_id = %s AND o.submission_id = %s AND sl.submission_id = %s AND ol.submission_id = %s
+            """, [args.submission_id]*5)
+            for row in cur:
+                assert row.subject_type in set(['PER', 'ORG', 'GPE']), 'Subject type: '+str(row.subject_type)+' not one of PER, ORG, GPE'
+                if row.object_type == 'TITLE':
+                    writer.writerow([entity_name(row.subject_link_name, row.subject_hash), row.relation, "\""+row.object_gloss+"\"", ','.join([MFile.to_prov(row.object_id)]+ row.provenances),  row.confidence])
+                elif row.object_type == 'DATE':
+                    writer.writerow([entity_name(row.subject_link_name, row.subject_hash), row.relation, "\""+row.object_link_name+"\"",','.join([MFile.to_prov(row.object_id)]+ row.provenances), row.confidence])
+                else:
+                    writer.writerow([entity_name(row.subject_link_name, row.subject_hash), row.relation, entity_name(row.object_link_name, row.object_hash),','.join([MFile.to_prov(row.object_id)]+ row.provenances), row.confidence])
+
+            
+
 
 def do_submission(args):
     writer = csv.writer(args.output, delimiter="\t")
     with db.CONN:
         with db.CONN.cursor() as cur:
             mention_ids = set([])
-            # mentions
-            # TODO: put this in the db/custom cursor class
-            db.register_composite('kbpo.span', cur)
             cur.execute("""
             SELECT mention_id, mention_type, gloss
             FROM submission_mention WHERE submission_id = %s
@@ -165,6 +255,11 @@ if __name__ == "__main__":
     command_parser.add_argument('-i', '--submission_id', type=int, required=True, help="Submission id to export")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="File to export to")
     command_parser.set_defaults(func=do_submission)
+
+    command_parser = subparsers.add_parser('submission2kb', help='Export a submission as a kb')
+    command_parser.add_argument('-i', '--submission_id', type=int, required=True, help="Submission id to export")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="File to export to")
+    command_parser.set_defaults(func=do_submission_to_kb)
 
     command_parser = subparsers.add_parser('stanford', help='Export output from a Stanford table.')
     command_parser.add_argument('-k', '--kb-table', type=str, default="public.kb_patterns_2016_8_28_16", help="KB table")
