@@ -13,7 +13,7 @@ from matplotlib import rc
 import matplotlib.colors as pltc
 
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif')#, size=18)
+plt.rc('font', family='serif', size=16)
 
 def teamid(runid):
     return runid[3:-1]
@@ -30,8 +30,8 @@ def read_series(lst, *fields):
 def do_command(args):
     lbls = {
         "pool": "Pooling",
-        "simple": "Simple sampling",
-        "joint": "Importance sampling",
+        "simple": "Simple",
+        "joint": "Joint",
         "p": "Precision",
         "r": "Recall",
         "f1": "$F_1$",
