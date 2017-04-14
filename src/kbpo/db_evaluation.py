@@ -79,19 +79,22 @@ def test_compute_relation_distribution():
 def compute_entity_distribution(corpus_tag, submission_id):
     distribution = Counter()
     for row in db.select("""
-        WITH _entities AS (
-                SELECT s.submission_id, COUNT(DISTINCT link_name) 
-                FROM submission_relation s, submission_link l 
-                WHERE s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND  s.subject_id = l.mention_id
-                GROUP BY s.submission_id),
-             _counts AS (
+        WITH _counts AS (
                 SELECT s.submission_id, link_name, COUNT(*) 
-                FROM submission_relation s, submission_link l
-                WHERE s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND  s.subject_id = l.mention_id
-                GROUP BY s.submission_id, link_name)
+                FROM submission_relation s, submission_link l, submission_mention m
+                WHERE s.submission_id = l.submission_id AND s.submission_id = m.submission_id
+                AND s.doc_id = l.doc_id AND s.doc_id = m.doc_id
+                AND  s.subject_id = m.mention_id AND m.canonical_id = l.mention_id
+                GROUP BY l.link_name, s.submission_id),
+        _entities AS (
+                SELECT submission_id, COUNT(*)
+                FROM _counts
+                GROUP BY submission_id)
         SELECT s.subject_id, s.relation, s.object_id, l.link_name, (1./c.count)/(e.count) AS prob
-        FROM submission_relation s, submission_link l, _counts c, _entities e, submission s_
-        WHERE s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND  s.subject_id = l.mention_id
+        FROM submission_relation s, submission_mention m, submission_link l, _counts c, _entities e, submission s_
+        WHERE s.submission_id = l.submission_id AND s.submission_id = m.submission_id
+          AND s.doc_id = l.doc_id AND s.doc_id = m.doc_id
+          AND s.subject_id = m.mention_id AND m.canonical_id = l.mention_id
           AND s.submission_id = e.submission_id AND s.submission_id = c.submission_id AND c.link_name = l.link_name
           AND s_.id = s.submission_id
           AND s.submission_id = %(submission_id)s
@@ -132,8 +135,13 @@ def get_submission_samples(corpus_tag, scheme, submission_id):
           AND b.corpus_tag = %(tag)s
           AND b.batch_type = 'selective_relations'
           AND b.params ~ %(scheme)s
+          AND b.params ~ %(submission_f)s
           AND r.submission_id = %(submission_id)s 
-          """, tag=corpus_tag, scheme=scheme, submission_id=submission_id)
+          """, tag=corpus_tag,
+                    scheme='"method":"{}"'.format(scheme),
+                    submission_id=submission_id,
+                    submission_f='"submission_id":{}'.format(submission_id)
+                    )
     # TODO: ^^ is a hack to get the right rows from the database. we
     # should probably do differently.
     return [((row.subject_id, row.predicted_relation, row.object_id), 1.0 if row.predicted_relation == row.gold_relation else 0.0) for row in rows]
