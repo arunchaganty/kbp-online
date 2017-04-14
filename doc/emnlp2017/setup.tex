@@ -41,7 +41,7 @@ Separately, a team of annotators identify and label correct relation instances f
 These two sets of labeled relation instances are combined and released as the evaluation dataset.
 In the example in \reffig{pooling}, systems A and B were used in constructing the pooling dataset, and there are 3 distinct relations in the dataset, between $s_1$ and $o_1$, $o_2$ and $o_3$.
 
-A system is evaluated on the precision of its predicted relation instances for the evaluation entities $E$ and on the recall of the \textit{relations} (not instances) it predicts for the same entities (see \reffig{pooling} for a worked example).
+A system is evaluated on the precision of its predicted relation instances for the evaluation entities $E$ and on the recall of the corresponding predicted \textit{relations} (not instances) for the same entities (see \reffig{pooling} for a worked example).
 When using the evaluation data during system development, it is common practice to use the more lenient \anydoc{} score that ignores the provenance when checking if a relation instance is true.
 Under this metric, predicting the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) from an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered correct even though it would be marked wrong under the official metric.
 
