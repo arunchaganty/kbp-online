@@ -23,7 +23,7 @@ Note that the same relation can be expressed in different parts of the document 
   \centering
   \includegraphics[width=0.9\columnwidth]{figures/pooling}
   \caption{\label{fig:pooling}
-  In pooled evaluation, a evaluation dataset is constructed by labeling the relational tuples collected from the pooled systems (A and B) and those identified by a team of human annotators (Annotators).
+  In pooled evaluation, an evaluation dataset is constructed by labeling the relation instances collected from the pooled systems (A and B) and those identified by a team of human annotators (Annotators).
  % Arrows indicate which systems extract which relation instances.
   However, when a new system (C) is evaluated on this dataset, some of its predictions are previously unseen and can not be fairly evaluated.
   Here, the precision and recall for C should be $\frac{3}{3}$ and $\frac{3}{4}$ respectively, but its evaluation scores are estimated to be $\frac{2}{3}$ and $\frac{2}{3}$.
@@ -37,11 +37,11 @@ As mentioned earlier, the dataset is constructed by evaluating every relation in
 the participating systems for subject entities that belong to a held-out set of evaluation entities.
 %A relational tuple for the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) that specifies an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered incorrect.
 Separately, a team of annotators identify relations for the same evaluation entities by manually searching the document corpus within a time budget.
-These two sets of labeled relational tuples are combined and released as the evaluation dataset.
+These two sets of labeled relation instances are combined and released as the evaluation dataset.
 In the example in \reffig{pooling}, systems A and B were used in constructing the pooling dataset, and there are 3 distinct relations in the dataset, between $s_1$ and $o_1$, $o_2$ and $o_3$.
 
 A system is evaluated on the precision of its predicted relation instances for the evaluation entities and on the recall of the \textit{relations} it predicts for the same entities (see \reffig{pooling} for a worked example).
-When using the evaluation data during system development, it is common practice to use the more lenient \anydoc{} score that ignores the provenance when checking if an relational tuple is true.
+When using the evaluation data during system development, it is common practice to use the more lenient \anydoc{} score that ignores the provenance when checking if a relation instance is true.
 Under this metric, predicting the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) from an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered correct even though it would be marked wrong under the official metric.
 
 %$t_5$ would be considered to be correct and system B would get a precision and recall of $\frac{2}{2}$ and $\frac{2}{3}$ respectively.
