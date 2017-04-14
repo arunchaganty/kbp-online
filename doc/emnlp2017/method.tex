@@ -6,7 +6,7 @@ We could of course sidestep the problem by exhaustively annotating the entire do
 using the interfaces we've developed (\refsec{evaluation}), it costs about \$15 to annotate a single document by non-expert crowdworkers, resulting in an estimated cost of at least \$1,350,000 for a reasonably large corpus of 90,000 documents \citep{XXX}.
 The annotation effort would cost significantly more with expert annotators.
 % TODO: highlight contrast with pooling.
-In contrast, \textit{verifying} relation instances pooled from system predictions \pl{can we remove 'pooled from system predictions'?} can be an order of magnitude cheaper than finding them in documents: using our interfaces, it costs only about \$0.18 to verify each pooled instances compared to \$1.60 per instance extracted through exhaustive annotations.
+In contrast, \textit{verifying} \pl{be consistent with terminology: labeling?} relation instances pooled from system predictions \pl{can we remove 'pooled from system predictions'?} can be an order of magnitude cheaper than finding them in documents: using our interfaces, it costs only about \$0.18 to verify each pooled instances compared to \$1.60 per instance extracted through exhaustive annotations.
 \pl{why the diff between 0.18 and 1.60?  Isn't it the same problem of labeling an instance?}
 
 We propose a new paradigm called on-demand evaluation which takes a lazy approach to dataset construction by annotating predictions from systems \textit{only when they are underrepresented}, thus correcting for pooling bias as it arises.
@@ -14,7 +14,8 @@ In this section, we'll formalize the problem solved by on-demand evaluation inde
 We'll then instantiate the framework for KBP in \refsec{application}.
 
 \subsection{Problem statement}
-Let $\sX$ be a universe of candidate predictions (e.g.\, relation instances),
+Let $\sX$ be the universe of %candidate predictions (e.g.\, relation instances),
+(relation) instances,
   $\sY \subseteq \sX$ be the unknown subset of correct instances,
   $X_1, \ldots X_m \subseteq \sX$ be the predictions for $m$ systems,
   and let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
@@ -26,11 +27,12 @@ Let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then the precision
 \end{align*}
 where $x$ is sampled from $X_i$ and $\sY$ according to distributions $p_i(x)$ and $p'(x)$ respectively.
 We assume that $p_i(x)$ is known, e.g.\, the uniform distribution over $X_i$
-  and that we know $p'(x)$ up to normalization constant, i.e.\ we know $p'(x) \propto u(x)$.
+  and that we know $p'(x)$ up to normalization constant, i.e.\ we know $p'(x) \propto u(x)$ \pl{how about $p_0$ rather than $p$' everywhere? more consistent with other notation}.
 Finally, we assume that we are able to draw samples uniformly from $\sY$.
 
-In on-demand evaluation, we are allowed to ask if $x \in \sY$ (e.g.\, by verifying a prediction) or for samples from $\sY$ (e.g.\, by exhaustively annotating a document) at a certain (monetary) cost.
+In on-demand evaluation, we are allowed to ask if $x \in \sY$ (e.g.\, by labeling an instance) or for fresh samples from $\sY$ (e.g.\, by exhaustively annotating a document \pl{this might be confusing since annotating a document does more than produce just one sample - actually not sure how it provides a random draw from $\sY$}) at a certain (monetary) cost.
 Typically, checking if $x \in \sY$ is significantly cheaper than asking for samples from $\sY$.
+\pl{abrupt transition}
 We only see the sets $X_1, \ldots, X_m$ sequentially, as and when they are submitted for evaluation, and
   our goal is to estimate $\pi_i$ and $\rho_i$ within a confidence interval $\epsilon$ at a minimal cost. 
 
@@ -41,14 +43,16 @@ Then, a simple baseline estimator for precision and recall is:
 \begin{align}
   \pih_i^{(s)} &= \sum_{x \in \Xh_i} f(x) & \rhoh_i^{(s)} &= \sum_{x \in \Yh_0} g_i(x).
 \end{align}
+\pl{need to divide by the number of samples, no?}
+\pl{subscript $(s)$ stands for simple?  I'd do $(\text{s})$ to make it not look like a variable}
 
 \subsection{Joint estimator}
-The simple estimator leaves much wanting: in particular, because it does not use samples collected from other systems, it will have a larger variance and requires us to spend money to collect data for every new system submitted.
+The simple estimator leaves much to be desired: in particular, because it does not use samples collected from other systems, it will have a larger variance and requires us to spend money to collect data for every new system submitted.
 We'll address these problems by answering the following three key questions:
 \begin{enumerate}
-  \item How can we use all the samples $\Xh_1, \ldots \Xh_m$ when estimating $\pi_i$?
-  \item How can we combine all the samples $\Xh_1, \ldots, \Xh_m$ with $\Yh_0$ when estimating $\rho_i$?
-  \item Finally, how many samples should we draw from $X_m$, given existing samples $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$?
+  \item How can we use all the samples $\Xh_1, \ldots \Xh_m$ when estimating precision $\pi_i$?
+  \item How can we combine all the samples $\Xh_1, \ldots, \Xh_m$ with $\Yh_0$ when estimating recall $\rho_i$?
+  \item Finally, to form $\Xh_m$, how many samples should we draw from $X_m$, given existing samples $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$?
 \end{enumerate}
 %The whole approach is summarized in \refalg{on-demand-sampling}.
 %
@@ -98,23 +102,26 @@ Unfortunately, because $X$ and therefore $q$ changes every time a new set of pre
 % We handle these two desiderata using the following joint precision estimator:
 %\ac{Other readers have noted that it might be good to give intuition about this estimator. I'm not sure how to do so given space constraints.}
 We overcome this obstacle by proposing the following joint precision estimator that simulates the behavior of a proposal distribution without actually drawing samples from it:
+\pl{I think a more helpful description would talk about the high-level intuition - and with a figure!  something about suppose you're trying to evaluate $i$,
+how much of other systems should you pull; well, let $w_{ij}$ measure that, and now define $q_i$, and gradually build up rather than defining $\hat \pi_i$ directly}
 \begin{align}
   \pih_i^{(j)} &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align}
+\pl{I don't understand this equation at all; for example, LHS has $j$ in the superscript, but RHS sums over $j$}
 where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
 This last condition is easy to guarantee by setting $w_{ii} > 0$.
 Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_{ij}$.\footnote{%
 We provide rigorous proofs for the unbiasedness of the proposed estimators in \refapp{sampling} of the supplementary material.}
 
-The variance depends on $f(x)$, but the general intuition is that $\pih_i^{(j)}$ will have high variance if $q_i(x) \ll p_i(x)$.
-In particular, we can show that the ideal choice of $w_{ij}$ for if $X_i$ and $X_j$ are disjoint is $0$, and if $X_i$ and $X_j$ are identical is $w_{ij} \propto n_{j}$.
+The variance depends on $f(x)$, but the general intuition is that $\pih_i^{(j)}$ will have high variance if $q_i(x) \ll p_i(x)$ \pl{what does this mean? there exists an $x$ such this is true? you're comparing functions}.
+In particular, we can show that the ideal choice \pl{in what sense?} of $w_{ij}$ for if $X_i$ and $X_j$ are disjoint is $0$, and if $X_i$ and $X_j$ are identical is $w_{ij} \propto n_{j}$.
 This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 
 \paragraph{Estimating recall jointly.}
 During the process of evaluating $f(x)$ on $\Xh_i$, we also are able to identify $\Yh_i \eqdef \Xh_i \intersection \sY$.
 The collection of $\Yh = \Union_{i=1}^m \Yh_i$ forms a random subset of $\sY$ that is much cheaper to obtain than by sampling from $\sY$, but this subset can extremely biased if we were to use it to evaluate recall: 
 If the pool $\Yh$ contained just one system, that system would be given a perfect recall score irrespective of how bad it was.
-We dub this incomplete estimate pooled recall, $\nu_i \eqdef \E_{x \sim Y}[f(x) g_i(x)]$.
+We dub this the incomplete estimate pooled recall, $\nu_i \eqdef \E_{x \sim Y}[f(x) g_i(x)]$.
 The remaining factor must compensate for how much of $\sY$ the pool $Y$ actually covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$.
 Thus, the recall of a system is simply the product: $\rho_i = \theta \nu_i$.\footnote{%
 We present a rigorous proof in \refapp{sampling} of the supplementary material.}
@@ -126,11 +133,12 @@ The joint estimator for recall is then $\rhoh_i^{(j)} \eqdef \thetah\nuh_i$, whe
 where $q_i$ and $w_{ij}$ are the same as defined for $\pih_i^{(j)}$.
 
 \paragraph{Adaptively choosing the number of samples.}
-Finally, a desired property for on-demand evaluation is to annotate new data only when the current evaluation data is unable to do the job, e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
+Finally, a desired property for on-demand evaluation is to annotate \pl{use consistent terminology: label} new data \pl{instances} only when the current evaluation data \pl{I don't think this was ever defined formally - set of predicted instances and their labels?} is unable to do the job, e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
 We can measure how well the current evaluation set covers the predictions $X_m$ by using an upper bound on the variance of $\pih_m^{(j)}$.\footnote{Details can be found in \refapp{sampling} of the supplementary material.}
 In particular, the variance of $\pih_m^{(j)}$ is a monotonically decreasing functions in the number of samples of $X_m$ drawn $n_m$ and we can easily solve for the minimum number of samples required to estimate $\pih_m^{(j)}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}. \ac{I feel like this conspicuously omits $\rho_i$ from the picture, and that's because the variance of $\nu_i$ is god-awfully nasty.}
 
 \paragraph{Summary.}
+\pl{this would be better to have first as an outline before all the formulas!}
 On-demand evaluation with the joint estimator works as follows:
 First $\Yh_0$ is randomly sampled from $\sY$ once when the evaluation framework is launched.
 For every new set of predictions $X_m$ submitted for evaluation, the minimum number of samples $n_i$ required to accurately evaluate $X_m$ is calculated based on the current evaluation data, $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$.
