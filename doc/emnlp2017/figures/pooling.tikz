@@ -57,7 +57,7 @@
     \node[anchor=west] (eval-c) at ($(eval-ref)!(tupl-c)!(eval-ref-)$) {\Checkmark};
     \node[anchor=west] (eval-d) at ($(eval-ref)!(tupl-d)!(eval-ref-)$) {\Checkmark};
     \node[anchor=west] (eval-e) at ($(eval-ref)!(tupl-e)!(eval-ref-)$) {\Cross};
-    \node[anchor=west] (eval-f) at ($(eval-ref)!(tupl-f)!(eval-ref-)$) {\Question};
+    \node[anchor=west] (eval-f) at ($(eval-ref)!(tupl-f)!(eval-ref-)$) {\Checkmark};
 
     \draw[-latex,dashed] (sys-h.east) -- (tupl-a.west);
     \draw[-latex,dashed] (sys-h.east) -- (tupl-b.west);
