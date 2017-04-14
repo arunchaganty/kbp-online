@@ -1,25 +1,26 @@
 \section{On-demand evaluation for KBP}
 \label{sec:application}
-Applying the on-demand evaluation framework needs us to define 3 operations:
+Applying the on-demand evaluation framework to a task requires us to define 3 operations:
 \begin{enumerate}
-  \item Given some system output $X_i$, how should we sample its elements, i.e.\ what is $p_i(x)$?
-  \item How do we verify system output, i.e.\ check if $x \in \sY$?
+  \item How are elements sampled from a system's predictions, i.e.\ what is $p_i(x)$?
+  \item How do we verify a prediction, i.e.\ check if $x \in \sY$?
   \item How do we sample from the unknown set of true instances $x \sim \sY$?
 \end{enumerate}
-In this section, we'll see how each of these operations can be practically implemented for knowledge base population.
+In this section, we'll present practical implementations for each of these operations for knowledge base population.
 
 \subsection{Sampling from system predictions}
 % 1. what is the point of this distribution?
 % - prevent over sampling instances.
 Recall that a KBP system predicts relation instances of the form (\entity{subject}, \relation{predicate}, \entity{object}, \textsc{provenance}).
 The choice of distribution over system predictions, $p_i(x)$, allows us to calibrate our precision metric to increase the representation of rare predicates or subject entities in our precision score.
-This can desirable because, in practice, it is common for a system's predictions to be be dominated by a few common predicates (e.g.\ professional titles) or subject entities (like ``the United States of America''), skewing our evaluation metrics towards a particular relation or entity type.
+This can desirable because, in practice, it is common for a system's predictions to be be dominated by a few common predicates (e.g.\ professional titles) or subject entities (like ``the United States of America''), skewing our evaluation metrics towards a particular predicate or entity type.
+To this end, we use two instance sampling schemes that evaluate precision and recall scores macro-averaged over predicates and subject entities respectively:
+\begin{align*}
+  p_i^\text{(p)}(x) &\eqdef \frac{1}{|\operatorname{predicates}(X_i)|} \frac{1}{\operatorname{instances}(X_i, \relation{predicate}(x))} \\
+  p_i^\text{(e)}(x) &\eqdef \frac{1}{|\operatorname{subjects}(X_i)|} \frac{1}{\operatorname{instances}(X_i, \relation{subject}(x))}.
+\end{align*}
 
-The traditional solution to this problem is to take the macro average of the metric over predicates or subject entities.
-We can replicate this behavior with the appropriate choice of a sampling distribution.
-To estimate the macro-average over predicates, we use a predicate-centric distribution $p_i^\text{(p)}$ that first uniformly samples a predicate and then uniformly samples an instances with that predicate.
-Similarly, to estimate the macro-average over subject entities, we use an entity-centric distribution $p_i^\text{(e)}$ that first uniformly samples over the entities in the system's predicted relation instances and then uniformly samples instances with that entity as its subject.
-Detailed histograms comparing different sampling distributions can be found in \appendixref{implementation}.
+Additional information regarding the distribution of predicates and entities under the above sampling schemes can be found in \appendixref{implementation} of the supplementary material.
 
 \begin{figure*}[t]
 \begin{subfigure}{0.49\textwidth}
