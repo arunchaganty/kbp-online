@@ -7,6 +7,8 @@ import json
 import logging
 from collections import Counter
 
+from tqdm import tqdm
+
 from . import db
 from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance, EvaluationMentionResponse, EvaluationLinkResponse, EvaluationRelationResponse
 
@@ -124,14 +126,16 @@ def parse_responses():
     evaluation_links = []
     evaluation_relations = []
 
-    for row in db.select("""
+    rows = db.select("""
 SELECT a.id AS assignment_id, b.id AS question_batch_id, q.id AS question_id, b.batch_type, q.params AS question, a.response AS response
 FROM mturk_assignment a,
      mturk_hit h,
      evaluation_question q,
      evaluation_batch b
 WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch_id AND b.id = q.batch_id
- AND NOT a.ignored"""): # Q: Should there be a fixed type?
+ AND NOT a.ignored""")
+
+    for row in tqdm(rows): # Q: Should there be a fixed type?
         if len(row.response) == 0:
             logger.warning("Empty response : %s", row)
             continue
@@ -205,10 +209,11 @@ def majority_element(lst):
     return Counter(lst).most_common(1)[0][0]
 
 def merge_evaluation_mentions(row):
+    assert len(row) > 0.
     # Only merge eval mentions with > 1 response.
     # Choose the most frequent char_begin and char_end.
     #TODO: the elements in lst should be weighed by the weight of their vote (e.g. canonical_mention if wrong)
-    canonical_begin, canonical_end = majority_element([(b,e) for b,e,w in zip(row.canonical_char_begins, row.canonical_char_ends, row.weights) if w > 0.5])
+    canonical_begin, canonical_end = majority_element([(b,e) for b,e in zip(row.canonical_char_begins, row.canonical_char_ends)])
     mention_type = majority_element(row.mention_types)
     gloss = majority_element(row.glosses)
     weight = sum(weight for weight, canonical_begin_, canonical_end_ in zip(row.weights, row.canonical_char_begins, row.canonical_char_ends) if canonical_begin_ == canonical_begin and canonical_end_ == canonical_end)/len(row.weights)
@@ -216,17 +221,19 @@ def merge_evaluation_mentions(row):
     return row.doc_id, row.mention_id, (row.doc_id, canonical_begin, canonical_end), mention_type, gloss, weight
 
 def merge_evaluation_links(row):
+    assert len(row) > 0.
     link_name = majority_element(row.link_names)
     weight = sum(weight for weight, link_name_ in zip(row.weights, row.link_names) if link_name_ == link_name)/len(row.weights)
 
     return row.doc_id, row.mention_id, link_name, weight
 
 def merge_evaluation_relations(row):
+    assert len(row) > 0.
     # Choose the most frequent char_begin and char_end.
     relation = majority_element(row.relations)
     n_assignments = max(max([int(json.loads(params)['max_assignments']) for params in row.params]), len(row.weights))
 
-    param = majority_element(row.params)
+    #param = majority_element(row.params)
     weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/n_assignments
 
     return row.question_id, row.question_batch_id, row.doc_id, row.subject_id, row.object_id, relation, weight
@@ -236,12 +243,13 @@ def update_evaluation_mention():
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_mention;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT doc_id, mention_id, 
+            cur.execute("""SELECT doc_id, mention_id,
                     array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends,
                     array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses,
                     array_agg(weight) as weights FROM evaluation_mention_response GROUP BY doc_id, mention_id""")
             # Take the majority vote on this mention iff count > 1.
-            values = [merge_evaluation_mentions(row) for row in cur]
+            values = [merge_evaluation_mentions(row) for row in tqdm(cur, total=cur.rowcount)]
+            logger.info("%d rows of evaluation_mention_response merged into %d rows", cur.rowcount, len(values))
             db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
 
 def update_evaluation_link():
@@ -251,7 +259,8 @@ def update_evaluation_link():
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
             cur.execute("""SELECT doc_id, mention_id, array_agg(link_name) AS link_names, array_agg(weight) AS weights FROM evaluation_link_response GROUP BY doc_id, mention_id""")
             # Take the majority vote on this mention iff count > 1.
-            values = [merge_evaluation_links(row) for row in cur]
+            values = [merge_evaluation_links(row) for row in tqdm(cur, total=cur.rowcount)]
+            logger.info("%d rows of evaluation_link_response merged into %d rows", cur.rowcount, len(values))
             db.execute_values(cur, """INSERT INTO evaluation_link(doc_id, mention_id, link_name, weight) VALUES %s""", values)
 
 def update_evaluation_relation():
@@ -261,7 +270,8 @@ def update_evaluation_relation():
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
             cur.execute("""SELECT question_id, question_batch_id, doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights, array_agg(params) as params FROM evaluation_relation_response as r, mturk_assignment as a, mturk_batch as b WHERE r.assignment_id = a.id AND a.batch_id = b.id GROUP BY question_id, question_batch_id, doc_id, subject_id, object_id""")
             # Take the majority vote on this mention iff count > 1.
-            values = [merge_evaluation_relations(row) for row in cur]
+            values = [merge_evaluation_relations(row) for row in tqdm(cur, total=cur.rowcount)]
+            logger.info("%d rows of evaluation_relation_response merged into %d rows", cur.rowcount, len(values))
             db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject_id, object_id, relation, weight) VALUES %s""", values)
 
 def update_summary():
