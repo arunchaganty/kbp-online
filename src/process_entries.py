@@ -32,6 +32,14 @@ def do_validate(args):
     for row in mfile.relations:
         writer.writerow(row)
 
+def do_debug(args):
+    reader = csv.reader(args.input, delimiter='\t')
+    mfile = MFile.from_stream(reader)
+
+    writer = csv.writer(args.output, delimiter='\t')
+    for row in mfile.relations:
+        writer.writerow([mfile.get_link(row.subj) or mfile.get_gloss(row.subj), row.reln, mfile.get_link(row.obj) or mfile.get_gloss(row.obj), row.prov])
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Process and transform entry files')
@@ -41,6 +49,11 @@ if __name__ == "__main__":
     command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), default=sys.stdin, help="")
     command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="")
     command_parser.set_defaults(func=do_validate)
+
+    command_parser = subparsers.add_parser('debug', help='Prints in English')
+    command_parser.add_argument('-i', '--input', type=argparse.FileType('r'), default=sys.stdin, help="")
+    command_parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="")
+    command_parser.set_defaults(func=do_debug)
 
     ARGS = parser.parse_args()
     if ARGS.func is None:

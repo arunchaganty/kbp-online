@@ -8,6 +8,8 @@ import csv
 import sys
 import logging
 
+from tqdm import tqdm
+
 from kbpo import db
 from kbpo.entry import MFile, Entry
 from kbpo.defs import TYPES,NER_MAP,ALL_RELATIONS
@@ -179,37 +181,24 @@ def do_stanford(args):
     with db.CONN:
         with db.CONN.cursor() as cur:
             db.register_composite('kbpo.span', cur)
-            # First, get the relations in a useful way.
-            cur.execute("""CREATE TEMPORARY TABLE _relation AS (
-            SELECT m.doc_id AS doc_id, m.sentence_id, m.id AS subject_id, (m.doc_id, m.doc_char_begin, m.doc_char_end)::SPAN AS subject_span,
-                   relation,
-                   n.id AS object_id, (n.doc_id, n.doc_char_begin, n.doc_char_end)::SPAN AS object_span,
-                   confidence
-            FROM {mention} m, {mention} n, {kb} k
-            WHERE
-                m.doc_id = n.doc_id AND m.sentence_id = n.sentence_id AND m.id = k.subject_id AND n.id = k.object_id
-                AND m.parent_id IS NULL and n.parent_id IS NULL
-                AND is_kbpo_reln(relation)
-            )""".format(kb=kb_table,mention=mention_table))
-            logger.info("Wrote %d rows", cur.rowcount)
-
-            valid_mentions = set([])
-            # Get all the mention information.
+            # Get every single mention from the database.
             cur.execute("""
             SELECT DISTINCT ON (m.doc_id, m.doc_char_begin, m.doc_char_end)
             m.doc_id, m.doc_char_begin, m.doc_char_end, m.gloss, 
             n.ner, m.best_entity, m.best_entity_score,
             n.doc_canonical_char_begin, n.doc_canonical_char_end, n.gloss AS canonical_gloss
-            FROM _relation r, {mention} m, {mention} n
-            WHERE r.doc_id = m.doc_id AND r.doc_id = n.doc_id AND r.sentence_id = m.sentence_id
-              AND (r.subject_id = m.id OR r.object_id = m.id)
+            FROM {mention} m, {mention} n
+            WHERE m.doc_id = n.doc_id
               AND m.doc_canonical_char_begin = n.doc_char_begin AND m.doc_canonical_char_end = n.doc_char_end
+              AND m.doc_id ~ 'ENG_' AND m.doc_id !~ '_DF_'
               AND m.ner = n.ner
+              AND m.parent_id IS NULL and n.parent_id IS NULL
+              AND m.corpus_id = 2016
               AND is_kbpo_type(n.ner)
             """.format(mention=mention_table))
-            logger.info("Found %d rows", cur.rowcount)
 
-            for row in cur:
+            valid_mentions = set([])
+            for row in tqdm(cur, total=cur.rowcount, desc="Getting mentions"):
                 if "ENG_" not in row.doc_id: continue
                 if "ENG_DF" in row.doc_id: continue
                 if row.ner not in NER_MAP: continue
@@ -225,19 +214,31 @@ def do_stanford(args):
                 cmentions.append(Entry(canonical_prov, "canonical_mention", canonical_prov, None, None))
                 # a link line (only for canonical mention
                 links.append(Entry(canonical_prov, "link", row.best_entity, None, row.best_entity_score))
-            logger.info("Wrote %d mentions", len(valid_mentions))
+            logger.info("Found %d mentions", len(valid_mentions))
 
             cur.execute("""
+            WITH _relation AS (
+            SELECT m.doc_id AS doc_id, m.sentence_id, m.id AS subject_id, (m.doc_id, m.doc_char_begin, m.doc_char_end)::SPAN AS subject_span,
+                   relation,
+                   n.id AS object_id, (n.doc_id, n.doc_char_begin, n.doc_char_end)::SPAN AS object_span,
+                   confidence
+            FROM {mention} m, {mention} n, {kb} k
+            WHERE
+                m.doc_id = n.doc_id AND m.sentence_id = n.sentence_id AND m.id = k.subject_id AND n.id = k.object_id
+                AND m.corpus_id = 2016
+                AND m.parent_id IS NULL and n.parent_id IS NULL
+                AND is_kbpo_reln(relation)
+            )
         SELECT subject_span, relation, object_span, s.doc_id, s.doc_char_begin[1], s.doc_char_end[public.array_length(s.doc_char_end)], confidence
         FROM _relation r, {sentence} s
         WHERE r.doc_id = s.doc_id AND r.sentence_id = s.id
         ORDER BY subject_span, relation, object_span
-        """.format(sentence=sentence_table))
-            logger.info("Found %d rows", cur.rowcount)
+        """.format(kb=kb_table,mention=mention_table,sentence=sentence_table))
 
-            for row in cur:
+            for row in tqdm(cur, total=cur.rowcount, desc="Getting relations"):
                 if "ENG_" not in row.doc_id or row.relation not in ALL_RELATIONS: continue
                 if "ENG_DF" in row.doc_id: continue
+                if row.relation not in ALL_RELATIONS: continue
                 subject_prov = MFile.to_prov(row.subject_span)
                 object_prov = MFile.to_prov(row.object_span)
                 if subject_prov not in valid_mentions or object_prov not in valid_mentions:

@@ -37,7 +37,7 @@ def do_command(args):
         return
         for rect in rects:
             height = rect.get_height()
-            ax.text(rect.get_x() + 1.1*rect.get_width()/2., height + .03*ax.get_ylim()[1],
+            ax.text(rect.get_x() + 1.1*rect.get_width()/2., height + .06*ax.get_ylim()[1],
                     "{0:.2f}".format(height), 
                     ha='center', va='bottom')
     ind = 0.1+np.arange(sum(simple['run_id'].str.contains(ARGS.sampling_scheme)))
@@ -96,7 +96,7 @@ def do_command(args):
     ax.set_xticks(ind + width)
     ax.set_xticklabels(('Patterns', 'Supervised', 'RNN'))
 
-    ax.legend((rects1[0], rects2[0]), ('Simple', 'Joint', 'Official'))
+    ax.legend((rects1[0], rects2[0], rects3[0]), ('Simple', 'Joint', 'Official'))
     autolabel(ax, rects1)
     autolabel(ax, rects2)
     fig.set_tight_layout(True)
