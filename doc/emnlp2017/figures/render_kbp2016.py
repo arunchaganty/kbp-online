@@ -7,10 +7,19 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+#KBP 2016 official scores
+#System 1 - Patterns
+#System 2 - Patterns+Sup
+#System 3 - Patterns+Sup+RNN
+official_scores = {
+        'p': [0.3962, 0.3697, 0.2226], 
+        'r': [0.0739, 0.1549, 0.2500], 
+        'f1':[0.1246, 0.2184, 0.2355], 
+        }
 def do_command(args):
     colors = ["#9A2617", "#829356", "#093145"]
     colors = {
-        "pool": colors[0],
+        "official": colors[0],
         "simple": colors[1],
         "joint": colors[2],
         }
@@ -42,12 +51,13 @@ def do_command(args):
     fig, ax = plt.subplots()
     rects1 = ax.bar(ind, simple_filtered['p'], width, color=colors['simple'], yerr=(simple_filtered['err-p-left']+simple_filtered['err-p-right'])/2, capsize = 5, ecolor='black')
     rects2 = ax.bar(ind+width, joint_filtered['p'], width, color=colors['joint'], yerr=(joint_filtered['err-p-left']+joint_filtered['err-p-right'])/2, capsize = 5, ecolor='black')
+    rects3 = ax.bar(ind+2*width, official_scores['p'], width, color=colors['official'])
     ax.set_ylabel('Precision')
     #ax.set_title('Precision for systems under evaluation schemes')
     ax.set_xticks(ind + width)
     ax.set_xticklabels(('Patterns', 'Supervised', 'RNN'))
 
-    ax.legend((rects1[0], rects2[0]), ('Simple', 'Joint'))
+    ax.legend((rects1[0], rects2[0], rects3[0]), ('Simple', 'Joint', 'Official'))
 
 
     autolabel(ax, rects1)
@@ -61,12 +71,13 @@ def do_command(args):
     fig, ax = plt.subplots()
     rects1 = ax.bar(ind, simple_filtered['r'], width, color="#004949", yerr=(simple_filtered['err-r-left']+simple_filtered['err-r-right'])/2, capsize = 5, ecolor='black')
     rects2 = ax.bar(ind+width, joint_filtered['r'], width, color="#006DDB", yerr=(joint_filtered['err-r-left']+joint_filtered['err-r-right'])/2, capsize = 5, ecolor='black')
+    rects3 = ax.bar(ind+2*width, official_scores['r'], width, color=colors['official'])
     ax.set_ylabel('Recall')
     #ax.set_title('Recall for systems under evaluation schemes')
     ax.set_xticks(ind + width)
     ax.set_xticklabels(('Patterns', 'Supervised', 'RNN'))
 
-    ax.legend((rects1[0], rects2[0]), ('Simple', 'Joint'))
+    ax.legend((rects1[0], rects2[0], rects3[0]), ('Simple', 'Joint', 'Official'))
     autolabel(ax, rects1)
     autolabel(ax, rects2)
     fig.set_tight_layout(True)
@@ -78,12 +89,13 @@ def do_command(args):
     fig, ax = plt.subplots()
     rects1 = ax.bar(ind, simple_filtered['f1'], width, color=colors['simple'], yerr=(simple_filtered['err-f1-left']+simple_filtered['err-f1-right'])/2, capsize = 5, ecolor='black')
     rects2 = ax.bar(ind+width, joint_filtered['f1'], width, color=colors['joint'], yerr=(joint_filtered['err-f1-left']+joint_filtered['err-f1-right'])/2, capsize = 5, ecolor='black')
+    rects3 = ax.bar(ind+2*width, official_scores['f1'], width, color=colors['official'])
     ax.set_ylabel('F1')
     #ax.set_title('Recall for systems under evaluation schemes')
     ax.set_xticks(ind + width)
     ax.set_xticklabels(('Patterns', 'Supervised', 'RNN'))
 
-    ax.legend((rects1[0], rects2[0]), ('Simple', 'Joint'))
+    ax.legend((rects1[0], rects2[0]), ('Simple', 'Joint', 'Official'))
     autolabel(ax, rects1)
     autolabel(ax, rects2)
     fig.set_tight_layout(True)
