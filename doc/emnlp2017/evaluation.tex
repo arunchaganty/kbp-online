@@ -23,21 +23,24 @@ We find that we are able to obtain results of comparable quality at a fraction o
 \end{figure*}
 
 \subsection{Evaluating bias and variance of the on-demand evaluation.}
-Once again, we use the system predictions from the TAC KBP 2015 evaluation and treat the labeled instances as an exhaustively annotated dataset.
-We compare against the pooling methodology as a baseline by constructing an evaluation dataset using instances found by human annotators and labeled instances pooled from 9 randomly chosen teams (i.e.\ half the total number of participating teams) and use this dataset to evaluate the remaining 9 teams.
+Once again, we use all the system predictions from the TAC KBP 2015 evaluation and treat the labeled instances as an exhaustively annotated dataset.
+To evaluate the pooling methodology, we contruct an evaluation dataset using
+instances found by human annotators and labeled instances pooled from 9
+randomly chosen teams (i.e.\ half the total number of participating teams), and
+use this dataset to evaluate the remaining 9 teams.
 On average, the pooled evaluation dataset contains between 5,000 and 6,000 labeled instances and evaluates 34 different systems (recall that each team may have submitted systems).
-Consequently, we also evaluate a set of 9 randomly chosen teams with the simple and joint estimators using a total of 5,000 samples.
+Next, we evaluated a set of 9 randomly chosen teams with our proposed simple and joint estimators using a total of 5,000 samples.
 About 150 of these samples are drawn from $\sY$, i.e.\ the complete TAC KBP 2015 evaluation data, and roughly another 150 samples from each of the systems being evaluated.
-The samples are used by the simple and joint estimators to predict precision and recall.
+The samples are used by the simple and joint estimators to estimate precision and recall.
 
-As the properties we wish to study are statistical, we repeat the above experiment 500 times and compare the estimated precision and recall with their true scores in \reffig{simulation}.
+We repeat the above experiment 500 times and compare the estimated precision and recall with their true values in \reffig{simulation}.
 The simulations once again highlight that the pooled methodology is biased, while the simple and joint estimators are not.
-Furthermore, the joint estimators significantly reduce variance when compared with the simple estimators, 
+Furthermore, the joint estimators significantly reduce variance when compared with the simple estimators,
 approximately reducing the size the 90\% confidence intervals by a factor of 2 for precision and a factor of 3 for recall.
 
 \subsection{A mock evaluation for TAC KBP 2016}
-Using on-demand evaluation with the joint estimators described in \refalg{on-demand-sampling}, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
-Each system uses Stanford CoreNLP~\citep{} to identify entities and the Illinois Wikifier~\citep{} to perform entity linking. 
+Using on-demand evaluation with the joint estimators, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
+Each system uses Stanford CoreNLP~\citep{XXX} to identify entities and the Illinois Wikifier~\citep{XXX} to perform entity linking. 
 The systems were part of a submission to the competition and hence the scores on the official evaluation are likely to be accurate.
 
 \begin{figure}[t]
@@ -46,5 +49,5 @@ The systems were part of a submission to the competition and hence the scores on
   \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
 \end{figure}
 In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
-\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with \fake{with the official TAC KBP evaluation scores}.
+\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with \fake{the official TAC KBP evaluation scores}.
 \ac{I'm not sure how we should compare our results with the official TAC KBP ones. The scores are going to be different because we don't use query entities. I want to basically make the point that our evaluation methodology is reasonable and preferable because it doesn't have the flaws that the official evaluation does.}
