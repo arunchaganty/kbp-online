@@ -3,8 +3,10 @@ Utilities to manage different data input files.
 """
 import logging
 from collections import namedtuple
+from xml.etree.ElementTree import ElementTree
 
 from tqdm import tqdm
+from .schema import MentionInstance 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -15,6 +17,9 @@ class Provenance(namedtuple("Provenance", ["doc_id", "start", "end"])):
         doc_id, start_end = str_.split(':', 1)
         start, end = map(int, start_end.split('-', 1))
         return cls(doc_id, start, end)
+
+    def __str__(self):
+        return "{}:{}-{}".format(self.doc_id, self.start, self.end)
 
 def test_provenance_from_str():
     str_ = "ENG_NW_001278_20130214_F00011JDX:1448-1584"
@@ -128,6 +133,17 @@ def load_gold(fstream, Q):
     logger.info("Loaded %d evaluation entries", len(gold))
     return gold
 
+def load_gold_2016(fstream, Q):
+    gold = []
+    for line in tqdm(fstream):
+        parts = line.split("\t")
+        line = "\t".join(parts[0:6] + parts[7:9])
+        entry = EvaluationEntry.from_line(line)
+        if entry.query_id in Q:
+            gold.append(entry._replace(ldc_id=Q[entry.query_id]))
+    logger.info("Loaded %d evaluation entries", len(gold))
+    return gold
+
 def load_output(fstream, Q):
     output = []
     for line in tqdm(fstream, desc='Loading entries'):
@@ -136,3 +152,21 @@ def load_output(fstream, Q):
             output.append(entry._replace(ldc_id=Q[entry.query_id]))
     #logger.info("Loaded %d output entries.", len(output))
     return output
+
+QueryEntry = namedtuple("QueryEntry", ["id", "gloss", "mention_type", "prov", "slot"])
+def load_query_entries(f):
+    tree = ElementTree()
+    tree.parse(f)
+
+    E = []
+    for query in tree.getroot().getchildren():
+        query_id = query.get('id')
+        gloss = query.find("name").text
+        mention_type = query.find("enttype").text.upper()
+        docid = query.find("docid").text
+        beg, end = int(query.find("beg").text), int(query.find("end").text)+1
+        prov = Provenance(docid, beg, end)
+        slot = query.find("slot0").text
+        E.append(QueryEntry(query_id, gloss, mention_type, prov, slot))
+
+    return E

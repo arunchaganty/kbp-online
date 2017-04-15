@@ -1,7 +1,14 @@
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{figures/entities-example.pdf}
-  \caption{\label{fig:example} An example describing entities and relations in knowledge base population. \ac{Change tuple to instance. Potentially make figure less ugly.}}
+  \includegraphics[width=0.9\columnwidth]{figures/pooling}
+  \caption{\label{fig:pooling}
+  In pooled evaluation, an evaluation dataset is constructed by labeling relation instances collected from the pooled systems (A and B) and those identified by a team of human annotators (Annotators).
+ % Arrows indicate which systems extract which relation instances.
+  However, when a new system (C) is evaluated on this dataset, some of its predictions are previously unseen (e.g., $t_6$) and can not be fairly evaluated.
+  Here, the precision and recall for C should be $\frac{3}{3}$ and $\frac{3}{4}$ respectively, but its evaluation scores are estimated to be $\frac{2}{3}$ and $\frac{2}{3}$.
+%  \pl{why isn't the recall $3/5$? because we miss $t_1$ and $t_2$?  This is a nice figure, maybe use as figure 1?}
+  The discrepancy between these two scores is called \textit{pooling bias}.
+  }
 \end{figure}
 
 \section{Introduction}

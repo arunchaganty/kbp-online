@@ -1,6 +1,11 @@
 \section{Background}
 \label{sec:setup}
 % (1 page)
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{figures/entities-example.pdf}
+  \caption{\label{fig:example} An example describing entities and relations in knowledge base population.}
+\end{figure}
 
 % 1. Basic output specification of KBP.
 %   - what are types, and entity links
@@ -18,18 +23,6 @@ The provenance also identifies that \entity{Carrie Fisher} is referenced by \men
 Note that the same relation can be expressed in multiple sentences across the document corpus; each of these is a different relation instance.
 
 \paragraph{Pooled evaluation.}
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.9\columnwidth]{figures/pooling}
-  \caption{\label{fig:pooling}
-  In pooled evaluation, an evaluation dataset is constructed by labeling the relation instances collected from the pooled systems (A and B) and those identified by a team of human annotators (Annotators).
- % Arrows indicate which systems extract which relation instances.
-  However, when a new system (C) is evaluated on this dataset, some of its predictions are previously unseen and can not be fairly evaluated.
-  Here, the precision and recall for C should be $\frac{3}{3}$ and $\frac{3}{4}$ respectively, but its evaluation scores are estimated to be $\frac{2}{3}$ and $\frac{2}{3}$.
-%  \pl{why isn't the recall $3/5$? because we miss $t_1$ and $t_2$?  This is a nice figure, maybe use as figure 1?}
-  The discrepancy between these two scores is called \textit{pooling bias}.
-  }
-\end{figure}
 
 % 2. How is KBP evaluated? 
 The primary source of evaluation data for KBP comes from the annual TAC KBP competition organized by NIST \citep{ji2011kbp}.
