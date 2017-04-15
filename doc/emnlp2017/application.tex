@@ -17,14 +17,16 @@ to be be dominated by a few common predicates (e.g.\ professional titles) or
 subject entities (e.g.\ ``United States of America'').
 Thus, if we let $p_i$ be the uniform distribution over this set,
 our evaluation metrics would be skewed towards a particular predicate or entity.
-%The choice of distribution over this set determines how much we put weight on rare predicates and subject entities in our evaluation metric. % in our precision score. % PL: for recall 
-We therefore propose two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities, respectively:
-\begin{align*}
-  p_i^\text{(pred)}(x) &\eqdef \frac{1}{\operatorname{\#preds}(X_i)} \frac{1}{\operatorname{\#insts}(X_i, \relation{pred}(x))} \\
-  p_i^\text{(subj)}(x) &\eqdef \frac{1}{\operatorname{\#subjs}(X_i)} \frac{1}{\operatorname{\#insts}(X_i, \relation{subj}(x))}
-\end{align*}
-where $\operatorname{\#preds}$, $\operatorname{\#nsubjs}$ specifies the number of predicates, subject entities in $X_i$ respectively and $\operatorname{\#insts}$ the number of instances with the given predicate or subject entity.
-See \refapp{implementation} for more details.
+In \refapp{implementation} we describe two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities.
+
+%%The choice of distribution over this set determines how much we put weight on rare predicates and subject entities in our evaluation metric. % in our precision score. % PL: for recall 
+%We therefore propose two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities, respectively:
+%\begin{align*}
+%  p_i^\text{(pred)}(x) &\eqdef \frac{1}{\operatorname{\#preds}(X_i)} \frac{1}{\operatorname{\#insts}(X_i, \relation{pred}(x))} \\
+%  p_i^\text{(subj)}(x) &\eqdef \frac{1}{\operatorname{\#subjs}(X_i)} \frac{1}{\operatorname{\#insts}(X_i, \relation{subj}(x))}
+%\end{align*}
+%where $\operatorname{\#preds}$, $\operatorname{\#nsubjs}$ specifies the number of predicates, subject entities in $X_i$ respectively and $\operatorname{\#insts}$ the number of instances with the given predicate or subject entity.
+%See \refapp{implementation} for more details.
 
 \begin{figure*}[t]
 \centering
@@ -49,8 +51,7 @@ We label predicted relation instances by presenting the instance's provenance to
 On average, we find that crowdworkers are able to perform this task in about 20 seconds, corresponding to about \$0.05 per instance.
 We requested 5 crowdworkers to annotate a small set of 200 relation instances from the 2015 TAC-KBP corpus 
 and measured a substantial inter-annotator agreement of 0.90 with 3 crowdworkers and 0.95 with 5. % \pl{why does it go up with more annotators?}.
-Consequently, we take a majority vote over 3 workers in subsequent experiments,
-leading to a total cost of \$0.15 per relation instance.
+
 %\pl{what does it mean to annotate a relation - get all the relation instances for that relation or just one?}.
 
 \subsection{Sampling true instances}
@@ -66,11 +67,16 @@ We find that 3 crowdworkers together identify 92\% of the entity spans identifie
 When using a token-level majority vote to identify entities, 3 crowdworkers identify about 78\% of the entity spans; this number does not change significantly with additional crowdworkers.
 We also measure substantial token-level inter-annotator agreement for identifying typed mention spans ($\kappa = 0.83$), canonical mentions ($\kappa = 0.75$) and entity links ($\kappa = 0.75$) with just three workers.
 Based on this analysis, we use token-level majority over 3 workers in subsequent experiments.
+We also manually labeled 200 relation instances that from the exhaustively annotated documents and observed a precision of about 75\%.
+While this precision is slightly less than the 80\% obtained by annotators at LDC \citep{ellis2016overview}, we believe it could be easily improved with appropriate changes to the annotation interface.
+Consequently, we take a majority vote over 3 workers in subsequent experiments,
+leading to a total cost of \$0.15 per relation instance.
 
 The entity annotation interface is far more involved and takes on average about 13 minutes per document, corresponding to about \$2.60 per document, while the relation annotation interface takes on average about \$2.25 per document.
 Because documents vary significantly in length and complexity, we set rewards for each document based on the number of tokens (.75c per token) and mention pairs (5c per pair) respectively.
-With 3 workers per document, we paid on average about \$15 per document.
-On average, each document contained 9.2 relations and it cost about \$1.61 per relation, which is about ten times as much as labeling a relation.
+With 3 workers per document, we paid about \$15 per document on average.
+Each document contained an average 9.2 relations, resulting in a cost of about \$1.61 per relation instance.
+We note that this is about ten times as much as labeling a relation instance.
 
 We defer details regarding how documents themselves should be weighted to capture diverse entities that span documents to \refapp{implementation}.
 %We provide details regarding our sampling scheme and its distribution over entities in \refapp{implementation} of the supplementary material.
