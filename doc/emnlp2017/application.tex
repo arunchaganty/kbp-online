@@ -20,10 +20,10 @@ our evaluation metrics would be skewed towards a particular predicate or entity.
 %The choice of distribution over this set determines how much we put weight on rare predicates and subject entities in our evaluation metric. % in our precision score. % PL: for recall 
 We therefore propose two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities, respectively:
 \begin{align*}
-  p_i^\text{(p)}(x) &\eqdef \frac{1}{|\text{npreds}(X_i)|} \frac{1}{\operatorname{ninsts}(X_i, \relation{pred}(x))} \\
-  p_i^\text{(e)}(x) &\eqdef \frac{1}{|\text{nsubjs}(X_i)|} \frac{1}{\operatorname{ninsts}(X_i, \relation{subj}(x))},
+  p_i^\text{(p)}(x) &\eqdef \frac{1}{\operatorname{\#preds}(X_i)} \frac{1}{\operatorname{\#insts}(X_i, \relation{pred}(x))} \\
+  p_i^\text{(e)}(x) &\eqdef \frac{1}{\operatorname{\#subjs}(X_i)} \frac{1}{\operatorname{\#insts}(X_i, \relation{subj}(x))}
 \end{align*}
-where npreds, nsubjs specifies the number of predicates, subject entities in $X_i$ respectively  and ninsts the number of instances with the given predicate or subject entity.
+where $\operatorname{\#preds}$, $\operatorname{\#nsubjs}$ specifies the number of predicates, subject entities in $X_i$ respectively and $\operatorname{\#insts}$ the number of instances with the given predicate or subject entity.
 See \refapp{implementation} for more details.
 
 \begin{figure*}[t]
@@ -42,7 +42,7 @@ See \refapp{implementation} for more details.
 \subsection{Labeling predicted instances}
 We label predicted relation instances by presenting the instance's provenance to crowdworkers
   and asking them to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
-  Crowd workers are also asked to link the subject and object mentions to their canonical mentions \ap{undefined} within the document and to pages on Wikipedia, if possible, for entity linking.
+  Crowd workers are also asked to link the subject and object mentions \ap{undefined; to their canonical mentions within the document and } to pages on Wikipedia, if possible, for entity linking.
 On average, we find that crowdworkers are able to perform this task in about 20 seconds, corresponding to about \$0.05 per instance.
 We requested 5 crowdworkers to annotate a small set of 200 relation instances from the 2015 TAC-KBP corpus 
 and measured a substantial inter-annotator agreement of 0.90 with 3 crowdworkers and 0.95 with 5 \pl{why does it go up with more annotators?}.

@@ -57,9 +57,16 @@ Then, the simple estimators for precision and recall are:
 \subsection{Joint estimators}
 The simple estimators are unbiased but have wastefully large variance
 because evaluating a new system does not leverage labels acquired for previous
-systems.
+systems.  %\paragraph{Estimation Algorithm}
+
+On-demand evaluation with the joint estimator works as follows:
+First $\Yh_0$ is randomly sampled from $\sY$ once when the evaluation framework is launched.
+For every new set of predictions $X_m$ submitted for evaluation, the minimum number of samples $n_i$ required to accurately evaluate $X_m$ is calculated based on the current evaluation data, $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$.
+Then, the set $\Xh_m$ is added to the evaluation data by evaluating $f(x)$ on $n_m$ samples drawn from $X_m$.
+Finally, estimates $\pi_1, \ldots, \pi_m$ and $\rho_1, \ldots, \rho_m$ are updated using the joint estimators.
 %requires us to spend money to collect data for every new system submitted.
-We need to answer the following three questions:
+
+Thus, we need to answer the following three questions:
 \begin{enumerate}
   \item How can we use all the samples $\Xh_1, \ldots \Xh_m$ when estimating the precision $\pi_i$ of system $i$?
   \item How can we use all the samples $\Xh_1, \ldots, \Xh_m$ with $\Yh_0$ when estimating recall $\rho_i$?
@@ -143,6 +150,12 @@ and if $X_i = X_j$, then $w_{ij} \propto n_{j}$.
 %In particular, we can show that the ideal choice \pl{in what sense?} of $w_{ij}$ for
 This motivates the following scheme which interpolates between the two extremes:
 $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
+%=======
+%The variance depends on $f(x)$, but the general intuition is that $\pih_i^{(j)}$ will have high variance if 
+%$q_i$ does not have tails at least as heavy as $p_i$.
+% \pl{$q_i(x) \ll p_i(x)$ what does this mean? there exists an $x$ such this is true? you're comparing functions}.
+%In particular, we can show that the ideal choice \pl{in what sense?} of $w_{ij}$ for if $X_i$ and $X_j$ are disjoint is $0$, and if $X_i$ and $X_j$ are identical is $w_{ij} \propto n_{j}$.
+%This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 
 \paragraph{Estimating recall jointly.}
 During the process of evaluating $f(x)$ on $\Xh_i$, we also are able to identify $\Yh_i \eqdef \Xh_i \intersection \sY$.
@@ -167,10 +180,3 @@ Finally, a desired property for on-demand evaluation is to label new instances o
 e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
 We can measure how well the current evaluation set covers the predictions $X_m$ by using an upper bound on the variance of $\pih_m^{\text{(joint)}}$.\footnote{Details can be found in \refapp{sampling} of the supplementary material.}
 In particular, the variance of $\pih_m^{\text{(joint)}}$ is a monotonically decreasing function in the number of samples of $X_m$ drawn $n_m$ and we can easily solve for the minimum number of samples required to estimate $\pih_m^{\text{(joint)}}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}. \ac{I feel like this conspicuously omits $\rho_i$ from the picture, and that's because the variance of $\nu_i$ is god-awfully nasty.}
-
-\paragraph{Summary.}
-On-demand evaluation with the joint estimator works as follows:
-First $\Yh_0$ is randomly sampled from $\sY$ once when the evaluation framework is launched.
-For every new set of predictions $X_m$ submitted for evaluation, the minimum number of samples $n_m$ required to accurately evaluate $X_m$ is calculated based on the current evaluation data, $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$.
-Then, the set $\Xh_m$ is added to the evaluation data by evaluating $f(x)$ on $n_m$ samples drawn from $X_m$.
-Finally, estimates $\pi_1, \ldots, \pi_m$ and $\rho_1, \ldots, \rho_m$ are updated using the joint estimators.
