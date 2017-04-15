@@ -2,8 +2,9 @@
 \label{sec:evaluation}
 
 Let us now see how well on-demand evaluation works in practice.
-We begin by empirically studying the statistical properties of the proposed estimators and show that they are indeed unbiased.
-We then show that the on-demand evaluation methodology can serve as a practical replacement for the TAC KBP competitions by actually running a mock evaluation TAC KBP 2016 competition using our framework and showing that we obtain results of comparable quality at a fraction of the cost.
+We begin by empirically studying the bias and variance of the joint estimator proposed in \refsec{method} and find it is able to correct for pooling bias while significantly reducing variance in comparison with the simple estimator.
+We then ask if on-demand evaluation can serve as a practical replacement for the TAC KBP evaluations by comparing the scores predicted by our framework with the official evaluation on TAC KBP 2016 document corpus.
+We find that we are able to obtain results of comparable quality at a fraction of the cost.
 
 \begin{figure*}[t]
   \centering
@@ -20,20 +21,20 @@ We then show that the on-demand evaluation methodology can serve as a practical 
   }
 \end{figure*}
 
-\subsection{Studying statistical properties with simulated experiments}
-The statistical properties we'd like to study, namely bias and variance, require many repeated trials.
-However, because the evaluation data in the TAC-KBP 2015 was collected by completely evaluating all predictions for 317 evaluation entities and 70 systems, we can simulate these trials by imagining that the evaluation data represents the universe of our output and treat a subset of the participating systems as submissions to our framework.
+\subsection{Evaluating bias and variance of the on-demand evaluation.}
+Once again, we use the system predictions from the TAC KBP 2015 evaluation and treat the labeled instances as an exhaustively annotated dataset.
+We compare against the pooling methodology as a baseline by constructing an evaluation dataset using instances found by human annotators and labeled instances pooled from 9 randomly chosen teams (i.e.\ half the total number of participating teams) and use this dataset to evaluate the remaining 9 teams.
+On average, the pooled evaluation dataset contains between 5,000 and 6,000 labeled instances and evaluates 34 different systems (recall that each team may have submitted systems).
+Consequently, we also evaluate a set of 9 randomly chosen teams with the simple and joint estimators using a total of 5,000 samples.
+About 150 of these samples are drawn from $\sY$, i.e.\ the complete TAC KBP 2015 evaluation data, and roughly another 150 samples from each of the systems being evaluated.
+The samples are used by the simple and joint estimators to predict precision and recall.
 
-As baselines, we'll compare the precision and recall estimators proposed in \refsec{method} with the pooling-based methodology and with simple precision and recall estimators ($\pih^{(s)}$ and $\rhoh^{(s)}$) that do not reuse samples collected from other systems.
-For the pooling-based methodology, we estimate bias and variance over many pool choices.
-  On average, each pooled evaluation dataset has about 5,000 evaluated instances.
-For the sampling-based methodologies, we estimate bias and variance by running the experiment many times with 5,000 samples in total from all the different systems, making the two evaluation datasets comparable in terms of how many samples are drawn.
+As the properties we wish to study are statistical, we repeat the above experiment 500 times and compare the estimated precision and recall with their true scores in \reffig{simulation}.
+The simulations once again highlight that the pooled methodology is biased, while the simple and joint estimators are not.
+Furthermore, the joint estimators significantly reduce variance when compared with the simple estimators, 
+approximately reducing the size the 90\% confidence intervals by a factor of 2 for precision and a factor of 3 for recall.
 
-In \reffig{statistical-experiment}, we plot the precision and recall estimates made by each of these methods versus their ``true'' values which can be computed by looking at the entire evaluation corpus.
-We see from the plots that the pooling-based methodology is significantly biased, while the sampling based estimators are not.
-Furthermore, by incorporating samples drawn from other systems, the median 90\% confidence interval reduces from 9.9\% \fone{} to 6.2\% \fone{}.
-
-\subsection{A mock evaluation for TAC-KBP 2016}
+\subsection{A mock evaluation for TAC KBP 2016}
 Using on-demand evaluation with the joint estimators described in \refalg{on-demand-sampling}, we evaluated three distinct relation extraction systems (a rule-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP competition.
 Each system uses Stanford CoreNLP~\citep{} to identify entities and the Illinois Wikifier~\citep{} to perform entity linking. 
 In total, 100 documents were exhaustively annotated for about \$2,000, and 1000 of each systems submissions were annotated at about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.

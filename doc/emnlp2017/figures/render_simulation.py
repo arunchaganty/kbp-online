@@ -81,7 +81,7 @@ def do_command(args):
             ixs = np.argsort(X)
             X, dX, dX_L, dX_R = X[ixs], dX[ixs], dX_L[ixs], dX_R[ixs]
 
-            bound_L, bound_R = np.median(dX_L), np.median(dX_R)
+            print("Median confidence interval for {} {} is {:.4f}".format(series, k, np.median(dX_L + dX_R)))
 
             # Fit the mean curve, L curve and R curve.
             mean = np.poly1d(np.polyfit(X, X-dX, 1))
