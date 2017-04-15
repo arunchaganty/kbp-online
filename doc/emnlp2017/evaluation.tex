@@ -8,18 +8,36 @@ We find that we are able to obtain results of comparable quality in a cost effec
 
 \begin{figure*}[t]
   \centering
-  \begin{subfigure}{0.49\textwidth}
-    \includegraphics[width=\textwidth]{figures/simulation/simulation-p}
+  \begin{subfigure}{0.30\textwidth}
+    \includegraphics[width=\textwidth,trim={1.5cm 0 1.5cm 0},clip]{figures/simulation/simulation-p}
+    \caption{}
   \end{subfigure}
-  \begin{subfigure}{0.49\textwidth}
-    \includegraphics[width=\textwidth]{figures/simulation/simulation-r}
+  \begin{subfigure}{0.30\textwidth}
+    \includegraphics[width=\textwidth,trim={1.5cm 0 1.5cm 0},clip]{figures/simulation/simulation-r}
+    \caption{}
   \end{subfigure}
+  \begin{subfigure}{0.30\textwidth}
+    \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
+    \caption{}
+  \end{subfigure}
+
   \caption{\label{fig:simulation}
-  A comparison of the pooling methodology and the simple and joint estimators on the TAC KBP 2015 challenge.
-  Each point in the figure represents the mean value of estimates from 500 repeated trials, and the dotted lines show the 90\% quartile.
-  Dashed trend lines indicate the mean bias of the estimation method: an unbiased system should lie on the $y = x$ line.
+  \textbf{(a, b):}
+  A comparison of pooling, simple and joint estimators on the TAC KBP 2015 challenge.
+  Each point in the figure is mean of 500 repeated trials; dotted lines show the 90\% quartile.
+  %Dashed trend lines indicate the mean bias of the estimation method: 
+  Unbiased estimates lie on the $y = x$ line.
   Both the simple and joint estimators are unbiased, and the joint estimator is able to significantly reduce variance.
+  \textbf{(c):} 
+  Results from a pilot run of our evaluation service on the TAC KBP 2016 document corpus using the simple and joint estimators.
+  Evaluation scores labeled official correspond to the scores from the official evaluation.
   }
+
+%\begin{figure}[t]
+%  \centering
+%  \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
+%\end{figure}
+
 \end{figure*}
 
 \subsection{Evaluating bias and variance of the on-demand evaluation.}
@@ -44,13 +62,7 @@ As a pilot of the service, we evaluated three distinct relation extraction syste
 Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities and the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking. 
 These systems were also key components of three different submissions to the official TAC KBP 2016 evaluation.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
-  \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
-\end{figure}
-We exhaustively annotated 100 documents for about \$2,000, and labeled 1,000 instances from each system for about \$300 each, with 500 sampled to estimate macro-averaged {\em relation} scores and 500 sampled to estimate macro-averaged {\em entity} scores. We manually labelled 200 relation instances from exhaustively annotated documents and observed a precision of about 75\%, which although is slightly less than 80\% obtained by annotators at LDC \cite{ellis2015overview}, was qualitatively due to improper entity spans and could be easily improved with appropriate changes to the interface. 
-\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with \fake{the official TAC KBP evaluation scores}.
-We note that the official submissions were a combination of systems and we report scores for systems which most closely represent the pattern-based system, supervised system and the neural network classifier. Moreover, they included filtering and post-processing as required under the evaluation guidelines, which includes submitting a unique instance for each relation, making it hard to directly compare the evaluation scores.
-\ac{We need to address the discrepancy in scores here.}
-
+In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
+\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with their official TAC KBP evaluation scores.
+We note that when the systems were submitted to the official TAC KBP evaluation, they included some filtering and post-processing as necessary under the evaluation guidelines, making it hard to directly compare the evaluation scores.
+%\ac{We need to address the discrepancy in scores here.}
