@@ -38,10 +38,6 @@ We assume that $p_i$ is known, e.g.\, the uniform distribution over $X_i$
 and that we know $p_0$ up to normalization constant and can sample from it.
 
 In on-demand evaluation, we can query $f(x)$ (e.g.\, labeling an instance) or draw a sample from $p_0$;
-%(e.g.\, by exhaustively annotating a document \pl{this might be confusing since
-%annotating a document does more than produce just one sample - actually not
-%sure how it provides a random draw from $\sY$})
-%at a certain (monetary) cost.
 typically, querying $f(x)$ is significantly cheaper than sampling from $p_0$.
 We obtain prediction sets $X_1, \ldots, X_m$ sequentially as the systems are submitted for evaluation.
 Our goal is to estimate $\pi_i$ and $\rho_i$ for each system $i = 1, \dots, m$.
@@ -72,35 +68,6 @@ Thus, we need to answer the following three questions:
   \item How can we use all the samples $\Xh_1, \ldots, \Xh_m$ with $\Yh_0$ when estimating recall $\rho_i$?
   \item Finally, to form $\Xh_m$, how many samples should we draw from $X_m$ given existing samples and $\Xh_1, \ldots, \Xh_{m-1}$ and $\Yh_0$?
 \end{enumerate}
-%The whole approach is summarized in \refalg{on-demand-sampling}.
-%
-%\begin{algorithm}
-%  \caption{\label{alg:on-demand-sampling} The on-demand evaluation methodology}
-%\begin{algorithmic}
-%  \REQUIRE{
-%  A sequence of predicted output sets $X_1, \ldots X_m \subseteq \sX$,
-%  a method of evaluating $f(x) = \I[x \in \sY]$ and a method of sampling $x \sim \sY$,
-%  desired confidence intervals $\epsilon$.
-%  }
-%  \ENSURE{Unbiased predictions of precision, $\pih_1, \ldots, \pih_m$ and recall $\rhoh_1, \ldots \rhoh_m$.}
-%
-%  % Collect a dataset Y_0
-%  \STATE{Sample a set $\Yh_0$ from $\sY$ based on $\epsilon_\rho$.}
-%  % For each sample X_i, 
-%  \FOR{$i = 0$ \TO{} $i = m$}
-%  % compute the optimal number of samples $n_i$ required to estimate $\pih_i$ to within $\epsilon$ given $\Xh_{1} - \Xh_{i-1}.
-%  \STATE{Compute the minimum number of samples $n_i$ required to estimate $\pi_i$ within $\epsilon$.}
-%  % Draw $n_i$ samples from $X_i$ and evaluate $f(x)$ on these samples.
-%  \STATE{Draw $n_i$ samples from $X_i$ to form $\Xh_i$.}
-%  \STATE{Evaluate $f(x)$ on $\Xh_i$.}
-%
-%  \FOR{$j = 0$ \TO{} $j = i$}
-%    % For j,
-%    \STATE{Use $\Xh_1, \ldots \Xh_i$ and $\Yh_0$ to update estimates for $\pi_j$ and $\rho_j$.}
-%  \ENDFOR{}
-%  \ENDFOR{}
-%\end{algorithmic}
-%\end{algorithm}
 
 \paragraph{Estimating precision jointly.}
 Intuitively, if two systems have very similar predictions $X_i$ and $X_j$, we should be able to use samples from one to estimate precision on the other.
