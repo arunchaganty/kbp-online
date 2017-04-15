@@ -78,6 +78,7 @@ def do_submission_to_kb(args):
             #All relations
             cur.execute("""
             SELECT 
+            DISTINCT ON (subject_hash, r.relation, object_hash)
             md5(sl.link_name) AS subject_hash,
             wikify(sl.link_name) AS subject_link_name,
             s.mention_type AS subject_type,
@@ -90,11 +91,16 @@ def do_submission_to_kb(args):
             r.confidence,
             r.provenances
             FROM submission_relation AS r 
-            JOIN submission_mention AS s ON r.subject_id = s.mention_id 
-            JOIN submission_link AS sl ON s.canonical_id = sl.mention_id 
-            JOIN submission_mention AS o ON r.object_id = o.mention_id 
-            JOIN submission_link AS ol ON o.canonical_id = ol.mention_id 
+            LEFT JOIN submission_mention AS s ON r.subject_id = s.mention_id 
+            LEFT JOIN submission_link AS sl ON s.canonical_id = sl.mention_id 
+            LEFT JOIN submission_mention AS o ON r.object_id = o.mention_id 
+            LEFT JOIN submission_link AS ol ON o.canonical_id = ol.mention_id 
             WHERE r.submission_id = %s AND s.submission_id = %s AND o.submission_id = %s AND sl.submission_id = %s AND ol.submission_id = %s
+            ORDER BY
+            subject_hash, r.relation, object_hash,
+            LEAST(abs(2 - abs((o.mention_id).char_begin - (s.mention_id).char_end)::INTEGER), 
+                abs(2 - abs((s.mention_id).char_begin - (o.mention_id).char_end)::INTEGER)),
+            r.confidence;
             """, [args.submission_id]*5)
             for row in cur:
                 assert row.subject_type in set(['PER', 'ORG', 'GPE']), 'Subject type: '+str(row.subject_type)+' not one of PER, ORG, GPE'
@@ -204,7 +210,8 @@ def do_stanford(args):
             logger.info("Found %d rows", cur.rowcount)
 
             for row in cur:
-                if "_ENG_" not in row.doc_id: continue
+                if "ENG_" not in row.doc_id: continue
+                if "ENG_DF" in row.doc_id: continue
                 if row.ner not in NER_MAP: continue
                 prov = MFile.to_prov([row.doc_id, row.doc_char_begin, row.doc_char_end])
                 canonical_prov = MFile.to_prov([row.doc_id, row.doc_canonical_char_begin, row.doc_canonical_char_end])
@@ -229,7 +236,8 @@ def do_stanford(args):
             logger.info("Found %d rows", cur.rowcount)
 
             for row in cur:
-                if "_ENG_" not in row.doc_id or row.relation not in ALL_RELATIONS: continue
+                if "ENG_" not in row.doc_id or row.relation not in ALL_RELATIONS: continue
+                if "ENG_DF" in row.doc_id: continue
                 subject_prov = MFile.to_prov(row.subject_span)
                 object_prov = MFile.to_prov(row.object_span)
                 if subject_prov not in valid_mentions or object_prov not in valid_mentions:
