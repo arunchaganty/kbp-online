@@ -2,9 +2,9 @@
 \label{sec:application}
 Applying the on-demand evaluation framework to a task requires us to define three operations:
 \begin{enumerate}
-  \item How are instances sampled \pl{wouldn't use word sampled here - this is not about estimation but defining the objective function - say weighing instead} from a system's predictions, i.e.\ what is $p_i(x)$?
+  \item What is the desired distribution over system predictions $p_i$?
   \item How do we label an instance $x$, i.e.\ check if $x \in \sY$?
-  \item How do we sample from the unknown set of true instances $x \sim \sY$?
+  \item How do we sample from the unknown set of true instances $x \sim p_0$?
 \end{enumerate}
 In this section, we'll present practical implementations for each of these operations for knowledge base population.
 
