@@ -45,7 +45,7 @@ We can estimate each $\pi_i$ and $\rho_i$ independently with simple Monte Carlo 
 Let $\Xh_1, \ldots, \Xh_m$ be $n_1, \ldots, n_j$ i.i.d.~samples from $X_1, \ldots, X_m$ respectively, and let $\Yh_0$ be a set of $n_0$ samples drawn from $\sY$.
 Then, the independent estimators for precision and recall are:
 \begin{align}
-  \pih_i^{\text{indep}} &= \frac1{n_i} \sum_{x \in \Xh_i} f(x) & \rhoh_i^{\text{indep}} &= \frac1{n_0} \sum_{x \in \Yh_0} g_i(x).
+  \pih_i^{\text{(indep)}} &= \frac1{n_i} \sum_{x \in \Xh_i} f(x) & \rhoh_i^{\text{(indep)}} &= \frac1{n_0} \sum_{x \in \Yh_0} g_i(x).
 \end{align}
 
 \subsection{Joint estimators}
@@ -107,7 +107,7 @@ Formally, we define the \emph{joint precision estimator}:\footnote{We provide ri
 unbiasedness of the proposed estimators in \refapp{sampling} of the
 supplementary material.}
 \begin{align}
-  \pih_i^{(j)} &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
+  \pih_i^{\text{(joint)}} &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align}
 where each $\Xh_j$ consists of $n_j$ i.i.d.~samples drawn from $p_j$.
 
