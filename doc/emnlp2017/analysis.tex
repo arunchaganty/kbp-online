@@ -22,13 +22,12 @@ Our results are not qualitatively different on data from previous years of the s
    \end{tabular}}
   \end{subfigure}
   \caption{\label{fig:pooling-bias} Median pooling bias (difference between pooled and unpooled scores) on the top 40 systems of TAC KBP 2015 evaluation using the official and \anydoc{} scores.
-  \pl{should probably say that the bias is much smaller with \anydoc{} - the fact that wasn't mentioned made me confused because of pragmatics}
-  The bias, even with the lenient \anydoc{} metric, is larger than the largest difference between adjacent systems (1.5\% \fone{}) and typical system improvements (around 1\% \fone{}),
-  invalidating the assumption that pooling bias is insignificant.
+  The bias is much smaller for the lenient \anydoc{} metric, but even so, it is larger than the largest difference between adjacent systems (1.5\% \fone{}) and typical system improvements (around 1\% \fone{}):
+  the assumption that pooling bias is insignificant is false.
   }
 \end{figure}
 \paragraph{Measuring bias.}
-In total, there are 70 system submissions from 18 teams for 317 query entities \pl{this is $E$?} and the evaluation set consists of 11,008 labeled relation instances.\footnote{%
+In total, there are 70 system submissions from 18 teams for 317 query entities ($E$) and the evaluation set consists of 11,008 labeled relation instances.\footnote{%
   The evaluation set is actually constructed from compositional queries like, ``what does Carrie Fisher's parents do?'':
   these queries select relation instances that answer the question ``who are Carrie Fisher's parents?'', and then use those answers (e.g.\ ``Debbie Reynolds'') to select relation instances that answer ``what does Debbie Reynolds do?''.
   We only consider instances selected in the first part of this process.
