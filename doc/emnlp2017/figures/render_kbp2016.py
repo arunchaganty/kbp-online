@@ -34,6 +34,7 @@ def do_command(args):
         """
         Attach a text label above each bar displaying its height
         """
+        return
         for rect in rects:
             height = rect.get_height()
             ax.text(rect.get_x() + 1.1*rect.get_width()/2., height + .03*ax.get_ylim()[1],
