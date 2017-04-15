@@ -29,36 +29,34 @@ In contrast, our on-demand methodology can produce unbiased evaluation scores fo
 
 %While pooling bias hasn't been studied on KBP before, \cite{surdeanau} does study the effect of incomplete labels on distant supervision.
 % - crowdsourcing kbp and nlp
-Crowdsourcing has become common place in the NLP community and there has been prior work in using crowdsourcing for semantic role labeling \citep{he2015question}, building semantic ontologies \citep{vannella2014validating} and building a knowledge base for gun-violence related events~\cite{pavlick2016gun}.
-The main focus of our work is on \textit{evaluating systems}, not necessarily collecting an exhaustive dataset. As a result, we are able to integrate the systems we are evaluating into our data collection process.
+There have been several approaches taken to crowd source data pertinent to knowledge base population \citep{vannella2014validating,angeli2014combining,he2015question,liu2016effective}.
+The most extensive annotation effort is probably \citet{pavlick2016gun} work on crowd sourcing a knowledge base for gun-violence related events.
+In contrast to previous work, our focus is on \textit{evaluating systems}, not collecting a dataset.
+%As a result, we are able to integrate the systems we are evaluating while the data collection process.
+Furthermore, our main contribution is not a large dataset, but an evaluation service that allows anyone to use crowdsourcing predictions made by their system. 
 
 \section{Discussion}
 \label{sec:discussion}
 
-% Something about how we are stuck with KBP.
-% No doubt that we have a lot to improve on in methods, but it is important to also step back and study what is holding us back. We feel the lack of guidance from an evaluation score is one of them.
-% We feel our solution will help -- in its incarnation as an actual evaluation server.
-% Radically different approach -- different from online leaderboards --  
-% Some caveats of this platform -- the scores are not stable --  statistically within confidence interval, thus scores should not change much; furthermore, we believe results should be quoted with confidence intervals anyways.
-Over the last ten years of the TAC-KBP competition, the gap between human and system performance has barely narrowed, despite the community's best efforts.
+Over the last ten years of the TAC KBP task, the gap between human and system performance has barely narrowed despite the community's best efforts: top automated systems score less than 36\% \fone{} while human annotators score more than 60\%.
 % Cite Weber -- IR has much still to progress, hidden by variability in scores, etc.
 % Prevalence of patterns based systems.
-In this paper, we've shown that the existing evaluation methodology may be a contributing factor because of its bias against novel system improvements.
+In this paper, we've shown that the current evaluation methodology may be a contributing factor because of its bias against novel system improvements.
 The new on-demand framework proposed in this work addresses this problem by obtaining human assessments of new system output through crowdsourcing.
 The framework is made economically feasible by carefully sampling output to be assessed and correcting for sample bias through importance reweighing.
 
 % Presence of this platform allows us to decouple dataset creation from task. -- e.g. can use and evaluate distantly supervised datasets more easily.
-Of course, simply providing a higher fidelity evaluation signal is only part of the solution and it is clear that better datasets are also necessary.
+Of course, simply providing better evaluation scores is only part of the solution and it is clear that better datasets are also necessary.
 However, the very same difficulties in scale that make evaluating KBP difficult also make it hard to collect a high quality dataset for the task.
 As a result, existing datasets \citep{angeli2014combining,adel2016comparing} have relied on the output of existing systems, making it likely that they exhibit the same biases against novel systems that we've discussed in this paper.
-We believe that providing a fair and standardized evaluation platform as a service\footnote{We plan to host this platform publicly at \url{http://anonymo.us}} 
-allows researchers to incorporate such datasets and while still being able to accurately measure their performance on the knowledge base population task.
+We believe that providing a fair and standardized evaluation platform as a service
+allows researchers to exploit such datasets and while still being able to accurately measure their performance on the knowledge base population task.
 
 % There are tasks that are much harder to evaluate in NLP -- generation tasks like summarization and dialogue. Much more important to do so as current metrics are even more unsatisfying.
 % Poses a new challenge to be tackled -- being able to reuse assessments in KBP.
 % would be valuable and hope that ideas of sampling and sample reuse will help.
 %Finally, despite the challenges in evaluating knowledge base population we've described in this work,
-There are many other tasks in NLP that are even harder to evaluate than KBP.
+There are many other tasks in NLP that are even harder to evaluate than KBP.\@
 Existing evaluation metrics for tasks with a generation component---such as summarization or dialogue---leave much to be desired.
 We believe that adapting the ideas of this paper to those tasks is a fruitful direction,
 as progress of a research community is strongly tied to the fidelity of evaluation.
