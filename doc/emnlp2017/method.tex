@@ -106,14 +106,14 @@ To this end, we first define a distribution over systems $j$, represented by pro
 Then, define $q_i$ as sampling a $j$ and drawing $x \sim p_j$;
 formally $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$.
 There are two refinements:
-First, we numerically integrate over all $m$ systems rather than sampling a system.
-Second, note that the $n_j$ samples from each $p_j$ can be reused for each $i$;
-the weights $w_{ij}$ ``remix'' these samples to reduce variance.
-Formally, we define the \emph{joint precision estimator}:\footnote{We provide rigorous proofs for the
+First, we numerically integrate over all $m$ systems rather than sampling one.
+Second, the $n_j$ samples from each $p_j$ are reused for each $i$;
+the weights $w_{ij}$ ``mix'' these samples to reduce variance.
+Formally, define the \emph{joint precision estimator}:\footnote{We provide rigorous proofs for the
 unbiasedness of the proposed estimators in \refapp{sampling} of the
 supplementary material.}
 \begin{align}
-  \pih_i^{\text{(joint)}} &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
+  \pih_i^{\text{(joint)}} &\eqdef \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
 \end{align}
 where each $\Xh_j$ consists of $n_j$ i.i.d.~samples drawn from $p_j$.
 
@@ -136,34 +136,41 @@ where each $\Xh_j$ consists of $n_j$ i.i.d.~samples drawn from $p_j$.
 %This last condition is easy to guarantee by setting $w_{ii} > 0$.
 %Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_{ij}$.\footnote{%
 
-The variance depends on $f(x)$, but the general intuition is that $\pih_i^{(j)}$ will have high variance if $q_i(x) \ll p_i(x)$ \pl{what does this mean? there exists an $x$ such this is true? you're comparing functions}.
-In particular, we can show that the ideal choice \pl{in what sense?} of $w_{ij}$ for if $X_i$ and $X_j$ are disjoint is $0$, and if $X_i$ and $X_j$ are identical is $w_{ij} \propto n_{j}$.
-This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
+To set the mixing weights $w_{ij}$, we can first formally verify that
+if $X_i$ and $X_j$ are disjoint, then $w_{ij} = 0$ minimizes the variance of $\pi_i$,
+and if $X_i = X_j$, then $w_{ij} \propto n_{j}$.
+%$\pih_i^{(j)}$ will have high variance if $q_i(x) \ll p_i(x)$
+%In particular, we can show that the ideal choice \pl{in what sense?} of $w_{ij}$ for
+This motivates the following scheme which interpolates between the two extremes:
+$w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 
 \paragraph{Estimating recall jointly.}
 During the process of evaluating $f(x)$ on $\Xh_i$, we also are able to identify $\Yh_i \eqdef \Xh_i \intersection \sY$.
-The collection of $\Yh = \Union_{i=1}^m \Yh_i$ forms a random subset of $\sY$ that is much cheaper to obtain than by sampling from $\sY$, but this subset can extremely biased if we were to use it to evaluate recall: 
-If the pool $\Yh$ contained just one system, that system would be given a perfect recall score irrespective of how bad it was.
-We dub this the incomplete estimate pooled recall, $\nu_i \eqdef \E_{x \sim Y}[f(x) g_i(x)]$.
-The remaining factor must compensate for how much of $\sY$ the pool $Y$ actually covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$.
+The collection of $\Yh = \Union_{i=1}^m \Yh_i$ forms a random subset of $\sY$ that is much cheaper to obtain than by sampling from $\sY$.
+% PL: should be obvious
+%but this subset can be extremely biased if used to evaluate recall:
+%if there were one system, it would obtain 100\% recall regardless of how bad it was.
+We call this the \emph{incomplete estimate pooled recall},
+$\nu_i \eqdef \E_{x \sim X}[f(x) g_i(x)]$.
+We must also consider how much of $\sY$ the pool $X$ actually covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$.
 Thus, the recall of a system is simply the product: $\rho_i = \theta \nu_i$.\footnote{%
 We present a rigorous proof in \refapp{sampling} of the supplementary material.}
 
-The joint estimator for recall is then $\rhoh_i^{(j)} \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} g(x)$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
+The joint estimator for recall is then $\rhoh_i^{\text{(joint)}} \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} g(x)$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
 \begin{align*}
-  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x)}{q_i(x)}},
+  \nuh_i^{\text{(joint)}} &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x)}{q_i(x)}},
 \end{align*}
-where $q_i$ and $w_{ij}$ are the same as defined for $\pih_i^{(j)}$.
+where $q_i$ and $w_{ij}$ are the same as defined for $\pih_i^{\text{(joint)}}$.
 
 \paragraph{Adaptively choosing the number of samples.}
-Finally, a desired property for on-demand evaluation is to annotate \pl{use consistent terminology: label} new data \pl{instances} only when the current evaluation data \pl{I don't think this was ever defined formally - set of predicted instances and their labels?} is unable to do the job, e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
-We can measure how well the current evaluation set covers the predictions $X_m$ by using an upper bound on the variance of $\pih_m^{(j)}$.\footnote{Details can be found in \refapp{sampling} of the supplementary material.}
-In particular, the variance of $\pih_m^{(j)}$ is a monotonically decreasing functions in the number of samples of $X_m$ drawn $n_m$ and we can easily solve for the minimum number of samples required to estimate $\pih_m^{(j)}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}. \ac{I feel like this conspicuously omits $\rho_i$ from the picture, and that's because the variance of $\nu_i$ is god-awfully nasty.}
+Finally, a desired property for on-demand evaluation is to label new instances only when the current evaluation data is insufficient,
+e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
+We can measure how well the current evaluation set covers the predictions $X_m$ by using an upper bound on the variance of $\pih_m^{\text{(joint)}}$.\footnote{Details can be found in \refapp{sampling} of the supplementary material.}
+In particular, the variance of $\pih_m^{\text{(joint)}}$ is a monotonically decreasing function in the number of samples of $X_m$ drawn $n_m$ and we can easily solve for the minimum number of samples required to estimate $\pih_m^{\text{(joint)}}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}. \ac{I feel like this conspicuously omits $\rho_i$ from the picture, and that's because the variance of $\nu_i$ is god-awfully nasty.}
 
 \paragraph{Summary.}
-\pl{this would be better to have first as an outline before all the formulas!}
 On-demand evaluation with the joint estimator works as follows:
 First $\Yh_0$ is randomly sampled from $\sY$ once when the evaluation framework is launched.
-For every new set of predictions $X_m$ submitted for evaluation, the minimum number of samples $n_i$ required to accurately evaluate $X_m$ is calculated based on the current evaluation data, $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$.
+For every new set of predictions $X_m$ submitted for evaluation, the minimum number of samples $n_m$ required to accurately evaluate $X_m$ is calculated based on the current evaluation data, $\Yh_0$ and $\Xh_1, \ldots, \Xh_{m-1}$.
 Then, the set $\Xh_m$ is added to the evaluation data by evaluating $f(x)$ on $n_m$ samples drawn from $X_m$.
 Finally, estimates $\pi_1, \ldots, \pi_m$ and $\rho_1, \ldots, \rho_m$ are updated using the joint estimators.
