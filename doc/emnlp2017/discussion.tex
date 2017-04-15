@@ -9,20 +9,20 @@
 %an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
 The subject of pooling bias has been extensively studied in the information retrieval community starting with \citet{zobel1998reliable}, which examined the effects of pooling bias on the TREC AdHoc task, but concluded that pooling bias was not a significant problem for the TREC AdHoc tasks, as did a later study \citep{voorhees1999overview}.
 % zobel also mentions a reinforcing effect, but the dynamics are perhaps more dependent on the IR evaluation setup.
-However, when the topic was revisited after several years, \citet{buckley2004incomplete} found that pooling bias could significantly change system ranking and \citet{buckley2007bias} identified that the reason for the small measured bias was because the submissions to the task were very similar; on repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in AP scores!%
+However, when the topic was revisited after several years, \citet{buckley2004incomplete} found that pooling bias could significantly change system ranking, and \citet{buckley2007bias} identified that the reason for the small bias was because the submissions to the task were very similar; on repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in AP scores!%
 \footnote{For the interested reader, \citet{weber2010measurement} presents an excellent survey of the literature on pooling bias.}
-We adapt the leave-one-out methodology of \citet{zobel1998reliable} to measure pooling bias in KBP, however, unlike in the information retrieval setting, we find a very strong effect.
+We adapt the leave-one-out methodology of \citet{zobel1998reliable} to measure pooling bias in KBP, however, unlike in the information retrieval setting, we find a very strong effect \pl{what does strong effect mean?}.
 One explanation for this difference is that the popular information retrieval metrics are rank-weighted, and unassessed documents typically tend to be lower in the ranking and hence contribute less to the evaluation score.
 
 % - solutions to pooling bias 
-Likewise, many solutions to the pooling bias problem have been proposed in the context of information retrieval, from 
+Many solutions to the pooling bias problem have been proposed in the context of information retrieval, from 
   changing the queries to be more specific \citep{buckley2007bias}, 
   adaptively constructing the pool to collect relevant data more cost-effectively \citep{zobel1998reliable,cormack1998efficient,aslam2006statistical}, or
   modifying the scoring metrics to be less sensitive to unassessed data \citep{buckley2004incomplete,sakai2008information,aslam2006statistical}.
-Many of these ideas exploit rank-weighted metrics and the rankings reported by systems, neither of which apply in the KBP setting. Furthermore, the pooling bias persists in KBP evaluations despite the fact that \textit{all answers} reported by systems for a given set of entities are assessed for correctness.
+Many of these ideas exploit rank-weighted metrics and the rankings reported by systems, neither of which apply in the KBP setting. Furthermore, the pooling bias persists in KBP evaluations despite the fact that \pl{"even if"?} \textit{all answers} reported by systems for a given set of entities are assessed for correctness \pl{I thought we still sample, not annotate all...}.
 While both \citet{aslam2006statistical} and \citet{yilmaz2008simple} estimate evaluation metrics by carefully sampling system output for assessment and using importance reweighing to correct for sampling bias,
   the techniques they propose require knowing the set of all submissions beforehand.
-In contrast, our on-demand methodology can produce unbiased evaluation scores for new development systems too.
+In contrast, our on-demand methodology can produce unbiased evaluation scores for new development systems as well.
 
 %While pooling bias hasn't been studied on KBP before, \cite{surdeanau} does study the effect of incomplete labels on distant supervision.
 % - crowdsourcing kbp and nlp
@@ -41,7 +41,7 @@ Over the last ten years of the TAC-KBP competition, the gap between human and sy
 % Cite Weber -- IR has much still to progress, hidden by variability in scores, etc.
 % Prevalence of patterns based systems.
 In this paper, we've shown that the existing evaluation methodology may be a contributing factor because of its bias against novel system improvements.
-The new on-demand framework proposed in this work addresses this problem by obtaining human assessments of novel, unseen, system output through crowdsourcing.
+The new on-demand framework proposed in this work addresses this problem by obtaining human assessments of new system output through crowdsourcing.
 The framework is made economically feasible by carefully sampling output to be assessed and correcting for sample bias through importance reweighing.
 
 % Presence of this platform allows us to decouple dataset creation from task. -- e.g. can use and evaluate distantly supervised datasets more easily.
@@ -54,6 +54,12 @@ allows researchers to incorporate such datasets and while still being able to ac
 % There are tasks that are much harder to evaluate in NLP -- generation tasks like summarization and dialogue. Much more important to do so as current metrics are even more unsatisfying.
 % Poses a new challenge to be tackled -- being able to reuse assessments in KBP.
 % would be valuable and hope that ideas of sampling and sample reuse will help.
-Finally, despite the challenges in evaluating knowledge base population we've described in this work, there are many other tasks in NLP that are even harder to evaluate.
-In particular, we think that the community would be greatly aided by a better evaluation methodology for generation tasks like summarization or dialog.
-We believe the sampling ideas presented in this work will still be relevant in such a setting, but the challenge to tackle is in being able to reuse assessments obtained on one summary for another.
+%Finally, despite the challenges in evaluating knowledge base population we've described in this work,
+There are many other tasks in NLP that are even harder to evaluate than KBP.
+Existing evaluation metrics for tasks with a generation component---such as summarization or dialogue---leave much to be desired.
+We believe that adapting the ideas of this paper to those tasks is a fruitful direction,
+as progress of a research community is strongly tied to the fidelity of evaluation.
+%particular, we think that the community would be greatly aided by a more faithful evaluation methodology for
+%We believe the sampling ideas presented in this work could be adapted,
+%will still be relevant in such a setting,
+%but the challenge to tackle is in being able to reuse assessments obtained on one summary for another.
