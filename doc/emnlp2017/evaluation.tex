@@ -36,23 +36,15 @@ Furthermore, the joint estimators significantly reduce variance when compared wi
 approximately reducing the size the 90\% confidence intervals by a factor of 2 for precision and a factor of 3 for recall.
 
 \subsection{A mock evaluation for TAC KBP 2016}
-Using on-demand evaluation with the joint estimators described in \refalg{on-demand-sampling}, we evaluated three distinct relation extraction systems (a rule-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP competition.
+Using on-demand evaluation with the joint estimators described in \refalg{on-demand-sampling}, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
 Each system uses Stanford CoreNLP~\citep{} to identify entities and the Illinois Wikifier~\citep{} to perform entity linking. 
-In total, 100 documents were exhaustively annotated for about \$2,000, and 1000 of each systems submissions were annotated at about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
-\reffig{evaluation-results} presents the results of these systems on the mock evaluation \fake{in comparison with the official TAC KBP evaluation scores for these systems}.
+The systems were part of a submission to the competition and hence the scores on the official evaluation are likely to be accurate.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
   \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
 \end{figure}
-
-%\begin{table*}
-%  \centering
-%  \input{evaluation.table}
-%  \caption{\label{tbl:evaluation-results} Results from a mock evaluation.}
-%\end{table*}
-
-Two immediate takeaways are that the precisions of these systems are \fake{on par with} the precisions reported as part of the official 2016 evaluation and that the recall scores on this evaluation are a significantly smaller than on the official 2016 evaluation.
-\fake{More error analysis.}
-%Our explanation for this is that the exhaustive annotation required by our system is far more expansive and finds a lot of new entities that our mention detection systems. \fake{More error analysis.}
+In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
+\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with \fake{with the official TAC KBP evaluation scores}.
+\ac{I'm not sure how we should compare our results with the official TAC KBP ones. The scores are going to be different because we don't use query entities. I want to basically make the point that our evaluation methodology is reasonable and preferable because it doesn't have the flaws that the official evaluation does.}
