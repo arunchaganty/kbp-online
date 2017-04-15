@@ -8,16 +8,18 @@ We find that we are able to obtain results of comparable quality in a cost effec
 
 \begin{figure*}[t]
   \centering
-  \begin{subfigure}{0.30\textwidth}
+  \begin{subfigure}{0.32\textwidth}
     \includegraphics[width=\textwidth,trim={1.5cm 0 1.5cm 0},clip]{figures/simulation/simulation-p}
     \caption{}
   \end{subfigure}
-  \begin{subfigure}{0.30\textwidth}
+  \begin{subfigure}{0.32\textwidth}
     \includegraphics[width=\textwidth,trim={1.5cm 0 1.5cm 0},clip]{figures/simulation/simulation-r}
     \caption{}
   \end{subfigure}
-  \begin{subfigure}{0.30\textwidth}
-    \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
+  \begin{subfigure}{0.32\textwidth}
+    \input{evaluation.table}
+    %\includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
+    \vfill
     \caption{\label{fig:evaluation-results}}
   \end{subfigure}
 
@@ -29,8 +31,7 @@ We find that we are able to obtain results of comparable quality in a cost effec
   Unbiased estimates lie on the $y = x$ line.
   Both the simple and joint estimators are unbiased, and the joint estimator is able to significantly reduce variance.
   \textbf{(c):} 
-  Results from a pilot run of our evaluation service on the TAC KBP 2016 document corpus using the simple and joint estimators.
-  Evaluation scores labeled official correspond to the scores from the official evaluation.
+Precision ($P$), recall ($R$) and \fone{} scores from a pilot run of our evaluation service for a rule-based system (R), a logistic classifier (L) and a neural network classifier (N) run on the TAC KBP 2016 document corpus. 
   }
 
 %\begin{figure}[t]
@@ -61,7 +62,7 @@ We have implemented the on-demand evaluation framework described here as an eval
 As a pilot of the service, we evaluated three distinct relation extraction systems (a rule-based system, a logistic classifier, and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
 Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities and the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking. 
 
-In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
+In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 sampled to estimate macro-averaged entity scores.
 \reffig{evaluation-results} reports the scores obtained through on-demand evaluation of these systems.
 We note that the rule-based system does better on \fone{} because it has significantly higher precision that the other systems, while the RNN system has the highest recall among the three systems.
 %We also include TAC KBP evaluation scores for the official submissions that most closely represent these systems.
