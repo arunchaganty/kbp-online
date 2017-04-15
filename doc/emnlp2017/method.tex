@@ -138,7 +138,7 @@ We present a rigorous proof in \refapp{sampling} of the supplementary material.}
 
 The joint estimator for recall is then $\rhoh_i^{\text{(joint)}} \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} g(x)$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
 \begin{align*}
-  \nuh_i^{\text{(joint)}} &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{u(x)}{q_i(x)}},
+  \nuh_i^{\text{(joint)}} &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x)}{q_i(x)}},
 \end{align*}
 where $q_i$ and $w_{ij}$ are the same as defined for $\pih_i^{\text{(joint)}}$.
 
