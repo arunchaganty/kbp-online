@@ -2,15 +2,21 @@
 \label{sec:method}
 
 Pooling bias is fundamentally a sampling bias problem where relation instances from new systems are underrepresented in the evaluation dataset.
-We could of course sidestep the problem by exhaustively annotating the entire document corpus, but that would be a laborious and prohibitively expensive task:
+We could of course sidestep the problem by exhaustively annotating the entire document corpus, by annotating all mentions of entities and checking relations between all pairs of mentions. However, that would be a laborious and prohibitively expensive task:
 using the interfaces we've developed (\refsec{evaluation}), it costs about \$15 to annotate a single document by non-expert crowdworkers, resulting in an estimated cost of at least \$1,350,000 for a reasonably large corpus of 90,000 documents \citep{XXX}.
 The annotation effort would cost significantly more with expert annotators.
 % TODO: highlight contrast with pooling.
-In contrast, \textit{verifying} \pl{be consistent with terminology: labeling?} relation instances pooled from system predictions \pl{can we remove 'pooled from system predictions'?} can be an order of magnitude cheaper than finding them in documents: using our interfaces, it costs only about \$0.18 to verify each pooled instances compared to \$1.60 per instance extracted through exhaustive annotations.
-\pl{why the diff between 0.18 and 1.60?  Isn't it the same problem of labeling an instance?}
+In contrast, \textit{labeling} 
+%\pl{be consistent with terminology: labeling?} 
+relation instances from system predictions are better than random guess and it
+%pooled from system predictions \pl{can we remove 'pooled from system predictions'?} 
+can be an order of magnitude cheaper than finding them in documents: using our interfaces, it costs only about \$0.18 to verify each pooled instances compared to \$1.60 per instance extracted through exhaustive annotations.
+%\pl{why the diff between 0.18 and 1.60?  Isn't it the same problem of labeling an instance?}
 
 We propose a new paradigm called on-demand evaluation which takes a lazy approach to dataset construction by annotating predictions from systems \textit{only when they are underrepresented}, thus correcting for pooling bias as it arises.
-In this section, we'll formalize the problem solved by on-demand evaluation independent of KBP and describe a cost-effective solution that allows us to accurately estimate evaluation metrics \pl{be consistent: scores} without bias using importance sampling.
+In this section, we'll formalize the problem solved by on-demand evaluation independent of KBP and describe a cost-effective solution that allows us to accurately estimate evaluation scores
+%metrics \pl{be consistent: scores} 
+without bias using importance sampling.
 We'll then instantiate the framework for KBP in \refsec{application}.
 
 \subsection{Problem statement}
