@@ -7,21 +7,24 @@
 % - identifying and measuring pooling bias
 % Origin of pooling: K. Sp¨ arck Jones and C. J. van Rijsbergen. Report on the need for and provision of
 %an ‘ideal’ test collection. Technical report, University Computer Laboratory, Cam- bridge, 1975
-The subject of pooling bias has been extensively studied in the information retrieval community starting with \citet{zobel1998reliable}, which examined the effects of pooling bias on the TREC AdHoc task, but concluded that pooling bias was not a significant problem for the TREC AdHoc tasks, as did a later study \citep{voorhees1999overview}.
+The subject of pooling bias has been extensively studied in the information retrieval (IR) community starting with \citet{zobel1998reliable}, which examined the effects of pooling bias on the TREC AdHoc task, but concluded that pooling bias was not a significant problem. %  and \citep{voorhees1999overview}
 % zobel also mentions a reinforcing effect, but the dynamics are perhaps more dependent on the IR evaluation setup.
-However, when the topic was revisited after several years, \citet{buckley2004incomplete} found that pooling bias could significantly change system ranking, and \citet{buckley2007bias} identified that the reason for the small bias was because the submissions to the task were very similar; on repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in AP scores!%
+However, when the topic was later revisited,
+%\citet{buckley2004incomplete} found that pooling bias could significantly change system ranking, and 
+\citet{buckley2007bias} identified that the reason for the small bias was because the submissions to the task were too similar; on repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in AP scores!%
 \footnote{For the interested reader, \citet{weber2010measurement} presents an excellent survey of the literature on pooling bias.}
-We adapt the leave-one-out methodology of \citet{zobel1998reliable} to measure pooling bias in KBP, however, unlike in the information retrieval setting, we find a very strong effect \pl{what does strong effect mean?}.
-One explanation for this difference is that the popular information retrieval metrics are rank-weighted, and unassessed documents typically tend to be lower in the ranking and hence contribute less to the evaluation score.
+%We also use the methodology of \citet{zobel1998reliable} to measure pooling bias in KBP, but find that the pooling bias more significant of a problem in KBP evaluation than it has been in IR evaluation.
+%%However, unlike in the information retrieval setting, we find a very strong effect \pl{what does strong effect mean?}.
+%One explanation for this difference is that unlike evaluation metrics for KBP, popular IR metrics are rank-weighted, and unassessed documents, typically be lower in the ranking, contribute less to the evaluation score.
 
 % - solutions to pooling bias 
-Many solutions to the pooling bias problem have been proposed in the context of information retrieval, from 
-  changing the queries to be more specific \citep{buckley2007bias}, 
+Many solutions to the pooling bias problem have been proposed in the context of information retrieval, e.g.\ 
+%  changing the queries to be more specific \citep{buckley2007bias}, 
   adaptively constructing the pool to collect relevant data more cost-effectively \citep{zobel1998reliable,cormack1998efficient,aslam2006statistical}, or
   modifying the scoring metrics to be less sensitive to unassessed data \citep{buckley2004incomplete,sakai2008information,aslam2006statistical}.
-Many of these ideas exploit rank-weighted metrics and the rankings reported by systems, neither of which apply in the KBP setting. Furthermore, the pooling bias persists in KBP evaluations despite the fact that \pl{"even if"?} \textit{all answers} reported by systems for a given set of entities are assessed for correctness \pl{I thought we still sample, not annotate all...}.
-While both \citet{aslam2006statistical} and \citet{yilmaz2008simple} estimate evaluation metrics by carefully sampling system output for assessment and using importance reweighing to correct for sampling bias,
-  the techniques they propose require knowing the set of all submissions beforehand.
+Many of these ideas exploit the ranking of documents in IR which does not apply to KBP.\@
+%Furthermore, the pooling bias persists in TAC KBP evaluations even if \textit{all answers} reported by systems for a given set of entities are assessed for correctness.
+While both \citet{aslam2006statistical} and \citet{yilmaz2008simple} estimate evaluation metrics by using importance sampling estimators, the techniques they propose require knowing the set of all submissions beforehand.
 In contrast, our on-demand methodology can produce unbiased evaluation scores for new development systems as well.
 
 %While pooling bias hasn't been studied on KBP before, \cite{surdeanau} does study the effect of incomplete labels on distant supervision.

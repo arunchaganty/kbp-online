@@ -39,15 +39,19 @@ Furthermore, the joint estimators significantly reduce variance when compared wi
 approximately reducing the size the 90\% confidence intervals by a factor of 2 for precision and a factor of 3 for recall.
 
 \subsection{A mock evaluation for TAC KBP 2016}
-Using on-demand evaluation with the joint estimators, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
-Each system uses Stanford CoreNLP~\citep{XXX} to identify entities and the Illinois Wikifier~\citep{XXX} to perform entity linking. 
-The systems were part of a submission to the competition and hence the scores on the official evaluation are likely to be accurate.
+We have implemented the on-demand evaluation framework described here as an evaluation service which research can submit their own system predictions to.
+As a pilot of the service, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
+Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities and the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking. 
+These systems were also key components of three different submissions to the official TAC KBP 2016 evaluation.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
   \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
 \end{figure}
+
 In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
-\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with \fake{the official TAC KBP evaluation scores}.
-\ac{I'm not sure how we should compare our results with the official TAC KBP ones. The scores are going to be different because we don't use query entities. I want to basically make the point that our evaluation methodology is reasonable and preferable because it doesn't have the flaws that the official evaluation does.}
+\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with their official TAC KBP evaluation scores.
+We note that when the systems were submitted to the official TAC KBP evaluation, they included some filtering and post-processing as necessary under the evaluation guidelines, making it hard to directly compare the evaluation scores.
+An er
+\ac{We need to address the discrepancy in scores here.}
