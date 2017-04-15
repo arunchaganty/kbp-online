@@ -39,7 +39,7 @@ Furthermore, the joint estimators significantly reduce variance when compared wi
 approximately reducing the size of the 90\% confidence intervals by a factor of 2 for precision and a factor of 3 for recall.
 
 \subsection{A mock evaluation for TAC KBP 2016}
-We have implemented the on-demand evaluation framework described here as an evaluation service which research can submit their own system predictions to.
+We have implemented the on-demand evaluation framework described here as an evaluation service to which research can submit their own system predictions.
 As a pilot of the service, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
 Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities and the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking. 
 These systems were also key components of three different submissions to the official TAC KBP 2016 evaluation.
@@ -49,8 +49,8 @@ These systems were also key components of three different submissions to the off
   \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
   \caption{\label{fig:evaluation-results} Results from a mock evaluation.}
 \end{figure}
-In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores. We manually labelled 200 relation instances from exhaustively annotated documents and observed a precision of about 75\%, which although is slightly less than 80\% obtained by annotators at LDC \cite{ellis2015overview}, was qualitatively due to improper entity spans and can be easily improved with appropriate changes to the interface. 
+We exhaustively annotated 100 documents for about \$2,000, and labeled 1,000 instances from each system for about \$300 each, with 500 sampled to estimate macro-averaged {\em relation} scores and 500 sampled to estimate macro-averaged {\em entity} scores. We manually labelled 200 relation instances from exhaustively annotated documents and observed a precision of about 75\%, which although is slightly less than 80\% obtained by annotators at LDC \cite{ellis2015overview}, was qualitatively due to improper entity spans and could be easily improved with appropriate changes to the interface. 
 \reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with \fake{the official TAC KBP evaluation scores}.
-We note that when the systems were submitted to the official TAC KBP evaluation, they included some filtering and post-processing as necessary under the evaluation guidelines, making it hard to directly compare the evaluation scores.
+We note that the official submissions were a combination of systems and we report scores for systems which most closely represent the pattern-based system, supervised system and the neural network classifier. Moreover, they included filtering and post-processing as required under the evaluation guidelines, which includes submitting a unique instance for each relation, making it hard to directly compare the evaluation scores.
 \ac{We need to address the discrepancy in scores here.}
 
