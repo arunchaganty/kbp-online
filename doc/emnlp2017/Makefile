@@ -2,6 +2,10 @@ default: refdb-update figures
 	pdflatex main
 	bibtex main
 
+submission: default
+	pdfjam --outfile submission.pdf -- main.pdf 1-9
+	pdfjam --outfile supplementary.pdf -- main.pdf 10-
+
 figures:
 	make -C figures
 

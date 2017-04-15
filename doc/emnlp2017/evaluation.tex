@@ -18,7 +18,7 @@ We find that we are able to obtain results of comparable quality in a cost effec
   \end{subfigure}
   \begin{subfigure}{0.30\textwidth}
     \includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
-    \caption{}
+    \caption{\label{fig:evaluation-results}}
   \end{subfigure}
 
   \caption{\label{fig:simulation}
@@ -58,11 +58,13 @@ approximately reducing the size of the 90\% confidence intervals by a factor of 
 
 \subsection{A mock evaluation for TAC KBP 2016}
 We have implemented the on-demand evaluation framework described here as an evaluation service to which research can submit their own system predictions.
-As a pilot of the service, we evaluated three distinct relation extraction systems (a pattern-based system, a supervised system and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
+As a pilot of the service, we evaluated three distinct relation extraction systems (a rule-based system, a logistic classifier, and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
 Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities and the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking. 
-These systems were also key components of three different submissions to the official TAC KBP 2016 evaluation.
 
 In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 were sampled to estimate macro-averaged entity scores.
-\reffig{evaluation-results} compares the scores obtained through on-demand evaluation of these systems with their official TAC KBP evaluation scores.
-We note that when the systems were submitted to the official TAC KBP evaluation, they included some filtering and post-processing as necessary under the evaluation guidelines, making it hard to directly compare the evaluation scores.
-%\ac{We need to address the discrepancy in scores here.}
+\reffig{evaluation-results} reports the scores obtained through on-demand evaluation of these systems.
+We note that the rule-based system does better on \fone{} because it has significantly higher precision that the other systems, while the RNN system has the highest recall among the three systems.
+%We also include TAC KBP evaluation scores for the official submissions that most closely represent these systems.
+%The TAC KBP submissions are actually a combination of systems and include filtering and post-processing as required under the evaluation guidelines, e.g.\ submitting a unique instance for each relation.
+%While it is hard to directly compare the two evaluation scores, we note that the our evaluation evaluates the rule-based system significantly higher: 
+%, which includes submitting a unique instance for each relation, 
