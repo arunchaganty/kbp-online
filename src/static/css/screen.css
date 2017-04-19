@@ -1,0 +1,63 @@
+
+span.example{
+top: 15px;
+left: 15px;
+font-size: 12px;
+font-weight: 700;
+color: #959595;
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+
+div.header a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/**
+ * visualization css
+ * TODO: move to a better location.
+ */
+
+.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
+.link.relation {
+  stroke: green;
+}
+
+.link.comention {
+  stroke-dasharray: 0,2 1;
+}
+
+.node {
+}
+
+.node.PERSON {
+  stroke: red;
+}
+
+.node.ORGANIZATION {
+  stroke: blue;
+}
+
+circle {
+  fill: #ccc;
+  stroke: #333;
+  stroke-width: 1.5px;
+}
+
+text {
+  font: 10px sans-serif;
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+
+
+section.center-flex {
+  display: flex;
+  justify-content: center;
+}
