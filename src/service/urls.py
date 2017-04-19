@@ -17,8 +17,15 @@ from django.conf.urls import include, url
 from django.contrib import admin, staticfiles
 from . import settings
 
+from registration.backends.simple.views import RegistrationView
+from web.forms import UserForm
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserForm),
+        name='registration_register',
+       ),
+    url(r'^accounts/', include('registration.backends.simple.urls')),
     url(r'', include('web.urls')),
 ]
 
