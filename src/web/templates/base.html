@@ -38,15 +38,22 @@
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="/">{% bootstrap_icon "home" %} Home</a></li>
-            <li><a href="/explore/">{% bootstrap_icon "globe" %} Explore</a></li>
+            {% with request.resolver_match.url_name as url_name %}
+            <li {%if url_name == 'home' %} class="active" {% endif %} >
+              <a href="/">{% bootstrap_icon "home" %} Home</a></li>
+            <li {%if url_name == 'explore' %} class="active" {% endif %} >
+              <a href="/explore/">{% bootstrap_icon "globe" %} Explore</a></li>
             {% if user.is_authenticated %}
-              <li><a href="/submit/">{% bootstrap_icon "upload" %} Submit</a></li>
+              <li {%if url_name == 'submit' %} class="active" {% endif %} >
+                <a href="/submit/">{% bootstrap_icon "upload" %} Submit</a></li>
               <li><a href="/accounts/logout/">{% bootstrap_icon "log-out" %} Logout</a></li>
             {% else %}
-            <li><a href="/accounts/register/">{% bootstrap_icon "user" %} Register</a></li>
-              <li><a href="/accounts/login/">{% bootstrap_icon "log-in" %} Login</a></li>
+            <li {%if url_name == 'registration_register' %} class="active" {% endif %} >
+            <a href="/accounts/register/">{% bootstrap_icon "user" %} Register</a></li>
+            <li {%if url_name == 'auth_login' %} class="active" {% endif %} >
+              <a href="/accounts/login/">{% bootstrap_icon "log-in" %} Login</a></li>
             {% endif %}
+            {% endwith %}
           </ul>
         </div><!--/.nav-collapse -->
       </div>

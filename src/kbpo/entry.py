@@ -8,6 +8,7 @@ subject_id reln object_id prov weight
 """
 
 import pdb
+import csv
 import re
 import logging
 from collections import namedtuple
@@ -189,3 +190,11 @@ def verify_relations(mfile):
                         relations_.add(r_)
     logger.info("End with %d relations", len(relations_))
     return mfile._replace(relations=relations_)
+
+# TODO: make this validator 10x more robust
+def validate(fstream):
+    mfile = MFile.from_stream(csv.reader(fstream, delimiter='\t'))
+    mfile = verify_mention_ids(mfile)
+    mfile = verify_canonical_mentions(mfile)
+    mfile = verify_relations(mfile)
+    return mfile

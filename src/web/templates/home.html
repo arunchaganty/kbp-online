@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% load static from staticfiles %}
+{% load bootstrap3 %}
 
 {% block content %}
 <div class="col-md-2"></div>
 <div class="col-md-8">
   <div class="inner cover">
+    {% bootstrap_messages %}
     <h1 class="cover-heading">Evaluate your knowledge base population system. </h1>
     <p class="lead">KBP Online is an on-demand evaluation service that can accurately evaluate your KBP system.</p>
     <p class="lead">
