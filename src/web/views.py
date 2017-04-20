@@ -20,3 +20,7 @@ def submit(request):
 
     return render(request, 'submit.html', {'form': form})
 
+def explore(request):
+    # TODO: Actually implement.
+    return redirect('home')
+

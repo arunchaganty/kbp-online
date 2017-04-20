@@ -43,27 +43,6 @@ CREATE TABLE  submission_link (
   mention_id SPAN NOT NULL,
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  canonical_id SPAN NOT NULL,
-  mention_type TEXT NOT NULL,
-  gloss TEXT,
-
-  PRIMARY KEY (doc_id, submission_id, mention_id),
-  CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
-  CONSTRAINT valid_canonical_span CHECK (span_is_valid(canonical_id)),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
-  CONSTRAINT canonical_doc_agrees CHECK((canonical_id).doc_id = doc_id)
-) DISTRIBUTED BY (doc_id);
-COMMENT ON TABLE submission_mention IS 'Table containing mentions within a document, as specified by CoreNLP';
-CREATE INDEX submission_mention_mention_idx ON submission_mention(mention_id);
-CREATE INDEX submission_mention_doc_idx ON submission_mention(doc_id);
-
--- submission_link
-CREATE TABLE  submission_link (
-  submission_id INTEGER NOT NULL REFERENCES submission(id),
-  doc_id TEXT NOT NULL REFERENCES document,
-  mention_id SPAN NOT NULL,
-  updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
-
   link_name TEXT NOT NULL,
   confidence REAL DEFAULT 1.0,
 
@@ -84,8 +63,6 @@ CREATE TABLE  submission_relation (
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   relation TEXT NOT NULL,
-  subject_gloss TEXT,
-  object_gloss TEXT,
   confidence REAL DEFAULT 1.0,
   PRIMARY KEY (doc_id, submission_id, subject_id, object_id),
   CONSTRAINT subject_doc_agrees CHECK((subject_id).doc_id = doc_id),
