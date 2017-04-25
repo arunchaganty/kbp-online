@@ -77,7 +77,7 @@ STRICT
 ;
 COMMENT ON FUNCTION is_kbpo_type(TEXT) IS 'Checks that a type is supported by KBPO.';
 
-CREATE FUNCTION span_is_valid(x SPAN) RETURNS BOOLEAN AS  $$
+CREATE FUNCTION span_is_valid(x span) RETURNS BOOLEAN AS  $$
 BEGIN
     RETURN x.char_end > x.char_begin;
 END;
@@ -86,6 +86,6 @@ LANGUAGE plpgsql
 IMMUTABLE
 STRICT
 ;
-COMMENT ON FUNCTION span_is_valid(SPAN) IS 'Checks that span ends after it begins.';
+COMMENT ON FUNCTION span_is_valid(span) IS 'Checks that span ends after it begins.';
 
 COMMIT;
