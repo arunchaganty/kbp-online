@@ -76,14 +76,22 @@ WSGI_APPLICATION = 'service.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    'test': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'kbpo_test',
+        'USER': 'kbpo',
+        'PASSWORD': 'kbpo',
+        'HOST': 'localhost'
+    },
+    'production': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'kbpo',
         'USER': 'kbpo',
         'PASSWORD': 'kbpo',
         'HOST': 'localhost'
-    }
+    },
 }
+DATABASES['default'] = DATABASES['test']
 
 
 # Password validation
