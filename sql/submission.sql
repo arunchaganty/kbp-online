@@ -11,7 +11,6 @@ CREATE TABLE  submission (
     name TEXT NOT NULL, -- short textual identifier for this submission.
     corpus_tag TEXT NOT NULL,
     details TEXT -- A more detailed description of the submission.
-    -- NOTE: add a user_id field in the future.
 ); -- DISTRIBUTED BY (id);    
 COMMENT ON TABLE submission IS 'Summary of a submission';
 
@@ -63,6 +62,7 @@ CREATE TABLE  submission_relation (
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   relation TEXT NOT NULL,
+  provenances SPAN[] NOT NULL,
   confidence REAL DEFAULT 1.0,
   PRIMARY KEY (doc_id, submission_id, subject_id, object_id),
   CONSTRAINT subject_doc_agrees CHECK((subject_id).doc_id = doc_id),
