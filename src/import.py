@@ -8,16 +8,15 @@ import csv
 import sys
 import logging
 
-from kbpo import db
 from kbpo import web_data
-from kbpo.entry import MFile
+from kbpo.entry import MFile, upload_submission
+from kbpo import db
 
 logger = logging.getLogger('kbpo')
 logging.basicConfig(level=logging.INFO)
 
 def do_submission(args):
     mfile = MFile.from_stream(csv.reader(args.input, delimiter="\t"))
-
     with db.CONN:
         with db.CONN.cursor() as cur:
             # Create the submission
@@ -25,37 +24,7 @@ def do_submission(args):
             cur.execute("""SELECT MAX(id) FROM submission""")
             submission_id, = next(cur)
             logger.info("Inserting submission %d", submission_id)
-
-            mentions, links, relations = [], [], []
-            for mention_id in mfile.mention_ids:
-                mention_type, gloss, canonical_id = mfile.get_type(mention_id), mfile.get_gloss(mention_id), mfile.get_cmention(mention_id)
-                mention_id, canonical_id = MFile.parse_prov(mention_id), MFile.parse_prov(canonical_id)
-                doc_id = mention_id.doc_id
-                mentions.append((submission_id, doc_id, mention_id, canonical_id, mention_type, gloss))
-            for row in mfile.links:
-                mention_id = MFile.parse_prov(row.subj)
-                doc_id = mention_id.doc_id
-                link_name = row.obj
-                weight = row.weight
-                links.append((submission_id, doc_id, mention_id, link_name, weight))
-            for row in mfile.relations:
-                subject_id = MFile.parse_prov(row.subj)
-                object_id = MFile.parse_prov(row.obj)
-                doc_id = subject_id.doc_id
-
-                relation = row.reln
-                provs = row.prov.split(',')
-                weight = row.weight
-                relations.append((submission_id, doc_id, subject_id, object_id, relation, provs, weight))
-
-            # mentions
-            db.execute_values(cur, """INSERT INTO submission_mention (submission_id, doc_id, mention_id, canonical_id, mention_type, gloss) VALUES %s """, mentions)
-
-            # links
-            db.execute_values(cur, """INSERT INTO submission_link (submission_id, doc_id, mention_id, link_name, confidence) VALUES %s """, links)
-
-            # relations
-            db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject_id, object_id, relation, provenances, confidence) VALUES %s """, relations)
+    upload_submission(submission_id, mfile)
 
 def do_responses(args):
     # TODO: symmetrize relations in input.
