@@ -1,7 +1,11 @@
 """
 KBPO internal models.
 """
+import os
+import gzip
+
 from django.db import models
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from .fields import SpanField, ScoreField
 
@@ -75,12 +79,14 @@ class SuggestedLink(models.Model):
         unique_together = (('doc', 'id'),)
 
 class Submission(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
 
     name = models.TextField()
     corpus_tag = models.TextField()
     details = models.TextField()
+
+    objects = models.Manager()
 
     def __str__(self):
         return self.name
@@ -91,6 +97,13 @@ class Submission(models.Model):
     class Meta:
         managed = False
         db_table = 'submission'
+
+    @property
+    def uploaded_filename(self):
+        """
+        Load the uploaded filename from the server.
+        """
+        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}-{}.m.gz'.format(self.name, self.id))
 
 class SubmissionMention(models.Model):
     submission = models.ForeignKey(Submission, models.DO_NOTHING)

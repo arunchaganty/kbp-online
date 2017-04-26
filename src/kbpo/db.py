@@ -13,10 +13,11 @@ from .defs import NER_MAP
 
 # File wide connection.
 _PARAMS = {
-    'dbname':'kbp',
-    'user':'kbp',
+    'dbname':'kbpo_test',
+    'user':'kbpo',
+    'password':'kbpo',
     'host':'localhost',
-    'port':4242,
+    'port': 5432,
     'cursor_factory': NamedTupleCursor,
     }
 CONN = db.connect(**_PARAMS)

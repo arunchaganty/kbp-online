@@ -1,10 +1,14 @@
+import csv
 import gzip
+import logging
 
 from django import forms
 from registration.forms import RegistrationForm
 
 from kbpo.entry import validate
 from .models import User, Submission
+
+logger = logging.getLogger(__name__)
 
 class UserForm(RegistrationForm):
     class Meta:
@@ -44,3 +48,15 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
         return data
+
+    def save(self, commit=True):
+        instance = super(KnowledgeBaseSubmissionForm, self).save(commit=commit)
+
+        try:
+            data = self.cleaned_data['knowledge_base']
+            with gzip.open(instance.uploaded_filename, 'wt') as f:
+                data.to_stream(csv.writer(f, delimiter='\t'))
+        except OSError as e:
+            logger.exception(e)
+            instance.delete()
+        return instance
