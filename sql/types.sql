@@ -1,5 +1,4 @@
---
--- Database types.
+-- -- Database types.
 --
 SET search_path TO kbpo;
 
@@ -200,6 +199,15 @@ LANGUAGE plpgsql
 IMMUTABLE
 STRICT
 ;
+
+CREATE OR REPLACE FUNCTION as_prov(span SPAN)
+RETURNS TEXT AS
+$_$
+BEGIN
+      RETURN span.doc_id || ':' || span.char_begin || '-' || span.char_end;  
+END
+$_$ LANGUAGE plpgsql;
+
 
 CREATE OPERATOR < (
    leftarg = SPAN, rightarg = SPAN, procedure = span_lt,

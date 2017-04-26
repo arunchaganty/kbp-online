@@ -23,6 +23,8 @@ CONN = db.connect(**_PARAMS)
 with CONN:
     with CONN.cursor() as _cur:
         _cur.execute("SET search_path TO kbpo;")
+        # TODO: put this in the db/custom cursor class @arun, done?
+
 
 def select(sql, **kwargs):
     with CONN:
@@ -35,6 +37,19 @@ def sanitize(word):
     Remove any things that would confusing psql.
     """
     return re.sub(r"[^a-zA-Z0-9. ]", "%", word)
+
+def random_sample(field, table, sample_size = 1):
+    """
+    Get a randomly sampled field from a table
+    """
+    qry = """
+    SELECT COUNT(*) FROM {table};
+    """.format(table=table)
+    N = next(select(qry))
+    qry = """
+    SELECT {field} FROM {table} OFFSET floor(random()*%(N)s) LIMIT %(sample_size)s;
+    """.format(table=table, field=field)
+    return select(qry, field=field, table=table, N= N,sample_size=sample_size)
 
 def query_docs(corpus_id, sentence_table="sentence"):
     """
