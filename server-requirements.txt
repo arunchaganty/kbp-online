@@ -1,3 +1,4 @@
 django==1.11
 django-bootstrap3
 django-registration
+celery
