@@ -15,6 +15,7 @@ from collections import namedtuple
 
 from .defs import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS
 from .schema import Provenance
+from . import db
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -58,6 +59,8 @@ class MFile(_MFile):
 
     @classmethod
     def parse_prov(cls, prov):
+        if len(prov) == 0:
+            return None
         doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
         return Provenance(doc_id, int(beg), int(end))
 
@@ -80,16 +83,33 @@ class MFile(_MFile):
             assert len(row) <= 5, "Invalid number of columns, %d instead of %d"%(len(row), 5)
             row = row + [None] * (5-len(row))
             row = Entry(*row)
+            row = row._replace(
+                subj = cls.parse_prov(row.subj),
+                weight = float(row.weight) if row.weight else 0.0
+                )
 
             if row.reln in TYPES:
                 mentions.append(row)
             elif row.reln == "link":
                 links.append(row)
             elif row.reln == "canonical_mention":
+                row = row._replace(obj = cls.parse_prov(row.obj))
                 canonical_mentions.append(row)
             else:
+                provs = tuple(cls.parse_prov(p) for p in row.prov.split(',') if p)
+                row = row._replace(obj = cls.parse_prov(row.obj), prov=provs)
                 relations.append(row)
         return cls(mentions, links, canonical_mentions, relations)
+
+    def to_stream(self, stream):
+        for row in self.types:
+            stream.writerow([MFile.to_prov(row.subj), row.reln, row.obj, row.prov, row.weight])
+        for row in self.links:
+            stream.writerow([MFile.to_prov(row.subj), row.reln, row.obj, row.prov, row.weight])
+        for row in self.canonical_mentions:
+            stream.writerow([MFile.to_prov(row.subj), row.reln, MFile.to_prov(row.obj), row.prov, row.weight])
+        for row in self.relations:
+            stream.writerow([MFile.to_prov(row.subj), row.reln, MFile.to_prov(row.obj), ",".join([MFile.to_prov(p) for p in row.prov]), row.weight])
 
 class Entry(namedtuple('Entry', ['subj', 'reln', 'obj', 'prov', 'weight',])):
     @property
@@ -185,7 +205,7 @@ def verify_relations(mfile):
                 if reln_.startswith(mfile.get_type(obj).lower()):
                     r_ = r._replace(subj=obj, reln=reln_, obj=subj)
                     if (obj, subj) not in keys:
-                        logger.warning("Adding symmetrized relation %s: %s", r_, r)
+                        logger.info("Adding symmetrized relation %s: %s", r_, r)
                         keys.add((obj,subj))
                         relations_.add(r_)
     logger.info("End with %d relations", len(relations_))
@@ -198,3 +218,38 @@ def validate(fstream):
     mfile = verify_canonical_mentions(mfile)
     mfile = verify_relations(mfile)
     return mfile
+
+def upload_submission(submission_id, mfile):
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            # Create the submission
+            mentions, links, relations = [], [], []
+            for mention_id in mfile.mention_ids:
+                mention_type, gloss, canonical_id = mfile.get_type(mention_id), mfile.get_gloss(mention_id), mfile.get_cmention(mention_id)
+                mention_id, canonical_id = mention_id, canonical_id
+                doc_id = mention_id.doc_id
+                mentions.append((submission_id, doc_id, mention_id, canonical_id, mention_type, gloss))
+            for row in mfile.links:
+                mention_id = row.subj
+                doc_id = mention_id.doc_id
+                link_name = row.obj
+                weight = row.weight
+                links.append((submission_id, doc_id, mention_id, link_name, weight))
+            for row in mfile.relations:
+                subject_id = row.subj
+                object_id = row.obj
+                doc_id = subject_id.doc_id
+
+                relation = row.reln
+                provs = list(row.prov) if row.prov else []
+                weight = row.weight
+                relations.append((submission_id, doc_id, subject_id, object_id, relation, provs, weight))
+
+            # mentions
+            db.execute_values(cur, """INSERT INTO submission_mention (submission_id, doc_id, mention_id, canonical_id, mention_type, gloss) VALUES %s """, mentions)
+
+            # links
+            db.execute_values(cur, """INSERT INTO submission_link (submission_id, doc_id, mention_id, link_name, confidence) VALUES %s """, links)
+
+            # relations
+            db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject_id, object_id, relation, provenances, confidence) VALUES %s """, relations)

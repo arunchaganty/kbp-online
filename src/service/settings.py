@@ -76,14 +76,22 @@ WSGI_APPLICATION = 'service.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    'test': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'kbpo_test',
+        'USER': 'kbpo',
+        'PASSWORD': 'kbpo',
+        'HOST': 'localhost'
+    },
+    'production': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'kbpo',
         'USER': 'kbpo',
         'PASSWORD': 'kbpo',
         'HOST': 'localhost'
-    }
+    },
 }
+DATABASES['default'] = DATABASES['test']
 
 
 # Password validation
@@ -131,3 +139,8 @@ STATICFILES_DIRS = [
 AUTH_USER_MODEL = 'web.User'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+CELERY_RESULT_BROKER = 'ampq'
+CELERY_RESULT_BACKEND = 'rpc'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

@@ -5,6 +5,12 @@ SET search_path TO kbpo;
 
 BEGIN TRANSACTION;
 
+CREATE TYPE HIT_STATUS AS ENUM (
+    'Submitted' , 
+    'Approved' , 
+    'Rejected'
+);
+
 CREATE SEQUENCE evaluation_batch_id_seq;
 CREATE TABLE  evaluation_batch (
   id INTEGER PRIMARY KEY DEFAULT nextval('evaluation_batch_id_seq'),
@@ -12,9 +18,9 @@ CREATE TABLE  evaluation_batch (
 
   batch_type TEXT NOT NULL, -- which type of batch is this?
   corpus_tag TEXT NOT NULL, -- which corpus.
-  params TEXT NOT NULL, -- the parameters used to create this batch the mturk tasks
+  params JSON NOT NULL, -- the parameters used to create this batch the mturk tasks
   description TEXT -- A string blob about what this batch is for.
-) DISTRIBUTED BY (id);
+); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE evaluation_batch IS 'Keeps track of each distinct batch of questions that have been created according to a specific sampling scheme';
 
 CREATE TABLE  evaluation_question (
@@ -22,9 +28,9 @@ CREATE TABLE  evaluation_question (
   batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
 
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
-  params TEXT NOT NULL, -- the parameters used for this question
+  params JSON NOT NULL, -- the parameters used for this question
   PRIMARY KEY (batch_id, id)
-) DISTRIBUTED BY (batch_id);
+); -- DISTRIBUTED BY (batch_id);
 COMMENT ON TABLE evaluation_question IS 'Keeps track of an individual question part of an evaluation batch';
 
 CREATE SEQUENCE mturk_batch_id_seq;
@@ -32,9 +38,9 @@ CREATE TABLE  mturk_batch (
   id INTEGER PRIMARY KEY DEFAULT nextval('mturk_batch_id_seq'),
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  params TEXT NOT NULL, -- the parameters used to launch the mturk tasks
+  params JSON NOT NULL, -- the parameters used to launch the mturk tasks
   description TEXT -- A string blob about what this batch is for.
-) DISTRIBUTED BY (id);
+); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE mturk_batch IS 'Keeps track of each distinct batch of mturk HITS';
 
 CREATE TABLE  mturk_hit (
@@ -51,7 +57,7 @@ CREATE TABLE  mturk_hit (
 
   PRIMARY KEY(batch_id, id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (batch_id);
+); -- DISTRIBUTED BY (batch_id);
 COMMENT ON TABLE mturk_hit IS 'Keeps track of an individual hit';
 
 -- evaluation_request
@@ -68,7 +74,7 @@ CREATE TABLE  mturk_assignment (
   comments TEXT, -- comments provided by the turker 
   ignored BOOLEAN NOT NULL DEFAULT FALSE, -- Should we ignore this entry for some reason?
   CONSTRAINT mturk_hit_exists FOREIGN KEY (batch_id, hit_id) REFERENCES mturk_hit
-) DISTRIBUTED BY (id);
+); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE mturk_assignment IS 'Keeps track HIT responses from turkers';
 
 -- evaluation_mention_response
@@ -78,10 +84,10 @@ CREATE TABLE  evaluation_mention_response (
   question_id TEXT NOT NULL,
 
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id SPAN NOT NULL,
+  mention_id span NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  canonical_id SPAN NOT NULL,
+  canonical_id span NOT NULL,
   mention_type TEXT NOT NULL,
   gloss TEXT,
   weight REAL NOT NULL DEFAULT 1.0, -- Score/weight given to this response
@@ -93,7 +99,7 @@ CREATE TABLE  evaluation_mention_response (
   CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
   CONSTRAINT canonical_doc_agrees CHECK((canonical_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (doc_id);
+); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_mention_response IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX evaluation_mention_response_mention_idx ON evaluation_mention_response(mention_id);
 
@@ -103,10 +109,10 @@ CREATE TABLE  evaluation_mention (
   question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id SPAN,
+  mention_id span,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  canonical_id SPAN NOT NULL,
+  canonical_id span NOT NULL,
   mention_type TEXT NOT NULL,
   gloss TEXT,
   weight REAL NOT NULL DEFAULT 1.0, -- Score/weight given to this response
@@ -118,7 +124,7 @@ CREATE TABLE  evaluation_mention (
   CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
   CONSTRAINT canonical_doc_agrees CHECK((canonical_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (doc_id);
+); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_mention IS 'Table containing mentions within a document, aggregated from all the responses';
 CREATE INDEX evaluation_mention_mention_idx ON evaluation_mention(mention_id);
 
@@ -128,7 +134,7 @@ CREATE TABLE  evaluation_link_response (
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
   question_id TEXT NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id SPAN NOT NULL,
+  mention_id span NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
@@ -139,7 +145,7 @@ CREATE TABLE  evaluation_link_response (
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
   CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (doc_id);
+); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_link_response IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX evaluation_link_response_mention_idx ON evaluation_link_response(mention_id);
 
@@ -149,7 +155,7 @@ CREATE TABLE  evaluation_link (
   question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id SPAN,
+  mention_id span,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
@@ -160,7 +166,7 @@ CREATE TABLE  evaluation_link (
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
   CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (doc_id);
+); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_link IS 'Table containing mentions within a document, aggregated from all the responses';
 CREATE INDEX evaluation_link_mention_idx ON evaluation_link(mention_id);
 
@@ -171,8 +177,8 @@ CREATE TABLE  evaluation_relation_response (
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
   question_id TEXT NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
-  subject_id SPAN NOT NULL,
-  object_id SPAN NOT NULL,
+  subject_id span NOT NULL,
+  object_id span NOT NULL,
   created TIMESTAMP NOT NULL,
 
   relation TEXT NOT NULL,
@@ -185,7 +191,7 @@ CREATE TABLE  evaluation_relation_response (
   CONSTRAINT object_doc_agrees CHECK((object_id).doc_id = doc_id),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (doc_id);
+); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_relation_response IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX evaluation_relation_response_pair_idx ON evaluation_relation_response(subject_id, object_id);
 
@@ -195,8 +201,8 @@ CREATE TABLE  evaluation_relation (
   question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
-  subject_id SPAN NOT NULL,
-  object_id SPAN NOT NULL,
+  subject_id span NOT NULL,
+  object_id span NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   relation TEXT NOT NULL,
@@ -209,7 +215,7 @@ CREATE TABLE  evaluation_relation (
   CONSTRAINT object_doc_agrees CHECK((object_id).doc_id = doc_id),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
-) DISTRIBUTED BY (doc_id);
+); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_relation IS 'Table containing mentions within a document, aggregated from all the responses';
 CREATE INDEX evaluation_relation_pair_idx ON evaluation_relation(subject_id, object_id);
 

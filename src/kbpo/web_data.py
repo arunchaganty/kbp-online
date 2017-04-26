@@ -14,6 +14,12 @@ from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance,
 
 logger = logging.getLogger(__name__)
 
+def insert_assignment(assignment_id, hit_id, worker_id, created, worker_time, comments, response, status = "Submitted"):
+    batch_id = next(db.select("""SELECT id FROM mturk_hit WHERE id = (%s);""", hit_id))
+    db.execute(
+    """INSERT INTO mturk_assignment ( id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", assignment_id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status)
+
+
 def parse_selective_relations_response(question, responses):
     mentions, links, relations = [], [], []
     for response in responses:
