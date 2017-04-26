@@ -24,11 +24,18 @@ with CONN:
     with CONN.cursor() as _cur:
         _cur.execute("SET search_path TO kbpo;")
 
+
+
 def select(sql, **kwargs):
     with CONN:
         with CONN.cursor() as cur:
             cur.execute(sql, kwargs)
             yield from cur
+
+def execute(sql, **kwargs):
+    with CONN:
+        with CONN.cursor() as cur:
+            cur.execute(sql, kwargs)
 
 def sanitize(word):
     """
