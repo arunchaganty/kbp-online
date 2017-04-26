@@ -1,21 +1,22 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import KnowledgeBaseSubmissionForm
+from .models import SubmissionUser, SubmissionState
+from .tasks import process_submission
 
 # Create your views here.
 def home(request):
     return render(request, 'home.html')
 
-# TODO: Save submission to database.
-def process_submission(user, kb):
-    # TODO: Launch a task to process this submission.
-    pass
-
 def submit(request):
     if request.method == 'POST':
         form = KnowledgeBaseSubmissionForm(request.POST, request.FILES)
         if form.is_valid():
-            process_submission(request.user, form.cleaned_data['knowledge_base'])
+            submission = form.save()
+            SubmissionUser(user=request.user, submission=submission).save()
+            SubmissionState(submission=submission).save()
+
+            process_submission.delay(submission.id)
 
             messages.success(request, "Submission '{}' successfully uploaded, and pending evaluation.".format(form.cleaned_data['name']))
             return redirect('home')
