@@ -1,7 +1,6 @@
 """
 Utilities connecting the web interface to database
 """
-import pdb
 import unittest
 from datetime import date
 
@@ -121,7 +120,7 @@ def get_suggested_mention_pairs(doc_id):
               AND m.doc_id = %(doc_id)s
               AND m.id <> n.id
               AND is_entity_type(m.mention_type)
-            ORDER BY m.id, subject_id, object_id
+            ORDER BY subject_id, object_id
             """, doc_id=doc_id):
         # Pick up any subject pairs that are of compatible types.
         if (row.subject_type, row.object_type) not in defs.VALID_MENTION_TYPES: continue
@@ -180,6 +179,39 @@ def test_get_submission_mentions():
             'link': 'Ed_Rendell',
             },
         }
+
+def get_evaluation_mention_pairs(doc_id):
+    """
+    Get mention pairs from exhaustive mentions for a document.
+    """
+    mention_pairs = set()
+    for row in db.select("""
+            SELECT m.mention_id AS subject_id, m.mention_type AS subject_type, n.mention_id AS object_id, n.mention_type AS object_type
+            FROM evaluation_mention m, evaluation_mention n, evaluation_batch b, sentence s
+            WHERE m.question_batch_id = n.question_batch_id AND m.question_id = n.question_id 
+              AND m.doc_id = n.doc_id
+              AND m.question_batch_id = b.id
+              AND m.doc_id = s.doc_id AND m.mention_id <@ s.span AND n.mention_id <@ s.span
+              AND m.doc_id = %(doc_id)s
+              AND m.mention_id <> n.mention_id
+              AND b.batch_type = 'exhaustive_entities'
+              AND is_entity_type(m.mention_type)
+            ORDER BY subject_id, object_id
+            """, doc_id=doc_id):
+        # Pick up any subject pairs that are of compatible types.
+        if (row.subject_type, row.object_type) not in defs.VALID_MENTION_TYPES: continue
+        # Check that this pair doesn't already exist.
+        if (row.object_id, row.subject_id) in mention_pairs: continue
+        mention_pairs.add((row.subject_id, row.object_id))
+    return [{"subject_id": subject_id, "object_id": object_id} for subject_id, object_id in sorted(mention_pairs)]
+
+def test_get_evaluation_mention_pairs():
+    doc_id = "NYT_ENG_20131216.0031"
+    pairs = get_suggested_mention_pairs(doc_id)
+    assert len(pairs) == 70
+    pair = pairs[0]
+    assert tuple(pair['subject_id']) == ('NYT_ENG_20131216.0031', 371, 385)
+    assert tuple(pair['object_id']) == ('NYT_ENG_20131216.0031', 360, 368)
 
 def get_submission_relations(doc_id, submission_id):
     """
