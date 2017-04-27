@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import unittest
-import db
+from db import query_doc, query_mentions
 """
 Utilities connecting the web interface to database
 """

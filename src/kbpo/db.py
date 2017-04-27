@@ -9,15 +9,14 @@ import time
 import psycopg2 as db
 from psycopg2.extras import execute_values, NamedTupleCursor, register_composite
 
-from .defs import NER_MAP
+from defs import NER_MAP
 
 # File wide connection.
 _PARAMS = {
-    'dbname':'kbpo_test',
-    'user':'kbpo',
-    'password':'kbpo',
+    'dbname':'kbp',
+    'user':'kbp',
     'host':'localhost',
-    'port': 5432,
+    'port': 4242,
     'cursor_factory': NamedTupleCursor,
     }
 CONN = db.connect(**_PARAMS)
