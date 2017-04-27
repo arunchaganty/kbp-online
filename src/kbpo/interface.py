@@ -119,23 +119,24 @@ def get_suggested_mention_pairs(doc_id):
             FROM suggested_mention m, suggested_mention n
             WHERE m.doc_id = n.doc_id AND m.sentence_id = n.sentence_id
               AND m.doc_id = %(doc_id)s
+              AND m.id <> n.id
               AND is_entity_type(m.mention_type)
             ORDER BY m.id, subject_id, object_id
             """, doc_id=doc_id):
-
-        pdb.set_trace()
         # Pick up any subject pairs that are of compatible types.
         if (row.subject_type, row.object_type) not in defs.VALID_MENTION_TYPES: continue
         # Check that this pair doesn't already exist.
         if (row.object_id, row.subject_id) in mention_pairs: continue
         mention_pairs.add((row.subject_id, row.object_id))
-    return [{"subject_id": subject_id, "object_id": object_id} for subject_id, object_id in mention_pairs]
+    return [{"subject_id": subject_id, "object_id": object_id} for subject_id, object_id in sorted(mention_pairs)]
 
 def test_get_suggested_mention_pairs():
     doc_id = "NYT_ENG_20131216.0031"
     pairs = get_suggested_mention_pairs(doc_id)
-    assert False
-    assert len(pairs) == 91
+    assert len(pairs) == 70
+    pair = pairs[0]
+    assert tuple(pair['subject_id']) == ('NYT_ENG_20131216.0031', 371, 385)
+    assert tuple(pair['object_id']) == ('NYT_ENG_20131216.0031', 360, 368)
 
 def get_submission_mentions(doc_id, submission_id):
     """

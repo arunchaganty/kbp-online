@@ -5,18 +5,16 @@ Database utilities.
 """
 
 import re
-import time
 import psycopg2 as db
 from psycopg2.extras import execute_values, NamedTupleCursor, register_composite
 
-from defs import NER_MAP
-
 # File wide connection.
 _PARAMS = {
-    'dbname':'kbp',
-    'user':'kbp',
+    'dbname':'kbpo_test',
+    'user':'kbpo',
+    'password':'kbpo',
     'host':'localhost',
-    'port': 4242,
+    'port': 5432,
     'cursor_factory': NamedTupleCursor,
     }
 CONN = db.connect(**_PARAMS)
@@ -24,7 +22,6 @@ with CONN:
     with CONN.cursor() as _cur:
         _cur.execute("SET search_path TO kbpo;")
         # TODO: put this in the db/custom cursor class @arun, done?
-
 
 def select(sql, **kwargs):
     with CONN:
