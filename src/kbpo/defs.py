@@ -156,3 +156,44 @@ INVERTED_RELATIONS = {
     "gpe:member_of":["org:members"],
     "gpe:headquarters_in_place":["org:place_of_headquarters"],
     }
+
+RELATION_TYPES = {
+    "per:alternate_names": ("PER", "PER"),
+    "per:place_of_birth": ("PER", "GPE"),
+    "per:place_of_residence": ("PER", "GPE"),
+    "per:place_of_death": ("PER", "GPE"),
+    "per:date_of_birth": ("PER", "DATE"),
+    "per:date_of_death": ("PER", "DATE"),
+    "per:organizations_founded": ("PER", "ORG"),
+    "per:holds_shares_in": ("PER", "ORG"),
+    "per:schools_attended": ("PER", "ORG"),
+    "per:employee_or_member_of": ("PER", ["ORG", "GPE"]),
+    "per:parents": ("PER", "PER"),
+    "per:children": ("PER", "PER"),
+    "per:spouse": ("PER", "PER"),
+    "per:sibling": ("PER", "PER"),
+    "per:other_family": ("PER", "PER"),
+    "per:title": ("PER", "TITLE"),
+    "org:alternate_names": ("ORG", "ORG"),
+    "org:place_of_headquarters": ("ORG", "GPE"),
+    "org:date_founded": ("ORG", "DATE"),
+    "org:date_dissolved": ("ORG", "DATE"),
+    "org:founded_by": ("ORG", ["PER", "ORG", "GPE"]),
+    "org:member_of": ("ORG", "ORG"),
+    "org:members": ("ORG", ["ORG", "GPE"]),
+    "org:subsidiaries": ("ORG", "ORG"),
+    "org:parents": ("ORG", "ORG"),
+    "org:shareholders": ("ORG", ["PER", "ORG", "GPE"]),
+    "org:holds_shares_in": ("ORG", "ORG"),
+}
+
+def _create_mention_types(types):
+    valid_types = set()
+    for subject_, objects in types.values():
+        if isinstance(objects, str):
+            objects = [objects]
+        for object_ in objects:
+            valid_types.add((subject_, object_))
+    return valid_types
+
+VALID_MENTION_TYPES = _create_mention_types(RELATION_TYPES)

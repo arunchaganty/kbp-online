@@ -31,17 +31,6 @@ def do_submission_to_kb(args):
     with db.CONN:
         with db.CONN.cursor() as cur:
             db.register_composite('kbpo.span', cur)
-            #All entity types
-            #cur.execute("""
-            #             SELECT md5(l.link_name)as entity_hash, wikify(l.link_name) as entity_wikiname, mode(m.mention_type) AS mention_type,  max(confidence) AS confidence 
-            #              FROM submission_mention AS m 
-            #              JOIN submission_mention AS c ON m.canonical_id = c.mention_id 
-            #              JOIN submission_link AS l ON c.mention_id = l.mention_id 
-            #              WHERE m.submission_id = 1 AND c.submission_id = 1 AND l.submission_id = 1
-            #              GROUP BY l.link_name;
-            #""", [args.submission_id]*3)
-            #for row in cur:
-            #    #entity_ids.add(row.mention_id)
             cur.execute("""
                          SELECT md5(l.link_name)as entity_hash, wikify(l.link_name) as entity_wikiname,mode(m.mention_type) AS mention_type, mode(as_prov(c.mention_id)) AS canonical_prov, mode(c.gloss) as canonical_gloss, max(confidence) AS confidence 
                           FROM submission_mention AS m 
@@ -112,9 +101,6 @@ def do_submission_to_kb(args):
                     writer.writerow([entity_name(row.subject_link_name, row.subject_hash), row.relation, "\""+row.object_link_name+"\"",','.join([MFile.to_prov(row.object_id)]+ row.provenances), row.confidence])
                 else:
                     writer.writerow([entity_name(row.subject_link_name, row.subject_hash), row.relation, entity_name(row.object_link_name, row.object_hash),','.join([MFile.to_prov(row.object_id)]+ row.provenances), row.confidence])
-
-            
-
 
 def do_submission(args):
     writer = csv.writer(args.output, delimiter="\t")

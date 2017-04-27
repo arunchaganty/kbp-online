@@ -60,15 +60,12 @@ COMMENT ON FUNCTION is_kbpo_reln(TEXT) IS 'Checks that a reln is supported by KB
 
 CREATE FUNCTION is_kbpo_type(x TEXT) RETURNS BOOLEAN AS  $$
 BEGIN
-    RETURN x = 'PERSON' 
-        OR x = 'ORGANIZATION' 
-        OR x = 'COUNTRY' 
-        OR x = 'LOCATION' 
-        OR x = 'CITY' 
-        OR x = 'STATE_OR_PROVINCE' 
+    RETURN x = 'PER' 
+        OR x = 'ORG' 
         OR x = 'GPE' 
         OR x = 'TITLE' 
-        OR x = 'DATE';
+        OR x = 'DATE'
+        ;
 END;
 $$
 LANGUAGE plpgsql
@@ -76,6 +73,20 @@ IMMUTABLE
 STRICT
 ;
 COMMENT ON FUNCTION is_kbpo_type(TEXT) IS 'Checks that a type is supported by KBPO.';
+
+CREATE FUNCTION is_entity_type(x TEXT) RETURNS BOOLEAN AS  $$
+BEGIN
+    RETURN x = 'PER' 
+        OR x = 'ORG' 
+        OR x = 'GPE'
+        ;
+END;
+$$
+LANGUAGE plpgsql
+IMMUTABLE
+STRICT
+;
+COMMENT ON FUNCTION is_entity_type(TEXT) IS 'Checks that a type is supported by KBPO.';
 
 CREATE FUNCTION span_is_valid(x span) RETURNS BOOLEAN AS  $$
 BEGIN
