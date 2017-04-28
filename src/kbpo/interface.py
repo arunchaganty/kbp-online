@@ -8,6 +8,9 @@ from . import db
 from . import defs
 
 def get_document(doc_id):
+    """
+    Returns id, date, title and sentences for a given @doc_id
+    """
     T = {
         "-LRB-": "(",
         "-RRB-": ")",

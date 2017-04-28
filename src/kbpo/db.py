@@ -4,26 +4,33 @@
 Database utilities.
 """
 
+import logging
 import re
 import psycopg2 as db
-from psycopg2.extras import execute_values, NamedTupleCursor, register_composite
+from psycopg2.extras import execute_values, register_composite
+from .kbpo_db_params import _PARAMS
 
-# File wide connection.
-_PARAMS = {
-    'dbname':'kbpo_test',
-    'user':'kbpo',
-    'password':'kbpo',
-    'host':'localhost',
-    'port': 5432,
-    'cursor_factory': NamedTupleCursor,
-    }
-CONN = db.connect(**_PARAMS)
-with CONN:
-    with CONN.cursor() as _cur:
-        _cur.execute("SET search_path TO kbpo;")
-        # TODO: put this in the db/custom cursor class @arun, done?
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+def connect(params=_PARAMS):
+    """Connect to database using @params"""
+    conn = db.connect(**params)
+    with conn:
+        with conn.cursor() as _cur:
+            _cur.execute("SET search_path TO kbpo;")
+            # TODO: put this in the db/custom cursor class @arun, done?
+    return conn
+
+CONN = None
+
+try:
+    CONN = connect()
+except:
+    logging.error("Unable to connect to database")
 
 def select(sql, **kwargs):
+    """Wrapper around psycopg execute function to yield the result of a SELECT statement"""
     with CONN:
         with CONN.cursor() as cur:
             register_composite('kbpo.span', cur)
@@ -31,6 +38,7 @@ def select(sql, **kwargs):
             yield from cur
 
 def execute(sql, **kwargs):
+    """Wrapper around psycopg execute function to not yield the result of execute statement"""
     with CONN:
         with CONN.cursor() as cur:
             register_composite('kbpo.span', cur)
@@ -42,18 +50,18 @@ def sanitize(word):
     """
     return re.sub(r"[^a-zA-Z0-9. ]", "%", word)
 
-def random_sample(field, table, sample_size = 1):
+def random_sample(field, table, sample_size=1):
     """
     Get a randomly sampled field from a table
     """
     qry = """
     SELECT COUNT(*) FROM {table};
     """.format(table=table)
-    N = next(select(qry))
+    num = next(select(qry))
     qry = """
     SELECT {field} FROM {table} OFFSET floor(random()*%(N)s) LIMIT %(sample_size)s;
     """.format(table=table, field=field)
-    return select(qry, field=field, table=table, N= N,sample_size=sample_size)
+    return select(qry, field=field, table=table, N=num, sample_size=sample_size)
 
 def query_docs(corpus_id, sentence_table="sentence"):
     """
@@ -69,14 +77,19 @@ ORDER BY doc_id"""
     return select(qry.format(corpus_id=corpus_id, sentence=sentence_table))
 
 def query_wikilinks(fb_ids):
+    """Map to wikilink based on @fb_ids"""
     qry = "SELECT fb_id, wiki_id FROM fb_to_wiki_map WHERE fb_id IN %(fb_ids)s"
     return select(qry, fb_ids=fb_ids)
 
 def query_entity_docs(entities):
+    """
+    TODO: @Arun add description
+    """
     cur = CONN.cursor()
     cur.execute("DROP TABLE IF EXISTS _query_entities;")
     cur.execute("CREATE TEMPORARY TABLE _query_entities(gloss TEXT);")
-    execute_values(cur, "INSERT INTO _query_entities(gloss) VALUES %s", [(entity,) for entity, _ in entities])
+    execute_values(cur, "INSERT INTO _query_entities(gloss) VALUES %s", 
+                   [(entity,) for entity, _ in entities])
     cur.execute("""
 SELECT q.gloss, array_agg(DISTINCT doc_id)
 FROM mention m, _query_entities q
