@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import KnowledgeBaseSubmissionForm
-from .models import SubmissionUser, SubmissionState
+from .models import SubmissionUser, SubmissionState, Document
 from .tasks import process_submission
 
 # Create your views here.
@@ -25,6 +25,14 @@ def submit(request):
 
     return render(request, 'submit.html', {'form': form})
 
-def explore(request):
+def explore(request, doc_id=None):
+    """
+    Explore a document in the corpus given by @doc_id.
+    If @doc_id is None, pick a random one.
+    """
+    print(doc_id)
+    if doc_id is None:
+        redirect('explore', doc_id=Document.objects.order_by('?').first().id)
+
     # TODO: Actually implement.
-    return redirect('home')
+    return render(request, 'home.html')

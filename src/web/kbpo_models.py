@@ -18,6 +18,8 @@ class Document(models.Model):
     doc_digest = models.TextField(blank=True, null=True)
     gloss = models.TextField(blank=True, null=True)
 
+    objects = models.Manager()
+
     class Meta:
         managed = False
         db_table = 'document'
