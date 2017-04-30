@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap3 %}
+
+{% block content %}
+<div class="col-md-2"></div>
+<div id="content-main" class="col-md-8">
+  <div class="row">
+  <h2>Explore the KBPOnline corpora and annotations</h2>
+  <p>Select a corpus and document to examine from the choices below:</p>
+  <!-- Have a drop box to select things here -->
+  </div>
+
+  <div class="row">
+    <div id="document" class="document">
+    </div>
+    <!-- Actually show the document widget here -->
+  </div>
+</div>
+<div class="col-md-2"></div>
+
+{% endblock %}

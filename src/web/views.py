@@ -25,14 +25,9 @@ def submit(request):
 
     return render(request, 'submit.html', {'form': form})
 
-def explore(request, doc_id=None):
+def explore(request):
     """
-    Explore a document in the corpus given by @doc_id.
-    If @doc_id is None, pick a random one.
+    Explore a document in the corpus -- this entirely uses the
+    kbpo.interface functions.
     """
-    print(doc_id)
-    if doc_id is None:
-        redirect('explore', doc_id=Document.objects.order_by('?').first().id)
-
-    # TODO: Actually implement.
-    return render(request, 'home.html')
+    return render(request, 'explore.html')
