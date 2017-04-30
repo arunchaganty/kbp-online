@@ -134,13 +134,21 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
     ]
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'npm.finders.NpmFinder',
+    ]
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
+# Auth setup
 AUTH_USER_MODEL = 'web.User'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
+# Celery setup
 CELERY_RESULT_BROKER = 'ampq'
 CELERY_RESULT_BACKEND = 'rpc'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# NPM setup
+NPM_ROOT_PATH=os.path.join(BASE_DIR, "static", "kbpo")

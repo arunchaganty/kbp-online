@@ -1,0 +1,36 @@
+{
+  "name": "kbp-online",
+  "version": "0.1.0",
+  "description": "Javascript modules for the KBPOnline project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arunchaganty/kbp-online.git"
+  },
+  "keywords": [
+    "kbp",
+    "nlp",
+    "mturk"
+  ],
+  "author": "Arun Chaganty, Ashwin Paranjape",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arunchaganty/kbp-online/issues"
+  },
+  "homepage": "https://github.com/arunchaganty/kbp-online#readme",
+  "dependencies": {
+    "boostrap": "^1.0.0",
+    "bootstrap": "^3.3.7",
+    "d3": "^4.8.0",
+    "jquery": "^3.2.1",
+    "js-cookie": "^2.1.4",
+    "levenshtein": "^1.0.5",
+    "moment": "^2.18.1"
+  },
+  "devDependencies": {
+    "qunit": "^1.0.0"
+  }
+}
