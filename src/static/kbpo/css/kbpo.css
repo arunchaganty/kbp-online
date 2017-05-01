@@ -1,0 +1,212 @@
+#document {
+  font-size: larger;
+  max-height: 600px;
+  overflow-y: scroll;
+}
+
+#document.short {
+  max-height: 200px;
+}
+
+span.sentence {
+  display: inline-block;
+  margin-right: 1em;
+  line-height: 36px;
+}
+
+span.token {
+  display: inline-block;
+}
+
+span.token.with-space {
+  display: inline-block;
+  margin-left: 0.5em;
+}
+
+span.token.underline {
+  text-decoration: underline;
+}
+
+span.token.highlight {
+  text-shadow:0px 0px 1px black;
+}
+
+.mention.highlight {
+  text-shadow:0px 0px 1px;
+}
+
+span.selected {
+  font-weight:bold;
+  background-color: lightgray;
+}
+
+span.token.mention {
+  font-style: italic;
+}
+
+span.token.suggestion {
+  text-shadow: 0px 0px 1px black;
+  text-decoration: underline;
+}
+
+span.token.suggestion-end {
+  padding-right: 10px;
+}
+
+span.token.true-suggestion {
+  text-shadow: 0px 0px 1px green;
+}
+
+span.token.suggestion.true-suggestion {
+  text-decoration: underline;
+}
+
+.mention span.token.suggestion {
+  text-shadow: unset;
+  text-decoration: unset;
+}
+
+.mention span.token.suggestion-end {
+  padding-right: 0px;
+}
+
+.mention span.token.suggestion.highlight {
+  text-shadow: 0px 0px 1px;
+}
+
+span.mention {
+  font-style: italic;
+  position: relative;
+}
+
+span.type-marker {
+  vertical-align: super;
+  font-size: small;
+  z-index:0;
+}
+
+span.link-marker {
+  font-size: small;
+  font-variant: small-caps;
+  position: absolute;
+  top: 25px;
+  z-index:0;
+  line-height: 10px;
+}
+
+span.linked-mention {
+  font-weight: bold;
+}
+span.subject {
+  color: red;
+}
+
+span.canonical {
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+span.object {
+  color: blue;
+}
+
+div.btn.relation-option {
+  text-align: center;
+  display: inline-block;
+  padding: 6px;
+}
+
+div.relation-option span.icon {
+  margin: 0 auto;
+}
+
+div#relation-option-preview {
+  font-size: large;
+  height: 90px;
+}
+
+div#relation-option-preview span.subject {
+  font-weight: bold;
+}
+
+div#relation-option-preview span.object {
+  font-weight: bold;
+}
+
+#instruction-widget-modal>.modal-dialog {
+        width: 90%;
+}
+.sentence.highlight {
+  background-color: palegoldenrod;
+}
+#relation-option-preview>.sentence.highlight {
+  background-color: transparent;
+  border: 1px solid black;
+  border-radius: 16px;
+}
+
+#relation-options {
+  margin-bottom: 10px;
+}
+
+.token {
+}
+.selected-entity {
+    background-color:#BBF;
+    
+}
+.suggested-entity {
+  font-weight: bold;
+  text-decoration:underline;
+}
+.token-select {
+    background-color:grey;
+}
+/*.type>span{
+    display: inherit;
+}*/
+.entity.list-group-item{
+    padding-top:5px;
+    padding-bottom:5px;
+}
+#entity-panel {
+    max-height:400px;
+    overflow-y:scroll;
+}
+.wiki-entry.list-group-item{
+    padding:5px;
+}
+.wiki-entry>.list-group-item-heading{
+    
+}
+.wiki-entry>.list-group-item-text{
+    font-size:smaller;
+}
+.date-now{
+    font-weight:bold;
+}
+.date-now:after{
+    content: " (pub)";
+}
+
+.PER {
+  background-color: #7fc97f;
+}
+.ORG {
+  background-color: #beaed4;
+}
+.GPE {
+  background-color: #fdc086;
+}
+.DATE {
+  background-color: #ffff99;
+}
+.TITLE {
+  background-color: #386cb0;
+}
+#date-widget-modal>.modal-dialog {
+        width: 750px;
+}
+#instruction-widget-modal>.modal-dialog {
+        width: 90%;
+}
