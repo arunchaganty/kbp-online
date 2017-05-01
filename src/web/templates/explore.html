@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% load static %}
 {% load bootstrap3 %}
 
@@ -12,9 +13,9 @@
   </div>
 
   <div class="row">
+    <input id="doc-id" type="hidden" value={{doc_id}} />
     <div id="document" class="document">
     </div>
-    <!-- Actually show the document widget here -->
   </div>
 </div>
 <div class="col-md-2"></div>

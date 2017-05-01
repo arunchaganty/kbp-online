@@ -101,3 +101,6 @@ Session.vim
 # auto-generated tag files
 tags
 data
+
+# Ignore node
+node_modules

@@ -28,7 +28,8 @@
     "jquery": "^3.2.1",
     "js-cookie": "^2.1.4",
     "levenshtein": "^1.0.5",
-    "moment": "^2.18.1"
+    "moment": "^2.18.1",
+    "requirejs": "^2.3.3"
   },
   "devDependencies": {
     "qunit": "^1.0.0"
