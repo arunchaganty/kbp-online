@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load bootstrap3 %}
+
+{% block header %}
+<link rel="stylesheet" href="{% static 'kbpo/css/kbpo.css' %}">
+<style>
+/*
+span.type-marker{
+    display:none;
+}
+span.link-marker {
+    visibility:hidden;
+}
+div#relation-option-preview {
+    height: auto;
+}
+*/
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <h1>Identify relationships between entities <small>Use the buttons at the bottom of the screen.</small></h1>
+</div>
+<div class="row">
+  <form class ='input-group' id='mturk_form' action="" method="POST">
+  <input type="hidden" id="doc-id" value="{{doc_id}}" />
+  <div class="col-md-8">
+    <div class="row">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <div class="document short" id="document">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div id="relation-option-widget">
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div id="relation-list-widget"></div>
+  </div>
+  </form>
+</div>
+
+<script src="/static/requirejs/require.js"></script>
+<script>
+  require.config({
+    baseUrl: "/static/",
+    paths: {
+        "jquery": "jquery/dist/jquery",
+        "bootstrap": "bootstrap/dist/js/bootstrap",
+    },
+  });
+  require(["jquery",
+      "kbpo/js/widgets/DocWidget",
+      "kbpo/js/widgets/InstructionWidget",
+      "kbpo/js/widgets/EntityInterface",
+      ],
+      function($, DocWidget, InstructionWidget, EntityInterface) {
+        // TODO: Based on the page, define the appropriate widgets.
+        var docWidget = new DocWidget($("#document"));
+        var instructionWidget = new InstructionWidget('entity_extraction', '/static/instructions/entity_extraction.html');
+        var iface = new EntityInterface(docWidget, $('#interface'));
+        // Right now, docId is specified on the page.
+        var docId = $("#doc-id").val();
+        $.getJSON("/api/document/" + docId, function(doc) {
+          console.info("loaded document ", doc.id);
+          docWidget.loadDocument(doc);
+          iface.setDocDate(doc.date)
+
+          $.getJSON("/api/suggested-mentions/" + docId, function(mentions) {
+            console.info("loaded ", mentions.length, " mentions.");
+            docWidget.setSuggestions(mentions, "suggestion");
+          });
+
+        });
+      }
+  );
+</script>
+
+{% endblock %}

@@ -4,41 +4,44 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './AddEntityWidget', './RemoveSpanWidget', './DateWidget', './LinkWidget'], function ($, defs, util, DocWidget, EntityListWidget, AddEntityWidget, RemoveSpanWidget, DateWidget, LinkWidget) {
+define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './AddEntityWidget', './RemoveSpanWidget', './DateModal', './WikiLinkModal'], function ($, defs, util, DocWidget, EntityListWidget, AddEntityWidget, RemoveSpanWidget, DateModal, WikiLinkModal) {
 
   var EntityInterface = function(docWidget, elem) {
     var self = this;
+    this.elem = elem;
 
     // Inject HTML into DOM
     util.getDOMFromTemplate('/static/kbpo/html/EntityInterface.html', function(elem_) {
-      elem.html(elem_.html());
-      util.getDOMFromTemplate('/static/kbpo/html/DateWidget.html', function(elem_) {
-        elem.append(elem_);
-        self.dateWidget = new DateWidget(elem_);
-        self.dateWidget.doneListeners.push(function(link) {self.processLinkingDone(link);});
+      self.elem.html(elem_.html());
+      self.dateModal = new DateModal(function(elem_) {
+        self.dateModal.doneListeners.push(function(link) {self.processLinkingDone(link);});
+        self.elem.append(elem_);
       });
-      util.getDOMFromTemplate('/static/kbpo/html/WikiLinkWidget.html', function(elem_) {
-        elem.append(elem_);
-        self.linkWidget = new LinkWidget(elem_);
-        self.linkWidget.doneListeners.push(function(link) {self.processLinkingDone(link);});
+      self.wikiLinkModal = new WikiLinkModal(function(elem_) {
+        self.wikiLinkModal.doneListeners.push(function(link) {self.processLinkingDone(link);});
+        self.elem.append(elem_);
       });
 
       self.docWidget = docWidget;
-      self.listWidget = new EntityListWidget($("#entities"));
-      self.addEntityWidget = new AddEntityWidget($("#add-entity-widget"));
-      self.removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"));
+      self.docWidget.highlightListeners.push(function(selection) {self.processSpanSelection(selection);});
+      self.docWidget.clickListeners.push(function(mention) {self.processMentionClick(mention);});
+
+      self.listWidget = new EntityListWidget($("#entity-list-widget"), function() {
+        self.listWidget.clickListeners.push(function(entity) {self.processEntityClick(entity);});
+        self.listWidget.mouseEnterListeners.push(function(entity) {self.processEntityMouseEnter(entity);});
+        self.listWidget.mouseLeaveListeners.push(function(entity) {self.processEntityMouseLeave(entity);});
+      });
+
+      self.addEntityWidget = new AddEntityWidget($("#add-entity-widget"), function() {
+        self.addEntityWidget.clickListeners.push(function(type) {self.processTypeSelected(type);});
+      });
+      self.removeSpanWidget = new RemoveSpanWidget($("#remove-span-widget"), function() {
+        // Attach a listener for entity selections.
+        self.removeSpanWidget.clickListeners.push(function() {self.processRemoveSpan();});
+      });
 
       self.entities = [];
       self.currentMention = null;
-
-      // Attach a listener for entity selections.
-      self.docWidget.highlightListeners.push(function(selection) {self.processSpanSelection(selection);});
-      self.docWidget.clickListeners.push(function(mention) {self.processMentionClick(mention);});
-      self.addEntityWidget.clickListeners.push(function(type) {self.processTypeSelected(type);});
-      self.removeSpanWidget.clickListeners.push(function() {self.processRemoveSpan();});
-      self.listWidget.clickListeners.push(function(entity) {self.processEntityClick(entity);});
-      self.listWidget.mouseEnterListeners.push(function(entity) {self.processEntityMouseEnter(entity);});
-      self.listWidget.mouseLeaveListeners.push(function(entity) {self.processEntityMouseLeave(entity);});
 
       //$("#done")[0].disabled = false;
       $("#done").on("click.kbpo.interface", function (evt) {
@@ -54,12 +57,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
         $("#entities-output").attr('value', data);
         $("#td").attr('value', new Date().getTime() / 1000 - st);
         self.doneListeners.forEach(function(cb) {cb(data);});
-        //return true;
       });
-
-      // TODO: doc mouseEnter, mouseLeave?
-      // doc.mouseEnterListeners.push(process_mouse_enter);
-      // doc.mouseLeaveListeners.push(process_mouse_leave);
     });
   };
   entities = {};
@@ -103,7 +101,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
     this.docWidget.addMention(this.currentMention);
     this.docWidget.selectMention(this.currentMention);
     this.listWidget.activate(this.currentMention);
-    this.linkWidget.preload(this.currentMention.gloss);
+    this.wikiLinkModal.preload(this.currentMention.gloss);
     this.addEntityWidget.activate();
 
   };
@@ -114,7 +112,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
     this.currentMention.type = type;
 
     if (type.linking == 'wiki-search') {
-      this.linkWidget.show(this.currentMention.gloss);
+      this.wikiLinkModal.show(this.currentMention.gloss);
     } else if (type.linking == 'date-picker') {
       //Find the first related entity
       var i=0;
@@ -122,14 +120,14 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
         if ('suggestedMention' in this.currentMention.tokens[i]) {
           if ('entity' in this.currentMention.tokens[i].suggestedMention) {
             if ('link' in this.currentMention.tokens[i].suggestedMention.entity) {
-              this.dateWidget.show(this.currentMention.gloss, this.currentMention.tokens[i].suggestedMention.entity.link);
+              this.dateModal.show(this.currentMention.gloss, this.currentMention.tokens[i].suggestedMention.entity.link);
               break;
             }
           }
         }
       }
       if (i == this.currentMention.tokens.length) {
-        this.dateWidget.show(this.currentMention.gloss);
+        this.dateModal.show(this.currentMention.gloss);
       }
     } else {
       return this.processLinkingDone("");
@@ -233,7 +231,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
   };
 
   EntityInterface.prototype.setDocDate = function(docdate) {
-    this.dateWidget.setDocDate(docdate);
+    this.dateModal.setDocDate(docdate);
   };
 
   return EntityInterface;

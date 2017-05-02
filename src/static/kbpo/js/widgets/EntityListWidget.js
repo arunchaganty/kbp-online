@@ -4,9 +4,14 @@
  * Licensed under the MIT license
  */
 
-define(['jquery'], function ($) {
-    var EntityListWidget = function(elem) {
+define(['jquery', '../util'], function ($, util) {
+    var EntityListWidget = function(elem, cb) {
+        var self = this;
         this.elem = elem;
+        util.getDOMFromTemplate('/static/kbpo/html/EntityListWidget.html', function(elem_) {
+            self.elem.html(elem_.html());
+            cb();
+        });
     };
 
     EntityListWidget.prototype.clickListeners = [];

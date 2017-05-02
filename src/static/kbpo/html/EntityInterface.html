@@ -2,55 +2,26 @@
 <div class = "row">
   <div class="panel panel-default">
     <div class="panel-body" style='padding:5px;'>
-      <p>
-      <b>Estimated time:</b> <span id="estimated-time">10 minutes</span>
-      </p>
-      <p>
-      <b>Reward:</b> <span id="reward">$6.00</span>
-      </p>
+      <p><b>Estimated time:</b> <span id="estimated-time">10 minutes</span></p>
+      <p><b>Reward:</b> <span id="reward">$6.00</span></p>
 
       <button type="button" id="instructions" class="btn btn-default" >Instructions<span class='fa fa-info-circle fa-lg fa-fw'> </span></button>
-      <input type="hidden" name="assignmentId" id="assignmentId" value="" />
-      <input type="hidden" name="docId" id="docId" value="" />
-      <input id="document-input" name="document" value="" type="hidden" />
-      <input id="entities-output" name="entities" value="" type="hidden" />
       <button id="done" class="btn btn-success" type='submit' name='submit' ><span class="glyphicon glyphicon-ok"></span> Submit</button> 
-      <!--<input id="submitButton" class = 'hidden' type="submit" name="submit" value="Submit" />-->
-      <input type="hidden" name="td" id="td" value="" />
-
     </div>
   </div>
 </div>
-<div class = "row">
+<div class="row">
   <div class="panel panel-default">
-    <div id="entity-panel" class="panel-body">
+    <div class="panel-body">
       <h4>Select Entity to link:</h4>
 
-      <div id="entities" class="list-group">
-        <button type="button" id="entity-empty" class="list-group-item entity" disabled=true>No entities yet</button>
-        <button type="button" id="entity-template" class="btn hidden list-group-item entity"><i class="fa fa-fw {icon}"></i>{gloss}<sup>{id}</sup></button>
-      </div>
+      <div id="entity-list-widget"></div>
     </div>
   </div>
 </div>
-<div id ="add-entity-widget" class="row">
-  <div class="panel panel-default">
-    <div class="panel-body">
-      <h4> Add New Entity:</h4>
-      <div id='types' class="btn-group" role="group">
-        <button id="type-template" type="button" class="hidden type btn btn-secondary"><span class="fa fa-fw {icon}"></span>{name}</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div id ="remove-span-widget" class="row hidden">
-  <div class="panel panel-default">
-    <div class="panel-body">
-      <h4> Delete Span:</h4>
-      <button id="remove-span" class="btn btn-danger btn-block" type="button" name=""> Remove Span </button>
-    </div>
-  </div>
-</div>
+<div id="add-entity-widget"  class="row"></div>
+<div id="remove-span-widget" class="row hidden"></div>
+
 <div class = "row">
   <div class="panel panel-default">
     <div class="panel-body" style='padding:5px;'>
@@ -58,5 +29,6 @@
     </div>
   </div>
 </div>
+
 <div id="modals"></div>
 </div>

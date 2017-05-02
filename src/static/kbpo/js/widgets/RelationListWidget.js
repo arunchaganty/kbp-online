@@ -4,9 +4,12 @@
  * Licensed under the MIT license
  */
 
-define(['jquery'], function ($) {
+define(['jquery', '../util.js'], function ($, util) {
     RelationListWidget = function(elem) {
         this.elem = elem;
+        util.getDOMFromTemplate('/static/kbpo/html/RelationListWidget.html', function(elem_) {
+          elem.html(elem_.html());
+        });
     };
 
     RelationListWidget.prototype.mouseEnterListeners = [];

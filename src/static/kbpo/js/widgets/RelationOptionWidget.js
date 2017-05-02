@@ -5,8 +5,7 @@
  */
 
 // TODO: Maybe move CheckEntityLinkWidget out?
-define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget) {
-
+define(['jquery', '../util', './CheckEntityLinkWidget'], function ($, util, CheckEntityLinkWidget) {
     function getCandidateRelations(mentionPair) {
         var candidates = [];
         RELATIONS.forEach(function (reln) {
@@ -17,21 +16,22 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
 
     /**
      * The relation widget is controlled by the RelationInterface. */
-    var RelationWidget = function(elem) {
+    var RelationOptionWidget = function(elem, verifyLinks) {
         this.elem = elem;
-        this.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
+        this.verifyLinks = verifyLinks || false;
+
+        var self = this;
+        util.getDOMFromTemplate('/static/kbpo/html/RelationOptionWidget.html', function(elem_) {
+          self.elem.html(elem_.html());
+          self.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
+        });
         //this.wikiLinkWidget = CheckEntityLinkWidget(elem)
     };
 
     // initialize the interface using @mentionPair. On completion, call @cb.
-    RelationWidget.prototype.init = function(candidates, cb, linkVerify) {
+    RelationOptionWidget.prototype.init = function(candidates, cb) {
         this.mentionPair = mentionPair;
         this.cb = cb;
-        if (linkVerify !== undefined) {
-            this.linkVerify = linkVerify;
-        } else {
-            this.linkVerify = false;
-        }
         console.log("initializing relation widget for", mentionPair);
 
         this.relns = candidates;
@@ -55,12 +55,12 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
         this.updateText(this.renderTemplate(this.mentionPair));
     };
 
-    RelationWidget.prototype.updateText = function(previewText) {
+    RelationOptionWidget.prototype.updateText = function(previewText) {
         var div = this.elem.find("#relation-option-preview");
         div.html(previewText || "");
     };
 
-    RelationWidget.prototype.makeRelnOption = function(reln, id) {
+    RelationOptionWidget.prototype.makeRelnOption = function(reln, id) {
         var self = this;
         var div = $("#relation-option-widget").clone();
         div.html(div.html().replace("{short}", reln.short));
@@ -76,7 +76,7 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
         div.attr("id", "relation-option-" + id);
 
         div.on("click.kbpo.relationWidget", function(evt) {
-            if (self.linkVerify) {
+            if (self.verifyLinks) {
                 $(self.mentionPair.subject.elem).parent().removeClass("highlight");
                 self.canonicalLinkWidget.init(self.mentionPair.subject, function(){
                     self.canonicalLinkWidget.init(self.mentionPair.object, function(){self.done(reln);});
@@ -88,12 +88,12 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
         });
         // Update widget text. 
         console.log(self.mentionPair);
-        div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair), this.linkVerify);});
+        div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair), this.verifyLinks);});
         div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair));});
         return div;
     };
 
-    RelationWidget.prototype.makeRelnHelp = function(reln, id) {
+    RelationOptionWidget.prototype.makeRelnHelp = function(reln, id) {
         var elem = $("<li>");
         elem.html("<b>{}</b>".replace("{}", reln.short));
         var elems = $("<ul>");
@@ -110,7 +110,7 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
         return elem;
     };
 
-    RelationWidget.prototype.renderTemplate = function(mentionPair) {
+    RelationOptionWidget.prototype.renderTemplate = function(mentionPair) {
         var template = "Please choose how <span class='subject'>{subject}</span> and <span class='object'>{object}</span> are related from the options below.";
         return template
             .replace("{subject}", mentionPair.subject.gloss)
@@ -118,7 +118,7 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
     };
 
     // The widget selection is done -- send back results.
-    RelationWidget.prototype.done = function(chosen_reln) {
+    RelationOptionWidget.prototype.done = function(chosen_reln) {
         // Clear the innards of the html.
         this.elem.find("#relation-options").empty();
         this.elem.find("#relation-option-preview").empty();
@@ -132,5 +132,5 @@ define(['jquery', './CheckEntityLinkWidget'], function ($, CheckEntityLinkWidget
         }
     };
 
-    return RelationWidget;
+    return RelationOptionWidget;
 });
