@@ -42,9 +42,31 @@ def explore(request, doc_id=None):
     return render(request, 'explore.html', {'doc_id': doc.id})
 
 ### Interface functions
-def interface(request, doc_id):
+def _parse_span(doc_id, span_str):
+    beg, end = span_str.split('-')
+    return (doc_id, beg, end)
+
+def interface(request, task, doc_id, subject_id=None, object_id=None):
     doc = get_object_or_404(Document, id=doc_id)
-    return render(request, 'interface_entity.html', {'doc_id': doc.id})
+
+    if task == "entity":
+        return render(request, 'interface_entity.html', {'doc_id': doc.id})
+    elif task == "relation":
+        if subject_id is None and object_id is None:
+            # Exhaustive relations
+            subject_id = _parse_span(doc.id, subject_id)
+            object_id = _parse_span(doc.id, object_id)
+            verify_links = True
+        else:
+            subject_id, object_id = None, None
+            verify_links = False
+
+        return render(request, 'interface_relation.html', {
+            'doc_id': doc.id,
+            'subject_id': subject_id,
+            'object_id': object_id,
+            'verify_links': verify_links,
+            })
 
 ### API functions
 def api_document(_, doc_id):
