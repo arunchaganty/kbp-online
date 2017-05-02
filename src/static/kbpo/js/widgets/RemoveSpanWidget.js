@@ -10,6 +10,7 @@ define(['jquery', '../util'], function ($, util) {
     this.elem = elem;
 
     util.getDOMFromTemplate('/static/kbpo/html/RemoveSpanWidget.html', function(elem_) {
+      self.elem.html(elem_.html());
       self.elem.find("#remove-span").on("click.kbpo.RemoveSpanWidget", function(evt) {
         self.clickListeners.forEach(function (cb) {cb(true);});
       });
