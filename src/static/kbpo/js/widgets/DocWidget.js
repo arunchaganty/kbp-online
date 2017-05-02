@@ -1,10 +1,10 @@
 /*!
- * KBPOnline: The DocumentWidget
+ * KBPOnline
  * Author: Arun Chaganty, Ashwin Paranjape
  * Licensed under the MIT license
  */
 
-define(['jquery'], function () {
+define(['jquery'], function ($) {
   /**
    * The document object -- handles the storage and representation of
    * sentences.

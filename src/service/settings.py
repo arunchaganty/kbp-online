@@ -151,4 +151,4 @@ CELERY_RESULT_BROKER = 'ampq'
 CELERY_RESULT_BACKEND = 'rpc'
 
 # NPM setup
-NPM_ROOT_PATH=os.path.join(BASE_DIR, "static", "kbpo")
+NPM_ROOT_PATH=os.path.join(BASE_DIR, "static")

@@ -1,0 +1,89 @@
+<!-- date-widget Modal -->
+<div class="modal fade" id="date-widget-modal" tabindex="-1" role="dialog" aria-labelledby="linkingModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="linkingModalLabel">Ground the date</h4>
+      </div>
+      <div class="modal-body">
+        <p> Document was published on: <span id='doc-date'></span></p>
+        <p> Date to be grounded: <span id='date-gloss'><span></p>
+        <form>
+          <div class="row">
+
+            <div class="col-lg-9">
+              <div class="list-group">
+                <div class="list-group-item">
+                  <div class="input-group">
+                    <div class='form-inline'>
+                      <input type="radio" name = "week-or-date" value = 'day' aria-label="day">
+                      <div class="form-group">
+                        <label for="month-select">Month</label>
+                        <select name="month" class="form-control" id="month-select" placeholder="MM">
+                          <!--  <option value="volvo">Volvo</option>-->
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="date-select">Day</label>
+                        <select name="day" class="form-control" id="month-select" placeholder="DD">
+                          <!--  <option value="volvo">Volvo</option>-->
+                        </select>
+                      </div>
+                    </div>
+                  </div><!-- /input-group -->
+
+                </div>
+                <div class="list-group-item">
+                  <div class="input-group">
+                    <div class='form-inline'>
+                      <input type="radio" name='week-or-date' value='week' aria-label="week">
+                      <div class="form-group">
+                        <label for="week-select">Week</label>
+                        <select name="week" class="form-control" id="week-select" placeholder="WW" disabled>
+                          <!--  <option value="volvo">Volvo</option>-->
+                        </select>
+
+                      </div>
+                    </div>
+                  </div><!-- /input-group -->
+                </div>
+                <div class="list-group-item">
+                  <div class="input-group">
+                    <div class='form-inline'>
+                      <div class="form-group">
+                        <input type="radio" name = "week-or-date" value = 'neither' aria-label="neither">
+                        <label for="date-select">Neither applicable</label>
+                      </div>
+                    </div>
+                  </div><!-- /input-group -->
+
+                </div>
+              </div>
+            </div><!-- /.col-lg-6 -->
+            <div class="col-lg-3">
+              <div class="form-group">
+                <label for="year-select">Year</label>
+                <select name="year" class="form-control" id="year-select" placeholder="YYYY">
+                  <!--  <option value="volvo">Volvo</option>-->
+                </select>
+              </div>
+            </div><!-- /.col-lg-6 -->
+          </div><!-- /.row -->
+        </form>
+        <h4> Guidelines: </h4>
+        <ul>
+          <li> Choose either month-year or week or neither to report </li>
+          <li> Mark only the information that you can deduce </li>
+          <li> Document date and week is shown in bold in the dropdown for reference </li>
+          <li> Use NA option to indicate unknown fields. For instance in "February 2017", date is unknown </li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button id='link-date-submit' type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
