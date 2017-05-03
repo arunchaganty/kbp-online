@@ -52,7 +52,7 @@ def interface(request, task, doc_id, subject_id=None, object_id=None):
     if task == "entity":
         return render(request, 'interface_entity.html', {'doc_id': doc.id})
     elif task == "relation":
-        if subject_id is None and object_id is None:
+        if subject_id is not None and object_id is not None:
             # Exhaustive relations
             subject_id = _parse_span(doc.id, subject_id)
             object_id = _parse_span(doc.id, object_id)

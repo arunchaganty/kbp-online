@@ -60,7 +60,7 @@
         $.getJSON("/api/document/" + docId, function(doc) {
           console.info("loaded document ", doc.id);
           docWidget.loadDocument(doc);
-          iface.setDocDate(doc.date)
+          iface.setDocDate(doc.date);
 
           $.getJSON("/api/suggested-mentions/" + docId, function(mentions) {
             console.info("loaded ", mentions.length, " mentions.");

@@ -4,7 +4,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', '../util.js'], function ($, util) {
+define(['jquery', '../util'], function ($, util) {
     RelationListWidget = function(elem) {
         this.elem = elem;
         util.getDOMFromTemplate('/static/kbpo/html/RelationListWidget.html', function(elem_) {

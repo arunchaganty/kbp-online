@@ -54,157 +54,44 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
 
   RelationInterface.prototype.doneListeners = [];
 
-  // Iterates through the mention pairs that need to be verified.
-  RelationInterface.prototype.runVerify = function(relations) {
+  RelationInterface.prototype.loadMentionPairs = function(mentionPairs) {
     var self = this;
-    this.mentionPairs = [];
-    relations.forEach(function(rel, idx){
-      var link, canonicalMention;
-      //If object is PER, swap with subject
-      if(rel.object.type == 'PER'){
-        var temp = rel.object;
-        rel.object = rel.subject;
-        rel.subject = temp;
+
+    var mentions = [];
+    self.mentionPairs = [];
+    for (var i = 0; i < mentionPairs.length; i++) {
+      var mentionPair = mentionPairs[i];
+      // Add mention pairs to mentions.
+      subject = Mention.fromJSON(mentionPair.subject, self.docWidget);
+      object = Mention.fromJSON(mentionPair.object, self.docWidget);
+
+      mentions.push(subject);
+      mentions.push(object);
+      self.mentionPairs.push({'subject': subject, 'object': object, 'id': idx, 'relation': null});
+    }
+
+    var seen = new Set();
+    for (i = 0; i < mentions.length; i++) {
+      var mention = mentions[i];
+      var key = mention.doc_char_begin + "-" + mention.doc_char_end;
+      if (!seen.has(key)) {
+        self.docWidget.addMention(mention);
+        seen.add(key);
       }
-      rel.subject.tokens = self.docWidget.getTokens(rel.subject.doc_char_begin, rel.subject.doc_char_end);
-      if(rel.subject.tokens.length >0){
-        rel.subject = new Mention(rel.subject);
-        self.docWidget.addMention(rel.subject);
-      }
-      //TODO: Create a mention and add entity 
-      if (rel.subject.entity !== undefined) {
-        rel.subject.entity.type = rel.subject.type;
-        rel.subject.entity.tokens = self.docWidget.getTokens(rel.subject.entity.doc_char_begin, rel.subject.entity.doc_char_end);
-        link = rel.subject.entity.link;
-        canonicalMention = new Mention(rel.subject.entity);
-        self.docWidget.addMention(canonicalMention);
-        rel.subject.entity = new Entity(canonicalMention);
-        rel.subject.entity.link = link;
-      }
-      rel.object.tokens = self.docWidget.getTokens(rel.object.doc_char_begin, rel.object.doc_char_end);
-      if(rel.object.tokens.length >0){
-        rel.object = new Mention(rel.object);
-        self.docWidget.addMention(rel.object);
-        //TODO: Check if entities need to be added as well
-      }
-      //TODO: Create a mention and add entity 
-      if (rel.object.entity !== undefined){
-        rel.object.entity.type = rel.object.type;
-        rel.object.entity.tokens = self.docWidget.getTokens(rel.object.entity.doc_char_begin, rel.object.entity.doc_char_end);
-        link = rel.object.entity.link;
-        canonicalMention = new Mention(rel.object.entity);
-        self.docWidget.addMention(canonicalMention);
-        rel.object.entity = new Entity(canonicalMention);
-        rel.object.entity.link = link;
-      }
-      self.mentionPairs.push({'subject': rel.subject, 'object': rel.object, 'id': idx, 'relation': null});
-    });
-    this.currentIndex = -1;
-    this.viewStack = [];
-    this.next();
+    }
   };
 
-  RelationInterface.prototype.run = function(mentions) {
-    var self = this;
-    this.mentions = [];
-
-    mentions.forEach(function (m) {
-      m.tokens = self.docWidget.getTokens(m.doc_char_begin, m.doc_char_end);
-      if (m.tokens.length > 0) {
-        m = new Mention(m);
-        self.docWidget.addMention(m);
-        self.mentions.push(m);
-      }
-    });
-    this.mentionPairs = this.constructMentionPairs(this.mentions);
-
+  RelationInterface.prototype.run = function() {
+    console.assert(self.mentionPairs.length > 0);
     this.currentIndex = -1;
     this.viewStack = []; // Used when changing relations.
     this.next();
-  };
-
-  function outOfSentenceLimit(m, n) {
-    return Math.abs(m.sentenceIdx - n.sentenceIdx) > 1;
-  }
-
-  function isRelationCandidate(m, n) {
-    if (m.gloss == n.gloss) return false;
-    if (m.entity.link == n.entity.link) return false;
-    if (m.type.name == "PER") {
-      return true;
-    } else if (m.type.name == "ORG") {
-      return n.type.name !== "PER" && n.type.name !== "TITLE";
-    } else { // All other mentions are not entities; can't be subjects.
-      return false;
-    }
-  }
-
-  function notDuplicated(pairs, m, n) {
-    // Only need to look backwards through list until the sentence
-    // limit
-    console.log(pairs);
-    for(var i = pairs.length-1; i >= 0; i--) {
-      var m_ = pairs[i].subject;
-      var n_ = pairs[i].object;
-
-      if (outOfSentenceLimit(m, m_) || 
-          outOfSentenceLimit(m, n_) || 
-          outOfSentenceLimit(n, m_) || 
-          outOfSentenceLimit(n, n_)) break;
-      if (m_ === n && n_ == m) return false;
-    }
-    return true;
-  }
-
-  // For every pair of mentions in a span of (2) sentences.
-  RelationInterface.prototype.constructMentionPairs = function(mentions) {
-    var pairs = [];
-
-    //var seenEntities = {}; // If you see two entities with the same link, don't ask for another relation between them?
-
-    // Get pairs.
-    var i, j;
-    for (i = 0; i < mentions.length; i++) {
-      var m = mentions[i];
-      var n;
-      // - Go backwards until you cross a sentence boundary.
-      for (j = i-1; j >= 0; j--) {
-        n = mentions[j];
-        if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 0) break;
-
-        // Check that the pair is type compatible and not duplicated.
-        if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n)) {
-          pairs.push({'subject':m,'object':n});
-        }
-      }
-      // - Go forwards until you cross a sentence boundary.
-      for (j = i+1; j < mentions.length; j++) {
-        n = mentions[j];
-        if (Math.abs(m.sentenceIdx - n.sentenceIdx) > 0) break;
-        // Check that the pair is type compatible and not duplicated.
-        if (isRelationCandidate(m,n) && notDuplicated(pairs, m, n))
-          pairs.push({'subject':m,'object':n});
-      }
-    }
-    for (i = 0; i < pairs.length; i++) {
-      pairs[i].id = i;
-      pairs[i].relation = null; // The none relation.
-    }
-
-    return pairs;
   };
 
   function centerOnMention(m) {
     var sentence = $(m.elem).parent();
     var elem = sentence[0];
 
-    /*if (sentence.prev().length > 0) {
-      elem = sentence.prev()[0];
-    //.scrollIntoView(true);
-    } else {
-    elem = sentence[0];
-    //.scrollIntoView(true);
-    }*/
     var topPosRel = elem.offsetTop;
     console.log(topPosRel);
     var parentPosRel = $('#document')[0].offsetTop;

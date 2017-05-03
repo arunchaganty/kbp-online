@@ -404,11 +404,10 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
         this.id = Mention.count++;
         this.tokens = m.tokens;
         this.sentenceIdx = m.tokens[0].sentenceIdx;
-        if(typeof m.type == "string"){
-            this.type = m.type && TYPES[m.type];
-        }
-        else{
-            this.type = m.type && m.type.name && TYPES[m.type.name];
+        if (typeof m.type == "string") {
+          this.type = m.type && TYPES[m.type];
+        } else {
+          this.type = m.type && m.type.name && TYPES[m.type.name];
         }
         this.gloss = m.gloss;
         this.doc_char_begin = m.doc_char_begin;
@@ -426,6 +425,15 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
                "doc_char_begin": tokens[0].token.doc_char_begin,
                "doc_char_end": tokens[tokens.length-1].token.doc_char_end,
         });
+    };
+    Mention.fromJSON = function(m, doc) {
+      m.tokens = doc.getTokens(rel.subject.entity.doc_char_begin, rel.subject.entity.doc_char_end);
+      console.assert(m.tokens.length > 0);
+
+      if (m.entity !== undefined) {
+        m.entity = Entity.fromJSON(m.entity, doc);
+      }
+      return new Mention(m);
     };
 
     Mention.textFromTokens = function(tokens) {
@@ -498,16 +506,28 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
     Entity.count = 0;
     Entity.map = {};
 
-    Entity.prototype.addMention = function(mention) {
-        console.info("Adding mention ", mention);
-        // Set the type of the mention if it hasn't already been set.
-        if (mention.type === null) {
-            mention.type = this.type;
-        }
-        mention.entity = this;
+    Entity.fromJSON = function(m, doc) {
+      m.tokens = doc.getTokens(m.doc_char_begin, m.doc_char_end);
+      console.assert(m.tokens.length > 0);
 
-        this.mentions.push(mention);
-        Entity.map[mention.id] = this;
+      var link = m.link;
+      m = new Mention(m);
+      var e = new Entity(m);
+      e.link = link;
+      return e;
+    };
+
+
+    Entity.prototype.addMention = function(mention) {
+      console.info("Adding mention", mention.gloss, "to", this.gloss);
+      // Set the type of the mention if it hasn't already been set.
+      if (mention.type === null) {
+        mention.type = this.type;
+      }
+      mention.entity = this;
+
+      this.mentions.push(mention);
+      Entity.map[mention.id] = this;
     };
 
     // Returns "true" if the mention has > 0 mentions.

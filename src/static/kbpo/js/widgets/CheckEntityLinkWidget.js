@@ -4,7 +4,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery'], function ($) {
+define(['jquery', './CheckWikiLinkWidget'], function ($, CheckWikiLinkWidget) {
     var CheckEntityLinkWidget = function(elem){
         this.elem = elem;
         this.linkVerificationWidget = new CheckWikiLinkWidget($("#wiki-verification-modal"));
