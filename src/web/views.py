@@ -82,7 +82,7 @@ def api_suggested_mentions(_, doc_id):
 
 def api_suggested_mention_pairs(_, doc_id):
     doc = get_object_or_404(Document, id=doc_id)
-    ret = api.get_document(doc.id)
+    ret = api.get_suggested_mention_pairs(doc.id)
     return JsonResponse(ret)
 
 def api_submission_mentions(_, doc_id, submission_id):
