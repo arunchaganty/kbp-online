@@ -33,7 +33,8 @@ CREATE TABLE sentence (
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   doc_id TEXT NOT NULL REFERENCES document(id), -- Reference to document
-  sentence_index SMALLINT,
+  span INT4RANGE NOT NULL,
+  sentence_index SMALLINT NOT NULL,
 
   words TEXT[] NOT NULL,
   lemmas TEXT[] NOT NULL,
@@ -61,38 +62,32 @@ CREATE INDEX sentence_id_idx ON sentence(id);
 
 -- mention
 CREATE TABLE suggested_mention (
-  id span NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
+  span INT4RANGE NOT NULL,
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  sentence_id INTEGER NOT NULL,
+  sentence_id INTEGER,
 
   mention_type TEXT NOT NULL,
-  canonical_span span NOT NULL,
+  canonical_span INT4RANGE NOT NULL,
   gloss TEXT NOT NULL,
-  CONSTRAINT doc_id_matches CHECK ((id).doc_id = doc_id),
-  CONSTRAINT char_spans_exclusive CHECK ((id).char_end > (id).char_begin),
-  CONSTRAINT canonical_char_spans_exclusive CHECK ((canonical_span).char_end > (canonical_span).char_begin),
-  PRIMARY KEY(doc_id, id)
+
+  PRIMARY KEY(doc_id, span)
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE suggested_mention IS 'Entity mentions extracted by Stanford CoreNLP';
-CREATE INDEX suggested_mention_id_idx ON suggested_mention(id);
 
 -- link
 CREATE TABLE suggested_link (
-  id span,
   doc_id TEXT,
+  span INT4RANGE NOT NULL,
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
   confidence REAL DEFAULT 1.0,
 
-  CONSTRAINT doc_id_matches CHECK ((id).doc_id = doc_id),
-  CONSTRAINT char_spans_exclusive CHECK ((id).char_end > (id).char_begin),
-  CONSTRAINT mention_exists FOREIGN KEY (doc_id, id) REFERENCES suggested_mention,
-  PRIMARY KEY(doc_id, id)
+  CONSTRAINT mention_exists FOREIGN KEY (doc_id, span) REFERENCES suggested_mention,
+  PRIMARY KEY(doc_id, span)
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE suggested_link IS 'Entity links suggested by Stanford CoreNLP';
-CREATE INDEX suggested_link_id_idx ON suggested_link(id);
 
 COMMIT;

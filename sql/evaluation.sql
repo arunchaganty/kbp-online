@@ -84,24 +84,19 @@ CREATE TABLE  evaluation_mention_response (
   question_id TEXT NOT NULL,
 
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id span NOT NULL,
+  span INT4RANGE NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  canonical_id span NOT NULL,
+  canonical_span INT4RANGE NOT NULL,
   mention_type TEXT NOT NULL,
   gloss TEXT,
   weight REAL NOT NULL DEFAULT 1.0, -- Score/weight given to this response
 
-  PRIMARY KEY (doc_id, assignment_id, mention_id),
-  CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
+  PRIMARY KEY (assignment_id, doc_id, span),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
-  CONSTRAINT valid_canonical_span CHECK (span_is_valid(canonical_id)),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
-  CONSTRAINT canonical_doc_agrees CHECK((canonical_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_mention_response IS 'Table containing mentions within a document, as specified by CoreNLP';
-CREATE INDEX evaluation_mention_response_mention_idx ON evaluation_mention_response(mention_id);
 
 -- evaluation_mention
 CREATE TABLE  evaluation_mention (
@@ -109,24 +104,19 @@ CREATE TABLE  evaluation_mention (
   question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id span,
+  span INT4RANGE NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
-  canonical_id span NOT NULL,
+  canonical_span INT4RANGE NOT NULL,
   mention_type TEXT NOT NULL,
   gloss TEXT,
   weight REAL NOT NULL DEFAULT 1.0, -- Score/weight given to this response
 
-  PRIMARY KEY (doc_id, mention_id),
-  CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
+  PRIMARY KEY (doc_id, span),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
-  CONSTRAINT valid_canonical_span CHECK (span_is_valid(canonical_id)),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
-  CONSTRAINT canonical_doc_agrees CHECK((canonical_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_mention IS 'Table containing mentions within a document, aggregated from all the responses';
-CREATE INDEX evaluation_mention_mention_idx ON evaluation_mention(mention_id);
 
 -- evaluation_link_response
 CREATE TABLE  evaluation_link_response (
@@ -134,20 +124,18 @@ CREATE TABLE  evaluation_link_response (
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
   question_id TEXT NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id span NOT NULL,
+  span INT4RANGE NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
-  PRIMARY KEY (doc_id, assignment_id, mention_id),
-  CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
+  PRIMARY KEY (assignment_id, doc_id, mention_id),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_link_response IS 'Table containing mentions within a document, as specified by CoreNLP';
-CREATE INDEX evaluation_link_response_mention_idx ON evaluation_link_response(mention_id);
+CREATE INDEX evaluation_link_response_mention_idx ON evaluation_link_response(doc_id, span);
 
 -- evaluation_link
 CREATE TABLE  evaluation_link (
@@ -155,20 +143,17 @@ CREATE TABLE  evaluation_link (
   question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
-  mention_id span,
+  span INT4RANGE NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   link_name TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
   PRIMARY KEY (doc_id, mention_id),
-  CONSTRAINT valid_span CHECK (span_is_valid(mention_id)),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
-  CONSTRAINT doc_agrees CHECK((mention_id).doc_id = doc_id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_link IS 'Table containing mentions within a document, aggregated from all the responses';
-CREATE INDEX evaluation_link_mention_idx ON evaluation_link(mention_id);
 
 -- evaluation_relation_response
 -- evaluation_relation
@@ -177,23 +162,19 @@ CREATE TABLE  evaluation_relation_response (
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
   question_id TEXT NOT NULL,
   doc_id TEXT NOT NULL REFERENCES document,
-  subject_id span NOT NULL,
-  object_id span NOT NULL,
+  subject INT4RANGE NOT NULL,
+  object INT4RANGE NOT NULL,
   created TIMESTAMP NOT NULL,
 
   relation TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
-  PRIMARY KEY (doc_id, assignment_id, subject_id, object_id),
-  CONSTRAINT valid_subject CHECK (span_is_valid(subject_id)),
-  CONSTRAINT valid_object CHECK (span_is_valid(object_id)),
-  CONSTRAINT subject_doc_agrees CHECK((subject_id).doc_id = doc_id),
-  CONSTRAINT object_doc_agrees CHECK((object_id).doc_id = doc_id),
+  PRIMARY KEY (assignment_id, doc_id, subject, object),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_relation_response IS 'Table containing mentions within a document, as specified by CoreNLP';
-CREATE INDEX evaluation_relation_response_pair_idx ON evaluation_relation_response(subject_id, object_id);
+CREATE INDEX evaluation_relation_response_pair_idx ON evaluation_relation_response(doc_id, subject, object);
 
 -- evaluation_relation
 CREATE TABLE  evaluation_relation (
@@ -201,22 +182,18 @@ CREATE TABLE  evaluation_relation (
   question_id TEXT NOT NULL, -- this can be used to identify responses
 
   doc_id TEXT NOT NULL REFERENCES document,
-  subject_id span NOT NULL,
-  object_id span NOT NULL,
+  subject INT4RANGE NOT NULL,
+  object INT4RANGE NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   relation TEXT NOT NULL,
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
-  PRIMARY KEY (question_id, question_batch_id, doc_id, subject_id, object_id),
-  CONSTRAINT valid_subject CHECK (span_is_valid(subject_id)),
-  CONSTRAINT valid_object CHECK (span_is_valid(object_id)),
-  CONSTRAINT subject_doc_agrees CHECK((subject_id).doc_id = doc_id),
-  CONSTRAINT object_doc_agrees CHECK((object_id).doc_id = doc_id),
+  PRIMARY KEY (doc_id, subject, object),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_relation IS 'Table containing mentions within a document, aggregated from all the responses';
-CREATE INDEX evaluation_relation_pair_idx ON evaluation_relation(subject_id, object_id);
+CREATE INDEX evaluation_relation_pair_idx ON evaluation_relation(doc_id, object);
 
 COMMIT;
