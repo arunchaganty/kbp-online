@@ -20,8 +20,6 @@ def sample_uniformly_with_replacement(X, num_samples):
     assert len(Xh) == num_samples
     return Xh
 
-
-
 def sample_with_replacement(P, X, num_samples):
     """
     Draw num_samples from X using the distribution P.
@@ -56,4 +54,3 @@ def sample_without_replacement(P, X, num_samples):
     Xh = [X[i] for i in ixs[:num_samples]]
     assert len(Xh) == num_samples
     return Xh
-

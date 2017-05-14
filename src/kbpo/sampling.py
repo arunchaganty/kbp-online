@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 Different entity sampling schemes.
+TODO: REWRITE 
+    -- use distributions from db_evaluation
+    -- use sampling schemes from sample_util
+    -- finally push those into a format that can be inserted into
+    questions.
 """
 
 import random
@@ -217,70 +222,6 @@ def sample_by_balanced_instances(entries, num_samples):
     false_sample = [row._replace(weight=2*F/R) for row in sample_without_replacement(false_instances, int(np.floor(num_samples/2)))]
     sample = true_sample + false_sample
     return sample
-
-# def reweight(types, entries, new_entries, scheme="entity"):
-#     """
-#     Compute weights for @new_entries, using @entries to compute probability scores.
-#     """
-#     # Construct an entity-centric table to sample from.
-#     links = {}
-#     entities = defaultdict(lambda: defaultdict(list))
-#     relations = defaultdict(list)
-# 
-#     # Summary statistics
-#     for row in entries:
-#         subj, relation, obj = row[:3]
-#         if relation in TYPES:
-#             continue
-#         if relation == "link":
-#             links[subj] = obj
-#         elif relation == "canonical_mention":
-#             links[subj] = links[obj]
-#         else:
-#             subj_, obj_ = links[subj], links[obj]
-# 
-#             row = normalize(types, row) # Normalize every entry before adding it here.
-#             relation = row[1]
-#             entities[subj_][(relation,obj_)].append(tuple(row))
-#             relations[relation].append(tuple(row))
-#     E, F, I = len(entities), sum(len(fills) for fills in entities.values()), sum(len(instances) for fills in entities.values() for instances in fills.values())
-#     I_ = sum(len(mentions) for mentions in relations.values())
-#     assert I == I_, "Discrepancy in relation, entity counts."
-# 
-#     # Compute observed_relations
-#     observed_relations = Counter(row[1] for row in new_entries if is_reln(row[1]))
-#     num_entries = sum(observed_relations.values())
-# 
-#     logger.info("Found at %d entities, %d fills, %d instances split over %d relations", E, F, I, len(relations))
-# 
-#     MW, EW, RW = 5, 6, 7
-# 
-#     new_entries_ = []
-#     for row in new_entries:
-#         assert len(row) == 8 # subj, reln, obj, prov, conf, mw, ew, rw
-#         subj, relation, obj = row[:3]
-# 
-#         if is_reln(relation):
-#             subj_, obj_ = links[subj], links[obj]
-# 
-#             p_mi = I
-#             p_ei = E * len(entities[subj_]) * len(entities[subj_][relation, obj_])
-#             p_ri = len(relations[relation]) * len(relations)
-#             q_ri = len(relations[relation]) * num_entries / observed_relations[relation]
-# 
-#             if scheme == "entity":
-#                 row[MW] = p_ei / p_mi
-#                 row[EW] = 1.
-#                 row[RW] = p_ei / p_ri
-#             elif scheme == "relation":
-#                 row[MW] = q_ri / p_mi
-#                 row[EW] = q_ri / p_ei
-#                 row[RW] = q_ri / p_ri
-#             else:
-#                 raise ValueError("invalid scheme")
-#             new_entries_.append(row)
-# 
-#     return new_entries_
 
 def sample_instances(mode, candidates, num_samples, old_entries=None, per_entity=None):
     """
