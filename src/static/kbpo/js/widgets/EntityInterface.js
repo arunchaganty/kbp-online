@@ -9,6 +9,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
   var EntityInterface = function(docWidget, elem) {
     var self = this;
     this.elem = elem;
+    this.startTime = new Date().getTime();
 
     // Inject HTML into DOM
     util.getDOMFromTemplate('/static/kbpo/html/EntityInterface.html', function(elem_) {
@@ -54,8 +55,8 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
           }
         }
         var data = JSON.stringify(entities);
-        $("#entities-output").attr('value', data);
-        $("#td").attr('value', new Date().getTime() / 1000 - st);
+        $("#workerTime").attr('value', (new Date().getTime() - self.startTime) / 1000);
+        $("#response").attr('value', data);
         self.doneListeners.forEach(function(cb) {cb(data);});
       });
     });

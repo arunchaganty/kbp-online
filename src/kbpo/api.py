@@ -2,8 +2,7 @@
 Utilities connecting the web interface to database
 Interfacing with database API
 """
-import unittest
-from datetime import date
+from datetime import date, datetime
 
 from . import db
 from . import defs
@@ -273,7 +272,20 @@ def test_get_submission_relations():
         "confidence": 0.
         }
 
-
-
-if __name__ == '__main__':
-    unittest.main()
+def insert_assignment(
+        assignment_id, hit_id, worker_id,
+        worker_time, comments, response,
+        status="Submitted", created=datetime.now()):
+    batch_id = next(db.select("""SELECT id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id))
+    db.execute("""
+        INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) 
+        VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(status)s)""",
+               assignment_id=assignment_id,
+               hit_id=hit_id,
+               batch_id=batch_id,
+               worker_id= worker_id,
+               created= created,
+               worker_time=worker_time,
+               response=response,
+               comments=comments,
+               status=status)

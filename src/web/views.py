@@ -1,8 +1,10 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
 
-import kbpo.interface as api
+from kbpo import api
 
 from .forms import KnowledgeBaseSubmissionForm
 from .models import Submission, SubmissionUser, SubmissionState
@@ -50,7 +52,24 @@ def interface(request, task, doc_id, subject_id=None, object_id=None):
     doc = get_object_or_404(Document, id=doc_id)
 
     if task == "entity":
-        return render(request, 'interface_entity.html', {'doc_id': doc.id})
+        if request.method == 'POST': # handle response.
+            response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
+            response = json.loads(response)
+            api.insert_assignment(
+                assignment_id=request.POST["assignmentId"],
+                hit_id=request.POST["hitId"],
+                worker_id=request.POST["workerId"],
+                worker_time=request.POST["workerTime"],
+                comments=request.POST["comments"],
+                response=response)
+            # TODO: parse response.
+
+        return render(request, 'interface_entity.html', {
+            'doc_id': doc.id,
+            'assignment_id': "TEST_ASSIGNMENT",
+            'hit_id': "TEST_HIT",
+            'worker_id': "TEST_WORKER",
+            })
     elif task == "relation":
         if subject_id is not None and object_id is not None:
             # Exhaustive relations
