@@ -212,6 +212,7 @@ def verify_relations(mfile):
     return mfile._replace(relations=relations_)
 
 # TODO: make this validator 10x more robust
+# TODO: have validator report errors.
 def validate(fstream):
     mfile = MFile.from_stream(csv.reader(fstream, delimiter='\t'))
     mfile = verify_mention_ids(mfile)
