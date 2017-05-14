@@ -3,6 +3,12 @@ SET search_path TO kbpo;
 
 BEGIN TRANSACTION;
 
+CREATE TYPE score AS (
+  precision REAL,
+  recall REAL,
+  f1 REAL
+);
+
 CREATE SEQUENCE submission_id_seq;
 CREATE TABLE  submission (
     id INTEGER PRIMARY KEY DEFAULT nextval('submission_id_seq'),
@@ -25,7 +31,7 @@ CREATE TABLE  submission_mention (
   mention_type TEXT NOT NULL,
   gloss TEXT,
 
-  PRIMARY KEY (submission_id, doc_id, span),
+  PRIMARY KEY (submission_id, doc_id, span)
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE submission_mention IS 'Table containing mentions within a document, as specified by CoreNLP';
 CREATE INDEX submission_mention_doc_idx ON submission_mention(doc_id, span);
@@ -55,7 +61,7 @@ CREATE TABLE  submission_relation (
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   relation TEXT NOT NULL,
-  provenances SPAN[] NOT NULL,
+  provenances INT4RANGE[] NOT NULL,
   confidence REAL DEFAULT 1.0,
   PRIMARY KEY (submission_id, doc_id, subject, object),
   CONSTRAINT subject_exists FOREIGN KEY (submission_id, doc_id, subject) REFERENCES submission_mention,
