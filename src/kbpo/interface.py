@@ -1,11 +1,28 @@
 """
 Utilities connecting the web interface to database
+Interfacing with database API
 """
 import unittest
 from datetime import date
 
 from . import db
 from . import defs
+
+def get_documents(corpus_tag):
+    """
+    Returns a list of documents with a particualr corpus tag
+    """
+    return db.select("""
+        SELECT doc_id
+        FROM document_tag
+        WHERE tag=%(tag)s
+        ORDER BY doc_id
+        """, tag=corpus_tag)
+
+def test_get_documents():
+    docs = list(get_documents("kbp-2016"))
+    assert len(docs) == 15000
+    assert "NYT_ENG_20131216.0031" in docs
 
 def get_document(doc_id):
     """
@@ -255,6 +272,8 @@ def test_get_submission_relations():
         "doc_char_end": 1278,
         "confidence": 0.
         }
+
+
 
 if __name__ == '__main__':
     unittest.main()
