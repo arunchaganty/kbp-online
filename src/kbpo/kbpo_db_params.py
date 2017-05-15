@@ -4,7 +4,7 @@ Database connection parameters for kbpo database
 """
 from psycopg2.extras import NamedTupleCursor
 _PARAMS = {
-    'dbname':'kbpo_test',
+    'dbname':'kbpo',
     'user':'kbpo',
     'password':'kbpo',
     'host':'localhost',
