@@ -1,3 +1,8 @@
+# File wide connection.
+"""
+Database connection parameters for kbpo database
+"""
+from psycopg2.extras import NamedTupleCursor
 _PARAMS = {
     'dbname':'kbpo_test',
     'user':'kbpo',

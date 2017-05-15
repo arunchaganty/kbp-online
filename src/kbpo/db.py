@@ -8,7 +8,7 @@ import logging
 import re
 import psycopg2 as db
 from psycopg2.extras import execute_values
-from .kbpo_db_params import _PARAMS
+from .params.db.default import _PARAMS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
