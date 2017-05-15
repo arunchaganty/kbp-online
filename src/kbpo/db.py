@@ -6,8 +6,8 @@ Database utilities.
 
 import logging
 import re
-import psycopg2 as db
-from psycopg2.extras import execute_values
+import psycopg2
+from psycopg2.extras import execute_values, NumericRange
 from .params.db.default import _PARAMS
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)
 
 def connect(params=_PARAMS):
     """Connect to database using @params"""
-    conn = db.connect(**params)
+    conn = psycopg2.connect(**params)
     with conn:
         with conn.cursor() as _cur:
             _cur.execute("SET search_path TO kbpo;")
@@ -46,3 +46,14 @@ def sanitize(word):
     Remove any things that would confusing psql.
     """
     return re.sub(r"[^a-zA-Z0-9. ]", "%", word)
+
+class TypedNumericRange(NumericRange):
+    pg_type = None
+
+class Int4NumericRange(TypedNumericRange):
+    pg_type = b'int4range'
+
+class TypedNumericRangeAdapter(psycopg2._range.NumberRangeAdapter):
+    def getquoted(self):
+        return super(TypedNumericRangeAdapter, self).getquoted() + b'::' + self.adapted.pg_type
+psycopg2.extensions.register_adapter(Int4NumericRange, TypedNumericRangeAdapter)
