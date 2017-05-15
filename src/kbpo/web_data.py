@@ -14,10 +14,10 @@ from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance,
 
 logger = logging.getLogger(__name__)
 
-def insert_assignment(assignment_id, hit_id, worker_id, created, worker_time, comments, response, status = "Submitted"):
-    batch_id = next(db.select("""SELECT id FROM mturk_hit WHERE id = (%s);""", hit_id))
-    db.execute(
-    """INSERT INTO mturk_assignment ( id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", assignment_id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status)
+#def insert_assignment(assignment_id, hit_id, worker_id, created, worker_time, comments, response, status = "Submitted"):
+    #batch_id = next(db.select("""SELECT id FROM mturk_hit WHERE id = (%s);""", hit_id))
+    #db.execute(
+    #"""INSERT INTO mturk_assignment ( id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", assignment_id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status)
 
 
 def parse_selective_relations_response(question, responses):
@@ -48,7 +48,7 @@ def parse_selective_relations_response(question, responses):
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
 
 def test_parse_selective_relations_response():
-    # My output could be one of the following cases:
+    # My output could be one of the following cases
     # - the mention could be wrong. (TODO: how are we handling this?)
     # - the linking could be wrong.
     # - the relation could be wrong.
@@ -287,3 +287,53 @@ def update_summary():
     update_evaluation_mention()
     update_evaluation_link()
     update_evaluation_relation()
+
+"""
+CREATE TEMP TABLE span_denominator AS (
+    SELECT doc_id, span, array_agg(batch_id) as batches, sum(n_assignments) AS denominator 
+    FROM (SELECT doc_id, span, batch_id, FIRST(mturk_batch_params#>>'{max_assignments}')::int as n_assignments 
+        FROM evaluation_mention_response_flat GROUP BY doc_id, span, batch_id) 
+        as temp GROUP BY doc_id, span
+    );
+"""
+"""
+CREATE TEMP TABLE span_counts AS (
+    SELECT m1.doc_id, m1.span, m1.gloss, count(*)  
+    FROM evaluation_mention_response_flat AS m1 
+    JOIN evaluation_mention_response AS m2 ON m1.doc_id = m2.doc_id 
+         AND (m1.span <@ m2.span OR m1.span = m2.span) 
+         AND m1.assignment_id < m2.assignment_id 
+    GROUP BY m1.doc_id, m1.span, m1.gloss
+    );
+"""
+"""
+CREATE TEMP TABLE mention_gloss_true AS (
+    SELECT m.doc_id, m.span, array_agg(w.gloss) 
+    FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m 
+    LEFT JOIN (SELECT doc_id, int4range(dcb, dce) as span, gloss FROM (
+        SELECT doc_id, unnest(doc_char_begin) AS dcb, unnest(doc_char_end) AS dce, unnest(words) as gloss 
+        FROM sentence ORDER BY doc_id) as t) AS w 
+    ON m.doc_id = w.doc_id AND m.span @> w.span group by m.doc_id, m.span
+);
+"""
+def sanitize_mention_response():
+    """Make sure mention responses are correct and correct them if possible"""
+    #db.execute(
+    #"""
+    #DROP TABLE IF EXISTS mention_gloss_true;
+    #CREATE TABLE mention_gloss_true AS (SELECT m.doc_id, m.span, substring(s.gloss from lower(m.span)-lower(s.span)+1 for upper(m.span)-lower(m.span)) as gloss FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m LEFT JOIN sentence AS s ON m.doc_id = s.doc_id AND m.span <@ s.span);
+    #""");
+    responses_with_true_gloss = db.select("""SELECT m.*, tm.gloss AS true_gloss FROM evaluation_mention_response AS m LEFT JOIN mention_gloss_true AS tm ON m.doc_id = tm.doc_id AND m.span = tm.span;""");
+    for response in responses_with_true_gloss:
+        logger.debug((response.gloss, response.true_gloss))
+        break
+
+
+if __name__ == '__main__':
+    sanitize_mention_response()
+        
+
+
+
+
+    
