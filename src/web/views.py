@@ -109,6 +109,18 @@ def do_task(request):
         except StopIteration:
             raise Http404("HIT {} does not exist".format(hit_id))
 
+        if request.POST:
+            response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
+            response = json.loads(response)
+
+            api.insert_assignment(
+                assignment_id=request.POST["assignmentId"],
+                hit_id=request.POST["hitId"],
+                worker_id=request.POST["workerId"],
+                worker_time=request.POST["workerTime"],
+                comments=request.POST["comments"],
+                response=response)
+            return JsonResponse({"success": True})
         # Get the corresponding mturk_hit and evaluation_question to
         # render this
         doc = get_object_or_404(Document, id=params["doc_id"])
