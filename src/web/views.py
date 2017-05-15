@@ -169,5 +169,5 @@ def api_suggested_mention_pairs(_, doc_id):
 def api_submission_mentions(_, doc_id, submission_id):
     doc = get_object_or_404(Document, id=doc_id)
     submission = get_object_or_404(Submission, id=submission_id)
-    ret = api.get_submission_mentions(doc.id, submission.id)
+    ret = api.get_submission_mentions(submission.id, doc.id)
     return JsonResponse(ret)
