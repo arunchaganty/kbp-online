@@ -7,7 +7,7 @@ Database utilities.
 import logging
 import re
 import psycopg2 as db
-from psycopg2.extras import execute_values, register_composite
+from psycopg2.extras import execute_values
 from .kbpo_db_params import _PARAMS
 
 logger = logging.getLogger(__name__)
@@ -33,16 +33,21 @@ def select(sql, **kwargs):
     """Wrapper around psycopg execute function to yield the result of a SELECT statement"""
     with CONN:
         with CONN.cursor() as cur:
-            register_composite('kbpo.span', cur)
             cur.execute(sql, kwargs)
             yield from cur
 
 def execute(sql, **kwargs):
-    """Wrapper around psycopg execute function to not yield the result of execute statement"""
+    """Wrapper around psycopg execute function to not yield the result of execute statement 
+    but commit the transction immedietly"""
     with CONN:
         with CONN.cursor() as cur:
-            register_composite('kbpo.span', cur)
-            cur.execute(sql, kwargs)
+            execute_without_commit(cur, sql, **kwargs)
+
+def execute_without_commit(cur, sql, **kwargs):
+    """Wrapper around psycopg execute function to execute a sql statement but not commit
+    the transaction"""
+    cur.execute(sql, kwargs)
+
 
 def sanitize(word):
     """
