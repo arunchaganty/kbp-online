@@ -1,14 +1,16 @@
 """
 Definitions for the KBPO task.
 """
+
+# MAKE SURE THIS CORRESPONDS WITH sql/functions.sql:to_kbpo_type.
 NER_MAP = {
     "PERSON": "PER",
     "ORGANIZATION": "ORG",
-    "COUNTRY": "GPE",
-    "LOCATION": "GPE",
+    "GPE": "GPE",
     "CITY": "GPE",
     "STATE_OR_PROVINCE": "GPE",
-    "GPE": "GPE",
+    "COUNTRY": "GPE",
+    "LOCATION": "GPE",
     "TITLE": "TITLE",
     "DATE": "DATE",
     }

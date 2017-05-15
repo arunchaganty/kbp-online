@@ -21,7 +21,14 @@
 </div>
 <div class="row">
   <form class ='input-group' id='mturk_form' action="" method="POST">
-  <input type="hidden" id="doc-id" value="{{doc_id}}" />
+  {% csrf_token %}
+  <input type="hidden" name="assignmentId" value="{{assignment_id}}" />
+  <input type="hidden" name="hitId" value="{{hit_id}}" />
+  <input type="hidden" name="workerId" value="{{worker_id}}" />
+  <input type="hidden" name="docId" id="doc-id" value="{{doc_id}}" />
+  <input type="hidden" name="workerTime" id="workerTime" value="" />
+  <input type="hidden" name="response" id="response" value="" />
+
   <div class="col-md-9">
     <div class="panel panel-default">
       <div class="panel-body">

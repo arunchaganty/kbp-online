@@ -51,7 +51,7 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
+#local_settings.py
 
 # Flask stuff:
 instance/
@@ -104,3 +104,7 @@ data
 
 # Ignore node
 node_modules
+
+# Ignore symlinks.
+src/service/settings.py
+src/kbpo/params/db/default.py

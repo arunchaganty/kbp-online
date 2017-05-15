@@ -36,26 +36,23 @@ CREATE TABLE sentence (
   span INT4RANGE NOT NULL,
   sentence_index SMALLINT NOT NULL,
 
+  token_spans INT4RANGE[] NOT NULL,
   words TEXT[] NOT NULL,
   lemmas TEXT[] NOT NULL,
   pos_tags TEXT[] NOT NULL,
   ner_tags TEXT[] NOT NULL,
-  doc_char_begin INTEGER[] NOT NULL,
-  doc_char_end INTEGER[] NOT NULL,
-  gloss TEXT,
+  gloss TEXT NOT NULL,
   dependencies TEXT NOT NULL,
 
-  CONSTRAINT _word_length_same_as_doc_char_begin_length CHECK ((array_lower(words, 1) = array_lower(doc_char_begin, 1))),
-  CONSTRAINT _word_length_same_as_doc_char_end_length CHECK ((array_lower(words, 1) = array_lower(doc_char_end, 1))),
+  CONSTRAINT _word_length_same_as_tokens_length CHECK ((array_lower(words, 1) = array_lower(token_spans, 1))),
   CONSTRAINT _word_length_same_as_lemma_length CHECK ((array_lower(words, 1) = array_lower(lemmas, 1))),
   CONSTRAINT _word_length_same_as_ner_length CHECK ((array_lower(words, 1) = array_lower(ner_tags, 1))),
   CONSTRAINT _word_length_same_as_pos_length CHECK ((array_lower(words, 1) = array_lower(pos_tags, 1))),
-  CONSTRAINT word_length_same_as_doc_char_begin_length CHECK ((array_upper(words, 1) = array_upper(doc_char_begin, 1))),
-  CONSTRAINT word_length_same_as_doc_char_end_length CHECK ((array_upper(words, 1) = array_upper(doc_char_end, 1))),
+  CONSTRAINT word_length_same_as_tokens_length CHECK ((array_upper(words, 1) = array_upper(token_spans, 1))),
   CONSTRAINT word_length_same_as_lemma_length CHECK ((array_upper(words, 1) = array_upper(lemmas, 1))),
   CONSTRAINT word_length_same_as_ner_length CHECK ((array_upper(words, 1) = array_upper(ner_tags, 1))),
   CONSTRAINT word_length_same_as_pos_length CHECK ((array_upper(words, 1) = array_upper(pos_tags, 1))),
-  PRIMARY KEY (doc_id, sentence_index)
+  PRIMARY KEY (doc_id, span)
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE sentence IS 'Sentences and features, from Stanford CoreNLP';
 CREATE INDEX sentence_id_idx ON sentence(id);
