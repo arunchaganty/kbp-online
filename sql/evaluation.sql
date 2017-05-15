@@ -44,7 +44,7 @@ CREATE TABLE  mturk_batch (
 COMMENT ON TABLE mturk_batch IS 'Keeps track of each distinct batch of mturk HITS';
 
 CREATE TABLE  mturk_hit (
-  id TEXT, -- provided by mturk
+  id TEXT PRIMARY KEY, -- provided by mturk
   batch_id INTEGER NOT NULL REFERENCES mturk_batch,
 
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
@@ -55,7 +55,6 @@ CREATE TABLE  mturk_hit (
   price REAL, -- provided to mturk
   units INTEGER, -- provided to mturk
 
-  PRIMARY KEY(batch_id, id),
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (batch_id);
 COMMENT ON TABLE mturk_hit IS 'Keeps track of an individual hit';
@@ -64,7 +63,7 @@ COMMENT ON TABLE mturk_hit IS 'Keeps track of an individual hit';
 CREATE TABLE  mturk_assignment (
   id TEXT PRIMARY KEY, -- provided by mturk
   batch_id INTEGER NOT NULL REFERENCES mturk_batch,
-  hit_id TEXT NOT NULL,
+  hit_id TEXT NOT NULL REFERENCES mturk_hit,
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   worker_id TEXT NOT NULL, -- provided by mturk
@@ -73,7 +72,6 @@ CREATE TABLE  mturk_assignment (
   response JSON NOT NULL, -- the raw response by the worker.
   comments TEXT, -- comments provided by the turker 
   ignored BOOLEAN NOT NULL DEFAULT FALSE, -- Should we ignore this entry for some reason?
-  CONSTRAINT mturk_hit_exists FOREIGN KEY (batch_id, hit_id) REFERENCES mturk_hit
 ); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE mturk_assignment IS 'Keeps track HIT responses from turkers';
 

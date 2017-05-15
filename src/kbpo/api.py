@@ -277,6 +277,7 @@ def insert_assignment(
         worker_time, comments, response,
         status="Submitted", created=datetime.now()):
     batch_id = next(db.select("""SELECT id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id))
+
     db.execute("""
         INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) 
         VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(status)s)""",
@@ -289,3 +290,19 @@ def insert_assignment(
                response=response,
                comments=comments,
                status=status)
+
+def get_hits(limit=None):
+    if limit is None:
+        return db.select("""SELECT * FROM mturk_hit""")
+    else:
+        return db.select("""SELECT * FROM mturk_hit LIMIT %(limit)d""", limit=limit)
+
+def get_hit(hit_id):
+    return next(db.select("""SELECT * FROM mturk_hit WHERE hit_id=%(hit_id)s""", hit_id=hit_id))
+
+def get_task_params(hit_id):
+    return next(db.select("""
+        SELECT params 
+        FROM mturk_hit h 
+        JOIN evaluation_question q ON (h.question_batch_id = q.batch_id AND h.question_id = q.id)
+        WHERE h.id=%(hit_id)s""", hit_id=hit_id)).params

@@ -8,6 +8,6 @@ _PARAMS = {
     'user':'kbpo',
     'password':'kbpo',
     'host':'localhost',
-    'port': 5432,
+    'port': 5433,
     'cursor_factory': NamedTupleCursor,
     }

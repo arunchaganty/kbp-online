@@ -81,14 +81,16 @@ DATABASES = {
         'NAME': 'kbpo_test',
         'USER': 'kbpo',
         'PASSWORD': 'kbpo',
-        'HOST': 'localhost'
+        'HOST': 'localhost',
+        'PORT': 5433, # Linked to KBPO.stanford.edu
     },
     'production': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'kbpo',
         'USER': 'kbpo',
         'PASSWORD': 'kbpo',
-        'HOST': 'localhost'
+        'HOST': 'localhost',
+        'PORT': 5433, # Linked to KBPO.stanford.edu
     },
 }
 DATABASES['default'] = DATABASES['test']
