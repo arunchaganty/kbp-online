@@ -238,15 +238,27 @@ def merge_evaluation_relations(row):
 
     return row.question_id, row.question_batch_id, row.doc_id, row.subject_id, row.object_id, relation, weight
 
+# TODO: Fix to handle overlapping mentions, etc. -- basically this approach is broken.
 def update_evaluation_mention():
     with db.CONN:
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_mention;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT doc_id, mention_id,
+            # TODO: WARNING: THIS DOES NOT ACCURATELY HANDLE THE CASE
+            # WHERE A SELECTIVE ANNOTATOR IDENTIFIES A MENTION IN
+            # A DOCUMENT WITH EXHAUSTIVE ANNOTATIONS BECAUSE IT OVER
+            # COUNTS THE "TOTAL_COUNT" USED DURING MERGING.
+            cur.execute("""
+            WITH _response_count AS (SELECT doc_id, COUNT(DISTINCT assignment_id) FROM evaluation_mention_response GROUP BY doc_id)
+            SELECT r.doc_id, mention_id,
+                    array_agg(assignment_id)
                     array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends,
                     array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses,
-                    array_agg(weight) as weights FROM evaluation_mention_response GROUP BY doc_id, mention_id""")
+                    array_agg(weight) AS weights,
+                    min(c.count) AS total_count
+            FROM evaluation_mention_response r
+            JOIN _response_count c ON (r.doc_id = c.doc_id)
+            GROUP BY doc_id, mention_id""")
             # Take the majority vote on this mention iff count > 1.
             values = [merge_evaluation_mentions(row) for row in tqdm(cur, total=cur.rowcount)]
             logger.info("%d rows of evaluation_mention_response merged into %d rows", cur.rowcount, len(values))
@@ -257,7 +269,10 @@ def update_evaluation_link():
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_link;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT doc_id, mention_id, array_agg(link_name) AS link_names, array_agg(weight) AS weights FROM evaluation_link_response GROUP BY doc_id, mention_id""")
+            cur.execute("""
+            WITH _response_count AS (SELECT doc_id, COUNT(DISTINCT assignment_id) FROM evaluation_mention_response GROUP BY doc_id)
+            SELECT doc_id, mention_id, array_agg(link_name) AS link_names, array_agg(weight) AS weights 
+            FROM evaluation_link_response GROUP BY doc_id, mention_id""")
             # Take the majority vote on this mention iff count > 1.
             values = [merge_evaluation_links(row) for row in tqdm(cur, total=cur.rowcount)]
             logger.info("%d rows of evaluation_link_response merged into %d rows", cur.rowcount, len(values))
