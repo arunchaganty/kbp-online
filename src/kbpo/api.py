@@ -276,7 +276,7 @@ def insert_assignment(
         assignment_id, hit_id, worker_id,
         worker_time, comments, response,
         status="Submitted", created=datetime.now()):
-    batch_id = next(db.select("""SELECT id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id))
+    batch_id = next(db.select("""SELECT batch_id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id))
 
     db.execute("""
         INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) 
@@ -286,7 +286,7 @@ def insert_assignment(
                batch_id=batch_id,
                worker_id= worker_id,
                created= created,
-               worker_time=worker_time,
+               worker_time=int(float(worker_time)),
                response=response,
                comments=comments,
                status=status)
@@ -295,7 +295,7 @@ def get_hits(limit=None):
     if limit is None:
         return db.select("""SELECT * FROM mturk_hit""")
     else:
-        return db.select("""SELECT * FROM mturk_hit LIMIT %(limit)d""", limit=limit)
+        return db.select("""SELECT * FROM mturk_hit LIMIT %(limit)s""", limit=limit)
 
 def get_hit(hit_id):
     return next(db.select("""SELECT * FROM mturk_hit WHERE hit_id=%(hit_id)s""", hit_id=hit_id))
