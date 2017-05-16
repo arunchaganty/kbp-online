@@ -11,9 +11,6 @@ from . import db
 
 logger = logging.getLogger(__name__)
 
-def get_submissions():
-    return list(db.select("""SELECT * FROM submission"""))
-
 def compute_exhaustive_distribution(corpus_tag):
     distribution = Counter()
     for row in db.select("""

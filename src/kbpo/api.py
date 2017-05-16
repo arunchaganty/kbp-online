@@ -344,3 +344,18 @@ def get_task_params(hit_id):
         FROM mturk_hit h 
         JOIN evaluation_question q ON (h.question_batch_id = q.batch_id AND h.question_id = q.id)
         WHERE h.id=%(hit_id)s""", hit_id=hit_id)).params
+
+def get_submissions(corpus_tag):
+    return db.select("""SELECT * FROM submission WHERE corpus_tag=%(corpus_tag)s ORDER BY id""", corpus_tag=corpus_tag)
+
+def test_get_submissions():
+    tag = 'kbp2016'
+    assert [s.name for s in get_submissions(tag)] == ["patterns", "supervised", "rnn"]
+
+def get_submission(submission_id):
+    return next(db.select("""SELECT * FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id))
+
+def test_get_submission():
+    submission = get_submission(1) 
+    assert submission.name == "patterns"
+    assert submission.corpus_tag == "kbp2016"
