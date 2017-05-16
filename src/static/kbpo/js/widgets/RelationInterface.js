@@ -4,7 +4,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './RelationListWidget'], function ($, util, DocWidget, RelationOptionWidget, RelationListWidget) {
+define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget', './RelationListWidget'], function ($, defs, util, DocWidget, RelationOptionWidget, RelationListWidget) {
   /**
    * Stores actual relations and iterates through every mention pair in
    * the document, controlling various UI elements.
@@ -14,10 +14,11 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
     this.docWidget = docWidget; 
     this.root = root;
     this.verifyLinks = verifyLinks;
+    this.startTime = new Date().getTime();
 
     util.getDOMFromTemplate('/static/kbpo/html/RelationInterface.html', function(elem_) {
       self.root.html(elem_.html());
-      self.relnWidget = new RelationOptionWidget(optionElem, verifyLinks);
+      self.optionWidget = new RelationOptionWidget(optionElem, verifyLinks);
       self.listWidget = new RelationListWidget($("#relation-list-widget"));
 
       self.listWidget.mouseEnterListeners.push(function(p) {self.highlightExistingMentionPair(p);});
@@ -44,8 +45,8 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
           });
         });
         var data = JSON.stringify(relations);
-        $("#relations-output").attr('value', data);
-        $("#td").attr('value', new Date().getTime() / 1000 - st);
+        $("#workerTime").attr('value', (new Date().getTime() - self.startTime) / 1000);
+        $("#response").attr('value', data);
         self.doneListeners.forEach(function(cb) {cb(data);});
         //return true;
       });
@@ -57,32 +58,40 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
   RelationInterface.prototype.loadMentionPairs = function(mentionPairs) {
     var self = this;
 
-    var mentions = [];
-    self.mentionPairs = [];
+    // First load the mentions into the document.
+    var mentions = {};
+
+    var mentionPair, subject, object;
     for (var i = 0; i < mentionPairs.length; i++) {
-      var mentionPair = mentionPairs[i];
-      // Add mention pairs to mentions.
-      subject = Mention.fromJSON(mentionPair.subject, self.docWidget);
-      object = Mention.fromJSON(mentionPair.object, self.docWidget);
-
-      mentions.push(subject);
-      mentions.push(object);
-      self.mentionPairs.push({'subject': subject, 'object': object, 'id': idx, 'relation': null});
-    }
-
-    var seen = new Set();
-    for (i = 0; i < mentions.length; i++) {
-      var mention = mentions[i];
-      var key = mention.doc_char_begin + "-" + mention.doc_char_end;
-      if (!seen.has(key)) {
-        self.docWidget.addMention(mention);
-        seen.add(key);
+      mentionPair = mentionPairs[i];
+      if (mentions[mentionPair.subject.span] === undefined) {
+        subject = defs.Mention.fromJSON(mentionPair.subject, self.docWidget);
+        self.docWidget.addMention(subject);
+        mentions[subject.span] = subject;
+      }
+      if (mentions[mentionPair.object.span] === undefined) {
+        object = defs.Mention.fromJSON(mentionPair.object, self.docWidget);
+        self.docWidget.addMention(object);
+        mentions[object.span] = object;
       }
     }
+
+    self.mentionPairs = [];
+    for (i = 0; i < mentionPairs.length; i++) {
+      mentionPair = mentionPairs[i];
+      subject = mentions[mentionPair.subject.span];
+      object = mentions[mentionPair.object.span];
+      console.assert(subject !== undefined);
+      console.assert(object !== undefined);
+
+      self.mentionPairs.push({'subject': subject, 'object': object, 'id': i, 'relation': null});
+    }
+
+    console.assert(self.mentionPairs.length > 0);
   };
 
   RelationInterface.prototype.run = function() {
-    console.assert(self.mentionPairs.length > 0);
+    console.assert(this.mentionPairs.length > 0);
     this.currentIndex = -1;
     this.viewStack = []; // Used when changing relations.
     this.next();
@@ -93,14 +102,12 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
     var elem = sentence[0];
 
     var topPosRel = elem.offsetTop;
-    console.log(topPosRel);
     var parentPosRel = $('#document')[0].offsetTop;
-    console.log(parentPosRel);
     $('#document').scrollTop(topPosRel - parentPosRel);
   }
 
   function centerOnMentionPair(p) {
-    if (p.subject.doc_char_begin < p.object.doc_char_begin)
+    if (p.subject.span[0] < p.object.span[0])
       centerOnMention(p.subject);
     else
       centerOnMention(p.object);
@@ -140,7 +147,7 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
   RelationInterface.prototype.next = function(idx) {
     var self = this;
 
-    if (idx !== null) {
+    if (idx !== undefined) {
       this.currentIndex = idx;
     } else if (this.viewStack.length > 0) {
       this.currentIndex = this.viewStack.pop();
@@ -161,7 +168,7 @@ define(['jquery', '../util', './DocWidget', './RelationOptionWidget', './Relatio
 
     this.mentionPair = mentionPair;
     this.select(mentionPair);
-    this.relnWidget.init(mentionPair, function(reln) {
+    this.optionWidget.init(mentionPair, function(reln) {
       self.unselect(mentionPair);
 
       // Remove a previous relation from the list if it existed.

@@ -57,6 +57,7 @@ def get_document(doc_id):
         _, token_spans, words, lemmas, pos_tags, ner_tags = row
 
         words = list(map(lambda w: T.get(w, w), words))
+        token_spans = [(span.lower, span.upper) for span in token_spans]
         keys = ("word", "lemma", "pos_tag", "ner_tag", "span",)
         sentence = [{k:v for k, v in zip(keys, values)} for values in zip(words, lemmas, pos_tags, ner_tags, token_spans)]
         sentences.append(sentence)
@@ -138,11 +139,13 @@ def get_suggested_mention_pairs(doc_id):
             WHERE m.doc_id = n.doc_id AND m.sentence_id = n.sentence_id
               AND m.doc_id = %(doc_id)s
               AND m.span <> n.span
+              AND m.canonical_span <> n.canonical_span
               AND is_entity_type(m.mention_type)
             ORDER BY subject, object
             """, doc_id=doc_id):
         # Pick up any subject pairs that are of compatible types.
         if (row.subject_type, row.object_type) not in defs.VALID_MENTION_TYPES: continue
+        # Remove pairs which have the same canonical span
         # Check that this pair doesn't already exist.
         if (row.object, row.subject) in mention_pairs: continue
         mention_pairs.add((row.subject, row.object))
@@ -199,6 +202,48 @@ def test_get_submission_mentions():
             },
         }
 
+def get_evaluation_mentions(doc_id):
+    """
+    Get mention pairs from exhaustive mentions for a document.
+    """
+    mentions = []
+    for row in db.select("""
+            SELECT m.span, m.gloss, m.mention_type, n.span AS canonical_span, n.gloss AS canonical_gloss, l.link_name
+            FROM evaluation_mention m
+            JOIN evaluation_mention n ON (m.doc_id = n.doc_id AND m.canonical_span = n.span)
+            LEFT OUTER JOIN evaluation_link l ON (n.doc_id = l.doc_id AND n.span = l.span)
+            WHERE m.doc_id = %(doc_id)s
+            ORDER BY m.span
+            """, doc_id=doc_id):
+        mention = {
+            "span": (row.span.lower, row.span.upper),
+            "gloss": row.gloss,
+            "type": row.mention_type,
+            "entity": {
+                "span": (row.canonical_span.lower, row.canonical_span.upper),
+                "gloss": row.canonical_gloss,
+                "link": row.link_name,
+                }
+            }
+        mentions.append(mention)
+    return mentions
+
+def test_get_evaluation_mentions():
+    doc_id = "NYT_ENG_20130726.0208"
+    mentions = get_evaluation_mentions(doc_id)
+    assert len(mentions) == 118
+    mention = mentions[10]
+    assert mention == {
+        'span': (787, 792),
+        'gloss': 'Hamas',
+        'type': 'ORG',
+        'entity': {
+            'span': (787, 792),
+            'gloss': 'Hamas',
+            'link': 'Hamas',
+            },
+        }
+
 def get_evaluation_mention_pairs(doc_id):
     """
     Get mention pairs from exhaustive mentions for a document.
@@ -206,14 +251,10 @@ def get_evaluation_mention_pairs(doc_id):
     mention_pairs = set()
     for row in db.select("""
             SELECT m.span AS subject, m.mention_type AS subject_type, n.span AS object, n.mention_type AS object_type
-            FROM evaluation_mention m, evaluation_mention n, evaluation_batch b, sentence s
-            WHERE m.question_batch_id = n.question_batch_id AND m.question_id = n.question_id 
-              AND m.doc_id = n.doc_id
-              AND m.question_batch_id = b.id
+            FROM evaluation_mention m, evaluation_mention n, sentence s
+            WHERE m.doc_id = n.doc_id AND m.span <> n.span
               AND m.doc_id = s.doc_id AND m.span <@ s.span AND n.span <@ s.span
               AND m.doc_id = %(doc_id)s
-              AND m.span <> n.span
-              AND b.batch_type = 'exhaustive_entities'
               AND is_entity_type(m.mention_type)
             ORDER BY subject, object
             """, doc_id=doc_id):
@@ -225,12 +266,12 @@ def get_evaluation_mention_pairs(doc_id):
     return [{"subject": (subject.lower, subject.upper), "object": (object_.lower, object_.upper)} for subject, object_ in sorted(mention_pairs)]
 
 def test_get_evaluation_mention_pairs():
-    doc_id = "NYT_ENG_20131216.0031"
-    pairs = get_suggested_mention_pairs(doc_id)
-    assert len(pairs) == 70
-    pair = pairs[0]
-    assert pair['subject'] == (371, 385)
-    assert pair['object'] == (360, 368)
+    doc_id = "NYT_ENG_20130726.0208"
+    pairs = get_evaluation_mention_pairs(doc_id)
+    assert len(pairs) == 238
+    pair = pairs[5]
+    assert pair['subject'] == (628, 642)
+    assert pair['object'] == (568, 574)
 
 def get_submission_relations(doc_id, submission_id):
     """
@@ -290,9 +331,9 @@ def insert_assignment(
 
 def get_hits(limit=None):
     if limit is None:
-        return db.select("""SELECT * FROM mturk_hit""")
+        return db.select("""SELECT * FROM mturk_hit ORDER BY id""")
     else:
-        return db.select("""SELECT * FROM mturk_hit LIMIT %(limit)s""", limit=limit)
+        return db.select("""SELECT * FROM mturk_hit ORDER BY id LIMIT %(limit)s""", limit=limit)
 
 def get_hit(hit_id):
     return next(db.select("""SELECT * FROM mturk_hit WHERE hit_id=%(hit_id)s""", hit_id=hit_id))

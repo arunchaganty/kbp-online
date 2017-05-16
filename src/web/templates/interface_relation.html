@@ -26,8 +26,16 @@ div#relation-option-preview {
 </div>
 <div class="row">
   <form class ='input-group' id='mturk_form' action="" method="POST">
-  <input type="hidden" id="doc-id" value="{{doc_id}}" />
-  <input type="hidden" id="mention-pair" value="{{mention_pair}}" />
+  {% csrf_token %}
+  <input type="hidden" name="assignmentId" value="{{assignment_id}}" />
+  <input type="hidden" name="hitId" value="{{hit_id}}" />
+  <input type="hidden" name="workerId" value="{{worker_id}}" />
+  <input type="hidden" name="workerTime" id="workerTime" value="" />
+  <input type="hidden" name="response" id="response" value="" />
+
+  <input type="hidden" name="docId" id="doc-id" value="{{doc_id}}" />
+  <input type="hidden" name="mentionPair" id="mention-pair" value="{{mention_pair}}" />
+
   <div class="col-md-8">
     <div class="row">
       <div class="panel panel-default">
@@ -74,16 +82,19 @@ div#relation-option-preview {
 
           var mentionPair = $("#mention-pair").val();
           var shouldVerify = false;
+          // TODO: Change to evaluation-mention-pairs
           if (mentionPair.length > 0) {
-            iface.loadMentionPairs([mentionPair]);
-            shouldVerify = true;
-            console.info("loaded", mentionPairs.length, "mention pairs");
-            iface.run(true);
+            $.getJSON("/api/suggested-mention-pairs/" + docId + "/" + mentionPair, function(mentionPairs) {
+              iface.loadMentionPairs([mentionPair]);
+              shouldVerify = true;
+              console.info("loaded", mentionPairs.length, "mention pairs");
+              iface.run(shouldVerify);
+            });
           } else {
-            $.getJSON("/api/mention-pairs/" + docId, function(mentionPairs) {
+            $.getJSON("/api/suggested-mention-pairs/" + docId, function(mentionPairs) {
               iface.loadMentionPairs(mentionPairs);
               console.info("loaded", mentionPairs.length, "mention pairs");
-              iface.run(false);
+              iface.run(shouldVerify);
             });
           }
         });

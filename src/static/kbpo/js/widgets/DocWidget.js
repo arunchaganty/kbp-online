@@ -40,7 +40,9 @@ define(['jquery'], function ($) {
         tokenSpan[0].sentenceIdx = i;
         tokenSpan[0].tokenIdx = j;
 
-        if (j > 0 && sentence[j].doc_char_begin > sentence[j-1].doc_char_end) {
+        // TODO: Implement in a way that &nbsp; are not added (causes
+        // glosses to contain \xa0).
+        if (j > 0 && sentence[j].span[0] > sentence[j-1].span[1]) {
           tokenSpan.html('&nbsp;' + tokenSpan.text());
         }
         span.append(tokenSpan);
@@ -58,7 +60,7 @@ define(['jquery'], function ($) {
     }
 
     mentions.forEach(function(m) {
-      m.tokens = self.getTokens(m.span[1], m.span[2]);
+      m.tokens = self.getTokens(m.span[0], m.span[1]);
       m.tokens.forEach(function(t) {
         $(t).addClass("suggestion");
         t.suggestedMention = m;
@@ -71,11 +73,11 @@ define(['jquery'], function ($) {
   // character offsets 
   DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
     return $('span.token').filter(function(_, t) {
-      if (t.token.doc_char_begin >= docCharBegin && 
-          t.token.doc_char_end <= docCharEnd) {
+      if (t.token.span[0] >= docCharBegin && 
+          t.token.span[1] <= docCharEnd) {
       }
-      return t.token.doc_char_begin >= docCharBegin && 
-        t.token.doc_char_end <= docCharEnd;
+      return t.token.span[0] >= docCharBegin && 
+        t.token.span[1] <= docCharEnd;
     }).get(); 
   };
 
@@ -84,6 +86,7 @@ define(['jquery'], function ($) {
     var self = this;
     $(mention.tokens).wrapAll($("<span class='mention' />").attr("id", "mention-"+mention.id));
     var elem = $(mention.tokens[0].parentNode)[0];
+    console.assert(elem !== undefined);
     // Create links between the mention and DOM elements.
     elem.mention = mention;
     mention.elem = elem;

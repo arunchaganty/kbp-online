@@ -5,10 +5,10 @@
  */
 
 // TODO: Maybe move CheckEntityLinkWidget out?
-define(['jquery', '../util', './CheckEntityLinkWidget'], function ($, util, CheckEntityLinkWidget) {
+define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($, defs, util, CheckEntityLinkWidget) {
     function getCandidateRelations(mentionPair) {
         var candidates = [];
-        RELATIONS.forEach(function (reln) {
+        defs.RELATIONS.forEach(function (reln) {
             if (reln.isApplicable(mentionPair)) candidates.push(reln);
         });
         return candidates;
@@ -29,12 +29,12 @@ define(['jquery', '../util', './CheckEntityLinkWidget'], function ($, util, Chec
     };
 
     // initialize the interface using @mentionPair. On completion, call @cb.
-    RelationOptionWidget.prototype.init = function(candidates, cb) {
+    RelationOptionWidget.prototype.init = function(mentionPair, cb) {
         this.mentionPair = mentionPair;
         this.cb = cb;
-        console.log("initializing relation widget for", mentionPair);
+        console.info("initializing relation widget for", mentionPair);
 
-        this.relns = candidates;
+        this.relns = getCandidateRelations(mentionPair);
         this.elem.find("#relation-options").empty(); // Clear.
         this.elem.find("#relation-option-preview").empty(); // Clear.
         for (var i = 0; i < this.relns.length; i++) {
@@ -61,36 +61,34 @@ define(['jquery', '../util', './CheckEntityLinkWidget'], function ($, util, Chec
     };
 
     RelationOptionWidget.prototype.makeRelnOption = function(reln, id) {
-        var self = this;
-        var div = $("#relation-option-widget").clone();
-        div.html(div.html().replace("{short}", reln.short));
-        if (reln.image !== ""){
-            div.find('img').removeClass('hidden').attr('src', 'images/relations/'+reln.image);
-        }
-        else if(reln.icon !== ""){
-            div.find('.icon').removeClass('hidden').addClass(reln.icon);
+      var self = this;
+      var div = $("#relation-option").clone();
+      div.html(div.html().replace("{short}", reln.short));
+      if (reln.image !== "") {
+        div.find('img').removeClass('hidden').attr('src', '/static/kbpo/img/relations/'+reln.image);
+      } else if(reln.icon !== "") {
+        div.find('.icon').removeClass('hidden').addClass(reln.icon);
+      } else {
+        div.find('.icon').removeClass('hidden').addClass('fa-question-circle-o').css('color',  'coral');
+      }
+      div.attr("id", "relation-option-" + id);
+
+      div.on("click.kbpo.relationWidget", function(evt) {
+        if (self.verifyLinks) {
+          $(self.mentionPair.subject.elem).parent().removeClass("highlight");
+          self.canonicalLinkWidget.init(self.mentionPair.subject, function(){
+            self.canonicalLinkWidget.init(self.mentionPair.object, function(){self.done(reln);});
+          });
         }
         else{
-            div.find('.icon').removeClass('hidden').addClass('fa-question-circle-o').css('color',  'coral');
+          self.done(reln);
         }
-        div.attr("id", "relation-option-" + id);
-
-        div.on("click.kbpo.relationWidget", function(evt) {
-            if (self.verifyLinks) {
-                $(self.mentionPair.subject.elem).parent().removeClass("highlight");
-                self.canonicalLinkWidget.init(self.mentionPair.subject, function(){
-                    self.canonicalLinkWidget.init(self.mentionPair.object, function(){self.done(reln);});
-                });
-            }
-            else{
-                self.done(reln);
-            }
-        });
-        // Update widget text. 
-        console.log(self.mentionPair);
-        div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair), this.verifyLinks);});
-        div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair));});
-        return div;
+      });
+      // Update widget text. 
+      //console.log(self.mentionPair);
+      div.on("mouseenter.kbpo.relationWidget", function(evt) {self.updateText(reln.renderTemplate(self.mentionPair), this.verifyLinks);});
+      div.on("mouseleave.kbpo.relationWidget", function(evt) {self.updateText(self.renderTemplate(self.mentionPair));});
+      return div;
     };
 
     RelationOptionWidget.prototype.makeRelnHelp = function(reln, id) {

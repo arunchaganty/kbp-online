@@ -15,7 +15,7 @@ define(['jquery', './CheckWikiLinkWidget'], function ($, CheckWikiLinkWidget) {
         this.linkVerificationWidget.init(mention);
         this.cb = cb;
         //Check if canonical mention is the same as this mention
-        if (this.mention.doc_char_begin == this.canonicalMention.doc_char_begin && this.mention.doc_char_end == this.canonicalMention.doc_char_end){
+        if (this.mention.span[0] == this.canonicalMention.span[0] && this.mention.span[1] == this.canonicalMention.span[1]){
             this.done('Yes');
             return;
         }
