@@ -40,7 +40,7 @@ def do_command(_):
                 tokens = [db.Int4NumericRange(int(b), int(e)) for b, e in zip(begin, end)]
                 row_ = NewRow(row.id, row.updated, row.doc_id, row.span, row.sentence_index, row.gloss, tokens, row.words, row.lemmas, row.pos_tags, row.ner_tags, row.dependencies)
                 values.append(row_)
-            db.execute_values(cur, """INSERT INTO _sentence(id, updated, doc_id, span, sentence_index, gloss, token_span, words, lemmas, pos_tags, ner_tags, dependencies) VALUES %s""", values)
+            db.execute_values(cur, """INSERT INTO _sentence(id, updated, doc_id, span, sentence_index, gloss, token_spans, words, lemmas, pos_tags, ner_tags, dependencies) VALUES %s""", values)
 
             # ADD constraints
             cur.execute("""
