@@ -85,7 +85,7 @@ div#relation-option-preview {
           // TODO: Change to evaluation-mention-pairs
           if (mentionPair.length > 0) {
             $.getJSON("/api/suggested-mention-pairs/" + docId + "/" + mentionPair, function(mentionPairs) {
-              iface.loadMentionPairs([mentionPair]);
+              iface.loadMentionPairs(mentionPairs);
               shouldVerify = true;
               console.info("loaded", mentionPairs.length, "mention pairs");
               iface.run(shouldVerify);

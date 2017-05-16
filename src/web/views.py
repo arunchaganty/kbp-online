@@ -50,10 +50,17 @@ def explore(request, doc_id=None):
 
 ### Interface functions
 def _parse_span(span_str):
-    beg, end = span_str.split('-')
-    return (beg, end)
+    if "-" not in span_str: return None
+    beg, end = span_str.split('-', 1)
+    if not beg.isdigit() or not end.isdigit(): return None
+    return (int(beg), int(end))
 
 def interface(request, task, doc_id, subject_id=None, object_id=None):
+    if subject_id is not None or object_id is not None:
+        subject_id, object_id = _parse_span(subject_id), _parse_span(object_id)
+        if subject_id is None or object_id is None:
+            raise Http404("Invalid mention spans: {}:{}".format(subject_id, object_id))
+
     doc = get_object_or_404(Document, id=doc_id)
 
     if task == "entity":
@@ -76,9 +83,7 @@ def interface(request, task, doc_id, subject_id=None, object_id=None):
 
         if subject_id is not None and object_id is not None:
             # Exhaustive relations
-            subject_id = _parse_span(subject_id)
-            object_id = _parse_span(object_id)
-            mention_pair = json.dumps((subject_id, object_id))
+            mention_pair = "{}-{}:{}-{}".format(*subject_id, *object_id)
             verify_links = True
         else:
             mention_pair = ""
@@ -164,7 +169,11 @@ def api_suggested_mentions(_, doc_id):
     # see https://docs.djangoproject.com/en/1.11/ref/request-response/#jsonresponse-objects
     return JsonResponse(ret, safe=False)
 
-def api_suggested_mention_pairs(_, doc_id):
+def api_suggested_mention_pairs(_, doc_id, subject_id=None, object_id=None):
+    if subject_id is not None or object_id is not None:
+        subject_id, object_id = _parse_span(subject_id), _parse_span(object_id)
+        if subject_id is None or object_id is None:
+            raise Http404("Invalid mention spans: {}:{}".format(subject_id, object_id))
     doc = get_object_or_404(Document, id=doc_id)
 
     # Get the basic mentions
@@ -172,7 +181,10 @@ def api_suggested_mention_pairs(_, doc_id):
     mentions = {m["span"]: m for m in mentions}
 
     # Get the pairs.
-    pairs = api.get_suggested_mention_pairs(doc.id)
+    if subject_id is not None and object_id is not None:
+        pairs = [{"subject": subject_id, "object": object_id}]
+    else:
+        pairs = api.get_suggested_mention_pairs(doc.id)
     # Construct mention pairs using the above information.
     ret = [{"subject": mentions[p["subject"]], "object": mentions[p["object"]],} for p in pairs]
 
@@ -189,7 +201,23 @@ def api_evaluation_mentions(_, doc_id):
     ret = api.get_evaluation_mentions(doc.id)
     return JsonResponse(ret, safe=False)
 
-def api_evaluation_mention_pairs(_, doc_id):
+def api_evaluation_mention_pairs(_, doc_id, subject_id=None, object_id=None):
+    if subject_id is not None or object_id is not None:
+        subject_id, object_id = _parse_span(subject_id), _parse_span(object_id)
+        if subject_id is None or object_id is None:
+            raise Http404("Invalid mention spans: {}:{}".format(subject_id, object_id))
     doc = get_object_or_404(Document, id=doc_id)
-    ret = api.get_evaluation_mention_pairs(doc.id)
+
+    # Get the basic mentions
+    mentions = api.get_evaluation_mentions(doc.id)
+    mentions = {m["span"]: m for m in mentions}
+
+    # Get the pairs.
+    if subject_id is not None and object_id is not None:
+        pairs = [{"subject": subject_id, "object": object_id}]
+    else:
+        pairs = api.get_evaluation_mention_pairs(doc.id)
+    # Construct mention pairs using the above information.
+    ret = [{"subject": mentions[p["subject"]], "object": mentions[p["object"]],} for p in pairs]
+
     return JsonResponse(ret, safe=False)
