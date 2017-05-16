@@ -83,7 +83,7 @@ def interface(request, task, doc_id, subject_id=None, object_id=None):
 
         if subject_id is not None and object_id is not None:
             # Exhaustive relations
-            mention_pair = "{}-{}:{}-{}".format(*subject_id, *object_id)
+            mention_pair = "{}-{}:{}-{}".format(subject_id[0], subject_id[1], object_id[0], object_id[1])
             verify_links = True
         else:
             mention_pair = ""
