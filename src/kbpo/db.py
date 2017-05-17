@@ -28,18 +28,25 @@ try:
 except:
     logging.error("Unable to connect to database")
 
-def select(sql, **kwargs):
+def select(sql, cur=None, **kwargs):
     """Wrapper around psycopg execute function to yield the result of a SELECT statement"""
-    with CONN:
-        with CONN.cursor() as cur:
-            cur.execute(sql, kwargs)
-            yield from cur
+    if cur is None:
+        with CONN:
+            with CONN.cursor() as cur:
+                cur.execute(sql, kwargs)
+                yield from cur
+    else:
+        cur.execute(sql, kwargs)
+        yield from cur
 
-def execute(sql, **kwargs):
+def execute(sql, cur=None, **kwargs):
     """Wrapper around psycopg execute function to not yield the result of execute statement"""
-    with CONN:
-        with CONN.cursor() as cur:
-            cur.execute(sql, kwargs)
+    if cur is None:
+        with CONN:
+            with CONN.cursor() as cur:
+                cur.execute(sql, kwargs)
+    else:
+        cur.execute(sql, kwargs)
 
 def sanitize(word):
     """

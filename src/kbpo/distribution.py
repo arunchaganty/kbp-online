@@ -5,30 +5,70 @@ import logging
 from collections import Counter, defaultdict
 
 from . import db
-from .api import get_submissions, get_submission
+from .api import get_documents, get_submissions, get_submission
+from .counter_utils import normalize
 
 logger = logging.getLogger(__name__)
 
-# TODO: This seems fishy.
-#def compute_exhaustive_distribution(corpus_tag):
-#    distribution = Counter()
-#    for row in db.select("""
-#        WITH _counts AS (
-#            SELECT COUNT(*) FROM evaluation_relation e, evaluation_batch b
-#            WHERE e.question_batch_id = b.id AND b.batch_type = 'exhaustive_relations' AND b.corpus_tag = %(tag)s)
-#        SELECT subject_id, relation, object_id, 1./c.count AS prob 
-#        FROM evaluation_relation e, evaluation_batch b, _counts c
-#        WHERE e.question_batch_id = b.id AND b.batch_type = 'exhaustive_relations'
-#          AND b.corpus_tag = %(tag)s
-#        """, tag=corpus_tag):
-#        distribution[row.subject_id, row.relation, row.object_id] = float(row.prob)
-#    return distribution
-#
-#def test_compute_exhaustive_distribution():
-#    tag = 'kbp2016'
-#    distribution = compute_exhaustive_distribution(tag)
-#    value = sum(distribution.values())
-#    assert abs(value - 1.0) < 1.e-5, "Distribution is not normalized: Z = {}".format(value)
+def document_uniform(corpus_tag):
+    """
+    The uniform distribution over documents
+    """
+    docs = list(get_documents(corpus_tag))
+    return Counter({doc_id: 1./len(docs) for doc_id in docs})
+
+def test_document_uniform():
+    tag = 'kbp2016'
+    P = document_uniform(tag)
+    assert len(P) == 15001
+
+    Z = sum(P.values())
+    assert abs(Z - 1.0) < 1.e-5, "Distribution for documents is not normalized: Z = {}".format(Z)
+
+    _, prob = next(iter(P.items()))
+    assert prob == 1./15001
+
+def document_entity(corpus_tag, seed_documents, mention_table="evaluation_mention"):
+    """
+    Constructs a distribution over documents based on links from @link_table.
+    The probability of a document is proportional to how many links it shares.
+    """
+
+    # TODO: Reweight documents and mentions with some sort of TF-IDF scoring.
+    distribution = Counter()
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("CREATE TEMPORARY TABLE _seed_document (doc_id TEXT NOT NULL) ON COMMIT DROP;")
+            db.execute_values(cur, "INSERT INTO _seed_document VALUES %s", seed_documents)
+            for row in db.select(r"""
+                WITH links AS (
+                    SELECT DISTINCT plainto_tsquery(m.gloss) AS query
+                    FROM {mention_table} m
+                    JOIN _seed_document d ON (m.doc_id = d.doc_id)
+                    WHERE m.canonical_span = m.span
+                    ),
+                    document_links AS (
+                    SELECT d.doc_id, query
+                    FROM document_tag d, document_index i,
+                         links l
+                    WHERE d.tag = %(corpus_tag)s
+                      AND i.doc_id = d.doc_id
+                      AND i.tsvector @@ query
+                    )
+                SELECT doc_id, COUNT(*) AS count
+                FROM document_links
+                GROUP BY doc_id;
+            """.format(mention_table=mention_table), cur, corpus_tag=corpus_tag):
+                distribution[row.doc_id] = row.count
+    return normalize(distribution)
+
+def test_document_entity():
+    tag = 'kbp2016'
+    seed_docs = [(doc_id,) for doc_id, _ in zip(get_documents(tag), range(10))]
+    P = document_entity(tag, seed_docs, "suggested_mention")
+    assert len(P) == 14544
+    Z = sum(P.values())
+    assert abs(Z - 1.0) < 1.e-5, "Distribution for documents is not normalized: Z = {}".format(Z)
 
 # Get distributions.
 def submission_instance(corpus_tag, submission_id=None):
