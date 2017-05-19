@@ -105,7 +105,7 @@ def create_hit(mturk_connection, batch, question):
 
 def test_create_hit():
     """Test hit creation on the sandbox"""
-    from .kbpo_test_db_params import _PARAMS
+    from .params.db.remote_kbpo_test import _PARAMS
     db.CONN = db.connect(_PARAMS)
     mturk_connection = connect('sandbox')
     batch = next(db.select("SELECT params from mturk_batch WHERE id = 20 LIMIT 1"))[0]
@@ -226,7 +226,7 @@ def create_batch(db, mturk_connection, batch_id, range_type=None, range_begin=No
 
 def test_create_batch():
     """Test batch creation on the sandbox"""
-    from .kbpo_test_db_params import _PARAMS
+    from .params.db.remote_kbpo_test import _PARAMS
     db.CONN = db.connect(_PARAMS)
     mturk_connection = connect('sandbox')
     batch_id = 12
