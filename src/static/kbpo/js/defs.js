@@ -410,8 +410,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           this.type = m.type && m.type.name && TYPES[m.type.name];
         }
         this.gloss = m.gloss;
-        this.doc_char_begin = m.doc_char_begin;
-        this.doc_char_end = m.doc_char_end;
+        this.span = m.span;
 
         this.entity = m.entity;
     };
@@ -422,12 +421,11 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
                "sentenceIdx": tokens[0].token.sentenceIdx,
                "type": undefined,
                "gloss": Mention.textFromTokens(tokens),
-               "doc_char_begin": tokens[0].token.doc_char_begin,
-               "doc_char_end": tokens[tokens.length-1].token.doc_char_end,
+               "span": tokens[0].token.span,
         });
     };
     Mention.fromJSON = function(m, doc) {
-      m.tokens = doc.getTokens(rel.subject.entity.doc_char_begin, rel.subject.entity.doc_char_end);
+      m.tokens = doc.getTokens(m.span[0], m.span[1]);
       console.assert(m.tokens.length > 0);
 
       if (m.entity !== undefined) {
@@ -471,13 +469,11 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
         var val = {
             "gloss": this.gloss,
                 "type": this.type,
-                "doc_char_begin": this.doc_char_begin,
-                "doc_char_end": this.doc_char_end,
+                "span": this.span,
                 "entity": (this.entity) ? {
                     "gloss": this.entity.gloss,
                     "link": this.entity.link,
-                    "doc_char_begin": this.entity.doc_char_begin,
-                    "doc_char_end": this.entity.doc_char_end,
+                    "span": this.entity.span,
                     "canonicalCorrect": this.canonicalCorrect, 
                     "linkCorrect": this.linkCorrect
                 } : null
@@ -497,8 +493,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
         this.id = "e-" + this.idx;
         this.gloss = canonicalMention.gloss;
         this.type = canonicalMention.type;
-        this.doc_char_begin = canonicalMention.doc_char_begin;
-        this.doc_char_end = canonicalMention.doc_char_end;
+        this.span = canonicalMention.span;
         this.mentions = [];
 
         this.addMention(canonicalMention);
@@ -506,8 +501,9 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
     Entity.count = 0;
     Entity.map = {};
 
+    // TODO: There is all sorts of double referencing happening here...
     Entity.fromJSON = function(m, doc) {
-      m.tokens = doc.getTokens(m.doc_char_begin, m.doc_char_end);
+      m.tokens = doc.getTokens(m.span[0], m.span[1]);
       console.assert(m.tokens.length > 0);
 
       var link = m.link;

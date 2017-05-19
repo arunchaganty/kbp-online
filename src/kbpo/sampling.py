@@ -1,242 +1,189 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Different entity sampling schemes.
-TODO: REWRITE 
-    -- use distributions from db_evaluation
-    -- use sampling schemes from sample_util
-    -- finally push those into a format that can be inserted into
-    questions.
+Generate samples for a corpus tag and for a submission.
 """
 
-import random
+import json
 import logging
-from collections import Counter, defaultdict
 
 import numpy as np
 
-from .defs import RELATIONS, INVERTED_RELATIONS, TYPES
-from .db import query_docs, query_entities, query_entity_docs
+from . import db
+from . import distribution
+from .sample_util import sample_without_replacement
+from .counter_utils import normalize
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
-# = Generic utilities
+def sample_document_uniform(corpus_tag, n_samples):
+    # Get distribution
+    P = distribution.document_uniform(corpus_tag)
 
-def sample_without_replacement(lst, n, weights=None):
-    """
-    Sample @n elements from @lst randomly.
-    """
-    if weights:
-        elems, _ = zip(*sorted(zip(lst, weights), key=lambda t: random.random()**t[1])[:n])
-        return elems
+    # Get samples
+    doc_ids = sample_without_replacement(P, n_samples)
+
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""
+                INSERT INTO sample_batch(distribution_type, corpus_tag, params) VALUES %s RETURNING id
+                """, [('uniform', corpus_tag, json.dumps({'type':'uniform', 'with_replacement': False}),)])
+            batch_id, = next(cur)
+            db.execute_values(cur, """
+                INSERT INTO document_sample(batch_id, doc_id) VALUES %s
+                """, [(batch_id, doc_id) for doc_id in doc_ids])
+
+def test_sample_document_uniform():
+    np.random.seed(42)
+    tag = 'kbp2016'
+
+    db.execute("""TRUNCATE sample_batch CASCADE;
+                   ALTER SEQUENCE sample_batch_id_seq RESTART;
+                   """)
+    sample_document_uniform(tag, 20)
+    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    assert len(batches) == 1
+    batch = batches[0]
+    assert batch.id == 1
+    assert batch.submission_id is None
+    assert batch.distribution_type == "uniform"
+    assert batch.corpus_tag == "kbp2016"
+    assert batch.params == {"type":"uniform", "with_replacement": False}
+
+    docs = list(db.select("""SELECT doc_id FROM document_sample WHERE batch_id=%(batch_id)s""", batch_id=batch.id))
+    assert len(docs) == 20
+
+def sample_document_entity(corpus_tag, n_samples, mention_table='evaluation_mention'):
+    # Get documents
+    seed_documents = [(row.doc_id,) for row in db.select("""
+        SELECT s.doc_id
+        FROM document_sample s,
+             document_tag d
+        WHERE s.doc_id = d.doc_id AND d.tag = %(corpus_tag)s
+        """, corpus_tag=corpus_tag)]
+
+    # Get distribution
+    P = distribution.document_entity(corpus_tag, seed_documents, mention_table=mention_table)
+    # Remove seed documents.
+    for doc_id in seed_documents:
+        P[doc_id] = 0.
+    P = normalize(P)
+
+    # Get samples
+    doc_ids = sample_without_replacement(P, n_samples)
+
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""
+                INSERT INTO sample_batch(distribution_type, corpus_tag, params) VALUES %s RETURNING id
+                """, [('entity', corpus_tag, json.dumps({'type':'entity', 'with_replacement': False}),)])
+            batch_id, = next(cur)
+            db.execute_values(cur, """
+                INSERT INTO document_sample(batch_id, doc_id) VALUES %s
+                """, [(batch_id, doc_id) for doc_id in doc_ids])
+
+def test_sample_document_entity():
+    tag = 'kbp2016'
+
+    db.execute("""TRUNCATE sample_batch CASCADE;
+                   ALTER SEQUENCE sample_batch_id_seq RESTART;
+                   """)
+    sample_document_uniform(tag, 20)
+    sample_document_entity(tag, 20, mention_table="suggested_mention")
+
+    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    assert len(batches) == 2
+    batch = batches[1]
+    assert batch.id == 2
+    assert batch.submission_id is None
+    assert batch.distribution_type == "entity"
+    assert batch.corpus_tag == "kbp2016"
+    assert batch.params == {"type":"entity", "with_replacement": False}
+
+    docs = list(db.select("""SELECT doc_id FROM document_sample WHERE batch_id=%(batch_id)s""", batch_id=batch.id))
+    assert len(docs) == 20
+
+def sample_submission(corpus_tag, submission_id, type_, n_samples):
+    # Get distribution
+    if type_ == "instance":
+        P = distribution.submission_instance(corpus_tag, submission_id)
+    elif type_ == "relation":
+        P = distribution.submission_relation(corpus_tag, submission_id)
+    elif type_ == "entity":
+        P = distribution.submission_entity(corpus_tag, submission_id)
     else:
-        return sorted(lst, key=lambda _: random.random())[:n]
+        raise ValueError("Invalid submission sampling distribution type: {}".format(type_))
 
-def normalize_probs(lst):
-    total = sum(lst)
-    return [x/total for x in lst]
+    # Get samples
+    relation_mentions = sample_without_replacement(P[submission_id], n_samples)
 
-def get_queries(docs):
-    """
-    Retreives all the entities in said documents.
-    """
-    return Counter({entity: count for entity, count in query_entities(docs)})
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""
+                INSERT INTO sample_batch(submission_id, distribution_type, corpus_tag, params) VALUES %s RETURNING id
+                """, [(submission_id, type_, corpus_tag, json.dumps({'submission_id':submission_id, 'type':type_, 'with_replacement': False}),)])
+            batch_id, = next(cur)
+            db.execute_values(cur, """
+                INSERT INTO submission_sample(batch_id, submission_id, doc_id, subject, object) VALUES %s
+                """, [(batch_id, submission_id, doc_id, db.Int4NumericRange(*subject), db.Int4NumericRange(*object_)) for doc_id, subject, object_ in relation_mentions])
 
-# = Document sample routines.
+def test_sample_submission_instance():
+    tag = 'kbp2016'
+    submission_id = 1 # patterns
 
-def sample_docs_uniform(corpus_id, sentence_table, num_docs):
-    docs = set(d for d, in query_docs(corpus_id, sentence_table=sentence_table))
-    logger.info("Sampling %d documents from %d", num_docs, len(docs))
-    return sample_without_replacement(docs, num_docs)
+    db.execute("""TRUNCATE sample_batch CASCADE;
+                   ALTER SEQUENCE sample_batch_id_seq RESTART;
+                   """)
+    sample_submission(tag, submission_id, 'instance', 20)
 
-def sample_docs_entity(corpus_id, sentence_table, mention_table, per_entity, num_docs, is_uniform=True, fudge=1):
-    # Sample 0.2 * n documents.
-    docs = set(d for d, in query_docs(corpus_id, sentence_table=sentence_table))
-    logger.info("Sampling %d documents from %d", num_docs, len(docs))
+    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    assert len(batches) == 1
+    batch = batches[0]
+    assert batch.id == 1
+    assert batch.submission_id == submission_id
+    assert batch.distribution_type == "instance"
+    assert batch.corpus_tag == "kbp2016"
+    assert batch.params == {"submission_id": submission_id, "type":"instance", "with_replacement": False}
 
-    doc_collection = set(sample_without_replacement(docs, int(.2 * num_docs)))
-    logger.info("Seeding with %d documents", len(doc_collection))
+    relation_mentions = list(db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    assert len(relation_mentions) == 20
 
-    # Find all mentions and hence links in these documents.
-    seed_entities = list(query_entities(sorted(doc_collection), mention_table=mention_table))
-    logger.info("Found %d entities", len(seed_entities))
+def test_sample_submission_relation():
+    tag = 'kbp2016'
+    submission_id = 1 # patterns
 
-    # Create a table with these seed entities, and use them in querying.
-    doc_map = query_entity_docs(seed_entities)
+    db.execute("""TRUNCATE sample_batch CASCADE;
+                   ALTER SEQUENCE sample_batch_id_seq RESTART;
+                   """)
+    sample_submission(tag, submission_id, 'relation', 20)
 
-    entities, probs = [], []
-    for entity, docs in doc_map.items():
-        if len(docs) > 1.:
-            entities.append(entity)
-            probs.append(np.log(len(docs))**(fudge))
-    assert len(entities) > 0
-    probs = normalize_probs(probs)
-    #print(Counter(dict(zip(entities,probs))).most_common(10))
+    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    assert len(batches) == 1
+    batch = batches[0]
+    assert batch.id == 1
+    assert batch.submission_id == submission_id
+    assert batch.distribution_type == "relation"
+    assert batch.corpus_tag == "kbp2016"
+    assert batch.params == {"submission_id": submission_id, "type":"relation", "with_replacement": False}
 
-    # Proceed to add entities
-    while len(doc_collection) < num_docs and len(entities) > 0:
-        # Sample an entity.
-        if is_uniform:
-            idx = np.random.choice(len(entities))
-        else:
-            idx = np.random.choice(len(entities), p=probs)
+    relation_mentions = list(db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    assert len(relation_mentions) == 20
 
-        entity, prob = entities.pop(idx), probs.pop(idx)
-        probs = normalize_probs(probs) # renormalize distribution
-        #print(Counter(dict(zip(entities,probs))).most_common(10))
+def test_sample_submission_entity():
+    tag = 'kbp2016'
+    submission_id = 1 # patterns
 
-        logger.debug("Searching for %s %.4f", entity, prob)
-        docs_ = set(doc_map[entity])
-        docs_.difference_update(doc_collection)
-        # Measure how many to sample.
-        m = min(num_docs - len(doc_collection), per_entity)
-        doc_collection.update(sample_without_replacement(docs_, m))
-        logger.debug("Now at %s", len(doc_collection))
-    assert len(doc_collection) == num_docs, "Couldn't find 'n' documents!"
-    return doc_collection
+    db.execute("""TRUNCATE sample_batch CASCADE;
+                   ALTER SEQUENCE sample_batch_id_seq RESTART;
+                   """)
+    sample_submission(tag, submission_id, 'entity', 20)
 
-def sample_docs(corpus_id, sentence_table, mention_table, mode, num_docs, per_entity=4, fudge=1):
-    """
-    Sample documents according to mode.
-    """
-    if mode == "uniform":
-        return sample_docs_uniform(corpus_id, sentence_table, num_docs)
-    elif mode == "entity_uniform":
-        return sample_docs_entity(corpus_id, sentence_table, mention_table, per_entity, num_docs, is_uniform=True, fudge=fudge)
-    elif mode == "entity":
-        return sample_docs_entity(corpus_id, sentence_table, mention_table, per_entity, num_docs, is_uniform=False, fudge=fudge)
-    else:
-        raise ValueError("Invalid sampling mode: " + mode)
+    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    assert len(batches) == 1
+    batch = batches[0]
+    assert batch.id == 1
+    assert batch.submission_id == submission_id
+    assert batch.distribution_type == "entity"
+    assert batch.corpus_tag == "kbp2016"
+    assert batch.params == {"submission_id": submission_id, "type":"entity", "with_replacement": False}
 
-# = Instance sampling routines
-def map_relations(entries, relations):
-    return (entries.normalize_relation(r) for r in relations)
-
-def get_relation_pairs(old_entries):
-    ret = set()
-    for r in old_entries.relations:
-        ret.add(r.pair)
-        if r.reln in INVERTED_RELATIONS:
-            ret.add(r.inv_pair)
-    return ret
-
-def sample_by_relation(entries, num_samples, old_entries=None):
-    """
-    Sample from @num_samples entries from @entries in a way that keeps
-    the relation distribution as uniform as possible.
-
-    @types is a mapping from entry to type.
-    @old_entries are existing entries that should be ignored when sampling.
-    """
-    old_pairs = get_relation_pairs(old_entries) if old_entries is not None else []
-
-    # Populate population table.
-    population = defaultdict(list)
-    for row in entries.relations:
-        if row.pair in old_pairs: continue
-
-        row = entries.normalize_relation(row) # Normalize every entry before adding it here.
-        reln = row.reln
-        population[reln].append(row)
-    I = sum(len(instances) for instances in population.values()) # Count the number of instances
-    logger.info("Found at %d instances split over %d relations", I, len(population))
-
-    # Build a list of samples (one for every (subj, obj) pair).
-    samples = {}
-
-    # Sort relations by decreasing frequency.
-    for i, (relation, instances) in enumerate(sorted(population.items(), key=lambda t:(len(t[1]),t[0]))):
-        remaining_samples = num_samples - len(samples)
-        remaining_relations = len(population) - i
-        per_relation = int(remaining_samples / remaining_relations)
-
-        # Don't double-sample an instance.
-        instances = [instance for instance in instances if (instance.pair) not in samples]
-
-        for instance in sample_without_replacement(instances, per_relation):
-            weight = 1.0 # TODO: figure out.
-            samples[instance.pair] = instance._replace(weight=weight)
-
-        logger.info("Currently at %s (%d/%d) and %d instances", relation, i, len(population), len(samples))
-    logger.info("Done with %d instances", len(samples))
-    return sorted(samples.values())
-
-def sample_by_entity(entries, num_entries, per_entity=10, old_entries=None):
-    old_pairs = get_relation_pairs(old_entries) if old_entries is not None else []
-
-    # Construct an entity-centric table to sample from.
-    population = defaultdict(lambda: defaultdict(list))
-    for row in entries.relations:
-        if row.pair in old_pairs: continue # skip old_entries
-        subj_, obj_ = entries.get_link(row.subj), entries.get_link(row.obj)
-        # TODO: invert relations?
-        row = entries.normalize_relation(row)
-        population[subj_][(row.reln,obj_)].append(row)
-    E, F, I = len(population), sum(len(fills) for fills in population.values()), sum(len(instances) for fills in population.values() for instances in fills.values())
-    logger.info("Found at %d entities, %d fills and %d instances", E, F, I)
-
-    samples = {}
-    condition = lambda: len(samples) < num_entries
-
-    # Sample (without replacement) uniformly from entities
-    for entity in sorted(sorted(population.keys()), key=lambda *args: random.random()):
-        fills = population[entity]
-        Z = sum(len(vs) for vs in fills.values())
-        instances, weights = zip(*[(i, len(vs)/Z) for vs in fills.values() for i in vs])
-
-        for instance in sample_without_replacement(instances, per_entity, weights):
-            if instance.pair in samples: continue # This really shouldn't happen, unless you predict different relations for the same pair.
-            weight = 1.0 # TODO: figure out
-
-            samples[instance.pair] = instance._replace(weight=weight)
-            if not condition(): break
-        if not condition(): break
-        logger.debug("Currently at %d instances over %d entities", sum(len(vs) for vs in samples.values()), len(samples))
-    logger.info("Done with %d instances over %d entities", sum(len(vs) for vs in samples.values()), len(samples))
-
-    return sorted(samples.values())
-
-def sample_by_instance(entries, num_samples, old_entries=None):
-    """
-    Sample @num_sample entries from @entries, uniformly at random over the instances.
-
-    @_ is a mapping from entry to type that is not used.
-    @old_entries are existing entries that should be ignored when sampling.
-    """
-    old_pairs = get_relation_pairs(old_entries) if old_entries is not None else []
-
-    population = [row for row in entries.relations if row.pair not in old_pairs]
-    sample = sample_without_replacement(population, num_samples)
-    return sample
-
-def sample_by_balanced_instances(entries, num_samples):
-    true_instances = [row for row in entries.relations if row.score == 1.0]
-    false_instances = [row for row in entries.relations if row.score == 0.0]
-
-    T, F = len(true_instances), len(false_instances)
-    R = T + F
-
-    true_sample = [row._replace(weight=2*T/R) for row in sample_without_replacement(true_instances, int(np.ceil(num_samples/2)))]
-    false_sample = [row._replace(weight=2*F/R) for row in sample_without_replacement(false_instances, int(np.floor(num_samples/2)))]
-    sample = true_sample + false_sample
-    return sample
-
-def sample_instances(mode, candidates, num_samples, old_entries=None, per_entity=None):
-    """
-    Sample relations according to mode.
-    """
-
-    if mode == "instance":
-        return sample_by_instance(candidates, num_samples, old_entries=old_entries)
-    elif mode == "entity":
-        return sample_by_entity(candidates, num_samples, per_entity=per_entity, old_entries=old_entries)
-    elif mode == "relation":
-        return sample_by_relation(candidates, num_samples, old_entries=None)
-    elif mode == "balanced":
-        return sample_by_balanced_instances(candidates, num_samples)
-    else:
-        raise ValueError("Invalid sampling mode: " + mode)
-
-    return []
+    relation_mentions = list(db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    assert len(relation_mentions) == 20

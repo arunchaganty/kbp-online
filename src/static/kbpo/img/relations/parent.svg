@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="300.00009"
+   id="svg3290"
+   inkscape:version="0.45.1"
+   sodipodi:docname="ParentChildIcon.svg"
+   sodipodi:version="0.32"
+   width="300"
+   version="1.0"
+   sodipodi:docbase="/Users/ezrakatz/Documents/Wikimedia"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape">
+  <metadata
+     id="metadata3">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>AIGA_Symbol_Signs</dc:title>
+        <dc:description>Build upon http://aiga.org</dc:description>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>symbol</rdf:li>
+            <rdf:li>crime</rdf:li>
+            <rdf:li>weapon</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+        <dc:publisher>
+          <cc:Agent
+             rdf:about="http://www.openclipart.org/">
+            <dc:title />
+          </cc:Agent>
+        </dc:publisher>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Abu Badali</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:rights>
+          <cc:Agent>
+            <dc:title />
+          </cc:Agent>
+        </dc:rights>
+        <dc:date />
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://creativecommons.org/licenses/by-sa/2.5/" />
+        <dc:language />
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/licenses/by-sa/2.5/">
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Reproduction" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Distribution" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/Notice" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/Attribution" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/ShareAlike" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     bordercolor="#666666"
+     borderopacity="1.0"
+     id="base"
+     inkscape:current-layer="g2781"
+     inkscape:cx="131.00968"
+     inkscape:cy="150.86455"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:window-height="779"
+     inkscape:window-width="916"
+     inkscape:window-x="4"
+     inkscape:window-y="22"
+     inkscape:zoom="1.2279853"
+     pagecolor="#ffffff"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     width="300px"
+     height="300.00009px" />
+  <defs
+     id="defs3292">
+    <linearGradient
+       id="linearGradient3251">
+      <stop
+         style="stop-color:#ffff00;stop-opacity:1;"
+         offset="0"
+         id="stop3253" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="1"
+         id="stop3255" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3251"
+       id="linearGradient3257"
+       x1="269.48694"
+       y1="306.04901"
+       x2="32.240566"
+       y2="-8.9282284"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.0064378,0,0,1.0064379,-0.9656773,-0.9656792)" />
+  </defs>
+  <g
+     id="g2781"
+     transform="translate(5.745061e-6,1.437715e-4)">
+    <rect
+       style="opacity:1;fill:url(#linearGradient3257);fill-opacity:1;stroke:#000000;stroke-width:3.01931357;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:2.80080002;stroke-opacity:1"
+       id="rect2272"
+       width="296.98068"
+       height="296.98068"
+       x="1.5096511"
+       y="1.5096086"
+       ry="60"
+       rx="60" />
+    <g
+       id="g2274"
+       transform="translate(-4,0)">
+      <path
+         style="fill:#000000;stroke:none"
+         id="path2944"
+         d="M 87.499301,162.95112 C 97.163662,162.95112 104.99846,155.11632 104.99846,145.45111 C 104.99846,135.78676 97.163662,127.95112 87.499301,127.95112 C 77.834093,127.95112 69.998455,135.78676 69.998455,145.45111 C 69.998455,155.11632 77.834093,162.95112 87.499301,162.95112 z " />
+      <path
+         d="M 64.326471,168.30723 C 58.60281,171.92782 40.741596,208.72739 40.741596,208.72739 C 35.826711,218.74371 48.398073,221.65848 52.728373,213.81648 L 68.242346,185.28393 L 65.871122,278.99872 C 65.871122,288.6711 85.117524,288.38686 85.117524,278.99872 L 85.117524,222.60561 L 88.343858,222.61131 L 88.343858,279.0038 C 88.343858,288.39197 107.73417,288.6711 107.73417,278.99872 L 109.06599,180.62416 L 140.4617,155.35141 C 150.6483,147.15145 143.03408,136.86799 132.61644,144.65102 L 104.80426,165.42952 C 104.80426,165.42952 70.321687,164.51487 64.326471,168.30723 z "
+         id="path2950"
+         style="fill:#000000;stroke:none"
+         sodipodi:nodetypes="cccccccccccszcz" />
+      <path
+         d="M 206.14419,62.146915 C 219.95009,62.146915 231.1442,50.953223 231.1442,37.147221 C 231.1442,23.340606 219.95009,12.146915 206.14419,12.146915 C 192.33708,12.146915 181.1442,23.340606 181.1442,37.147221 C 181.1442,50.953223 192.33708,62.146915 206.14419,62.146915 z "
+         id="path3304"
+         style="fill:#000000;stroke:none" />
+      <path
+         sodipodi:nodetypes="cccccccccccccccccc"
+         d="M 173.6962,101.66503 L 173.84423,273.31315 C 173.84423,290.48291 200.99898,290.32599 200.99898,272.92002 L 201.01497,173.06073 L 206.30048,173.01338 L 206.2839,272.87322 C 206.2839,290.27864 233.75545,290.71856 233.75545,273.31315 L 233.77144,100.9454 L 238.54297,100.9454 L 238.54297,162.49922 C 238.54297,177.2761 260.10902,177.2761 260.10902,162.7635 L 260.10902,95.426785 C 260.10902,77.32541 245.61974,66.665334 230.29553,66.665334 L 187.29903,66.665334 C 177.10104,66.665334 168.58127,69.379278 162.36372,77.63821 L 127.99397,142.98632 C 120.64614,155.97962 141.06112,163.51469 147.83216,151.04112 L 173.6962,101.66503 z "
+         id="path3306"
+         style="fill:#000000;fill-opacity:1;stroke:none" />
+    </g>
+  </g>
+</svg>

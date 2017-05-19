@@ -1,3 +1,5 @@
+-- Migrating to transform deprecated SPAN classes to INT4RANGE
+--
 -- BEGIN TRANSACTION;
 -- 
 -- -- INSERT INTO document (SELECT * FROM kbpo_bk.document);

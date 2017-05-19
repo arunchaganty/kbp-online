@@ -8,12 +8,10 @@ import boto3
 from boto.mturk.question  import ExternalQuestion
 
 import pytest
+from .api import get_document, get_evaluation_mention_pairs
+from . import db
 
-from .interface import get_document, get_evaluation_mention_pairs
-from . import db as db
-#from .db import CONN, select
-
-#from .db import connect as db_connect
+logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
