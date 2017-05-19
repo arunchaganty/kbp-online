@@ -2,7 +2,7 @@
 # Sets up KBPO database (minus django stuff)
 
 if [[ $# != 2 ]]; then 
-  echo "Usage: $0 <usrname> <dbname> <superusr>"
+  echo "Usage: $0 <usrname> <dbname> [superusr]"
   exit 1;
 fi;
 
@@ -11,15 +11,15 @@ dbname=$2
 superusr=$3
 
 if [ ! -z $superusr ]; then
-  sudo -u postgres psql $dbname -c 'create schema kbpo authorization kbpo;'
+  sudo -u postgres psql $dbname -c 'CREATE SCHEMA kbpo AUTHORIZATION kbpo;'
 else
-  psql $dbname -c 'create schema kbpo authorization kbpo;'
+  psql $dbname -c 'CREATE SCHEMA kbpo AUTHORIZATION kbpo;'
 fi;
 
-PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f 'functions.sql'
-
-PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f 'basic.sql'
-PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f 'submission.sql'
-PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f 'evaluation.sql'
-
-PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f 'views.sql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '00_functions.sql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '01_basic.sql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '02_submission.sql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '03_sample.sql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '04_questions.sql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '05_views.ql'
+PGPASSWORD=$usrname psql -h localhost -U $usrname $dbname -f '06_evaluation.sql'
