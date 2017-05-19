@@ -1,17 +1,14 @@
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.debug("test")
 import json
+import logging
 
 import boto
 from boto.mturk.connection import MTurkConnection
 from boto.mturk.question  import ExternalQuestion
 
-from .interface import get_document, get_evaluation_mention_pairs
-from .db import CONN, select
-from .db import connect as db_connect
+from .api import get_document, get_evaluation_mention_pairs
+from . import db
 
+logger = logging.getLogger(__name__)
 
 mturk_url = "kbpo.stanford.edu/tasks/do"
 
@@ -86,8 +83,8 @@ def create_hit(mturk_connection, batch, question):
                                            title=batch['title'],
                                            description=batch['description'],
                                            max_assignments=batch['max_assignments'],
-                                           duration=batch['duration'], 
-                                           lifetime=batch['lifetime'], 
+                                           duration=batch['duration'],
+                                           lifetime=batch['lifetime'],
                                            reward=reward)
 
     logging.debug("Created hit")
@@ -104,11 +101,11 @@ def approve_assignments():
     raise NotImplementedError
 
 if __name__ == '__main__':
-    from .julie1_db_params import _PARAMS
-    CONN = db_connect(_PARAMS)
+    from .params.db.remote_kbpo_test import _PARAMS
+    db.CONN = db.connect(_PARAMS)
     mturk_connection = connect('sandbox')
-    batch = json.loads(next(select("SELECT params from mturk_batch WHERE batch_id = 20 LIMIT 1")))
-    question = json.loads(next(select("SELECT params from mturk_batch WHERE question_batch_id = 12 LIMIT 1")))
+    batch = json.loads(next(db.select("SELECT params from mturk_batch WHERE batch_id = 20 LIMIT 1")))
+    question = json.loads(next(db.select("SELECT params from mturk_batch WHERE question_batch_id = 12 LIMIT 1")))
     logging.debug("Batch and question retrieved")
     logging.debug(batch)
     logging.debug(question)
