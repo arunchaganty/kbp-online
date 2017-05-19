@@ -18,13 +18,39 @@ def create_questions_for_submission(submission_id):
         WHERE s.submission_id = %(submission_id)s)
         EXCEPT 
         (SELECT doc_id, subject, object
-        FROM evaluation_relation_question q);
+        FROM evaluation_question q
+        JOIN evaluation_relation_question r ON (q.id = r.question_id AND q.batch_id = r.batch_id)
+        WHERE q.state <> 'error');
         """, submission_id=submission_id):
         questions.append({
+            "batch_type": "selective_relations",
             "submission_id": submission_id,
             "doc_id": row.doc_id,
             "subject": (row.subject.lower, row.subject.upper),
             "object": (row.object.lower, row.object.upper),
+            })
+    return questions
+
+def create_questions_for_corpus(corpus_tag):
+    """
+    Produces questions for a submission, based on what's in the
+    database.
+    """
+    questions = []
+    for row in db.select("""
+        (SELECT DISTINCT doc_id
+        FROM document_sample s
+        JOIN document_tag t ON (s.doc_id = t.doc_id)
+        WHERE  t.tag=%(corpus_tag)s)
+        EXCEPT 
+        (SELECT doc_id
+        FROM evaluation_question q
+        JOIN evaluation_doc_question d ON (q.id = d.question_id AND q.batch_id = d.batch_id)
+        WHERE q.state <> 'error');
+        """, corpus_tag=corpus_tag):
+        questions.append({
+            "batch_type": "exhaustive_mentions",
+            "doc_id": row.doc_id,
             })
     return questions
 
@@ -61,8 +87,8 @@ def insert_evaluation_question(batch_id, params, cur=None):
         params_str = json.dumps(params)
         id_ = sha1(params_str.encode("utf-8")).hexdigest()
         cur.execute(
-            """INSERT INTO evaluation_question(id, batch_id, params) VALUES %s""",
-            [(id_, batch_id, params_str)]
+            """INSERT INTO evaluation_question(id, batch_id, state, params) VALUES %s""",
+            [(id_, batch_id, "pending-turking-0", params_str)]
             )
 
         # Insert into evaluation_?_question
@@ -103,8 +129,8 @@ def insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur=
 
         db.execute_values(
             cur,
-            """INSERT INTO evaluation_question(id, batch_id, params) VALUES %s""",
-            [(id_, batch_id, json.dumps(params)) for id_, params in zip(ids, questions)])
+            """INSERT INTO evaluation_question(id, batch_id, state, params) VALUES %s""",
+            [(id_, batch_id, "pending-turking-0", json.dumps(params)) for id_, params in zip(ids, questions)])
 
         # Insert into evaluation_?_question
         if batch_type == "exhaustive_mentions":
