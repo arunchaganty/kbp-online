@@ -2,7 +2,9 @@
 Utilities connecting the web interface to database
 Interfacing with database API
 """
+import json
 from datetime import date, datetime
+from hashlib import sha1
 
 from . import db
 from . import defs
@@ -273,6 +275,22 @@ def test_get_evaluation_mention_pairs():
     assert pair['subject'] == (628, 642)
     assert pair['object'] == (568, 574)
 
+def get_submissions(corpus_tag):
+    return db.select("""SELECT * FROM submission WHERE corpus_tag=%(corpus_tag)s ORDER BY id""", corpus_tag=corpus_tag)
+
+def test_get_submissions():
+    tag = 'kbp2016'
+    assert [s.name for s in get_submissions(tag)] == ["patterns", "supervised", "rnn"]
+
+def get_submission(submission_id):
+    return next(db.select("""SELECT * FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id))
+
+def test_get_submission():
+    submission_id = 1
+    submission = get_submission(submission_id)
+    assert submission.name == "patterns"
+    assert submission.corpus_tag == "kbp2016"
+
 def get_submission_relations(doc_id, submission_id):
     """
     Get suggested mentions for a document.
@@ -310,6 +328,49 @@ def test_get_submission_relations():
         "confidence": 1.
         }
 
+def insert_evaluation_question(batch_id, params, cur=None):
+    if cur is None:
+        with db.CONN:
+            with db.CONN.cursor() as cur:
+                return insert_evaluation_question(batch_id, params, cur)
+    else:
+        params_str = json.dumps(params)
+        id_ = sha1(params_str.encode("utf-8")).hexdigest()
+        cur.execute(
+            """INSERT INTO evaluation_question(id, batch_id, params) VALUES %s""",
+            [(id_, batch_id, params_str)]
+            )
+
+def test_insert_evaluation_question():
+    # TODO: Create a test database for this.
+    raise NotImplementedError()
+
+def insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur=None):
+    """
+    Creates an evaluation batch with a set of questions.
+    @questions is a list of parameters to launch tasks with.
+    """
+    if cur is None:
+        with db.CONN:
+            with db.CONN.cursor() as cur:
+                return insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur)
+    else:
+        # Create new batch.
+        cur.execute("""
+            INSERT INTO evaluation_batch(corpus_tag, batch_type, description) VALUES %s
+            RETURNING (id);
+            """, [(corpus_tag, batch_type, description)])
+        batch_id, = next(cur)
+        db.execute_values(
+            cur,
+            """INSERT INTO evaluation_question(id, batch_id, params) VALUES %s""",
+            [(sha1(json.dumps(params).encode("utf-8")).hexdigest(), batch_id, json.dumps(params)) for params in questions])
+        return batch_id
+
+def test_insert_evaluation_batch():
+    # TODO: Create a test database for this.
+    raise NotImplementedError()
+
 def insert_assignment(
         assignment_id, hit_id, worker_id,
         worker_time, comments, response,
@@ -344,18 +405,3 @@ def get_task_params(hit_id):
         FROM mturk_hit h 
         JOIN evaluation_question q ON (h.question_batch_id = q.batch_id AND h.question_id = q.id)
         WHERE h.id=%(hit_id)s""", hit_id=hit_id)).params
-
-def get_submissions(corpus_tag):
-    return db.select("""SELECT * FROM submission WHERE corpus_tag=%(corpus_tag)s ORDER BY id""", corpus_tag=corpus_tag)
-
-def test_get_submissions():
-    tag = 'kbp2016'
-    assert [s.name for s in get_submissions(tag)] == ["patterns", "supervised", "rnn"]
-
-def get_submission(submission_id):
-    return next(db.select("""SELECT * FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id))
-
-def test_get_submission():
-    submission = get_submission(1) 
-    assert submission.name == "patterns"
-    assert submission.corpus_tag == "kbp2016"
