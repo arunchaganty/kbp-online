@@ -24,13 +24,15 @@
   "dependencies": {
     "bootstrap": "^3.3.7",
     "d3": "^4.8.0",
+    "fast-levenshtein": "^2.0.4",
     "font-awesome": "^4.7.0",
     "jquery": "^3.2.1",
     "jquery-modal": "^0.8.0",
     "js-cookie": "^2.1.4",
-    "fast-levenshtein": "^2.0.4",
     "moment": "^2.18.1",
-    "requirejs": "^2.3.3"
+    "requirejs": "^2.3.3",
+    "sprintf": "^0.1.5",
+    "sprintf-js": "^1.1.0"
   },
   "devDependencies": {
     "qunit": "^1.0.0"

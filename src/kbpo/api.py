@@ -360,3 +360,113 @@ def get_task_params(hit_id):
         FROM mturk_hit h 
         JOIN evaluation_question q ON (h.question_batch_id = q.batch_id AND h.question_id = q.id)
         WHERE h.id=%(hit_id)s""", hit_id=hit_id)).params
+
+def get_submission_entries(submission_id):
+    """
+    Get entries from a submission that have been evaluated by Turk.
+    """
+    entries = []
+    for i, row in enumerate(db.select("""
+        SELECT 
+               r.doc_id,
+               d.title,
+               t.tag AS corpus_tag,
+               s.gloss AS sentence,
+               s.span AS sentence_span,
+               m.span AS subject_span,
+               m.mention_type AS subject_type,
+               m.gloss AS subject_gloss,
+               ml.link_name AS subject_link,
+               eml.link_name AS subject_link_gold,
+               lower(ml.link_name) = lower(COALESCE(eml.link_name, ml.link_name)) AS subject_link_correct,
+               em.weight > 0.5 AS subject_correct,
+               n.span AS object_span,
+               n.mention_type AS object_type,
+               n.gloss AS object_gloss,
+               nl.link_name AS object_link,
+               enl.link_name AS object_link_gold,
+               lower(nl.link_name) = lower(COALESCE(enl.link_name, nl.link_name)) AS object_link_correct,
+               en.weight > 0.5 AS object_correct,
+               r.relation AS predicate_name,
+               er.relation AS predicate_gold
+        FROM submission_relation r
+        JOIN submission_mention m ON (r.submission_id = m.submission_id AND r.doc_id = m.doc_id AND r.subject = m.span)
+        JOIN submission_mention n ON (r.submission_id = n.submission_id AND r.doc_id = n.doc_id AND r.object = n.span)
+        JOIN submission_link ml ON (m.submission_id = ml.submission_id AND m.doc_id = ml.doc_id AND m.canonical_span = ml.span)
+        JOIN submission_link nl ON (n.submission_id = nl.submission_id AND n.doc_id = nl.doc_id AND n.canonical_span = nl.span)
+        JOIN evaluation_relation er  ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
+        JOIN evaluation_mention em ON (m.doc_id = em.doc_id AND m.span = em.span)
+        JOIN evaluation_mention en ON (n.doc_id = en.doc_id AND n.span = en.span)
+        JOIN evaluation_link eml ON (ml.doc_id = eml.doc_id AND ml.span = eml.span)
+        JOIN evaluation_link enl ON (nl.doc_id = enl.doc_id AND nl.span = enl.span)
+        JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
+        JOIN document d ON (r.doc_id = d.id)
+        JOIN document_tag t ON (r.doc_id = t.doc_id)
+        WHERE r.submission_id = %(submission_id)s
+        ORDER BY r.doc_id, r.subject, r.object
+        """, submission_id=submission_id)):
+        entry = {
+            "id": i,
+            "doc_id": row.doc_id,
+            "corpus_tag": row.corpus_tag,
+            "title": row.title,
+            "sentence": row.sentence,
+            "subject": {
+                "span": [row.subject_span.lower - row.sentence_span.lower, row.subject_span.upper  - row.sentence_span.lower],
+                "mentionType": row.subject_type,
+                "canonicalGloss": row.subject_gloss,
+                "canonicalCorrect": row.subject_correct,
+                "linkName": row.subject_link,
+                "linkNameGold": row.subject_link_gold,
+                "linkCorrect": row.subject_link_correct,
+                "isCorrect": row.subject_correct and row.subject_link_correct,
+                },
+            "object": {
+                "span": [row.object_span.lower - row.sentence_span.lower, row.object_span.upper - row.sentence_span.lower],
+                "mentionType": row.object_type,
+                "canonicalGloss": row.object_gloss,
+                "canonicalCorrect": row.object_correct,
+                "linkName": row.object_link,
+                "linkNameGold": row.object_link_gold,
+                "linkCorrect": row.object_link_correct,
+                "isCorrect": row.object_correct and row.object_link_correct,
+                },
+            "predicate": {
+                "name": row.predicate_name,
+                "gold": row.predicate_gold,
+                "isCorrect": row.predicate_name == row.predicate_gold,
+                }
+            }
+        entries.append(entry)
+    return entries
+
+def test_get_submission_entries():
+    submission_id=1
+    entries = get_submission_entries(submission_id)
+    assert len(entries) == 1104
+    entry = entries[0]
+    assert entry == {
+        "id": 0,
+        "sentence": "Argentine striker Barcos re-signs with Palmeiras",
+        "subject": {
+            "span": [119, 125],
+            "mentionType": "PER",
+            "canonicalGloss": "Barcos",
+            "linkName": "Hernán_Barcos",
+            "linkNameGold": "Hern%C3%A1n_Barcos",
+            "isCorrect": False,
+            },
+        "object": {
+            "span": [111, 118],
+            "mentionType": "TITLE",
+            "canonicalGloss": "striker",
+            "linkName": "Striker",
+            "linkNameGold": None,
+            "isCorrect": True,
+            },
+        "predicate": {
+            "name": "per:title",
+            "gold": "per:title",
+            "isCorrect": True,
+            }
+        }

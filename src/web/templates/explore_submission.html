@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load bootstrap3 %}
+
+{% block header %}
+<link rel="stylesheet" href="{% static 'kbpo/css/kbpo.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="col-md-12">
+  <div class="row">
+  <h2>Explore submitted relations from {{submission.name}}</h2>
+  <!-- TODO: User information -->
+  <p>
+  <b>Description:</b> {{submission.details}}
+  <input type="hidden" id="submission-id" value="{{submission.id}}">
+  </p>
+
+  <table class="table table-hover">
+    <colgroup>
+    <col style="width:5%" />
+    <col style="width:55%" />
+    <col style="width:15%" />
+    <col style="width:10%" />
+    <col style="width:15%" />
+    </colgroup>
+    <thead>
+      <th>#</th>
+      <th>Sentence</th>
+      <th><span class="subject">Subject</span></th>
+      <th>Predicate</th>
+      <th><span class="object">Object</span></th>
+    </thead>
+    <tbody id="predictions">
+    </tbody>
+  </table>
+
+  <script src="/static/requirejs/require.js"></script>
+  <script>
+    require.config({
+      baseUrl: "/static/",
+      paths: {
+          "jquery": "jquery/dist/jquery",
+          "bootstrap": "bootstrap/dist/js/bootstrap",
+          "sprintf": "sprintf-js/dist/sprintf.min"
+      },
+    });
+    require( ["jquery", "bootstrap", "sprintf", "kbpo/js/defs"],
+        function($, bootstrap, pp, defs) {
+          function renderWikiLink(txt) {
+            return txt.replace(/_/g, " ");
+          }
+
+          var MARKER = {
+            checkmark: "<span class='fa fa-fw fa-check'></span>",
+            cross: "<span class='fa fa-fw fa-times'></span>",
+            linkBroken: "<span class='fa fa-fw fa-chain-broken'></span>",
+            doc: "<span class='fa fa-fw fa-file-text'></span>"
+          };
+
+          function renderMention(mention) {
+            var ret = "";
+            // Correct?
+            if (mention.isCorrect) {
+              ret += MARKER.checkmark;
+            } else if (mention.canonicalCorrect) {
+              console.assert(!mention.linkCorrect);
+              console.assert(mention.linkName !== mention.linkNameGold);
+              ret += pp.sprintf("<a href='https://en.wikipedia.org/wiki/%s' data-toggle='tooltip' title='%s'>%s</a>",
+                  mention.linkNameGold, renderWikiLink(mention.linkNameGold), MARKER.linkBroken); // Include link actual person.
+            } else {
+              ret += MARKER.cross;
+            }
+            // Type
+            ret += pp.sprintf(" <span class='fa fa-fw %s'></span> ", defs.TYPES[mention.mentionType].icon);
+            // Link
+            if (mention.mentionType == "PER" || mention.mentionType == "ORG" || mention.mentionType == "GPE") {
+              ret += pp.sprintf("<a href='https://en.wikipedia.org/wiki/%s'>%s</a>", mention.linkName, renderWikiLink(mention.linkName));
+            } else {
+              ret += mention.canonicalGloss
+            }
+            // If there is a correct link.
+            return ret;
+          }
+
+          function renderSentence(row) {
+            var html = "";
+            // Now add <span> tags.
+            var tags = [], elems = [];
+            if (row.subject.span[0] < row.object.span[0]) {
+              tags.push("subject"); tags.push("object");
+              elems.push(row.subject); elems.push(row.object);
+            } else {
+              tags.push("object"); tags.push("subject");
+              elems.push(row.object); elems.push(row.subject);
+            }
+
+            html += row.sentence.slice(0, elems[0].span[0]);
+            html += pp.sprintf("<span class='%s'>", tags[0]);
+            html += row.sentence.slice(elems[0].span[0], elems[0].span[1]);
+            html += "</span>";
+            html += row.sentence.slice(elems[0].span[1], elems[1].span[0]);
+            html += pp.sprintf("<span class='%s'>", tags[1]);
+            html += row.sentence.slice(elems[1].span[0], elems[1].span[1]);
+            html += "</span>";
+            html += row.sentence.slice(elems[1].span[1]);
+
+            return html;
+          }
+
+          function renderPredicate(predicate) {
+            var ret = "";
+            if (predicate.isCorrect) {
+              ret += MARKER.checkmark;
+            } else {
+              ret += pp.sprintf("<a href='#' data-toggle='tooltip' title='%s'>%s</a>",
+                  predicate.gold, MARKER.cross);
+            }
+            ret += pp.sprintf(" <span class='fa fa-fw %s'></span> ", defs.RELATION_MAP[predicate.name].icon);
+            ret += defs.RELATION_MAP[predicate.name].short;
+            return ret;
+          }
+
+          function renderDocument(row) {
+            var ret = "";
+            ret += row.id;
+            ret += pp.sprintf(" <a href='/explore/corpus/%s/%s/' data-toggle='tooltip' title='%s'>%s</a>",
+                row.corpus_tag, row.doc_id, row.title, MARKER.doc)
+            return ret;
+          }
+
+          function renderRow(row) {
+            row.isCorrect = row.predicate.isCorrect && row.subject.isCorrect && row.object.isCorrect;
+            var tr = $("<tr>");
+            tr.append($("<td>")
+                .attr("class", row.isCorrect ? "success" : "danger")
+                .html(renderDocument(row)))
+              .append($("<td>")
+                .html(renderSentence(row)))
+              .append($("<td>")
+                .attr("class", row.subject.isCorrect ? "success" : "danger")
+                .html(renderMention(row.subject)))
+              .append($("<td>")
+                .attr("class", row.predicate.isCorrect ? "success" : "danger")
+                .html(renderPredicate(row.predicate)))
+              .append($("<td>")
+                .attr("class", row.object.isCorrect ? "success" : "danger")
+                .html(renderMention(row.object)))
+                ;
+            return tr;
+          }
+          console.info("loaded.");
+
+          var submissionId = $("#submission-id").val();
+          // Call AJAX api to load entries.
+          $.getJSON("/api/submission/" + submissionId + "/", function(rows) {
+            for(var i = 0; i < rows.length; i++) {
+              $("#predictions").append(renderRow(rows[i]));
+            }
+          });
+        }
+    );
+  </script>
+
+</div>
+</div>
+
+{% endblock %}

@@ -37,16 +37,26 @@ def submit(request):
 
     return render(request, 'submit.html', {'form': form})
 
-def explore(request, doc_id=None):
+def explore_corpus(request, corpus_tag, doc_id=None):
     """
     Explore a document in the corpus -- this entirely uses the
     kbpo.interface functions.
     """
     if doc_id is None:
+        # List corpus_tags.
         doc = Document.objects.order_by('?').first()
         return redirect('explore', doc_id=doc.id)
     doc = get_object_or_404(Document, id=doc_id)
     return render(request, 'explore.html', {'doc_id': doc.id})
+
+def explore_submission(request, submission_id):
+    """
+    Explore a document in the corpus -- this entirely uses the
+    kbpo.interface functions.
+    """
+    submission = get_object_or_404(Submission, id=submission_id)
+
+    return render(request, 'explore_submission.html', {'submission': submission})
 
 ### Interface functions
 def _parse_span(span_str):
@@ -220,4 +230,16 @@ def api_evaluation_mention_pairs(_, doc_id, subject_id=None, object_id=None):
     # Construct mention pairs using the above information.
     ret = [{"subject": mentions[p["subject"]], "object": mentions[p["object"]],} for p in pairs]
 
+    return JsonResponse(ret, safe=False)
+
+def api_submission_entries(request, submission_id):
+    """
+    Get all the submitted relations from submission_id.
+    """
+    if request.GET:
+        evaluated_only = bool(request.GET["evaluated_only"])
+    else:
+        evaluated_only = True
+
+    ret = api.get_submission_entries(submission_id)
     return JsonResponse(ret, safe=False)

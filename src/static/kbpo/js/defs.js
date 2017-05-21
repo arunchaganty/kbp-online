@@ -30,7 +30,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "name": "per:age",
           "short": "age",
           "image": "age.svg",
-          "icon" : "", 
+          "icon" : "fa-clock-o", 
           "examples": [],
           "template": "{subject} is {object} old.",
           "subject-types": ["PER"],
@@ -39,7 +39,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "name": "per:alternate_names",
           "short": "alias",
           "image": "alternate_names.svg",
-          "icon": "",
+          "icon": "fa-address-book",
           "examples": [
             "{Dwayne Johnson}, popularly known as [The Rock], ...",
               "{Cardozar} ([Snoop Dog]) announced his new song...",
@@ -51,7 +51,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "name": "per:place_of_birth",
           "short": "born at",
           "image": "born.svg",
-          "icon": "",
+          "icon": "fa-birthday-cake",
           "examples": ["{Julia} is a [Hawaiian] native.",
                        "Julia is NOT born in Hawaii if she is a Hawaiian congresswoman."
                       ],
@@ -74,7 +74,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "name": "per:place_of_death",
           "short": "died at",
           "image": "Tombstone.svg",
-          "icon": "", 
+          "icon": "fa-bolt", 
           "examples": [
               "{Mike} was mourned in [Philadelphia] where he died last weekend.",
               "{Mike} did not necessarily die in [Kansas City] if that is where he was laid to rest.",
@@ -86,7 +86,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "name": "per:date_of_birth",
           "short": "born on",
           "image": "born.svg",
-          "icon": "",
+          "icon": "fa-birthday-cake",
           "examples": [
               "{Mike} was born on [December 31st, 1975].",
           ],
@@ -98,7 +98,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "short": "died on",
           "template": "{subject} died on {object}.",
           "image": "Tombstone.svg",
-          "icon": "",
+          "icon": "fa-bolt",
           "examples": [
               "{Mike} was died on [December 31st, 2015].",
           ],
@@ -113,7 +113,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
               "{Abu al-Zarqawi} is widely regarded to be the founder of [ISIS].",
           ],
           "image": "founder.svg",
-          "icon": "",
+          "icon": "fa-building",
           "subject-types": ["PER"],
           "object-types": ["ORG"]
       },{
@@ -124,7 +124,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "examples": [
             "{Eric Schmidt} a the leading shareholder in [Google].",
           ],
-          "icon": "",
+          "icon": "fa-line-chart",
           "subject-types": ["PER"],
           "object-types": ["ORG"]
       },{
@@ -135,14 +135,14 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
             "{Eric Schmidt}, an [UC Berkeley]-graduate ...",
           ],
           "image": "school.svg",
-          "icon": "",
+          "icon": "fa-graduation-cap",
           "subject-types": ["PER"],
           "object-types": ["ORG"]
       },{
           "name": "per:employee_or_member_of",
           "short": "works for",
           "image": "employee.svg", 
-          "icon": "", 
+          "icon": "fa-black-tie", 
           "template": "{subject} works for {object}.",
           "examples": ["{Mike} is for [Shell] if he is Shell's spokesperson.",
                        "{Mia} works for [America] if she is an American ambassador.",
@@ -158,7 +158,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
                        "{Fisher}'s mother, [Debbie Reynolds].",
           ],
           "image": "parents.png", 
-          "icon": "",
+          "icon": "fa-child",
           "subject-types": ["PER"],
           "object-types": ["PER"]
       },{
@@ -169,7 +169,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
                        "{Debbie Reynolds} said [her daughter] was in a better place now.",
           ],
           "image": "parents.png", 
-          "icon": "",
+          "icon": "fa-child",
           "subject-types": ["PER"],
           "object-types": ["PER"]
       },{
@@ -180,7 +180,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "examples": [
                        "{Barack Obama} thanked his wife, [Michelle].",
           ],
-          "icon": "",
+          "icon": "fa-diamond",
           "subject-types": ["PER"],
           "object-types": ["PER"]
       },{
@@ -191,7 +191,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "examples": [
                        "Obama said he was proud of his daughters {Malia} and [Sasha].",
           ],
-          "icon": "",
+          "icon": "fa-child",
           "subject-types": ["PER"],
           "object-types": ["PER"]
       },{
@@ -200,7 +200,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "template": "{subject} and {object} are otherwise family.",
           "examples": ["Grandparents, cousins and uncles would be considered as other family."],
           "image": "other_family.png", 
-          "icon": "",
+          "icon": "fa-child",
           "subject-types": ["PER"],
           "object-types": ["PER"]
       },{
@@ -219,7 +219,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "name": "org:alternate_names",
           "short": "alias",
           "image": "alternate_names.svg", 
-          "icon": "",
+          "icon": "fa-address-book",
           "template": "{subject} is also known as {object}.",
           "examples": ["{Quantum Computer Services} was renamed [Americal Online]"],
           "subject-types": ["ORG"],
@@ -244,7 +244,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
             "Steve Jobs founded {Apple Inc.} in [1976].",
           ],
           "image": "founder.svg", 
-          "icon": "",
+          "icon": "fa-building",
           "subject-types": ["ORG"],
           "object-types": ["DATE"]
       },{
@@ -266,7 +266,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
             "{The association} was started by [Walmart].",
           ],
           "image": "founder.svg", 
-          "icon": "",
+          "icon": "fa-black-tie",
           "subject-types": ["ORG"],
           "object-types": ["ORG", "GPE"]
       },{
@@ -275,7 +275,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "template": "{subject} is a member of {object}, though {subject} can operate independently of {object}.",
           "image": "members.jpg", 
           "examples": ["{Golden State Warriors} is a member of the [NBA]."],
-          "icon": "",
+          "icon": "fa-users",
           "subject-types": ["ORG"],
           "object-types": ["ORG", "GPE"]
       },{
@@ -285,7 +285,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "image": "members.jpg", 
           "examples": ["The {United Nations} has the [United States] as a member",
                        "The {American Humane Society} has [Clover Farms] as a member"],
-          "icon": "",
+          "icon": "fa-users",
           "subject-types": ["ORG"],
           "object-types": ["ORG", "GPE"]
       },{
@@ -314,7 +314,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "template": "{object} is a shareholder of {subject}.",
           "image": "shareholders.png", 
           "examples": [],
-          "icon": "",
+          "icon": "fa-line-chart",
           "subject-types": ["ORG"],
           "object-types": ["ORG"]
       },{
@@ -323,7 +323,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "template": "{subject} holds shares in {object}.",
           "image": "shareholders.png", 
           "examples": [],
-          "icon": "",
+          "icon": "fa-line-chart",
           "subject-types": ["ORG"],
           "object-types": ["ORG"]
     }];
@@ -356,7 +356,9 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
     };
 
     var RELATIONS = [];
+    var RELATION_MAP = [];
     _RELATIONS.forEach(function(r) {RELATIONS.push(new RelationLabel(r));});
+    _RELATIONS.forEach(function(r) {RELATION_MAP[r.name] = new RelationLabel(r);});
 
     var _TYPES = [
       {
@@ -557,6 +559,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
 
     return {
         'RELATIONS': RELATIONS,
+        'RELATION_MAP': RELATION_MAP,
         'TYPES': TYPES,
         'Mention': Mention,
         'Entity': Entity,

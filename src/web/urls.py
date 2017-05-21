@@ -3,8 +3,11 @@ from . import views
 
 urlpatterns = [
     url(r'^submit/$', views.submit, name='submit'),
-    url(r'^explore/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.explore, name='explore'),
-    url(r'^explore/$', views.explore, name='explore'),
+
+    url(r'^explore/corpus/(?P<corpus_tag>[a-zA-Z_0-9.-]+)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.explore_corpus, name='explore_corpus'),
+    url(r'^explore/corpus/(?P<corpus_tag>[a-zA-Z_0-9.-]+)/$', views.explore_corpus, name='explore_corpus'),
+
+    url(r'^explore/submission/(?P<submission_id>[a-zA-Z_0-9.]+)/$', views.explore_submission, name='explore_submission'),
 
     url(r'tasks/do/$', views.do_task, name="do_task"),
 
@@ -16,6 +19,8 @@ urlpatterns = [
     url(r'^api/evaluation-mentions/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.api_evaluation_mentions, name='api_evaluation_mentions'),
     url(r'^api/evaluation-mention-pairs/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.api_evaluation_mention_pairs, name='api_evaluation_mention_pairs'),
     url(r'^api/evaluation-mention-pairs/(?P<doc_id>[a-zA-Z_0-9.]+)/(?P<subject_id>[0-9]+-[0-9]+):(?P<object_id>[0-9]+-[0-9]+)/$', views.api_evaluation_mention_pairs, name='api_evaluation_mention_pairs'),
+
+    url(r'^api/submission/(?P<submission_id>[0-9]+)/$', views.api_submission_entries, name='api_submission_entries'),
 
     # These are all test interfaces.
     url(r'^interface/(?P<task>entity)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
