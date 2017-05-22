@@ -14,7 +14,11 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
   var DocWidget = function(elem) {
     console.assert(elem);
     this.elem = $(elem);
+    this.mentions = {};
   };
+  DocWidget.prototype.getMention = function(span) {
+    return this.mentions[span[0] + "-" + span[1]];
+  }
 
   // Load a document specified in json @doc.
   DocWidget.prototype.loadDocument = function(doc) {
@@ -116,6 +120,7 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
     elem.mention = mention;
     mention.elem = elem;
     mention.tokens.forEach(function(t) {t.mention = mention;});
+    this.mentions[mention.span[0] + "-" + mention.span[1]] = mention;
 
     return this.updateMention(mention);
   };
@@ -151,6 +156,7 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
           mention.tokens[i].mention = undefined;
     }
     $(mention.tokens).unwrap();
+    delete this.mentions[mention.span[0] + "-" + mention.span[1]];
   };
 
   DocWidget.prototype.isSentence = function(node) {
@@ -178,6 +184,14 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
   DocWidget.prototype.unselectMention = function(mention) {
     $(mention.elem).removeClass("selected");
   };
+
+  DocWidget.prototype.centerOnMention = function(mention) {
+    var elem = mention.elem.parentNode;
+
+    var topPosRel = elem.offsetTop;
+    var parentPosRel = this.elem.offset().top;
+    this.elem.scrollTop(topPosRel - parentPosRel);
+  }
 
   // Listeners
   DocWidget.prototype.highlightListeners = [];

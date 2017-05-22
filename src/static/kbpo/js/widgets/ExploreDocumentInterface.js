@@ -65,28 +65,47 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationListWidget'], 
   };
 
 
-  function centerOnMention(m) {
-    var sentence = $(m.elem).parent();
-    var elem = sentence[0];
-
-    var topPosRel = elem.offsetTop;
-    var parentPosRel = $('#document')[0].offsetTop;
-    $('#document').scrollTop(topPosRel - parentPosRel);
-  }
-  function centerOnMentionPair(p) {
+  ExploreDocumentInterface.prototype.centerOnMentionPair = function (p) {
     if (p.subject.span[0] < p.object.span[0])
-      centerOnMention(p.subject);
+      this.docWidget.centerOnMention(this.docWidget.getMention(p.subject.span));
     else
-      centerOnMention(p.object);
+      this.docWidget.centerOnMention(this.docWidget.getMention(p.object.span));
   }
+
+  // Draw mention pair
+  ExploreDocumentInterface.prototype.select = function(mentionPair) {
+    // Move to the location.
+    this.centerOnMentionPair(mentionPair);
+    this.docWidget.getMention(mentionPair.subject.span)
+        .tokens.forEach(function(t) {$(t).addClass("subject highlight");});
+    this.docWidget.getMention(mentionPair.object.span)
+        .tokens.forEach(function(t) {$(t).addClass("object highlight");});
+    $(this.docWidget.getMention(mentionPair.subject.span)
+        .elem.parentNode).addClass("highlight");
+  };
+
+  ExploreDocumentInterface.prototype.unselect = function(mentionPair) {
+    this.docWidget.getMention(mentionPair.subject.span)
+        .tokens.forEach(function(t) {$(t).removeClass("subject highlight");});
+    this.docWidget.getMention(mentionPair.object.span)
+        .tokens.forEach(function(t) {$(t).removeClass("object highlight");});
+    $(this.docWidget.getMention(mentionPair.subject.span)
+        .elem.parentNode).removeClass("highlight");
+  };
+
 
   ExploreDocumentInterface.prototype.highlightExistingMentionPair = function(mentionPair) {
-    this.unselect(this.mentionPair);
+    if (this.mentionPair !== undefined) {
+      this.unselect(this.mentionPair);
+    }
     this.select(mentionPair);
+
   };
   ExploreDocumentInterface.prototype.unhighlightExistingMentionPair = function(mentionPair) {
     this.unselect(mentionPair);
-    this.select(this.mentionPair);
+    if (this.mentionPair !== undefined) {
+      this.select(this.mentionPair);
+    }
   };
 
   return ExploreDocumentInterface;

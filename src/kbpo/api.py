@@ -207,15 +207,16 @@ def get_evaluation_mentions(doc_id):
     Get mention pairs from exhaustive mentions for a document.
     """
     mentions = []
-    for row in db.select("""
+    for i, row in enumerate(db.select("""
             SELECT m.span, m.gloss, m.mention_type, n.span AS canonical_span, n.gloss AS canonical_gloss, l.link_name
             FROM evaluation_mention m
             JOIN evaluation_mention n ON (m.doc_id = n.doc_id AND m.canonical_span = n.span)
             LEFT OUTER JOIN evaluation_link l ON (n.doc_id = l.doc_id AND n.span = l.span)
             WHERE m.doc_id = %(doc_id)s
             ORDER BY m.span
-            """, doc_id=doc_id):
+            """, doc_id=doc_id)):
         mention = {
+            "id": i,
             "span": (row.span.lower, row.span.upper),
             "gloss": row.gloss,
             "type": row.mention_type,
@@ -234,6 +235,7 @@ def test_get_evaluation_mentions():
     assert len(mentions) == 118
     mention = mentions[10]
     assert mention == {
+        'id': 10,
         'span': (787, 792),
         'gloss': 'Hamas',
         'type': 'ORG',
