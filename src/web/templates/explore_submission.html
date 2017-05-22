@@ -96,6 +96,8 @@
               elems.push(row.object); elems.push(row.subject);
             }
 
+            html += pp.sprintf("<a href='/explore/corpus/%s/%s/' data-toggle='tooltip' title='%s'>%s</a> ",
+                row.corpus_tag, row.doc_id, row.title, MARKER.doc)
             html += row.sentence.slice(0, elems[0].span[0]);
             html += pp.sprintf("<span class='%s'>", tags[0]);
             html += row.sentence.slice(elems[0].span[0], elems[0].span[1]);
@@ -115,7 +117,7 @@
               ret += MARKER.checkmark;
             } else {
               ret += pp.sprintf("<a href='#' data-toggle='tooltip' title='%s'>%s</a>",
-                  predicate.gold, MARKER.cross);
+                  defs.RELATION_MAP[predicate.gold].short, MARKER.cross);
             }
             ret += pp.sprintf(" <span class='fa fa-fw %s'></span> ", defs.RELATION_MAP[predicate.name].icon);
             ret += defs.RELATION_MAP[predicate.name].short;
@@ -124,9 +126,13 @@
 
           function renderDocument(row) {
             var ret = "";
+            if (row.isCorrect) {
+              ret += MARKER.checkmark;
+            } else {
+              ret += MARKER.cross;
+            }
+
             ret += row.id;
-            ret += pp.sprintf(" <a href='/explore/corpus/%s/%s/' data-toggle='tooltip' title='%s'>%s</a>",
-                row.corpus_tag, row.doc_id, row.title, MARKER.doc)
             return ret;
           }
 

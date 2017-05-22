@@ -6,25 +6,29 @@
 <div class="col-md-5">
   <div class="inner cover">
     {% bootstrap_messages %}
-    <!--<h1 class="cover-heading">Evaluate your knowledge base population system. </h1> -->
     <h1> KBP Online </h1>
 
-    <p class="lead">KBP Online is an on-demand evaluation service that can accurately evaluate your KBP system.</p>
+    <p class="lead">KBP Online is an on-demand evaluation service that accurately and quickly evaluates your knowledge base population (KBP) system.</p>
     
     <b> What is KBP?</b>
-    <p> KBP which stands for Knowledge Base Population, is the task of automatically extracting relations between entities from unstructured text and populating a knowledge base. Evaluating this task is challenging because it is not economically feasible to exhaustively annotate every possible candidate relation from a sufficiently large corpus. As a result, a pooling-based methodology is used in practice to construct datasets, similar to them methodology used in information retrieval. 
-
+    <p> Knowledge base population is the task of automatically extracting relations between entities from unstructured text and populating a knowledge base.
+    Evaluating this task is challenging because it is not economically feasible to exhaustively annotate every possible candidate relation from a sufficiently large corpus.
+    As a result, a pooling-based methodology is used in practice to construct datasets, similar to them methodology used in information retrieval. 
     <hr>
     <b> What is on-demand evaluation?</b>
-    <p> On-demand evaluation is a new evaluation paradigm which takes your system predictions, and annotates a sample, combines with other system predictions via importance sampling and generates an accurate score
+    <p> On-demand evaluation is a new evaluation paradigm which takes your system predictions, and annotates a sample, combines with other system predictions via importance sampling and generates an accurate score.
 
     <hr>
-    <b> Getting Started </b>
+    <b> Cool! How do I getting started? </b>
+    <p>
+    All you'll need is an <a href="/register/">account</a> and <a href="/submit/">submit</a> your knowledge base!
+    We'll automatically sample predicted relations and have them annotated via <a href="https://mturk.amazon.com/">Amazon Mechanical Turk</a>.
+    </p>
 
-    <!--<p class="lead">
-      <a href="/login" class="btn btn-lg btn-default">Log in</a>
-      <a href="/about" class="btn btn-lg btn-default">Learn more</a>
-    </p>-->
+    <p>
+    As your predictions are annotated, your submission will be updated on the leader board to the right.
+    You can explore annotations made on the corpus and analyze your system's errors. 
+    </p>
   </div>
 </div>
 <div class="col-md-7"> 
@@ -38,11 +42,13 @@
         <col style="width:15%" />
         </colgroup>
         <thead >
-          <th style='text-align:center'>Rank</th>
-          <th>System</th>
-          <th>Prec. (%)</th>
-          <th>Recall (%)</th>
-          <th>F1 (%)</th>
+          <tr>
+            <th style='text-align:center'>Rank</th>
+            <th>System</th>
+            <th>Prec. (%)</th>
+            <th>Recall (%)</th>
+            <th>F1 (%)</th>
+          </tr>
         </thead>
         <tbody id="submissions">
         </tbody>
@@ -96,7 +102,6 @@
           });
         }
     );
-    
   </script>
 
 </div>
