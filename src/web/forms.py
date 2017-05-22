@@ -19,6 +19,7 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
     """
     A knowledge base submitted by the user.
     """
+    file_format = forms.ChoiceField(choices=[("tac", "TAC-KBP KB format"), ("mfile", "Mention-based KB format")], help_text="")
     knowledge_base = forms.FileField(help_text="The file to be uploaded. Please ensure that it is gzipped.")
     class Meta:
         model = Submission
@@ -42,8 +43,15 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             # Check that the file is gzipped.
             with gzip.open(data, 'rt') as f:
                 # Check that it has the right format, aka validate it.
-                data = validate(f)
+
                 # TODO: Save validation errors in a better format and display them.
+                if self.cleaned_data["file_format"] == "tac":
+                    # TODO: Convert file from tac format to mfile.
+                    raise forms.ValidationError("Sorry, can not currently process TAC-KBP KB format")
+                elif self.cleaned_data["file_format"] == "mfile":
+                    data = validate(f)
+                else:
+                    raise ValueError("Unexpected file-format: {}".format(self.cleaned_data["file_format"]))
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
