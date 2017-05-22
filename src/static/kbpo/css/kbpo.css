@@ -209,3 +209,8 @@ div#relation-option-preview span.object {
 #instruction-widget-modal>.modal-dialog {
         width: 90%;
 }
+
+#relation-list-widget {
+  max-height: 400px;
+  overflow-y: scroll;
+}
