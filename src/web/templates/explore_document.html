@@ -45,7 +45,7 @@
                 console.info("loaded ", mentions.length, " mentions.");
                 iface.docWidget.loadMentions(mentions);
 
-                $.getJSON(pp.sprintf("/api/evaluation-relations/%s/", docId), function(mentions) {
+                $.getJSON(pp.sprintf("/api/evaluation-relations/%s/", docId), function(relations) {
                   console.info("loaded ", mentions.length, " relations.");
                   iface.listWidget.loadRelations(relations);
                 });

@@ -246,7 +246,7 @@ def api_evaluation_relations(_, doc_id):
     # Construct mention pairs using the above information.
     ret = [{"subject": mentions[r["subject"]],
             "object": mentions[r["object"]],
-            "relation": r["relation"],} for r in relations]
+            "relation": r["relation"],} for r in relations if r["subject"] in mentions and r["object"] in mentions]
 
     return JsonResponse(ret, safe=False)
 

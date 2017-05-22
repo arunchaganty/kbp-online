@@ -64,11 +64,6 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationListWidget'], 
     console.assert(self.mentionPairs.length > 0);
   };
 
-  ExploreDocumentInterface.prototype.loadRelations = function(relations) {
-    var self = this;
-    // TODO: Add each relation into listWidget. 
-  };
-
 
   function centerOnMention(m) {
     var sentence = $(m.elem).parent();
