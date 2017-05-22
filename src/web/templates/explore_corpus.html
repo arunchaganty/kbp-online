@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load bootstrap3 %}
+
+{% block header %}
+<link rel="stylesheet" href="{% static 'kbpo/css/kbpo.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="col-md-12">
+  <div class="row">
+  <h2>Explore document annotations from {{corpus_tag}}</h2>
+
+  <p>
+  <input type="hidden" id="corpus-tag" value="{{corpus_tag}}">
+  </p>
+
+  <table class="table table-striped table-hover">
+    <colgroup>
+    <col style="width:5%" />
+    <col style="width:60%" />
+    <col style="width:15%" />
+    <col style="width:10%" />
+    <col style="width:10%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Title</th>
+        <th>Publishing date</th>
+        <th># entity annotations</th>
+        <th># relation annotations</th>
+      </tr>
+    </thead>
+    <tbody id="listing">
+    </tbody>
+  </table>
+
+  <script src="/static/requirejs/require.js"></script>
+  <script>
+    require.config({
+      baseUrl: "/static/",
+      paths: {
+          "jquery": "jquery/dist/jquery",
+          "bootstrap": "bootstrap/dist/js/bootstrap",
+          "sprintf": "sprintf-js/dist/sprintf.min"
+      },
+    });
+    require( ["jquery", "bootstrap", "sprintf", "kbpo/js/defs"],
+        function($, bootstrap, pp, defs) {
+          function renderRow(corpusTag, i, row) {
+            var tr = $("<tr>");
+            tr.append($("<td>").text(i))
+              .append($("<td>").html(pp.sprintf("<a href='/explore/corpus/%s/%s/'>%s</a>", corpusTag, row.docId, row.title || "Untitled")))
+              .append($("<td>").text(row.date))
+              .append($("<td>").text(row.entityCount))
+              .append($("<td>").text(row.relationCount))
+              ;
+            return tr;
+          }
+          console.info("loaded.");
+
+          var corpusTag = $("#corpus-tag").val();
+          // Call AJAX api to load entries.
+          $.getJSON(pp.sprintf("/api/corpus/%s/", corpusTag), function(rows) {
+            for(var i = 0; i < rows.length; i++) {
+              $("#listing").append(renderRow(corpusTag, i+1, rows[i]));
+            }
+          });
+        }
+    );
+  </script>
+
+</div>
+</div>
+
+{% endblock %}
