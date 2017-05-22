@@ -12,10 +12,7 @@
 <div class="col-md-2"></div>
 <div id="content-main" class="col-md-8">
   <div class="row">
-  <h2>Explore the KBPOnline corpora and annotations</h2>
-  <p>Select a corpus and document to examine from the choices below:</p>
-  <!-- TODO: Have a drop box to select things here -->
-  {{doc_id}}
+  <h2>Explore the KBPOnline annotations</h2>
   </div>
 
   <div class="row">
@@ -31,7 +28,7 @@
       baseUrl: "/static/",
       paths: {
           "jquery": "jquery/dist/jquery",
-          "bootstrap": "bootstrap/dist/js/bootstrap"
+          "bootstrap": "bootstrap/dist/js/bootstrap",
       },
     });
     require( ["jquery", "bootstrap", "kbpo/js/widgets/DocWidget"],
@@ -44,11 +41,11 @@
             console.info("loaded document ", doc.id);
             docWidget.loadDocument(doc);
 
-            $.getJSON("/api/suggested-mentions/" + docId, function(mentions) {
-              console.log(mentions)
-              console.info("loaded ", mentions.length, " mentions.");
-              docWidget.setSuggestions(mentions, "suggestion");
-            });
+            //$.getJSON("/api/suggested-mentions/" + docId, function(mentions) {
+            //  console.log(mentions)
+            //  console.info("loaded ", mentions.length, " mentions.");
+            //  docWidget.setSuggestions(mentions, "suggestion");
+            //});
           });
         }
     );
