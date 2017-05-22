@@ -500,3 +500,53 @@ def get_leaderboard():
         entries.append(entry)
     return {'submissions': entries}
 
+def get_corpus_listing(corpus_tag):
+    """
+    List documents from the corpus, with summaries of #entities,
+    #relations.
+    """
+    entries = []
+    for row in db.select("""
+        WITH entity_counts AS (
+            SELECT t.doc_id, COUNT(*)
+            FROM document_tag t,
+                 evaluation_mention m
+            WHERE m.doc_id = t.doc_id
+              AND t.tag = %(corpus_tag)s
+              GROUP BY t.doc_id),
+             relation_counts AS (
+            SELECT t.doc_id, COUNT(*)
+            FROM document_tag t,
+                 evaluation_relation r
+            WHERE r.doc_id = t.doc_id
+              AND t.tag = %(corpus_tag)s
+              GROUP BY t.doc_id)
+        SELECT d.id, d.title, d.doc_date, e.count AS entity_count, r.count AS relation_count
+        FROM document d
+        JOIN document_tag t ON (d.id = t.doc_id AND t.tag = %(corpus_tag)s)
+        JOIN entity_counts e ON (d.id = e.doc_id)
+        JOIN relation_counts r ON (d.id = r.doc_id)
+        ORDER BY e.count DESC, r.count DESC, d.id
+        """, corpus_tag=corpus_tag):
+        entry = {
+            "docId": row.id,
+            "title": row.title,
+            "date": row.doc_date,
+            "entityCount": row.entity_count,
+            "relationCount": row.relation_count,
+            }
+        entries.append(entry)
+    return entries
+
+def test_get_corpus_listing():
+    corpus_tag='kbp2016'
+    entries = get_corpus_listing(corpus_tag)
+    assert len(entries) == 1232
+    entry = entries[0]
+    assert entry == {
+        'docId': 'ENG_NW_001278_20130316_F00012OME',
+        'title': "3rd LD Writethru-Xinhua Insight: China's new leadership takes shape amid high expectations",
+        "date": date(2013, 3, 16),
+        "entityCount": 72,
+        "relationCount": 119,
+        }

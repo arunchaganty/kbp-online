@@ -19,8 +19,7 @@ span.token {
 }
 
 span.token.with-space {
-  display: inline-block;
-  margin-left: 0.5em;
+  margin-left: 0.2em;
 }
 
 span.token.underline {

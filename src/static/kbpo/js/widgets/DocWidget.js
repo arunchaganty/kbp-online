@@ -4,7 +4,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery'], function ($) {
+define(['jquery', 'sprintf-js/dist/sprintf.min'], function ($, pp) {
   /**
    * The document object -- handles the storage and representation of
    * sentences.
@@ -25,6 +25,15 @@ define(['jquery'], function ($) {
 
   // Insert the document @doc into the DOM
   DocWidget.prototype.insertIntoDOM = function(doc) {
+    // Add title.
+    this.elem.addClass("panel panel-default");
+    this.elem.append($("<div class='panel-heading'>").append(
+          $("<h3 class='panel-title'>")
+            .text(pp.sprintf("%s: %s [%s]", doc.id, doc.title, doc.date))
+          ));
+
+    var elem = $("<div class='panel-body'>");
+
     // Load every sentence into the DOM.
     for (var i = 0; i < doc.sentences.length; i++) {
       sentence = doc.sentences[i];
@@ -43,12 +52,13 @@ define(['jquery'], function ($) {
         // TODO: Implement in a way that &nbsp; are not added (causes
         // glosses to contain \xa0).
         if (j > 0 && sentence[j].span[0] > sentence[j-1].span[1]) {
-          tokenSpan.html('&nbsp;' + tokenSpan.text());
+          tokenSpan.addClass("with-space");
         }
         span.append(tokenSpan);
       }
-      this.elem.append(span);
+      elem.append(span);
     }
+    this.elem.append(elem);
   };
 
   // Highlight certain portions of the document.
