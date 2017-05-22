@@ -168,6 +168,10 @@ def do_task(request):
                 })
 
 ### API functions
+def api_leaderboard(_):
+    ret = api.get_leaderboard()
+    return JsonResponse(ret)
+
 def api_document(_, doc_id):
     doc = get_object_or_404(Document, id=doc_id)
     ret = api.get_document(doc.id)

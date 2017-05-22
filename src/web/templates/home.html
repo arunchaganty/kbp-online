@@ -3,19 +3,103 @@
 {% load bootstrap3 %}
 
 {% block content %}
-<div class="col-md-2"></div>
-<div class="col-md-8">
+<div class="col-md-5">
   <div class="inner cover">
     {% bootstrap_messages %}
-    <h1 class="cover-heading">Evaluate your knowledge base population system. </h1>
+    <!--<h1 class="cover-heading">Evaluate your knowledge base population system. </h1> -->
+    <h1> KBP Online </h1>
+
     <p class="lead">KBP Online is an on-demand evaluation service that can accurately evaluate your KBP system.</p>
-    <p class="lead">
+    
+    <b> What is KBP?</b>
+    <p> KBP which stands for Knowledge Base Population, is the task of automatically extracting relations between entities from unstructured text and populating a knowledge base. Evaluating this task is challenging because it is not economically feasible to exhaustively annotate every possible candidate relation from a sufficiently large corpus. As a result, a pooling-based methodology is used in practice to construct datasets, similar to them methodology used in information retrieval. 
+
+    <hr>
+    <b> What is on-demand evaluation?</b>
+    <p> On-demand evaluation is a new evaluation paradigm which takes your system predictions, and annotates a sample, combines with other system predictions via importance sampling and generates an accurate score
+
+    <hr>
+    <b> Getting Started </b>
+
+    <!--<p class="lead">
       <a href="/login" class="btn btn-lg btn-default">Log in</a>
       <a href="/about" class="btn btn-lg btn-default">Learn more</a>
-    </p>
+    </p>-->
   </div>
 </div>
-<div class="col-md-2"></div>
+<div class="col-md-7"> 
+    <h1> Leaderboard </h1>
+      <table class="table table-hover">
+        <colgroup>
+        <col style="width:5%; text-align:center;" />
+        <col style="width:50%" />
+        <col style="width:15%" />
+        <col style="width:15%" />
+        <col style="width:15%" />
+        </colgroup>
+        <thead >
+          <th style='text-align:center'>Rank</th>
+          <th>System</th>
+          <th>Prec. (%)</th>
+          <th>Recall (%)</th>
+          <th>F1 (%)</th>
+        </thead>
+        <tbody id="submissions">
+        </tbody>
+      </table>
+  <script src="/static/requirejs/require.js"></script>
+  <script>
+    require.config({
+      baseUrl: "/static/",
+      paths: {
+          "jquery": "jquery/dist/jquery",
+          "moment": "moment/moment"
+      },
+    });
+    require( ["jquery", "moment"],
+        function($, moment) {
+          function renderMonthYear(dt){
+            dt1 = moment(dt);
+            return dt1.format('MMM YYYY')
+          }
+          function renderRow(row, i) {
+            var tr = $("<tr>");
+            tr.append($("<td>")
+                  .addClass('text-center')
+                  .append($("<p>")
+                      .html(i+1))
+                  .append($("<span>")
+                      .addClass('label label-default')
+                      .html(renderMonthYear(row.timestamp))))
+              .append($("<td>")
+                  .append($("<a>")
+                      .attr('href', '/explore/submission/'+row.id)
+                      .append($("<p>")
+                          .html(row.name))
+                      .append($("<p>")
+                          .html(row.details)))
+                  )
+              .append($("<td>")
+                .html(row.P))
+              .append($("<td>")
+                .html(row.R))
+              .append($("<td>")
+                .html(row.F1))
+                ;
+            return tr;
+          }
+          $.getJSON("/api/leaderboard/", function(rows) {
+            console.log(rows['submissions'])
+            for(var i = 0; i < rows['submissions'].length; i++) {
+              $("#submissions").append(renderRow(rows['submissions'][i], i));
+            }
+          });
+        }
+    );
+    
+  </script>
+
+</div>
 
 {% endblock %}
 

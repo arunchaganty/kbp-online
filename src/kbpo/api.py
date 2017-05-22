@@ -470,3 +470,33 @@ def test_get_submission_entries():
             "isCorrect": True,
             }
         }
+
+def get_leaderboard():
+    """Get scores for all submissions"""
+    #TODO: Take score_type into account
+    entries = []
+    for row in db.select(
+    """
+    SELECT 
+    sub.id, 
+    sub.updated, 
+    sub.name, 
+    sub.corpus_tag, 
+    sub.details, 
+    (sc.score).precision,
+    (sc.score).recall, 
+    (sc.score).f1
+    FROM submission_score AS sc 
+    JOIN submission AS sub ON sub.id = sc.submission_id 
+    ORDER BY (sc.score).f1 DESC;"""):
+        entry = {
+                'id': row.id,
+                'name': row.name,
+                'details': row.details,
+                'timestamp': row.updated, 
+                'corpus': row.corpus_tag, 
+                'P': row.precision, 'R': row.recall, 'F1': row.f1
+                }
+        entries.append(entry)
+    return {'submissions': entries}
+

@@ -22,6 +22,8 @@ urlpatterns = [
 
     url(r'^api/submission/(?P<submission_id>[0-9]+)/$', views.api_submission_entries, name='api_submission_entries'),
 
+    url(r'^api/leaderboard/$', views.api_leaderboard, name='api_leaderboard'),
+
     # These are all test interfaces.
     url(r'^interface/(?P<task>entity)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
     url(r'^interface/(?P<task>relation)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
