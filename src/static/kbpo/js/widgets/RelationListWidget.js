@@ -4,7 +4,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', '../util'], function ($, util) {
+define(['jquery', '../util', '../defs'], function ($, util, defs) {
     RelationListWidget = function(elem) {
         this.elem = elem;
         util.getDOMFromTemplate('/static/kbpo/html/RelationListWidget.html', function(elem_) {
@@ -15,6 +15,15 @@ define(['jquery', '../util'], function ($, util) {
     RelationListWidget.prototype.mouseEnterListeners = [];
     RelationListWidget.prototype.mouseLeaveListeners = [];
     RelationListWidget.prototype.clickListeners = [];
+
+    RelationListWidget.prototype.loadRelations = function(relations) {
+      var self = this;
+
+      relations.forEach(function(r) {
+        r.relation = defs.RELATION_MAP[r.relation];
+        self.addRelation(r);
+      });
+    }
 
     RelationListWidget.prototype.addRelation = function(mentionPair) {
         var self = this;

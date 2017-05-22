@@ -4,7 +4,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', 'sprintf-js/dist/sprintf.min'], function ($, pp) {
+define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, defs) {
   /**
    * The document object -- handles the storage and representation of
    * sentences.
@@ -79,6 +79,19 @@ define(['jquery', 'sprintf-js/dist/sprintf.min'], function ($, pp) {
     });
   };
 
+  // Insert mentions into the document with typing and canonical
+  // linking.
+  DocWidget.prototype.loadMentions = function(mentions) {
+    var self = this;
+
+    mentions.forEach(function(m) {
+      m.tokens = self.getTokens(m.span[0], m.span[1]);
+      m.type = defs.TYPES[m.type];
+      self.addMention(m);
+    });
+  };
+
+
   // Provide the DOM elements corresponding to tokens between specified
   // character offsets 
   DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
@@ -94,7 +107,9 @@ define(['jquery', 'sprintf-js/dist/sprintf.min'], function ($, pp) {
   // Create a mention from a set of spans.
   DocWidget.prototype.addMention = function(mention) {
     var self = this;
-    $(mention.tokens).wrapAll($("<span class='mention' />").attr("id", "mention-"+mention.id));
+    $(mention.tokens)
+      .wrapAll($("<span class='mention' />")
+      .attr("id", "mention-"+mention.id));
     var elem = $(mention.tokens[0].parentNode)[0];
     console.assert(elem !== undefined);
     // Create links between the mention and DOM elements.

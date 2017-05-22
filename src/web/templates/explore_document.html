@@ -9,17 +9,15 @@
 
 
 {% block content %}
-<div class="col-md-2"></div>
-<div id="content-main" class="col-md-8">
+<div id="content-main" class="col-md-12">
+  <input id="doc-id" type="hidden" value={{doc_id}} />
+
   <div class="row">
   <h2>Explore the KBPOnline annotations</h2>
   </div>
 
   <div class="row">
-    <!-- TODO: Have a document frame that contains the document title and id -->
-    <input id="doc-id" type="hidden" value={{doc_id}} />
-    <div id="document" class="document">
-    </div>
+    <div id="interface"></div>
   </div>
 
   <script src="/static/requirejs/require.js"></script>
@@ -29,29 +27,34 @@
       paths: {
           "jquery": "jquery/dist/jquery",
           "bootstrap": "bootstrap/dist/js/bootstrap",
-      },
+          },
     });
-    require( ["jquery", "bootstrap", "kbpo/js/widgets/DocWidget"],
-        function($, bootstrap, DocWidget) {
+    require( ["jquery", "bootstrap", "sprintf-js/dist/sprintf.min", "kbpo/js/widgets/ExploreDocumentInterface"],
+        function($, bootstrap, pp, ExploreDocumentInterface) {
           // TODO: Based on the page, define the appropriate widgets.
-          var docWidget = new DocWidget($("#document"));
+          var iface = new ExploreDocumentInterface($("#interface"));
           // Right now, docId is specified on the page.
           var docId = $("#doc-id").val();
-          $.getJSON("/api/document/" + docId, function(doc) {
-            console.info("loaded document ", doc.id);
-            docWidget.loadDocument(doc);
+          console.log("docId");
+          iface.onReady(function () {
+            $.getJSON("/api/document/" + docId, function(doc) {
+              console.info("loaded document ", doc.id);
+              iface.docWidget.loadDocument(doc);
 
-            //$.getJSON("/api/suggested-mentions/" + docId, function(mentions) {
-            //  console.log(mentions)
-            //  console.info("loaded ", mentions.length, " mentions.");
-            //  docWidget.setSuggestions(mentions, "suggestion");
-            //});
+              $.getJSON(pp.sprintf("/api/evaluation-mentions/%s/", docId), function(mentions) {
+                console.info("loaded ", mentions.length, " mentions.");
+                iface.docWidget.loadMentions(mentions);
+
+                $.getJSON(pp.sprintf("/api/evaluation-relations/%s/", docId), function(mentions) {
+                  console.info("loaded ", mentions.length, " relations.");
+                  iface.listWidget.loadRelations(relations);
+                });
+              });
+            });
           });
-        }
-    );
+        });
   </script>
 
 </div>
-<div class="col-md-2"></div>
 
 {% endblock %}

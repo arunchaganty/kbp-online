@@ -9,7 +9,7 @@
     
     <title>
       {% block title %}
-      KBPOnline
+      KBP Online
       {% endblock %}
     </title>
 
@@ -35,15 +35,16 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">KBPOnline</a>
+          <a class="navbar-brand" href="/">KBP Online<sub>β</sub></a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             {% with request.resolver_match.url_name as url_name %}
             <li {%if url_name == 'home' %} class="active" {% endif %} >
               <a href="/">{% bootstrap_icon "home" %} Home</a></li>
+            <!-- TODO: Make this a drop down menu of "submissions" or "corpus" -->
             <li {%if url_name == 'explore' %} class="active" {% endif %} >
-              <a href="/explore/">{% bootstrap_icon "globe" %} Explore</a></li>
+              <a href="/">{% bootstrap_icon "globe" %} Explore</a></li>
             {% if user.is_authenticated %}
               <li {%if url_name == 'submit' %} class="active" {% endif %} >
                 <a href="/submit/">{% bootstrap_icon "upload" %} Submit</a></li>

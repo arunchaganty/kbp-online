@@ -273,6 +273,34 @@ def test_get_evaluation_mention_pairs():
     assert pair['subject'] == (628, 642)
     assert pair['object'] == (568, 574)
 
+def get_evaluation_relations(doc_id):
+    """
+    Get relations for a document.
+    """
+    relations = []
+    for row in db.select("""
+            SELECT r.subject, r.relation, r.object
+            FROM evaluation_relation r
+            WHERE r.doc_id = %(doc_id)s
+            ORDER BY r.subject, r.object, r.relation
+            """, doc_id=doc_id):
+        relation = {
+            "subject": (row.subject.lower, row.subject.upper),
+            "relation": row.relation,
+            "object": (row.object.lower, row.object.upper),
+            }
+        relations.append(relation)
+    return relations
+
+def test_get_evaluation_relations():
+    doc_id = "NYT_ENG_20130726.0208"
+    relations = get_evaluation_relations(doc_id)
+    assert len(relations) == 42
+    relation = relations[0]
+    assert relation['subject'] == (172, 177)
+    assert relation['object'] == (223, 228)
+    assert relation['relation'] == 'per:place_of_residence'
+
 def get_submissions(corpus_tag):
     return db.select("""SELECT * FROM submission WHERE corpus_tag=%(corpus_tag)s ORDER BY id""", corpus_tag=corpus_tag)
 

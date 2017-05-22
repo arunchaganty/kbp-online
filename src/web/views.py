@@ -235,6 +235,21 @@ def api_evaluation_mention_pairs(_, doc_id, subject_id=None, object_id=None):
 
     return JsonResponse(ret, safe=False)
 
+def api_evaluation_relations(_, doc_id):
+    doc = get_object_or_404(Document, id=doc_id)
+
+    # Get the basic mentions
+    mentions = api.get_evaluation_mentions(doc.id)
+    mentions = {m["span"]: m for m in mentions}
+
+    relations = api.get_evaluation_relations(doc.id)
+    # Construct mention pairs using the above information.
+    ret = [{"subject": mentions[r["subject"]],
+            "object": mentions[r["object"]],
+            "relation": r["relation"],} for r in relations]
+
+    return JsonResponse(ret, safe=False)
+
 def api_submission_entries(_, submission_id):
     """
     Get all the submitted relations from submission_id.

@@ -19,6 +19,7 @@ urlpatterns = [
     url(r'^api/evaluation-mentions/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.api_evaluation_mentions, name='api_evaluation_mentions'),
     url(r'^api/evaluation-mention-pairs/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.api_evaluation_mention_pairs, name='api_evaluation_mention_pairs'),
     url(r'^api/evaluation-mention-pairs/(?P<doc_id>[a-zA-Z_0-9.]+)/(?P<subject_id>[0-9]+-[0-9]+):(?P<object_id>[0-9]+-[0-9]+)/$', views.api_evaluation_mention_pairs, name='api_evaluation_mention_pairs'),
+    url(r'^api/evaluation-relations/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.api_evaluation_relations, name='api_evaluation_relations'),
 
     url(r'^api/submission/(?P<submission_id>[0-9]+)/$', views.api_submission_entries, name='api_submission_entries'),
     url(r'^api/corpus/(?P<corpus_tag>[0-9a-zA-Z._]+)/$', views.api_corpus_listing, name='api_corpus_listing'),
