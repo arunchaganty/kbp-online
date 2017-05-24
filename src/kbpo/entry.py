@@ -20,6 +20,7 @@ from . import db
 import sys
 from tqdm import tqdm
 
+logging.basicConfig(filename = '/tmp/tmp')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -117,12 +118,20 @@ class MFile(_MFile):
                 @property
                 def inv_pair(self):
                     return (self.obj, self.subj)
+
+            class UniqueDict(dict):
+                def __setitem__(self, key, value):
+                    if key not in self:
+                        dict.__setitem__(self, key, value)
+                    else:
+                        raise KeyError("Key already exists")
+
             counter = 0
             raw_mentions = []
             raw_nominal_mentions = []
             raw_relations = []
-            subj_2_type = {}
-            doc_id_subj_2_canonical_mention = {}
+            subj_2_type = UniqueDict()
+            doc_id_subj_2_canonical_mention = UniqueDict()
             subj_doc_id_2_mention = defaultdict(list)
             for row in tqdm(stream):
                 counter += 1
@@ -132,17 +141,25 @@ class MFile(_MFile):
                 row = row + [None] * (5-len(row)) + [counter]
                 reln = row[1]
                 if reln == 'mention':
-                    #TODO: throw error if doesn't exist
+                    if row[3] is None:
+                        logger.error("LINE %d: No provenance for mention", counter)
+                        continue
                     row[3] = cls.parse_prov(row[3])
                     row = EntryLine(*row)
                     raw_mentions.append(row)
                     subj_doc_id_2_mention[(row.subj, row.prov.doc_id)].append(row)
                 elif reln == 'canonical_mention':
                     #raw_canonical_mentions.append(row)
-                    #TODO: throw error if doesn't exist
+                    if row[3] is None:
+                        logger.error("LINE %d: No provenance for mention", counter)
+                        continue
                     row[3] = cls.parse_prov(row[3])
                     row = EntryLine(*row)
-                    doc_id_subj_2_canonical_mention[(row.prov.doc_id, row.subj)] = row
+                    try: 
+                        doc_id_subj_2_canonical_mention[(row.prov.doc_id, row.subj)] = row
+                    except KeyError:
+                        logger.warning("LINE %d: Duplicate canonical mention of entity %s, in document %d", counter, row.subj, row.prov.doc_id)
+                        continue
                     raw_mentions.append(row)
 
                 elif reln == 'nominal_mention':
@@ -151,9 +168,18 @@ class MFile(_MFile):
 
                 elif reln == 'type':
                     #raw_types.append(row)
-                    #TODO: Throw warning for multiple types for same entity
                     row = EntryLine(*row)
-                    subj_2_type[row.subj] = row
+                    try:
+                        subj_2_type[row.subj] = row
+                    except KeyError:
+                        if subj_2_type[row.subj].obj == row.obj:
+                            logger.warning("LINE %d: Duplicate type for entity %s", counter, row.subj)
+                            continue
+                        else:
+                            logger.error("LINE %d: Inconsistent types (with line %d) for entity %s", counter,subj_2_type[row.subj].line_num, row.subj)
+                            continue
+
+
                 else:
                     row = EntryLine(*row)
                     raw_relations.append(row)
@@ -164,20 +190,25 @@ class MFile(_MFile):
             links = []
             #types
             for row in tqdm(raw_mentions):
+                if row.subj not in subj_2_type:
+                    logger.error("LINE %d: Type not found for mention %s", row.line_num, row.subj)
                 type_row = subj_2_type[row.subj]
                 mentions.append(Entry(row.prov, type_row.obj, row.obj, None, row.weight))
 
             #canonical-mentions
             for row in tqdm(raw_mentions):
+                if (row.prov.doc_id, row.subj) not in doc_id_subj_2_canonical_mention:
+                    logger.error("LINE %d: Canonical mention not found for entity %s in document %d", row.line_num, row.subj, row.prov.doc_id)
                 canonical_row = doc_id_subj_2_canonical_mention[(row.prov.doc_id, row.subj)]
                 canonical_mentions.append(Entry(row.prov, 'canonical_mention', canonical_row.prov, None, canonical_row.weight))
 
             #entity_links
             for row in tqdm(raw_mentions):
                 links.append(Entry(row.prov, 'link', row.subj, None, row.weight))
+
             def first_contained_entity_prov(reln_prov, entity):
                 for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
-                    if m.prov.begin > reln_prov.begin and m.prov.end < reln_prov.end:
+                    if m.prov.begin >= reln_prov.begin and m.prov.end <= reln_prov.end:
                         return m.prov
 
             ##relations
@@ -187,14 +218,19 @@ class MFile(_MFile):
             for row in tqdm(raw_relations):
                 if row.reln not in all_relations:
                     if row.reln in ignored_relations:
-                        #logger.warning("LINE %d: Ignored relation %s", row.line_num, row.reln)
+                        logger.warning("LINE %d: Ignored relation %s", row.line_num, row.reln)
                         pass
                     else:
-                        #logger.warning("LINE %d: Unsupported relation %s", row.line_num, row.reln)
+                        logger.warning("LINE %d: Unsupported relation %s", row.line_num, row.reln)
                         pass
                 else:
                     mapped_reln = RELATION_MAP[row.reln]
                     split_prov = row.prov.split(',')
+                    if len(split_prov) == 0:
+                        logger.error("LINE %d: No provenance for relation", row.line_num)
+                        continue
+
+
                     prov_idx = 0
                     o_prov = None
                     r_prov = None
@@ -220,6 +256,10 @@ class MFile(_MFile):
                                 break
 
                     if s_prov is None or o_prov is None:
+                        if s_prov is None:
+                            logger.error("LINE %d: No mention found for subject %s in relation provenances %s", row.line_num, row.subj, row.prov)
+                        if s_prov is None:
+                            logger.error("LINE %d: No mention found for object in relation provenances %s", row.line_num, row.obj, row.prov)
                         #TODO: throw error
                         pass
                     else:

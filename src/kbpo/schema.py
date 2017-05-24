@@ -8,7 +8,7 @@ from collections import namedtuple
 _Provenance = namedtuple("Provenance", ["doc_id", "begin", "end"])
 class Provenance(_Provenance):
     def __new__(cls, doc_id, begin, end):
-        assert begin < end, "Invalid span, expected begin {} < end {}".format(begin, end)
+        assert begin <= end, "Invalid span, expected begin {} <= end {} for provenance {}:{}-{}".format(begin, end, doc_id, begin, end)
         return super(Provenance, cls).__new__(cls, doc_id, begin, end)
 MentionInstance = namedtuple("MentionInstance", ["doc_id", "span", "canonical_span", "mention_type", "gloss", "weight"])
 LinkInstance = namedtuple("LinkInstance", ["doc_id", "span", "link_name", "weight"])

@@ -46,7 +46,7 @@ RELATION_MAP = {
     "per:parents":"per:parents",
     "per:children":"per:children",
     "per:spouse":"per:spouse",
-    "per:sibling":"per:sibling",
+    "per:siblings":"per:siblings",
     "per:other_family":"per:other_family",
     "per:title":"per:title",
 
@@ -61,11 +61,13 @@ RELATION_MAP = {
     "org:date_dissolved":"org:date_dissolved",
     "org:founded_by":"org:founded_by",
     "org:member_of":"org:member_of",
+    "org:employees_or_members": "org:employees_or_members",
     "org:members":"org:members",
     "org:subsidiaries":"org:subsidiaries",
     "org:parents":"org:parents",
     "org:shareholders":"org:shareholders",
     "org:holds_shares_in":"org:holds_shares_in",
+    "org:students": "org:students",
 
     "gpe:births_in_place":"gpe:births_in_place",
     "gpe:births_in_city":"gpe:births_in_place",
@@ -73,9 +75,9 @@ RELATION_MAP = {
     "gpe:births_in_country":"gpe:births_in_place",
 
     "gpe:residents_in_place": "gpe:residents_in_place",
-    "gpe:residents_in_city": "gpe:residents_in_place",
-    "gpe:residents_in_stateorprovince": "gpe:residents_in_place",
-    "gpe:residents_in_country": "gpe:residents_in_place",
+    "gpe:residents_of_city": "gpe:residents_in_place",
+    "gpe:residents_of_stateorprovince": "gpe:residents_in_place",
+    "gpe:residents_of_country": "gpe:residents_in_place",
 
     "gpe:deaths_in_place": "gpe:deaths_in_place",
     "gpe:deaths_in_city": "gpe:deaths_in_place",
@@ -109,7 +111,7 @@ RELATIONS = [
     "per:parents",
     "per:children",
     "per:spouse",
-    "per:sibling",
+    "per:siblings",
     "per:other_family",
     "per:title",
     "org:alternate_names",
@@ -123,6 +125,8 @@ RELATIONS = [
     "org:parents",
     "org:shareholders",
     "org:holds_shares_in",
+    "org:employees_or_members",
+    "org:students",
     "no_relation",
     ]
 
@@ -130,7 +134,7 @@ INVERTED_RELATIONS = {
     "per:children":["per:parents"],
     "per:other_family":["per:other_family"],
     "per:parents":["per:children"],
-    "per:sibling":["per:sibling"],
+    "per:siblings":["per:siblings"],
     "per:spouse":["per:spouse"],
     "per:employee_or_member_of":["org:employees_or_members","gpe:employees_or_members"],
     "per:schools_attended":["org:students"],
@@ -176,7 +180,7 @@ RELATION_TYPES = {
     "per:parents": ("PER", "PER"),
     "per:children": ("PER", "PER"),
     "per:spouse": ("PER", "PER"),
-    "per:sibling": ("PER", "PER"),
+    "per:siblings": ("PER", "PER"),
     "per:other_family": ("PER", "PER"),
     "per:title": ("PER", "TITLE"),
     "org:alternate_names": ("ORG", "ORG"),
@@ -190,6 +194,8 @@ RELATION_TYPES = {
     "org:parents": ("ORG", "ORG"),
     "org:shareholders": ("ORG", ["PER", "ORG", "GPE"]),
     "org:holds_shares_in": ("ORG", "ORG"),
+    "org:employees_or_members": ("ORG", "PER"),
+    "org:students": ("ORG", "PER"),
 }
 STRING_VALUED_RELATIONS = {}
 for k,v in RELATION_TYPES.items():
