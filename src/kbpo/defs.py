@@ -15,6 +15,9 @@ NER_MAP = {
     "DATE": "DATE",
     }
 TYPES = list(NER_MAP.values())
+ENTITY_SLOT_TYPES = set(["PER", "ORG", "GPE"])
+STRING_SLOT_TYPES = set(["DATE", "TITLE"])
+assert len((ENTITY_SLOT_TYPES | STRING_SLOT_TYPES) ^ set(TYPES)) == 0, "Inconsistency"
 
 RELATION_MAP = {
     "per:alternate_names":"per:alternate_names",
@@ -188,6 +191,18 @@ RELATION_TYPES = {
     "org:shareholders": ("ORG", ["PER", "ORG", "GPE"]),
     "org:holds_shares_in": ("ORG", "ORG"),
 }
+STRING_VALUED_RELATIONS = {}
+for k,v in RELATION_TYPES.items():
+    t = set([v[1]]) if not isinstance(v[1], list) else set(v[1])
+    string_types = t & STRING_SLOT_TYPES
+    if len(string_types) != 0:
+        assert len(string_types) == 1
+        STRING_VALUED_RELATIONS[k] = list(string_types)[0]
+
+#Special case where the string valued slow actually refers to an entity
+STRING_VALUED_RELATIONS['per:alternate_names'] = 'PER'
+STRING_VALUED_RELATIONS['org:alternate_names'] = 'ORG'
+print(STRING_VALUED_RELATIONS)
 
 def _create_mention_types(types):
     valid_types = set()
