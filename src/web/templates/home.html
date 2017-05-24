@@ -108,7 +108,7 @@
             return tr;
           }
           $.getJSON("/api/leaderboard/", function(rows) {
-            console.log(rows['submissions'])
+            console.info("Loading " + rows['submissions'].length + " submissions.");
             for(var i = 0; i < rows['submissions'].length; i++) {
               $("#submissions").append(renderRow(rows['submissions'][i], i));
             }
