@@ -97,14 +97,14 @@ class MFile(_MFile):
 
         #Take the first two underscore separated strings as the corpus prefix
         #Allows ENG_NW and NYT_ENG but not ENG_DF for instance within kbp2016 corpus
-        corpus_prefixes = [row.prefix for row in db.select("""SELECT distinct array_to_string(split_doc_id[1:2], '_') as prefix FROM 
-                        (SELECT regexp_split_to_array(s.doc_id, '_') AS split_doc_id 
-                            FROM sentence AS s 
-                            LEFT JOIN document_tag AS t 
-                            ON s.doc_id = t.doc_id 
-                            WHERE t.tag = %(corpus_tag)s
-                            ) as t""", corpus_tag = corpus_tag)]
-        print(corpus_prefixes)
+        #corpus_prefixes = [row.prefix for row in db.select("""SELECT distinct array_to_string(split_doc_id[1:2], '_') as prefix FROM 
+        #                (SELECT regexp_split_to_array(s.doc_id, '_') AS split_doc_id 
+        #                    FROM sentence AS s 
+        #                    LEFT JOIN document_tag AS t 
+        #                    ON s.doc_id = t.doc_id 
+        #                    WHERE t.tag = %(corpus_tag)s
+        #                    ) as t""", corpus_tag = corpus_tag)]
+        #print(corpus_prefixes)
 
 
         rows = []
@@ -226,177 +226,6 @@ class MFile(_MFile):
                         relations.append(Entry(s_prov, mapped_reln, o_prov, r_prov, row.weight))
         
 
-            #with db.CONN:
-            #    with db.CONN.cursor() as cur:
-            #        #db.execute("""DROP TABLE IF EXISTS _submission_tackb;""", cur = cur)
-            #        #db.execute("""CREATE TABLE _submission_tackb(
-            #        #                line_num integer,
-            #        #                e1 text, 
-            #        #                reln text,
-            #        #                e2 text,
-            #        #                doc_id text, 
-            #        #                span int4range, 
-            #        #                prov_num integer,
-            #        #                weight real);""", cur = cur)
-            #        #values = []
-            #        #counter = 0
-            #        #for row in tqdm(stream):
-            #        #    counter+=1
-            #        #    if counter == 1:
-            #        #        #Ignore the first line as it contains submission name
-            #        #        continue
-            #        #    assert len(row) <= 5, "Invalid number of columns, %d instead of %d"%(len(row), 5)
-            #        #    row = row + [None] * (5-len(row))
-            #        #    row = Entry(*row)
-            #        #    weight = float(row.weight) if row.weight else 0.0
-            #        #    if row.prov is not None:
-            #        #        for prov_idx, split_prov in enumerate(row.prov.split(',')):
-            #        #            try:
-            #        #                prov = cls.parse_prov(split_prov)
-            #        #                doc_id = prov.doc_id
-            #        #                if '_'.join(doc_id.split('_')[:2]) not in corpus_prefixes:
-            #        #                    #Filter out ENG_DF provenances which aren't supported
-            #        #                    continue
-            #        #               
-            #        #                span = db.Int4NumericRange(prov.begin, prov.end, bounds = '[]')
-            #        #                values.append(db.mogrify("(%(line_num)s, %(e1)s, %(reln)s, %(e2)s, %(doc_id)s, %(span)s, %(weight)s, %(prov_num)s)", 
-            #        #                line_num = counter, e1 = row.subj, reln = row.reln, e2 = row.obj, doc_id = doc_id, span=span, weight = weight, prov_num = prov_idx, verbose = False))
-            #        #            except AssertionError as e:
-            #        #                logger.warning(e)
-            #        #    else:
-            #        #        doc_id = None
-            #        #        span = None
-            #        #        values.append(db.mogrify("""(%(line_num)s, %(e1)s, %(reln)s, %(e2)s, %(doc_id)s, %(span)s, %(weight)s, %(prov_num)s)""", 
-            #        #        line_num = counter, e1 = row.subj, reln = row.reln, e2 = row.obj, doc_id = doc_id, span=span, weight = weight, prov_num = 0, verbose = False))
-            #        #    if counter % 10000 == 0:
-            #        #        args_str = b','.join(values)
-            #        #        #Need to call using cur because % present in strings causes it to expect input values
-            #        #        cur.execute(b"INSERT INTO _submission_tackb (line_num, e1, reln, e2, doc_id, span, weight, prov_num) VALUES "+ args_str)
-            #        #        values = []
-
-            #        #args_str = b','.join(values)
-            #        #cur.execute(b"INSERT INTO _submission_tackb (line_num, e1, reln, e2, doc_id, span, weight, prov_num) VALUES "+ args_str)
-            #        #cur.execute("""CREATE INDEX _submission_tackb_line_num_idx ON _submission_tackb(line_num)""");
-            #        #cur.execute("""CREATE INDEX _submission_tackb_e1_idx ON _submission_tackb(e1)""");
-            #        #cur.execute("""CREATE INDEX _submission_tackb_reln_idx ON _submission_tackb(reln)""");
-            #        #cur.execute("""CREATE INDEX _submission_tackb_e1_doc_id_idx ON _submission_tackb(doc_id, e1)""");
-
-            #        #db.execute("""
-            #        #            DROP TABLE IF EXISTS _submission_tackb_unique_mention CASCADE;
-            #        #            CREATE TABLE _submission_tackb_unique_mention AS 
-            #        #                (SELECT DISTINCT ON (e1, e2, doc_id, span) line_num, e1, e2, doc_id, span
-            #        #                    FROM _submission_tackb 
-            #        #                    WHERE reln = 'mention' 
-            #        #                        OR reln = 'canonical_mention' 
-            #        #                ORDER BY e1, e2, doc_id, span, reln DESC);
-            #        #            CREATE INDEX _submission_tackb_unique_mention_e1_doc_idx ON _submission_tackb_unique_mention(doc_id, e1);
-            #        #            CREATE INDEX _submission_tackb_unique_mention_e1_idx ON _submission_tackb_unique_mention(e1);
-            #        #                """, cur = cur)
-            #        ##mentions (from entities)
-            #        #for row in tqdm(db.select("""SELECT a.line_num, a.e1 as entity, a.doc_id, a.span, a.e2 as gloss, b.e2 AS type, a.weight 
-            #        #                FROM _submission_tackb_unique_mention AS a 
-            #        #                LEFT JOIN _submission_tackb as b 
-            #        #                    ON a.e1 = b.e1 
-            #        #                      WHERE b.reln = 'type';""", cur = cur)):
-            #        #    prov = Provenance(row.doc_id, row.span.lower, row.span.upper)
-            #        #    if row.type is None:
-            #        #        logging.error("LINE %d: Missing type for entity %s", row.line_num, row.entity)
-            #        #    if row.gloss is None:
-            #        #        logging.error("LINE %d: Missing gloss for mention @ %s", row.line_num, prov)
-            #        #    #Add error for gloss not matching
-            #        #    mentions.append(Entry(prov,row.type, row.gloss, None, row.weight))
-
-            #        #Takes around 4 minutes with Stanford submission
-            #        #canonical-mentions
-            #        db.execute("""DROP TABLE IF EXISTS _submission_tackb_canonical_mention; 
-            #                      CREATE TEMP TABLE _submission_tackb_canonical_mention AS 
-            #                      (SELECT * FROM _submission_tackb WHERE reln = 'canonical_mention');
-            #                      CREATE INDEX _submission_tackb_canonical_mentions_e1_doc_id_idx ON _submission_tackb_canonical_mentions(doc_id, e1);""")
-            #        for row in tqdm(db.select("""SELECT DISTINCT m.line_num, m.e1, m.doc_id, m.span, cm.doc_id AS cm_doc_id, cm.span AS cm_span, cm.weight
-            #                      FROM _submission_tackb AS m 
-            #                      LEFT JOIN _submission_tackb AS cm 
-            #                        ON m.e1 = cm.e1 AND m.doc_id = cm.doc_id 
-            #                      WHERE m.reln = 'mention' OR cm.reln = 'canonical_mention'
-            #                        AND cm.reln = 'canonical_mention';""", cur = cur)):
-            #            prov1 = Provenance(row.doc_id, row.span.lower, row.span.upper)
-            #            if row.cm_doc_id is None:
-            #                logger.error("LINE %d: No canonical mention exists for %s entity in document %s mentioned at %s", row.line_num, row.e1, row.doc_id, prov1)
-            #            prov2 = Provenance(row.cm_doc_id, row.cm_span.lower, row.cm_span.upper)
-            #            canonical_mentions.append(Entry(prov1, 'canonical_mention', prov2, None, row.weight))
-
-            #        #mentions (string_valued from relations)
-            #        #relations
-
-            #        all_relations = set(RELATION_MAP.keys()) - set(['no_relation'])
-            #        ignored_relations = set(['per:alternate_names', 'org:alternate_names'])
-            #        all_relations -= ignored_relations
-            #        #% sign in the query conflicts with kwargs in which are implicitly passed in db.select
-            #        cur.execute("""
-            #                                            SELECT                                                                                                                                                                                     DISTINCT ON (r.line_num) r.line_num, r.prov_num, r.span, 
-            #                                                s.doc_id AS s_doc_id, s.span AS s_span, r.e1 as s_entity,
-            #                                                o.doc_id AS o_doc_id, o.span AS o_span, r.e2 as o_entity,
-            #                                                r.reln, r.doc_id AS r_doc_id, r.span AS r_span, 
-            #                                                r.weight, sen.gloss as sen_gloss, sen.span as sen_span,
-            #                                                prov1.span as prov1_span
-            #                                            FROM _submission_tackb as r 
-            #                                            LEFT JOIN _submission_tackb_unique_mention AS s 
-            #                                                ON s.e1 = r.e1 AND s.doc_id = r.doc_id AND s.span && r.span 
-            #                                            LEFT JOIN _submission_tackb_unique_mention as o 
-            #                                                ON o.e1 = r.e2 AND o.doc_id = r.doc_id AND o.span && r.span 
-            #                                            LEFT JOIN _submission_tackb as prov1 
-            #                                                ON prov1.reln NOT IN ('mention', 'canonical_mention', 'type', 'nominal_mention') 
-            #                                                   AND prov1.line_num = r.line_num AND prov1.prov_num = 0
-            #                                            LEFT JOIN sentence as sen on sen.doc_id = r.doc_id AND sen.span && r.span
-            #                                            WHERE r.reln NOT IN ('mention', 'canonical_mention', 'type', 'nominal_mention') 
-            #                                            ORDER BY r.line_num, s.doc_id IS NOT NULL DESC, (substring(sen.gloss from (r.span).lower
-            #                                             - (sen.span).lower +1 for (r.span).upper - (r.span).lower) LIKE '%'||r.e2||'%' OR o.doc_id IS NOT NULL) DESC, r.prov_num """)
-            #        for row in tqdm(cur.fetchall()):
-            #            assert row.r_doc_id is not None
-            #            r_prov = Provenance(row.r_doc_id, row.r_span.lower, row.r_span.upper)
-            #            errors = False
-            #            if row.reln not in all_relations:
-            #                if row.reln in ignored_relations:
-            #                    #logger.warning("LINE %d: Ignored relation %s", row.line_num, row.reln)
-            #                    pass
-            #                else:
-            #                    #logger.warning("LINE %d: Unsupported relation %s", row.line_num, row.reln)
-            #                    pass
-            #                errors = True
-            #                continue
-            #            if row.s_doc_id is None:
-            #                logger.error("LINE %d: No subject mention for entity %s found for predicate %s in provenance %s", row.line_num, row.s_entity, row.reln, cls.to_prov(r_prov))
-            #                errors = True
-            #            else:
-            #                s_prov = Provenance(row.s_doc_id, row.s_span.lower, row.s_span.upper)
-            #            mapped_reln = RELATION_MAP[row.reln]
-            #            if row.o_doc_id is None:
-            #                #entity valued object entity (we have already confirmed that it is a supported relation
-            #                if mapped_reln not in STRING_VALUED_RELATIONS:
-            #                    logger.error("LINE %d: No object mention for entity %s found for predicate %s in provenance %s", row.line_num, row.o_entity, row.reln, cls.to_prov(r_prov))
-            #                    errors = True
-            #                #string valued relation
-
-            #                else:
-            #                    pass
-            #                    #TACKB format imposes that the first provenance should be for the string object
-            #                    if row.prov1_span is None:
-            #                        logger.error("LINE %d: No mention for string valued object %s found for predicate %s in provenance %s", row.line_num, row.o_entity, row.reln, cls.to_prov(r_prov))
-            #                        errors = True
-
-            #                    #string valued object entity found
-            #                    else:
-
-            #                        o_prov = Provenance(row.r_doc_id, row.prov1_span.lower, row.prov1_span.upper)
-            #                        o_type = STRING_VALUED_RELATIONS[mapped_reln]
-            #                        #TODO: What should be the weight ofr a string valued slotfill here? 0 or 1
-            #                        if not errors:
-            #                            mentions.append(Entry(o_prov, o_type, row.o_entity, None, 1))
-            #                            canonical_mentions.append(Entry(o_prov, 'canonical_mention', o_prov, None, 1))
-            #            else:
-            #                #Object entity found
-            #                o_prov = Provenance(row.o_doc_id, row.o_span.lower, row.o_span.upper)
-            #            if not errors:
-            #                relations.append(Entry(s_prov, mapped_reln, o_prov, r_prov, row.weight))
                         
         elif input_format == 'mfile':
             for row in stream:
