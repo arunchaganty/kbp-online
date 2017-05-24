@@ -42,11 +42,28 @@
             {% with request.resolver_match.url_name as url_name %}
             <li {%if url_name == 'home' %} class="active" {% endif %} >
               <a href="/">{% bootstrap_icon "home" %} Home</a></li>
+
             <!-- TODO: Make this a drop down menu of "submissions" or "corpus" -->
-            <li {%if url_name == 'explore' %} class="active" {% endif %} >
-              <a href="/">{% bootstrap_icon "globe" %} Explore</a></li>
+            <li class="dropdown {%if 'explore' in url_name %}active{% endif %}" >
+              <a href="#"  class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% bootstrap_icon "globe" %} Explore <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="/">Submissions</a></li>
+                <li><a href="/explore/corpus/kbp2015">TAC KBP 2015 Corpus</a></li>
+                <li><a href="/explore/corpus/kbp2016">TAC KBP 2016 Corpus</a></li>
+              </ul>
+            </li>
+            <li class="dropdown {%if 'interface' in url_name %}active{% endif %}" >
+              <a href="#"  class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% bootstrap_icon "eye-open" %} Annotate <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="/interface/entity/">Documents</a></li>
+                <li><a href="/interface/relation/">Relations</a></li>
+                <li><a href="/interface/submission/">Submissions</a></li>
+              </ul>
+            </li>
+
             {% if user.is_authenticated %}
               <li {%if url_name == 'submit' %} class="active" {% endif %} >
+
                 <a href="/submit/">{% bootstrap_icon "upload" %} Submit</a></li>
               <li><a href="/accounts/logout/">{% bootstrap_icon "log-out" %} Logout</a></li>
             {% else %}
@@ -55,13 +72,18 @@
             <li {%if url_name == 'auth_login' %} class="active" {% endif %} >
               <a href="/accounts/login/">{% bootstrap_icon "log-in" %} Login</a></li>
             {% endif %}
+
             {% endwith %}
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a data-toggle="modal" data-target="#help-modal">{% bootstrap_icon "question-sign" %} Help</a>
+            </li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
     </nav>
     {% endblock %}
-
 
     {% block body %}
     <div id="content" class="container">
@@ -72,5 +94,30 @@
       </div>
     </div>
     {% endblock %}
+
+    {% block help %}
+    <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="helpModalLabel">Help</h4>
+          </div>
+          <div class="modal-body">
+            {% block help_content %}
+            Sorry, there isn't any further help on this page right now.
+            {% endblock %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
+
+
+    <script>
+    $(document).ready(function() {
+        $(".dropdown-toggle").dropdown();
+    });
+    </script>
   </body>
 </html>

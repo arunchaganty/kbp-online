@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^interface/(?P<task>entity)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
     url(r'^interface/(?P<task>relation)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
     url(r'^interface/(?P<task>relation)/(?P<doc_id>[a-zA-Z_0-9.]+)/(?P<subject_id>[0-9]+-[0-9]+):(?P<object_id>[0-9]+-[0-9]+)/$', views.interface, name='interface'),
+    url(r'^interface/(?P<task>submission)/(?P<submission_id>[0-9]+)/$', views.interface, name='interface'),
 
     url(r'^$', views.home, name='home'),
 ]

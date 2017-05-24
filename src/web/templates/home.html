@@ -2,27 +2,39 @@
 {% load static from staticfiles %}
 {% load bootstrap3 %}
 
+{% block header %}
+<link rel="stylesheet" href="{% static 'kbpo/css/kbpo.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="col-md-5">
   <div class="inner cover">
     {% bootstrap_messages %}
     <h1> KBP Online </h1>
 
-    <p class="lead">KBP Online is an on-demand evaluation service that accurately and quickly evaluates your knowledge base population (KBP) system.</p>
+    <p class="lead">KBP Online is an on-demand evaluation service that can evaluate your knowledge base population (KBP) system quickly and accurately.</p>
     
-    <b> What is KBP?</b>
-    <p> Knowledge base population is the task of automatically extracting relations between entities from unstructured text and populating a knowledge base.
-    Evaluating this task is challenging because it is not economically feasible to exhaustively annotate every possible candidate relation from a sufficiently large corpus.
-    As a result, a pooling-based methodology is used in practice to construct datasets, similar to them methodology used in information retrieval. 
+    <h4> What is KBP?</h4>
+    <p> Knowledge base population is the task of automatically extracting relations between entities from a large corpus of unstructured text and populating a knowledge base.
+    Given a document containing a sentence like <em>"Fisher's mother, entertainer Debbie Reynolds, ..."</em>, such a system would identify that <span class="subject"><b>Fisher</b></span> is a child of <span class="object"><b>Debbie Reynolds</b></span>.
+    </p>
     <hr>
-    <b> What is on-demand evaluation?</b>
-    <p> On-demand evaluation is a new evaluation paradigm which takes your system predictions, and annotates a sample, combines with other system predictions via importance sampling and generates an accurate score.
+    <h4> What is on-demand evaluation?</h4>
+    <p> 
+    One of the challenges in evaluating KBP is that the corpus is too large to exhaustively annotate.
+    Unfortunately, partial annotations of these corpora are often <em>incomplete</em>, resulting in a <em>selection bias</em> in the evaluation scores:
+    if you are building a system that produces genuinely novel entity or relation extractions, it is very likely that these may not be part of the partial annotations, leading your system to be unfairly evaluated.
+    </p>
 
-    <hr>
-    <b> Cool! How do I getting started? </b>
     <p>
-    All you'll need is an <a href="/register/">account</a> and <a href="/submit/">submit</a> your knowledge base!
-    We'll automatically sample predicted relations and have them annotated via <a href="https://mturk.amazon.com/">Amazon Mechanical Turk</a>.
+    On-demand evaluation is a new evaluation paradigm which corrects for this selection bias by annotating your system's predictions through crowd-sourcing.
+    </p>
+    
+    <hr>
+    <h4>How do I get started?</h4>
+    <p>
+    All you'll need to do is to <a href="/register/">create an account</a> and <a href="/submit/">submit</a> your knowledge base!
+    We'll automatically sample from your predicted relations and have them annotated via <a href="https://mturk.amazon.com/">Amazon Mechanical Turk</a>.
     </p>
 
     <p>
@@ -32,7 +44,8 @@
   </div>
 </div>
 <div class="col-md-7"> 
-    <h1> Leaderboard </h1>
+    <h1>Leaderboard</h1>
+    <h3><small>Click any of the submissions below to explore its annotated predictions.</small></h3>
       <table class="table table-hover">
         <colgroup>
         <col style="width:5%; text-align:center;" />
@@ -41,7 +54,7 @@
         <col style="width:15%" />
         <col style="width:15%" />
         </colgroup>
-        <thead >
+        <thead>
           <tr>
             <th style='text-align:center'>Rank</th>
             <th>System</th>
@@ -105,6 +118,42 @@
   </script>
 
 </div>
+{% endblock %}
+
+{% block help_content %}
+<h4>How do I get on the leaderboard?</h4>
+<p>
+It's a simple three step process:
+<ol>
+  <li>
+    <a href="/accounts/register/">{% bootstrap_icon "user" %} Register</a>
+    yourself as a user or 
+    <a href="/accounts/login/">{% bootstrap_icon "log-in" %} log in</a>.
+  </li>
+  <li>
+    Access the <a href="/submit/">{% bootstrap_icon "upload" %} submit</a> link and upload your knowledge base.
+  </li>
+  <li>
+    We will take care of automatically annotating your data using Amazon Mechanical Turk.
+    Once we receive all the responses from annotators, we will score
+    your submission and place it on the home page.
+  </li>
+</ol>
+</p>
+
+<h4>Can I take my name off of the leaderboard?</h4>
+<p>
+  Not yet, but you will be able to delete or hide your submissions from
+  the submit page. In the meantime, please contact us via email (details
+  below).
+</p>
+
+<h4>How do I report an issue or contact you?</h4>
+<p>
+If you have any technical problems with the website, please create a GitHub issue so that we can track it.
+
+Otherwise, do contact us at <a href="mailto:arunchaganty@gmail.com">arunchaganty@gmail.com</a> with "KBPO" in the subject line.
+</p>
 
 {% endblock %}
 
