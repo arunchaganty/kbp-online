@@ -11,7 +11,7 @@ from kbpo import api
 
 from .forms import KnowledgeBaseSubmissionForm
 from .models import Submission, SubmissionUser, SubmissionState
-from .models import Document
+from .models import Document, DocumentTag
 from .tasks import process_submission
 
 logger = logging.getLogger(__name__)
@@ -64,48 +64,77 @@ def _parse_span(span_str):
     if not beg.isdigit() or not end.isdigit(): return None
     return (int(beg), int(end))
 
-def interface(request, task, doc_id, subject_id=None, object_id=None):
+def interface_entity(request, doc_id=None):
+    if request.method == 'POST': # handle response.
+        response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
+        response = json.loads(response)
+        messages.success(request, "Thank you, we've received your response.")
+        redirect("home")
+
+    if doc_id is None:
+        #doc_id = DocumentTag.objects.filter(tag="kbp2016").first().doc_id
+        doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
+        return redirect("interface_entity", doc_id=doc_id)
+    doc = get_object_or_404(Document, id=doc_id)
+
+    return render(request, 'interface_entity.html', {
+        'doc_id': doc.id,
+        'assignment_id': "TEST_ASSIGNMENT",
+        'hit_id': "TEST_HIT",
+        'worker_id': "TEST_WORKER",
+        })
+
+def interface_relation(request, doc_id=None, subject_id=None, object_id=None, submission_id=None):
+    if request.method == 'POST': # handle response.
+        response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
+        response = json.loads(response)
+        messages.success(request, "Thank you, we've received your response.")
+        return redirect("home")
+
+    if doc_id is None:
+        #doc_id = DocumentTag.objects.filter(tag="kbp2016").first().doc_id
+        doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
+        return redirect("interface_relation", doc_id=doc_id)
+    doc = get_object_or_404(Document, id=doc_id)
+
     if subject_id is not None or object_id is not None:
         subject_id, object_id = _parse_span(subject_id), _parse_span(object_id)
         if subject_id is None or object_id is None:
             raise Http404("Invalid mention spans: {}:{}".format(subject_id, object_id))
 
-    doc = get_object_or_404(Document, id=doc_id)
+    if subject_id is not None and object_id is not None:
+        # Exhaustive relations
+        mention_pair = "{}-{}:{}-{}".format(subject_id[0], subject_id[1], object_id[0], object_id[1])
+        verify_links = True
+    else:
+        mention_pair = ""
+        verify_links = False
 
-    if task == "entity":
-        if request.method == 'POST': # handle response.
-            response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
-            response = json.loads(response)
-            logger.info("Received response: %s", response)
+    return render(request, 'interface_relation.html', {
+        'assignment_id': "TEST_ASSIGNMENT",
+        'hit_id': "TEST_HIT",
+        'worker_id': "TEST_WORKER",
+        'doc_id': doc.id,
+        'mention_pair': mention_pair,
+        'verify_links': verify_links,
+        })
 
-        return render(request, 'interface_entity.html', {
-            'doc_id': doc.id,
-            'assignment_id': "TEST_ASSIGNMENT",
-            'hit_id': "TEST_HIT",
-            'worker_id': "TEST_WORKER",
-            })
-    elif task == "relation":
-        if request.method == 'POST': # handle response.
-            response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
-            response = json.loads(response)
-            logger.info("Received response: %s", response)
+def interface_submission(_, submission_id=None):
+    if submission_id is None:
+        submission_id = Submission.objects.order_by('?').first().id
+        #submission_id = Submission.objects.first().id
+        return redirect(
+            "interface_submission",
+            submission_id=submission_id)
+    submission = get_object_or_404(Submission, id=submission_id)
 
-        if subject_id is not None and object_id is not None:
-            # Exhaustive relations
-            mention_pair = "{}-{}:{}-{}".format(subject_id[0], subject_id[1], object_id[0], object_id[1])
-            verify_links = True
-        else:
-            mention_pair = ""
-            verify_links = False
-
-        return render(request, 'interface_relation.html', {
-            'assignment_id': "TEST_ASSIGNMENT",
-            'hit_id': "TEST_HIT",
-            'worker_id': "TEST_WORKER",
-            'doc_id': doc.id,
-            'mention_pair': mention_pair,
-            'verify_links': verify_links,
-            })
+    reln = api.get_submission_relation_list(submission.id)[0]
+    return redirect(
+        "interface_relation",
+        doc_id=reln["doc_id"],
+        subject_id="{}-{}".format(*reln["subject"]),
+        object_id="{}-{}".format(*reln["object"]),
+        )
 
 def do_task(request):
     """

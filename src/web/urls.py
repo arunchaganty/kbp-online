@@ -27,10 +27,13 @@ urlpatterns = [
     url(r'^api/leaderboard/$', views.api_leaderboard, name='api_leaderboard'),
 
     # These are all test interfaces.
-    url(r'^interface/(?P<task>entity)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
-    url(r'^interface/(?P<task>relation)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface, name='interface'),
-    url(r'^interface/(?P<task>relation)/(?P<doc_id>[a-zA-Z_0-9.]+)/(?P<subject_id>[0-9]+-[0-9]+):(?P<object_id>[0-9]+-[0-9]+)/$', views.interface, name='interface'),
-    url(r'^interface/(?P<task>submission)/(?P<submission_id>[0-9]+)/$', views.interface, name='interface'),
+    url(r'^interface/entity/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface_entity, name='interface_entity'),
+    url(r'^interface/entity/$', views.interface_entity, name='interface_entity'),
+    url(r'^interface/relation/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.interface_relation, name='interface_relation'),
+    url(r'^interface/relation/(?P<doc_id>[a-zA-Z_0-9.]+)/(?P<subject_id>[0-9]+-[0-9]+):(?P<object_id>[0-9]+-[0-9]+)/$', views.interface_relation, name='interface_relation'),
+    url(r'^interface/relation/$', views.interface_relation, name='interface_relation'),
+    url(r'^interface/submission/(?P<submission_id>[0-9]+)/$', views.interface_submission, name='interface_submission'),
+    url(r'^interface/submission/$', views.interface_submission, name='interface_submission'),
 
     url(r'^$', views.home, name='home'),
 ]

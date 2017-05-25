@@ -356,6 +356,37 @@ def test_get_submission_relations():
         "confidence": 1.
         }
 
+def get_submission_relation_list(submission_id, count=1):
+    """
+    Get suggested mentions for a document.
+    """
+    ret = []
+    for row in db.select("""
+            SELECT r.doc_id, subject, m.mention_type AS subject_type, relation, object, n.mention_type AS object_type, provenances, confidence
+            FROM submission_relation r
+            JOIN submission_mention m ON (r.doc_id = m.doc_id AND r.subject = m.span)
+            JOIN submission_mention n ON (r.doc_id = n.doc_id AND r.object = n.span)
+            WHERE r.submission_id = %(submission_id)s
+            ORDER BY subject
+            """, submission_id=submission_id):
+        assert len(row.provenances) > 0, "Invalid submission entry does not have any provenances"
+
+        subject, _, relation, object_, _ = defs.standardize_relation(
+            row.subject, row.subject_type, row.relation, row.object, row.object_type)
+
+        relation = {
+            "doc_id": row.doc_id,
+            "subject": (subject.lower, subject.upper),
+            "relation": relation,
+            "object": (object_.lower, object_.upper),
+            "provenance": (row.provenances[0].lower, row.provenances[0].upper), # Only use the first provenance.
+            "confidence": row.confidence,
+            }
+        ret.append(relation)
+
+        if len(ret) == count: break
+    return ret
+
 def insert_assignment(
         assignment_id, hit_id, worker_id,
         worker_time, comments, response,
@@ -408,14 +439,14 @@ def get_submission_entries(submission_id):
                m.gloss AS subject_gloss,
                ml.link_name AS subject_link,
                eml.link_name AS subject_link_gold,
-               lower(ml.link_name) = lower(COALESCE(eml.link_name, ml.link_name)) AS subject_link_correct,
+               lower(ml.link_name) = wikify(lower(COALESCE(eml.link_name, ml.link_name))) AS subject_link_correct,
                em.weight > 0.5 AS subject_correct,
                n.span AS object_span,
                n.mention_type AS object_type,
                n.gloss AS object_gloss,
                nl.link_name AS object_link,
                enl.link_name AS object_link_gold,
-               lower(nl.link_name) = lower(COALESCE(enl.link_name, nl.link_name)) AS object_link_correct,
+               lower(nl.link_name) = wikify(lower(COALESCE(enl.link_name, nl.link_name))) AS object_link_correct,
                en.weight > 0.5 AS object_correct,
                r.relation AS predicate_name,
                er.relation AS predicate_gold
@@ -427,8 +458,8 @@ def get_submission_entries(submission_id):
         JOIN evaluation_relation er  ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
         JOIN evaluation_mention em ON (m.doc_id = em.doc_id AND m.span = em.span)
         JOIN evaluation_mention en ON (n.doc_id = en.doc_id AND n.span = en.span)
-        JOIN evaluation_link eml ON (ml.doc_id = eml.doc_id AND ml.span = eml.span)
-        JOIN evaluation_link enl ON (nl.doc_id = enl.doc_id AND nl.span = enl.span)
+        LEFT JOIN evaluation_link eml ON (ml.doc_id = eml.doc_id AND ml.span = eml.span AND eml.weight > 0.5)
+        LEFT JOIN evaluation_link enl ON (nl.doc_id = enl.doc_id AND nl.span = enl.span AND enl.weight > 0.5)
         JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
         JOIN document d ON (r.doc_id = d.id)
         JOIN document_tag t ON (r.doc_id = t.doc_id)

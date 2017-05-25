@@ -12,7 +12,7 @@ DATABASES = {
         'USER': 'kbpo',
         'PASSWORD': 'kbpo',
         'HOST': 'localhost',
-        'PORT': 5432, # Tunnel to kbpo.stanford.edu
+        'PORT': 5433, # Tunnel to kbpo.stanford.edu
     },
     'production': {
         'ENGINE': 'django.db.backends.postgresql',
