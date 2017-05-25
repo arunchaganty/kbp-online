@@ -262,17 +262,127 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
 def majority_element(lst):
     return Counter(lst).most_common(1)[0][0]
 
-def merge_evaluation_mentions(row):
-    assert len(row) > 0.
-    # Only merge eval mentions with > 1 response.
-    # Choose the most frequent char_begin and char_end.
-    #TODO: the elements in lst should be weighed by the weight of their vote (e.g. canonical_mention if wrong)
-    canonical_begin, canonical_end = majority_element([(b,e) for b,e in zip(row.canonical_char_begins, row.canonical_char_ends)])
-    mention_type = majority_element(row.mention_types)
-    gloss = majority_element(row.glosses)
-    weight = sum(weight for weight, canonical_begin_, canonical_end_ in zip(row.weights, row.canonical_char_begins, row.canonical_char_ends) if canonical_begin_ == canonical_begin and canonical_end_ == canonical_end)/len(row.weights)
+#def merge_evaluation_mentions(row):
+#    assert len(row) > 0.
+#    # Only merge eval mentions with > 1 response.
+#    # Choose the most frequent char_begin and char_end.
+#    #TODO: the elements in lst should be weighed by the weight of their vote (e.g. canonical_mention if wrong)
+#    canonical_begin, canonical_end = majority_element([(b,e) for b,e in zip(row.canonical_char_begins, row.canonical_char_ends)])
+#    mention_type = majority_element(row.mention_types)
+#    gloss = majority_element(row.glosses)
+#    weight = sum(weight for weight, canonical_begin_, canonical_end_ in zip(row.weights, row.canonical_char_begins, row.canonical_char_ends) if canonical_begin_ == canonical_begin and canonical_end_ == canonical_end)/len(row.weights)
+#
+#    return row.doc_id, row.mention_id, (row.doc_id, canonical_begin, canonical_end), mention_type, gloss, weight
 
-    return row.doc_id, row.mention_id, (row.doc_id, canonical_begin, canonical_end), mention_type, gloss, weight
+def _merge_evaluation_mentions(cur, doc_table = None):
+    """
+    Merges evaluation_mention_responses from the documents in @doc_table
+    Algorithm
+        1)  Compute table span_denominator
+            having denominator (number of times the question was asked)
+            by getting all the questions to which this reponses is, along
+            with the number of assignments in the mturk_batch for each
+        2)  Compute table span_counts
+            For a submitted span, its count is the number of spans which 
+            contain it and have the same type. 
+            This is done using a self join, which counts the number of pairs
+            of spans contributing towards a single span within. Since it is 
+            always a clique (easy to verify) the count can be easily recovered
+        3)  Iterate through the spans to get winning_spans, i.e. set of non-
+            overlapping spans with highest count and count>denominator/2
+            Also compute a span_to_winning_span_map, which maps a span, to one 
+            of its contained spans to the first contained winning span
+        4)  Replace canonical spans with new-canonical spans based on 
+            span_to_winning_span_map then take the most common winning canonical
+            span
+        Note: This code assumes at least 2 responses are being merged. It fails if only 1 response is supposed to be merged. 
+        Note: The weights are assumed to be 0 or 1, and only those mentions with weight 1 are counted
+    """
+
+    db.execute("""
+    DROP TABLE IF EXISTS span_counts;
+    CREATE  TABLE span_counts AS (
+        SELECT span_count.*, 0.5 + sqrt(0.25 + 2* (span_count.pair_count)) AS count, d.question_id, d.question_batch_id, d.denominator
+        FROM (
+            SELECT m1.doc_id, m1.span, mode() WITHIN GROUP (ORDER BY m1.gloss) AS gloss, m1.mention_type, count(*) as pair_count, array_agg(m1.canonical_span) || array_agg(m2.canonical_span) as canonical_spans
+            FROM evaluation_mention_response_flat AS m1 
+            JOIN """+doc_table+""" as docs ON m1.doc_id = docs.doc_id
+            JOIN evaluation_mention_response AS m2 ON m1.doc_id = m2.doc_id 
+                 AND (m1.span <@ m2.span OR m1.span = m2.span) 
+                 AND m1.mention_type = m2.mention_type
+                 AND m1.assignment_id < m2.assignment_id 
+            WHERE m1.weight = 1 AND m2.weight = 1
+            GROUP BY m1.doc_id, m1.span, m1.mention_type) AS span_count
+            LEFT JOIN _denominator AS d 
+                ON span_count.doc_id = d.doc_id AND span_count.span = d.span
+        );
+    """, cur)
+
+    winning_spans = []
+    span_to_winning_span_map = {}
+    spans_window = []
+    winning_span = None
+    for span_row in tqdm(db.select("SELECT * from span_counts ORDER BY doc_id, span, count;")):
+        spans_window.append(span_row)
+        if winning_span is None:
+            winning_span = span_row
+            spans_window = [span_row]
+        elif span_row.doc_id != winning_span.doc_id or span_row.span.lower >= winning_span.span.upper:
+            if winning_span is not None and winning_span.count > winning_span.denominator/2.0:
+                winning_spans.append(winning_span)
+                for span in spans_window:
+                    span_to_winning_span_map[(span.doc_id, span.span)] = (winning_span.doc_id, winning_span.span)
+            else:
+                for span in spans_window:
+                    span_to_winning_span_map[(span.doc_id, span.span)] = None
+            winning_span = span_row
+            spans_window = [span_row]
+        else:
+            if span_row.count > span_row.denominator/2.0 and span_row.span.upper - span_row.span.lower >  winning_span.span.upper - winning_span.span.lower:
+                winning_span = span_row
+
+    _temp = winning_spans
+    winning_spans = []
+    for x in _temp:
+        x = dict(**x._asdict())
+        majority_can_span = majority_element([span_to_winning_span_map[(x['doc_id'], can_span)] if (x['doc_id'], can_span) in span_to_winning_span_map else None for can_span in x['canonical_spans']])
+        if majority_can_span is None:
+            x['canonical_span'] = x['span']
+        else:
+            x['canonical_span'] = majority_can_span[1]
+        x['weight'] = x['count']/x['denominator']
+        del x['canonical_spans']
+        winning_spans.append(x)
+
+    args_str = b','.join(db.mogrify("(%(doc_id)s,%(span)s,%(question_batch_id)s, %(question_id)s, %(canonical_span)s, %(mention_type)s,%(gloss)s,%(weight)s )",cur=cur, verbose=False, **x) for x in winning_spans)
+    cur.execute("""DELETE FROM evaluation_mention AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""")
+    cur.execute(b""" 
+            INSERT INTO evaluation_mention (doc_id, span, question_batch_id, question_id, canonical_span, mention_type, gloss, weight) VALUES"""
+     + args_str) 
+                
+def _merge_evaluation_links(cur, doc_table):
+    """
+    Merge evaluation_link_responses to get the modal link
+        Compute the winner by majority
+        Does not guarantee that every evaluation mention will have a link
+        Does not map to winning spans because links are highly sensitive to spans
+    """
+    db.execute("""DELETE FROM evaluation_link AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""", cur=cur)
+    db.execute(
+        """
+        INSERT INTO evaluation_link (doc_id, span, question_batch_id, question_id, link_name, weight)
+        SELECT c.doc_id, c.span, d.question_batch_id, d.question_id, c.link_name, c.count/d.denominator as weight FROM 
+            (SELECT lr.doc_id, span, link_name, sum(weight) as count
+            FROM evaluation_link_response as lr
+            JOIN """+doc_table+""" as docs ON lr.doc_id = docs.doc_id
+            GROUP BY lr.doc_id, span, link_name) AS c
+        JOIN _denominator as d
+            ON d.doc_id = c.doc_id AND d.span = c.span
+        WHERE c.count/d.denominator > 0.5;
+        """, cur = cur)
+    
+def _merge_evaluation_relations(cur, doc_table):
+    raise NotImplementedError
 
 def merge_evaluation_links(row):
     assert len(row) > 0.
@@ -292,33 +402,60 @@ def merge_evaluation_relations(row):
 
     return row.question_id, row.question_batch_id, row.doc_id, row.subject_id, row.object_id, relation, weight
 
-# TODO: Fix to handle overlapping mentions, etc. -- basically this approach is broken.
-def update_evaluation_mention():
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            cur.execute("""TRUNCATE evaluation_mention;""")
-            # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            # TODO: WARNING: THIS DOES NOT ACCURATELY HANDLE THE CASE
-            # WHERE A SELECTIVE ANNOTATOR IDENTIFIES A MENTION IN
-            # A DOCUMENT WITH EXHAUSTIVE ANNOTATIONS BECAUSE IT OVER
-            # COUNTS THE "TOTAL_COUNT" USED DURING MERGING.
-            cur.execute("""
-            WITH _response_count AS (SELECT doc_id, COUNT(DISTINCT assignment_id) FROM evaluation_mention_response GROUP BY doc_id)
-            SELECT r.doc_id, mention_id,
-                    array_agg(assignment_id)
-                    array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends,
-                    array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses,
-                    array_agg(weight) AS weights,
-                    min(c.count) AS total_count
-            FROM evaluation_mention_response r
-            JOIN _response_count c ON (r.doc_id = c.doc_id)
-            GROUP BY doc_id, mention_id""")
-            # Take the majority vote on this mention iff count > 1.
-            values = [merge_evaluation_mentions(row) for row in tqdm(cur, total=cur.rowcount)]
-            logger.info("%d rows of evaluation_mention_response merged into %d rows", cur.rowcount, len(values))
-            db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
+## TODO: Fix to handle overlapping mentions, etc. -- basically this approach is broken.
+#def update_evaluation_mention():
+#    with db.CONN:
+#        with db.CONN.cursor() as cur:
+#            cur.execute("""TRUNCATE evaluation_mention;""")
+#            # For evaluation_mention, we want to aggregate both types and canonical_ids.
+#            # TODO: WARNING: THIS DOES NOT ACCURATELY HANDLE THE CASE
+#            # WHERE A SELECTIVE ANNOTATOR IDENTIFIES A MENTION IN
+#            # A DOCUMENT WITH EXHAUSTIVE ANNOTATIONS BECAUSE IT OVER
+#            # COUNTS THE "TOTAL_COUNT" USED DURING MERGING.
+#            cur.execute("""
+#            WITH _response_count AS (SELECT doc_id, COUNT(DISTINCT assignment_id) FROM evaluation_mention_response GROUP BY doc_id)
+#            SELECT r.doc_id, mention_id,
+#                    array_agg(assignment_id)
+#                    array_agg((canonical_id).char_begin) AS canonical_char_begins, array_agg((canonical_id).char_end) AS canonical_char_ends,
+#                    array_agg(mention_type) AS mention_types, array_agg(gloss) AS glosses,
+#                    array_agg(weight) AS weights,
+#                    min(c.count) AS total_count
+#            FROM evaluation_mention_response r
+#            JOIN _response_count c ON (r.doc_id = c.doc_id)
+#            GROUP BY doc_id, mention_id""")
+#            # Take the majority vote on this mention iff count > 1.
+#            values = [merge_evaluation_mentions(row) for row in tqdm(cur, total=cur.rowcount)]
+#            logger.info("%d rows of evaluation_mention_response merged into %d rows", cur.rowcount, len(values))
+#            db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
 
-def update_evaluation_link():
+def merge_evaluation_table(table, mode = 'update'):
+    merging_tables = {table: 'evaluation_'+table+'_response' for table in ['mention', 'link', 'relation']}
+    merging_funcs = {'mention': _merge_evaluation_mentions, 'link': _merge_evaluation_links, 'relation': _merge_evaluation_relations}
+    pkey_fields = {'mention': ('doc_id', 'span'), 'link': ('doc_id', 'span'), 'relation': ('doc_id', 'subject', 'object')}
+
+    
+    with db.CONN: 
+        with db.CONN.cursor() as cur:
+            if mode == 'all':
+                cur.execute("CREATE TEMP TABLE _docids_for_merging AS (SELECT distinct doc_id FROM "+merging_tables[table]+");")
+                cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
+            #TODO: add update and doc_list modes
+            db.execute("""
+            DROP TABLE IF EXISTS _denominator;
+            CREATE TEMP TABLE _denominator AS (
+                SELECT """+','.join(pkey_fields[table])+""", array_agg(question_id) as question_id, array_cat_agg(question_batch_id) as question_batch_id, sum(n_assignments) AS denominator
+                FROM (SELECT """+','.join(map(lambda x: 'm.'+x, pkey_fields[table]))+""", m.question_id, array_agg(DISTINCT m.question_batch_id) AS question_batch_id, m.batch_id, mode() WITHIN GROUP (ORDER BY m.mturk_batch_params#>>'{max_assignments}')::int as n_assignments
+                    FROM evaluation_mention_response_flat AS m JOIN 
+                    _docids_for_merging
+                    AS docs ON m.doc_id = docs.doc_id 
+                    GROUP BY """+','.join(map(lambda x: 'm.'+x, pkey_fields[table]))+""", m.batch_id, m.question_id) 
+                    as temp GROUP BY """+','.join(pkey_fields[table])+"""
+                );
+            """, cur)
+            merging_funcs[table](cur, '_docids_for_merging')
+
+
+def _update_evaluation_link():
     with db.CONN:
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_link;""")
@@ -351,24 +488,11 @@ def update_summary():
     update_evaluation_link()
     update_evaluation_relation()
 
-"""
-CREATE TEMP TABLE span_denominator AS (
-    SELECT doc_id, span, array_agg(batch_id) as batches, sum(n_assignments) AS denominator 
-    FROM (SELECT doc_id, span, batch_id, FIRST(mturk_batch_params#>>'{max_assignments}')::int as n_assignments 
-        FROM evaluation_mention_response_flat GROUP BY doc_id, span, batch_id) 
-        as temp GROUP BY doc_id, span
-    );
-"""
-"""
-CREATE TEMP TABLE span_counts AS (
-    SELECT m1.doc_id, m1.span, m1.gloss, count(*)  
-    FROM evaluation_mention_response_flat AS m1 
-    JOIN evaluation_mention_response AS m2 ON m1.doc_id = m2.doc_id 
-         AND (m1.span <@ m2.span OR m1.span = m2.span) 
-         AND m1.assignment_id < m2.assignment_id 
-    GROUP BY m1.doc_id, m1.span, m1.gloss
-    );
-"""
+
+    
+
+                
+
 """
 CREATE TEMP TABLE mention_gloss_true AS (
     SELECT m.doc_id, m.span, array_agg(w.gloss) 
