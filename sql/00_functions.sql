@@ -57,7 +57,6 @@ STRICT
 ;
 COMMENT ON FUNCTION is_kbpo_reln(TEXT) IS 'Checks that a reln is supported by KBPO.';
 
-
 CREATE OR REPLACE FUNCTION is_kbpo_type(x TEXT) RETURNS BOOLEAN AS  $$
 BEGIN
     RETURN x = 'PER' 
@@ -74,7 +73,6 @@ STRICT
 ;
 COMMENT ON FUNCTION is_kbpo_type(TEXT) IS 'Checks that a type is supported by KBPO.';
 
-CREATE OR REPLACE FUNCTION is_kbpo_type(x TEXT) RETURNS BOOLEAN AS  $$
 --
 -- MAKE SURE THIS CORRESPONDS WITH src/kbpo/defs.py
 --
@@ -102,7 +100,6 @@ COMMENT ON FUNCTION to_kbpo_type(TEXT) IS 'Converts type to KBPO type.';
 
 
 CREATE FUNCTION is_entity_type(x TEXT) RETURNS BOOLEAN AS  $$
->>>>>>> f7125902403c5d97f49372331faf01eacbec7dd9
 BEGIN
     RETURN x = 'PER' 
         OR x = 'ORG' 
@@ -136,9 +133,7 @@ CREATE AGGREGATE mode(anyelement) (
   FINALFUNC=_final_mode, --Function to call after everything has been added to array
   INITCOND='{}' --Initialize an empty array when starting
 );
-COMMIT;
 
-BEGIN TRANSACTION;
 CREATE OR REPLACE FUNCTION wikify(name TEXT) 
 RETURNS TEXT AS
 $_$
@@ -146,9 +141,7 @@ BEGIN
     RETURN translate($1, E' []{}%+|?=<>\'"\/', '_________________'); 
 END
 $_$ LANGUAGE plpgsql;
-COMMIT;
 
-BEGIN TRANSACTION;
 -- Create a function that always returns the first non-NULL item
 CREATE OR REPLACE FUNCTION public.first_agg ( anyelement, anyelement )
 RETURNS anyelement LANGUAGE SQL IMMUTABLE STRICT AS $$
@@ -174,6 +167,5 @@ CREATE AGGREGATE public.LAST (
         basetype = anyelement,
         stype    = anyelement
 );
+
 COMMIT;
-
-
