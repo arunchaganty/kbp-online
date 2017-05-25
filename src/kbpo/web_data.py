@@ -379,21 +379,169 @@ CREATE TEMP TABLE mention_gloss_true AS (
     ON m.doc_id = w.doc_id AND m.span @> w.span group by m.doc_id, m.span
 );
 """
-def sanitize_mention_response():
-    """Make sure mention responses are correct and correct them if possible"""
-    #db.execute(
-    #"""
-    #DROP TABLE IF EXISTS mention_gloss_true;
-    #CREATE TABLE mention_gloss_true AS (SELECT m.doc_id, m.span, substring(s.gloss from lower(m.span)-lower(s.span)+1 for upper(m.span)-lower(m.span)) as gloss FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m LEFT JOIN sentence AS s ON m.doc_id = s.doc_id AND m.span <@ s.span);
-    #""");
-    responses_with_true_gloss = db.select("""SELECT m.*, tm.gloss AS true_gloss FROM evaluation_mention_response AS m LEFT JOIN mention_gloss_true AS tm ON m.doc_id = tm.doc_id AND m.span = tm.span;""");
-    for response in responses_with_true_gloss:
-        logger.debug((response.gloss, response.true_gloss))
-        break
 
+
+def sanitize_mention_response(response):
+    """Sanitize mention_response given a row of responses from sanitize_evaluation_mention_response view"""
+    if response.tm_gloss is None:
+        return "Delete"
+    gloss = response.gloss
+    tm_gloss = response.tm_gloss
+    if gloss == tm_gloss:
+        return "Correct"
+    gloss = gloss.replace('``', '"')
+    tm_gloss = tm_gloss.replace(u'&amp;', '&');
+    tm_gloss = tm_gloss.replace(u'&amp;', '&');
+    tm_gloss = tm_gloss.replace(u'’', '\'');
+    tm_gloss = tm_gloss.replace(u'“', '\"');
+    #response.tm_gloss.replace(u'&amp;', '&');
+    if gloss == tm_gloss:
+        return "Replace gloss"
+
+    if gloss != tm_gloss:
+        #Local check for consistency
+        if response.sm_gloss is not None and len(response.sm_gloss) == response.sm_span.upper - response.sm_span.lower:
+            return "Replace with suggested"
+        else:
+            return "Replace gloss"
+
+       #TODO: Fancier but low impact filters
+       # 
+       #     if len(tm_gloss) < len(gloss):
+       #         pass
+       #         print(("Garbled order: incorrect span length", (gloss, tm_gloss, response.sm_gloss)))
+       #     elif len(tm_gloss) > len(gloss):
+       #         print(("Garbled order: gloss missing words", (gloss, tm_gloss, response.sm_gloss)))
+       #         pass
+       #     else:
+       #         pass
+       #         print(("Unknown", (gloss, tm_gloss, response.sm_gloss)))
+            
+
+def test_sanitize_mention_response():
+    Record = namedtuple('Record', 
+            ['assignment_id', 'doc_id', 'span', 'created', 'question_batch_id', 'question_id', 'canonical_span', 'mention_type', 'gloss', 'weight', 'tm_gloss', 'sm_span', 'sm_gloss', 'sm_canonical_span'])
+    test_cases = [
+            [Record(assignment_id='3PJUZCGDJ7A8B8QNC7GL12PWTZK98R', doc_id='ENG_NW_001278_20130215_F000127AV', span=NumericRange(729, 741, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='113c9eed635cdecf6eddd9a154463cfd', canonical_span=NumericRange(729, 741, '[)'), mention_type='GPE', gloss='South and Africa', weight=1.0, tm_gloss='South Africa', sm_span=NumericRange(729, 741, '[)'), sm_gloss='South Africa', sm_canonical_span=NumericRange(729, 741, '[)')), 'Replace with suggested'], 
+            [Record(assignment_id='373ERPL3YP2XDSEX9MR2JJLDD0RRT5', doc_id='NYT_ENG_20130822.0209', span=NumericRange(2367, 2380, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=7, question_id='fc12b4895369c4994df245c97886f25b', canonical_span=NumericRange(2367, 2380, '[)'), mention_type='PER', gloss='Anne McClain', weight=1.0, tm_gloss='Anne  McClain', sm_span=NumericRange(2367, 2380, '[)'), sm_gloss='Anne McClain', sm_canonical_span=NumericRange(2367, 2380, '[)')), 'Replace with suggested'], 
+            [Record(assignment_id='369J354OFE40M4U7XYPX95FSRJ8G6Q', doc_id='ENG_NW_001278_20130401_F000139FI', span=NumericRange(257, 266, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='838cdc9750d0192283de300b7061ad1b', canonical_span=NumericRange(101, 106, '[)'), mention_type='ORG', gloss='Apple Inc.', weight=1.0, tm_gloss='Apple Inc', sm_span=NumericRange(257, 266, '[)'), sm_gloss='Apple Inc.', sm_canonical_span=NumericRange(101, 106, '[)')), 'Replace with suggested'], 
+            [Record(assignment_id='373ERPL3YP2XDSEX9MR2JJLDD0RRT5', doc_id='NYT_ENG_20130822.0209', span=NumericRange(2367, 2380, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=7, question_id='fc12b4895369c4994df245c97886f25b', canonical_span=NumericRange(2367, 2380, '[)'), mention_type='PER', gloss='Anne McClain', weight=1.0, tm_gloss='Anne  McClain', sm_span=NumericRange(2367, 2380, '[)'), sm_gloss='Anne McClain', sm_canonical_span=NumericRange(2367, 2380, '[)')), 'Replace with suggested'], 
+            [Record(assignment_id='369J354OFE40M4U7XYPX95FSRJ8G6Q', doc_id='ENG_NW_001278_20130401_F000139FI', span=NumericRange(257, 266, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='838cdc9750d0192283de300b7061ad1b', canonical_span=NumericRange(101, 106, '[)'), mention_type='ORG', gloss='Apple Inc.', weight=1.0, tm_gloss='Apple Inc', sm_span=NumericRange(257, 266, '[)'), sm_gloss='Apple Inc.', sm_canonical_span=NumericRange(101, 106, '[)')), 'Replace with suggested'], 
+            [Record(assignment_id='31LVTDXBL849UF6S0DPBXSBWJLOLRB', doc_id='ENG_NW_001278_20130306_F000127H7', span=NumericRange(1339, 1347, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='ba537d0fc9f08201ff6db1e032590820', canonical_span=NumericRange(316, 330, '[)'), mention_type='PER', gloss='Rousseff', weight=1.0, tm_gloss='Rousseff', sm_span=NumericRange(1339, 1347, '[)'), sm_gloss='Rousseff', sm_canonical_span=NumericRange(316, 330, '[)')), 'Correct'], 
+            [Record(assignment_id='3OJSZ2ATDTQLA7JSZCBYBMOZWMN577', doc_id='NYT_ENG_20131211.0211', span=NumericRange(332, 343, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=11, question_id='353ced19c93a7d36a0280d1e92420f2f', canonical_span=NumericRange(172, 179, '[)'), mention_type='ORG', gloss='Gannett Co.', weight=1.0, tm_gloss='Gannett Co.', sm_span=NumericRange(332, 343, '[)'), sm_gloss='Gannett Co.', sm_canonical_span=NumericRange(172, 179, '[)')), 'Correct'], 
+            [Record(assignment_id='3DYGAII7PM2Z9Z6QFQTI9JABSBCQP6', doc_id='NYT_ENG_20130702.0065', span=NumericRange(3809, 3823, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=11, question_id='dc0fb15b56460d629fbcf32f2b608990', canonical_span=NumericRange(3809, 3823, '[)'), mention_type='ORG', gloss='New York Times', weight=1.0, tm_gloss='New York Times', sm_span=NumericRange(3809, 3823, '[)'), sm_gloss='New York Times', sm_canonical_span=NumericRange(3809, 3823, '[)')), 'Correct'], 
+            [Record(assignment_id='3AUQQEL7U6NOQQYNK482058B1WK0VA', doc_id='NYT_ENG_20130730.0076', span=NumericRange(3474, 3488, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=10, question_id='52bead947891c50f518d44cd05df8361', canonical_span=NumericRange(3474, 3488, '[)'), mention_type='PER', gloss='Naomi Mitchell', weight=1.0, tm_gloss='Naomi Mitchell', sm_span=NumericRange(3474, 3488, '[)'), sm_gloss='Naomi Mitchell', sm_canonical_span=NumericRange(3474, 3488, '[)')), 'Correct'], 
+            [Record(assignment_id='3QBD8R3Z22DAZU7R2T9QHG4GMES4OF', doc_id='ENG_NW_001278_20130822_F00012Q53', span=NumericRange(257, 263, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='b8473bb8b1210e693debef7a515af441', canonical_span=NumericRange(152, 158, '[)'), mention_type='GPE', gloss='Israel', weight=1.0, tm_gloss='Israel', sm_span=NumericRange(257, 263, '[)'), sm_gloss='Israel', sm_canonical_span=NumericRange(257, 263, '[)')), 'Correct'], 
+            [Record(assignment_id='34Q075JO1Y784EIPDQODTH1VB7F10H', doc_id='ENG_NW_001436_20150718_F0010006Q', span=NumericRange(1431, 1434, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=2, question_id='0078e08b36a219f5e092f2455149b768', canonical_span=NumericRange(313, 316, '[)'), mention_type='ORG', gloss='NSA', weight=1.0, tm_gloss=None, sm_span=None, sm_gloss=None, sm_canonical_span=None), 'Delete'], 
+            [Record(assignment_id='3OE22WJIGJIC14EMWCSCJPXAZ8AQU3', doc_id='ENG_NW_001432_20150622_F0010006L', span=NumericRange(3214, 3224, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=2, question_id='5f49bf3cb38d1f2c0c06014e47e8fb8d', canonical_span=NumericRange(931, 941, '[)'), mention_type='PER', gloss='Paige Roof', weight=1.0, tm_gloss=None, sm_span=None, sm_gloss=None, sm_canonical_span=None), 'Delete'], 
+            [Record(assignment_id='3BC8WZX3V4QKXD155XM7J4KVOU0RRR', doc_id='ENG_NW_001435_20150718_F0010006O', span=NumericRange(743, 749, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=2, question_id='7b8a751495c6c549f6d9c51a274f1464', canonical_span=NumericRange(743, 749, '[)'), mention_type='DATE', gloss='friday', weight=1.0, tm_gloss=None, sm_span=None, sm_gloss=None, sm_canonical_span=None), 'Delete'], 
+            [Record(assignment_id='3WMINLGALCXOSUQ5LPAQZJWZOPBACY', doc_id='ENG_NW_001435_20150718_F0010006O', span=NumericRange(2335, 2337, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=2, question_id='7b8a751495c6c549f6d9c51a274f1464', canonical_span=NumericRange(1154, 1164, '[)'), mention_type='PER', gloss='He', weight=1.0, tm_gloss=None, sm_span=None, sm_gloss=None, sm_canonical_span=None), 'Delete'], 
+            [Record(assignment_id='3WMINLGALCXOSUQ5LPAQZJWZOPBACY', doc_id='ENG_NW_001435_20150718_F0010006O', span=NumericRange(1119, 1147, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=2, question_id='7b8a751495c6c549f6d9c51a274f1464', canonical_span=NumericRange(1119, 1147, '[)'), mention_type='ORG', gloss='Army Public Relations (DAPR)', weight=1.0, tm_gloss=None, sm_span=None, sm_gloss=None, sm_canonical_span=None), 'Delete'], 
+            [Record(assignment_id='3GU1KF0O4JVC5T41W8WSEUFC6CHBPN', doc_id='NYT_ENG_20130720.0038', span=NumericRange(878, 917, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=12, question_id='a2e0a0b7cd1315b62bd9492e3144ce15', canonical_span=NumericRange(878, 917, '[)'), mention_type='ORG', gloss="America's First Female Rocket Scientist", weight=1.0, tm_gloss='America’s First Female Rocket Scientist', sm_span=NumericRange(878, 917, '[)'), sm_gloss="America's First Female Rocket Scientist", sm_canonical_span=NumericRange(878, 917, '[)')), 'Replace gloss'], 
+            [Record(assignment_id='3X3OR7WPZ0U3CARW14JB6BGRTWVL80', doc_id='NYT_ENG_20130617.0145', span=NumericRange(1510, 1535, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=10, question_id='d6f1d10aa7cf717eef1b228f3a248bf0', canonical_span=NumericRange(1510, 1535, '[)'), mention_type='ORG', gloss='Slate, Meagher & Flom', weight=1.0, tm_gloss='Slate, Meagher &amp; Flom', sm_span=NumericRange(1510, 1535, '[)'), sm_gloss='Slate, Meagher & Flom', sm_canonical_span=NumericRange(1510, 1535, '[)')), 'Replace gloss'], 
+            [Record(assignment_id='30BUDKLTXEP6JMY2MKP4HWGGI91E5C', doc_id='NYT_ENG_20131108.0248', span=NumericRange(2933, 2973, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='019a6c70573d42c553a7a05fd0608399', canonical_span=NumericRange(2933, 2973, '[)'), mention_type='ORG', gloss="U.S. Navy's Joint Typhoon Warning Center", weight=1.0, tm_gloss='U.S. Navy’s Joint Typhoon Warning Center', sm_span=NumericRange(2933, 2942, '[)'), sm_gloss='U.S. Navy', sm_canonical_span=NumericRange(2933, 2942, '[)')), 'Replace gloss'], 
+            [Record(assignment_id='33NF62TLXKWHCL5X7841G1CQK7JJKE', doc_id='NYT_ENG_20130617.0145', span=NumericRange(1510, 1535, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=10, question_id='a42c3df8b30447d24dc37de9a0a9c70c', canonical_span=NumericRange(1510, 1535, '[)'), mention_type='ORG', gloss='Slate, Meagher & Flom', weight=1.0, tm_gloss='Slate, Meagher &amp; Flom', sm_span=NumericRange(1510, 1535, '[)'), sm_gloss='Slate, Meagher & Flom', sm_canonical_span=NumericRange(1510, 1535, '[)')), 'Replace gloss'], 
+            [Record(assignment_id='33SA9F9TRYO0W5DMILCD7WTT25OWES', doc_id='ENG_NW_001278_20130514_F000139UN', span=NumericRange(655, 662, '[)'), created=datetime.datetime(2017, 4, 14, 13, 30, 40, 862161), question_batch_id=3, question_id='809ed3d2d07fbac544ffb46740956bdc', canonical_span=NumericRange(655, 662, '[)'), mention_type='ORG', gloss='P&G', weight=1.0, tm_gloss='P&amp;G', sm_span=NumericRange(655, 662, '[)'), sm_gloss='P&G', sm_canonical_span=NumericRange(655, 662, '[)')), 'Replace gloss']
+            ]
+    for test_case in test_cases:
+        assert sanitize_mention_response(test_case[0]) == test_case[1]
+
+def sanitize_mention_response_table():
+    """Make sure mention responses are correct and correct them if possible"""
+    db.execute(
+    """
+    CREATE OR REPLACE VIEW mention_gloss_true AS 
+        (SELECT m.doc_id, m.span, substring(s.gloss from lower(m.span)-lower(s.span)+1 for upper(m.span)-lower(m.span)) as gloss 
+            FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m 
+        LEFT JOIN sentence AS s ON m.doc_id = s.doc_id AND m.span <@ s.span);
+    """);
+    def clean_whitespaces():
+        print(db.CONN.cursor().mogrify(r"""UPDATE evaluation_mention_response SET gloss = replace(gloss, E'\302\240', ' ')"""))
+        db.execute(r"""UPDATE evaluation_mention_response SET gloss = replace(gloss, E'\302\240', ' ')""")
+
+    clean_whitespaces()
+    responses_with_true_gloss = db.select("""
+            SELECT m.*, tm.gloss AS tm_gloss, sm.span as sm_span, sm.gloss as sm_gloss, sm.canonical_span as sm_canonical_span
+            FROM evaluation_mention_response AS m 
+            LEFT JOIN mention_gloss_true AS tm ON m.doc_id = tm.doc_id AND m.span = tm.span 
+            LEFT JOIN suggested_mention AS sm on sm.doc_id = m.doc_id AND sm.span && m.span AND sm.mention_type = m.mention_type 
+            ORDER BY upper(sm.span*m.span) - lower(sm.span*m.span);""");
+    changes_counter = Counter()
+    for response in tqdm(responses_with_true_gloss): 
+        action = sanitize_mention_response(response)
+        changes_counter[action]+=1
+        if action == 'Correct':
+            continue
+        elif action == 'Delete':
+            with db.CONN: 
+                with db.CONN.cursor() as cur:
+                    db.execute("""DELETE FROM evaluation_mention_response
+                    WHERE assignment_id = %(assignment_id)s AND doc_id = %(doc_id)s AND span = %(span)s""", 
+                    cur = cur, 
+                    assignment_id = response.assignment_id, 
+                    doc_id = response.doc_id, 
+                    span = response.span)
+                    db.execute("""DELETE FROM evaluation_mention_response
+                    WHERE assignment_id = %(assignment_id)s AND doc_id = %(doc_id)s AND canonical_span = %(span)s""", 
+                    cur = cur, 
+                    assignment_id = response.assignment_id, 
+                    doc_id = response.doc_id, 
+                    span = response.span)
+
+
+        elif action == 'Replace gloss':
+            db.execute("""UPDATE evaluation_mention_response
+            SET gloss = %(new_gloss)s
+            WHERE assignment_id = %(assignment_id)s AND doc_id = %(doc_id)s AND span = %(span)s""", 
+            assignment_id = response.assignment_id, 
+            doc_id = response.doc_id, 
+            span = response.span, 
+            new_gloss = response.tm_gloss
+            )
+
+        elif action == 'Replace with suggested':
+            with db.CONN: 
+                with db.CONN.cursor() as cur:
+                    db.execute("""UPDATE evaluation_mention_response
+                    SET span = %(new_span)s, gloss = %(new_gloss)s, canonical_span = %(new_canonical_span)s
+                    WHERE assignment_id = %(assignment_id)s AND doc_id = %(doc_id)s AND span = %(span)s""", 
+                    cur = cur, 
+                    assignment_id = response.assignment_id, 
+                    doc_id = response.doc_id, 
+                    span = response.span, 
+                    new_span = response.sm_span, 
+                    new_gloss = response.sm_gloss,
+                    new_canonical_span = response.sm_canonical_span
+                    )
+                    db.execute("""UPDATE evaluation_mention_response
+                    SET canonical_span = %(new_span)s
+                    WHERE assignment_id = %(assignment_id)s AND doc_id = %(doc_id)s AND canonical_span = %(span)s""", 
+                    cur = cur, 
+                    assignment_id = response.assignment_id, 
+                    doc_id = response.doc_id, 
+                    span = response.span,
+                    new_span = response.sm_span
+                    )
+        else:
+            assert False, "Undefined action:"+ action
+        
+    print(changes_counter)
+    
+    #Test case generation
+    #test_examples = defaultdict(list)
+    #for response in responses_with_true_gloss: 
+        #test_examples[sanitize_mention_response(response)].append(response)
+
+    #for k, vs in test_examples.items():
+    #    for rand_idx in np.random.randint(len(vs), size = 5): 
+    #        print([vs[rand_idx], k])
 
 if __name__ == '__main__':
-    sanitize_mention_response()
+    #sanitize_mention_response_table()
+    #merge_evaluation_table('mention', mode='all')
+    parse_responses()
+    merge_evaluation_table('link', mode='all')
+    #test_sanitize_mention_response()
         
 
 
