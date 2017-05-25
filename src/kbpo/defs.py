@@ -208,7 +208,7 @@ for k,v in RELATION_TYPES.items():
 #Special case where the string valued slow actually refers to an entity
 STRING_VALUED_RELATIONS['per:alternate_names'] = 'PER'
 STRING_VALUED_RELATIONS['org:alternate_names'] = 'ORG'
-print(STRING_VALUED_RELATIONS)
+#print(STRING_VALUED_RELATIONS)
 
 def _create_mention_types(types):
     valid_types = set()
@@ -216,7 +216,25 @@ def _create_mention_types(types):
         if isinstance(objects, str):
             objects = [objects]
         for object_ in objects:
+            # Strict type hierarchy -- prefer PER over ORG over GPE
+            if subject_ == "ORG" and object_ == "PER":
+                continue
+            if subject_ == "GPE" and object_ == "ORG":
+                continue
+            if subject_ == "GPE" and object_ == "PER":
+                continue
+
             valid_types.add((subject_, object_))
     return valid_types
 
 VALID_MENTION_TYPES = _create_mention_types(RELATION_TYPES)
+
+def standardize_relation(subject, subject_type, reln, object_, object_type):
+    if reln in RELATIONS:
+        return subject, subject_type, reln, object_, object_type
+    elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
+        for reln_ in INVERTED_RELATIONS[reln]:
+            if reln_.startswith(object_type.lower()):
+                return object_, object_type, reln, subject, subject_type
+    else:
+        raise ValueError("Couldn't map relation for {} {} {}".format(subject_type, reln, object_type))

@@ -89,7 +89,7 @@ def interface_relation(request, doc_id=None, subject_id=None, object_id=None, su
         response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
         response = json.loads(response)
         messages.success(request, "Thank you, we've received your response.")
-        redirect("home")
+        return redirect("home")
 
     if doc_id is None:
         #doc_id = DocumentTag.objects.filter(tag="kbp2016").first().doc_id
@@ -127,15 +127,11 @@ def interface_submission(_, submission_id=None):
             "interface_submission",
             submission_id=submission_id)
     submission = get_object_or_404(Submission, id=submission_id)
-    # TODO: fix tabs tags!
-    doc_id = DocumentTag.objects.filter(tag=submission.corpus_tag).order_by('?').first().doc_id
 
-    relns = api.get_submission_relations(doc_id, submission.id)
-    assert len(relns) > 0
-    reln = relns[0]
+    reln = api.get_submission_relation_list(submission.id)[0]
     return redirect(
         "interface_relation",
-        doc_id=doc_id,
+        doc_id=reln["doc_id"],
         subject_id="{}-{}".format(*reln["subject"]),
         object_id="{}-{}".format(*reln["object"]),
         )

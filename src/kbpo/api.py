@@ -356,6 +356,37 @@ def test_get_submission_relations():
         "confidence": 1.
         }
 
+def get_submission_relation_list(submission_id, count=1):
+    """
+    Get suggested mentions for a document.
+    """
+    ret = []
+    for row in db.select("""
+            SELECT r.doc_id, subject, m.mention_type AS subject_type, relation, object, n.mention_type AS object_type, provenances, confidence
+            FROM submission_relation r
+            JOIN submission_mention m ON (r.doc_id = m.doc_id AND r.subject = m.span)
+            JOIN submission_mention n ON (r.doc_id = n.doc_id AND r.object = n.span)
+            WHERE r.submission_id = %(submission_id)s
+            ORDER BY subject
+            """, submission_id=submission_id):
+        assert len(row.provenances) > 0, "Invalid submission entry does not have any provenances"
+
+        subject, _, relation, object_, _ = defs.standardize_relation(
+            row.subject, row.subject_type, row.relation, row.object, row.object_type)
+
+        relation = {
+            "doc_id": row.doc_id,
+            "subject": (subject.lower, subject.upper),
+            "relation": relation,
+            "object": (object_.lower, object_.upper),
+            "provenance": (row.provenances[0].lower, row.provenances[0].upper), # Only use the first provenance.
+            "confidence": row.confidence,
+            }
+        ret.append(relation)
+
+        if len(ret) == count: break
+    return ret
+
 def insert_assignment(
         assignment_id, hit_id, worker_id,
         worker_time, comments, response,
