@@ -39,6 +39,19 @@ def select(sql, cur=None, **kwargs):
         cur.execute(sql, kwargs)
         yield from cur
 
+def mogrify(sql, cur=None, verbose = True, **kwargs):
+    """Wrapper around psycopg mogrigy function"""
+    if cur is None:
+        with CONN:
+            with CONN.cursor() as cur:
+                if verbose:
+                    print(cur.mogrify(sql, kwargs))
+                return cur.mogrify(sql, kwargs)
+    else:
+        if verbose:
+            print(cur.mogrify(sql, kwargs))
+        return cur.mogrify(sql, kwargs)
+
 def execute(sql, cur=None, **kwargs):
     """Wrapper around psycopg execute function to not yield the result of execute statement"""
     if cur is None:
