@@ -11,7 +11,7 @@ CREATE OR REPLACE VIEW mturk_assignment_readable AS (
   FROM mturk_assignment
 );
 
-DROP VIEW evaluation_assignment_flat CASCADE;
+DROP VIEW mturk_assignment_flat CASCADE;
 CREATE OR REPLACE VIEW mturk_assignment_flat AS (
   SELECT assignment.*, 
          hit.type_id, 

@@ -1,0 +1,13 @@
+{
+    "selective_relations": {
+        "title": "Find relations between people, companies and places", 
+        "description": "You'll need to pick which relationship is described between a single pair of people, places or organisations in a sentece.", 
+        "answer_field": "relations", 
+        "duration": "300", 
+        "frame_height": "1200", 
+        "max_assignments": "3", 
+        "doc_reward": "0.10", 
+        "lifetime": "86400"
+    }
+}
+

@@ -89,7 +89,7 @@ CREATE TABLE  evaluation_relation_response (
   doc_id TEXT NOT NULL REFERENCES document,
   subject INT4RANGE NOT NULL,
   object INT4RANGE NOT NULL,
-  created TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
 
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
   question_id TEXT NOT NULL,

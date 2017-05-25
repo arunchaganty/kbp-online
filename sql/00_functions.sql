@@ -102,7 +102,6 @@ COMMENT ON FUNCTION to_kbpo_type(TEXT) IS 'Converts type to KBPO type.';
 
 
 CREATE FUNCTION is_entity_type(x TEXT) RETURNS BOOLEAN AS  $$
->>>>>>> f7125902403c5d97f49372331faf01eacbec7dd9
 BEGIN
     RETURN x = 'PER' 
         OR x = 'ORG' 
