@@ -439,9 +439,12 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
     Mention.textFromTokens = function(tokens) {
         text = "";
         for (i = 0; i < tokens.length; i++){
-            text += tokens[i].textContent;
+          if (tokens[i].classList.contains("with-space")) {
+            text += " ";
+          }
+          text += tokens[i].textContent;
         }
-        return text.replace("&nbsp;", " ");
+        return text;
     };
 
     // Returns the text represented within the spans of text. 
