@@ -6,7 +6,7 @@ import logging
 
 from celery import shared_task
 from kbpo.entry import validate, upload_submission
-from .models import Submission, SubmissionState
+from web.models import Submission, SubmissionState
 
 logger = logging.getLogger(__name__)
 
@@ -53,3 +53,14 @@ def process_response(assignment_id):
     Processes an mturk response.
     """
     pass
+
+@shared_task
+def score_submission(submission_id):
+    """
+    Scores a submission
+    """
+    print(submission_id)
+
+    state = SubmissionState.objects.get(submission_id=submission_id)
+    state.status = "done"
+    state.save()

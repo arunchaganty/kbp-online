@@ -1,12 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, Submission, SubmissionUser, SubmissionState
+from web.tasks import score_submission
 
 admin.site.register(User, UserAdmin)
 
-def rescore_submission(modeladmin, request, queryset):
+def rescore_submission(_, __, queryset):
     for row in queryset:
-        print(row)
+        row.state.status = 'pending-scoring'
+        row.state.save()
+        score_submission.delay(row.id)
 rescore_submission.short_description = "Rescore submission using the latest data."
 
 class SubmissionUserInline(admin.TabularInline):
@@ -24,14 +27,11 @@ class SubmissionAdmin(admin.ModelAdmin):
         ]
     actions = [rescore_submission]
 
-    def user(self, obj):
-        return SubmissionUser.objects.get(submission=obj).user
+    def _user(self, obj):
+        return obj.user.user
 
-    def status(self, obj):
-        return SubmissionState.objects.get(submission=obj).status
+    def _status(self, obj):
+        return obj.state.status
 
-    list_display = ('name', 'corpus_tag', 'user', 'status')
-
-
-
+    list_display = ('name', 'corpus_tag', '_user', '_status')
 admin.site.register(Submission, SubmissionAdmin)
