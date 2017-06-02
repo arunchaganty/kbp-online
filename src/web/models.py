@@ -13,8 +13,16 @@ class SubmissionUser(models.Model):
     user = models.ForeignKey(User)
 
 class SubmissionState(models.Model):
+    CHOICES = (
+        ('pending-upload', "Pending processing and upload into database"),
+        ('pending-sampling', "Pending sampling"),
+        ('pending-annotation', "Waiting for crowdworkers to annotate submission"),
+        ('pending-scoring', "Pending scoring"),
+        ('done', "Done!"),
+        )
+
     submission = models.OneToOneField(Submission, primary_key=True)
-    status = models.TextField(default='pending-upload')
+    status = models.CharField(max_length=20, default='pending-upload', choices=CHOICES)
     message = models.TextField(blank=True, default='')
 
     objects = models.Manager()
