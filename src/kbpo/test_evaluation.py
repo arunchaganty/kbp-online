@@ -63,10 +63,10 @@ def generate_submission(precision=0.3, recall=0.2, population_size=1000):
     return P, X
 
 def test_generate_submission():
-    population, precision, recall = 1000, 0.5, 0.2
-    P, X = generate_submission(precision, recall, population)
+    population_size, precision, recall = 1000, 0.5, 0.2
+    P, X = generate_submission(precision, recall, population_size)
     precision_ = sum(P[x] * fx for x, fx in X)
-    recall_ = sum(fx for _, fx in X)/(population/2)
+    recall_ = sum(fx for _, fx in X)/(population_size/2)
     assert np.allclose(precision, precision_)
     assert np.allclose(recall, recall_)
 
@@ -80,8 +80,8 @@ def generate_submission_set(precisions, recalls, population_size=1000):
 
 def test_simple_precision_wr():
     np.random.seed(42)
-    population, precision, recall = 1000, 0.5, 0.2
-    P, X = generate_submission(precision, recall, population)
+    population_size, precision, recall = 1000, 0.5, 0.2
+    P, X = generate_submission(precision, recall, population_size)
     n_samples = 100
     Xh = sample_with_replacement(P, n_samples, X=X)
     precision_ = simple_precision([Xh])[0]
@@ -89,8 +89,8 @@ def test_simple_precision_wr():
 
 def test_simple_precision_wor():
     np.random.seed(42)
-    population, precision, recall = 1000, 0.5, 0.2
-    P, X = generate_submission(precision, recall, population)
+    population_size, precision, recall = 1000, 0.5, 0.2
+    P, X = generate_submission(precision, recall, population_size)
     n_samples = 100
     Xh = sample_without_replacement(P, n_samples, X=X)
     precision_ = simple_precision([Xh])[0]
@@ -98,20 +98,20 @@ def test_simple_precision_wor():
 
 def test_simple_recall():
     np.random.seed(41)
-    population, precision, recall = 1000, 0.5, 0.2
+    population_size, precision, recall = 1000, 0.5, 0.2
     n_samples = 100
 
-    P, _ = generate_submission(precision, recall, population)
-    U = true_sample_distribution(population)
-    Y0 = generate_true_sample(n_samples, population)
-    recall_ = simple_recall(U, [P], Y0)[0]
+    P, _ = generate_submission(precision, recall, population_size)
+    U = true_sample_distribution(population_size)
+    Y0 = [(x, 1.0 if x in P and P[x] > 0 else 0.) for x, _ in generate_true_sample(n_samples, population_size)]
+    recall_ = simple_recall(U, [Y0])[0]
     assert np.allclose(recall, recall_, atol=5e-2)
 
 def test_joint_precision_wr():
     np.random.seed(42)
     n_samples = 100
-    population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
-    Ps, Xs = generate_submission_set(precisions, recalls, population)
+    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
     Xhs = [sample_with_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
     precisions_ = joint_precision(Ps, Xhs)
     print(precisions_)
@@ -120,8 +120,8 @@ def test_joint_precision_wr():
 def test_joint_precision_wor():
     np.random.seed(42)
     n_samples = 100
-    population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
-    Ps, Xs = generate_submission_set(precisions, recalls, population)
+    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
     Xhs = [sample_without_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
     precisions_ = joint_precision(Ps, Xhs)
     print(precisions_)
@@ -149,9 +149,9 @@ def true_pooled_recall(U, P):
 def test_pooled_recall_wr():
     np.random.seed(42)
     n_samples = 100
-    population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
-    Ps, Xs = generate_submission_set(precisions, recalls, population)
-    U = true_sample_distribution(population)
+    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
+    U = true_sample_distribution(population_size)
     pooled_recalls = true_pooled_recall(U, Ps)
 
     pooled_recalls_ = pooled_recall(U, Ps, Xs)
@@ -168,15 +168,15 @@ def test_pooled_recall_wr():
 def test_pool_recall():
     np.random.seed(42)
     n_samples = 100
-    population, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
-    Ps, _ = generate_submission_set(precisions, recalls, population)
-    U = true_sample_distribution(population)
+    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, _ = generate_submission_set(precisions, recalls, population_size)
+    U = true_sample_distribution(population_size)
 
-    Y = sorted(U.items())
-    pool_recalls = pool_recall(U, Ps, Y)
+    Y = [[(x, 1.0 if x in P and P[x] > 0 else 0.) for x, _ in sorted(U.items())] for P in Ps]
+    pool_recalls = pool_recall(U, Y)
 
-    Y0 = generate_true_sample(n_samples, population)
-    pool_recalls_ = pool_recall(U, Ps, Y0)
+    Y0 = [[(x, 1.0 if x in P and P[x] > 0 else 0.) for x, _ in generate_true_sample(n_samples, population_size)] for P in Ps]
+    pool_recalls_ = pool_recall(U, Y0)
     print("theta_i", pool_recalls)
     print("thetah_i", pool_recalls_)
     assert np.allclose(pool_recalls, pool_recalls_, atol=1e-1)
@@ -184,20 +184,21 @@ def test_pool_recall():
 def test_joint_recall():
     np.random.seed(42)
     n_samples = 500
-    population, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
-    Ps, Xs = generate_submission_set(precisions, recalls, population)
-    U = true_sample_distribution(population)
+    population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
+    U = true_sample_distribution(population_size)
 
-    Y = sorted(U.items())
+    Y = [[(x, 1.0 if x in P and P[x] > 0 else 0.) for x, _ in sorted(U.items())] for P in Ps]
+
     recalls_ = joint_recall(U, Ps, Y, Xs)
     print("rho_i", recalls)
     print("rhoh_i", recalls_)
     assert np.allclose(recalls, recalls_, atol=1e-1)
 
-    Y0 = generate_true_sample(n_samples, population)
+    Y0 = [[(x, 1.0 if x in P and P[x] > 0 else 0.) for x, _ in generate_true_sample(n_samples, population_size)] for P in Ps]
     Xhs = [sample_with_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
 
-    recalls_ = simple_recall(U, Ps, Y0)
+    recalls_ = simple_recall(U, Y0)
     print("rho(s)_i", recalls)
     print("rhoh(s)_i", recalls_)
     assert np.allclose(recalls, recalls_, atol=1e-1)
@@ -233,10 +234,10 @@ def test_joint_recall_statistical():
 
     def _sample():
         Xhs = [sample_without_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
-        Y0 = generate_true_sample(n_samples, population_size)
+        Y0 = [[(x, 1.0 if x in P and P[x] > 0 else 0.) for x, _ in generate_true_sample(n_samples, population_size)] for P in Ps]
         return Y0, Xhs
 
     def _evaluate(Y0, Xhs):
-        return simple_recall(U, Ps, Y0) + joint_recall(U, Ps, Y0, Xhs)
+        return simple_recall(U, Y0) + joint_recall(U, Ps, Y0, Xhs)
 
     print(stats(_evaluate, _sample, 100))

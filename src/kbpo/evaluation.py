@@ -67,33 +67,30 @@ def simple_precision(Xhs):
         pis.append(pi_i)
     return pis
 
-def simple_recall(P0, P, Y0):
+def simple_recall(P0, Y0):
     """
     @P0 - an unnormalized distribution Counter over all possible instances.
     @P - a list of M counters, giving p_i distributions for each system.
     @Y0 - a list of m lists, with [x, g(x)] samples over Y; one for each system.
     @returns: a list of m recalls
     """
-    m = len(P)
+    assert len(Y0) > 0
 
     Z = 0.
-    for n, (x, fx) in enumerate(Y0):
-        assert fx == 1.
+    for n, (x, _) in enumerate(Y0[0]):
         Z += (P0[x] - Z)/(n+1)
 
     rhos = []
-    for i in range(m):
+    for Y0i in Y0:
         rho_i = 0.
-        for n, (x, fx) in enumerate(Y0):
-            assert fx == 1.
-            gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
+        for n, (x, gxi) in enumerate(Y0i):
             rho_i += (P0[x]*gxi - rho_i)/(n+1)
         rhos.append(rho_i / Z)
     return rhos
 
 def simple_score(P0, P, Y0, Xhs):
     ps = simple_precision(Xhs)
-    rs = simple_recall(P0, P, Y0)
+    rs = simple_recall(P0, Y0)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s
 
@@ -270,27 +267,51 @@ def pooled_recall(P0, P, Xhs, W=None, Q=None, method="heuristic"):
         nus.append(nu_i)
     return nus
 
-def pool_recall(P0, P, Y0):
+def _merge_Y0(Y0):
+    assert len(Y0) > 0
+    assert len(Y0[0]) > 0
+
+    ret = []
+
+    m = len(Y0)
+    n = len(Y0[0])
+    for i in range(n):
+        x = Y0[0][i][0]
+        gx = max(Y0[j][i][1] for j in range(m))
+        ret.append((x, gx))
+    return ret
+
+def test_merge_Y0():
+    Y0 = [
+        [('a', 0), ('b', 0), ('c', 1)],
+        [('a', 1), ('b', 0), ('c', 0)],
+        [('a', 0), ('b', 0), ('c', 0)],
+        [('a', 1), ('b', 0), ('c', 0)],
+        ]
+    Y0_ = [('a', 1), ('b', 0), ('c', 1)]
+    assert _merge_Y0(Y0) == Y0_
+
+def pool_recall(P0, Y0):
     r"""
+    @Y0 - a list of m lists, with [x, g(x)] samples over Y; one for each system.
     Estimates the recall of the pool:
     \thetah = \frac{1}{Y0} \sum_{x \in Y_0} P0(x) I[x \in X]
     """
-    m = len(P)
+    # A "merged" Y0 which combines gxi from each system.
+    Y0_ = _merge_Y0(Y0)
 
     Z = 0.
-    for n, (x, fx) in enumerate(Y0):
-        assert fx == 1.
+    for n, (x, _) in enumerate(Y0_):
         Z += (P0[x] - Z)/(n+1)
 
     theta = 0.
-    for n, (x, fx) in enumerate(Y0):
-        assert fx == 1.0
-        gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
+    for n, (x, gx) in enumerate(Y0_):
+        #gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
         theta += (P0[x]*gx - theta)/(n+1)
     return theta/Z
 
 def joint_recall(P0, P, Y0, Xhs, W=None, Q=None):
-    theta = pool_recall(P0, P, Y0)
+    theta = pool_recall(P0, Y0)
     nus = pooled_recall(P0, P, Xhs, W=W, Q=Q)
     rhos = [theta * nu_i for nu_i in nus]
     return rhos
