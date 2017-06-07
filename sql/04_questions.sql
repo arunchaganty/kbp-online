@@ -28,44 +28,30 @@ CREATE TABLE evaluation_question (
 ); -- DISTRIBUTED BY (batch_id);
 COMMENT ON TABLE evaluation_question IS 'Keeps track of an individual question part of an evaluation batch';
 
-CREATE TABLE evaluation_doc_question (
-  question_id TEXT, 
-  batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
+-- Views that keep track of inflight requests.
+CREATE VIEW evaluation_doc_question AS (
+    SELECT q.id,
+           q.batch_id,
+           q.created,
+           q.params->>'doc_id' AS doc_id
+    FROM evaluation_question q, evaluation_batch b
+    WHERE q.batch_id = b.id
+      AND b.batch_type = 'exhaustive_entities'
+      AND state <> 'done'
+)
 
-  doc_id TEXT NOT NULL,
-
-  PRIMARY KEY (batch_id, question_id),
-  CONSTRAINT evaluation_doc_question_fkey FOREIGN KEY (batch_id, question_id) REFERENCES evaluation_question
-); -- DISTRIBUTED BY (batch_id);
-COMMENT ON TABLE evaluation_doc_question IS 'Keeps track of an individual question part of an evaluation batch';
-
-CREATE TABLE evaluation_mention_question (
-  question_id TEXT, 
-  batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
-
-  doc_id TEXT NOT NULL,
-  span INT4RANGE NOT NULL,
-
-  PRIMARY KEY (batch_id, question_id),
-  CONSTRAINT evaluation_mention_question_fkey FOREIGN KEY (batch_id, question_id) REFERENCES evaluation_question
-); -- DISTRIBUTED BY (batch_id);
-COMMENT ON TABLE evaluation_mention_question IS 'Keeps track of an individual question part of an evaluation batch';
-
-CREATE TABLE evaluation_relation_question (
-  question_id TEXT, 
-  batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
-  created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
-
-  doc_id TEXT NOT NULL,
-  subject INT4RANGE NOT NULL,
-  object INT4RANGE NOT NULL,
-
-  PRIMARY KEY (batch_id, question_id),
-  CONSTRAINT evaluation_relation_question_fkey FOREIGN KEY (batch_id, question_id) REFERENCES evaluation_question
-); -- DISTRIBUTED BY (batch_id);
-COMMENT ON TABLE evaluation_relation_question IS 'Keeps track of an individual question part of an evaluation batch';
+CREATE VIEW evaluation_relation_question AS (
+    SELECT q.id,
+           q.batch_id,
+           q.created,
+           q.params->>'doc_id' AS doc_id,
+           int4range((params#>>'{mention_1,1}')::integer, (params#>>'{mention_1,2}')::integer) AS subject,
+           int4range((params#>>'{mention_2,1}')::integer, (params#>>'{mention_2,2}')::integer) AS object
+    FROM evaluation_question q, evaluation_batch b
+    WHERE q.batch_id = b.id
+      AND b.batch_type = 'selective_relations'
+      AND state <> 'done'
+)
 
 CREATE TYPE HIT_STATUS AS ENUM (
     'Submitted' , 
