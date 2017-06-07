@@ -42,12 +42,17 @@
       baseUrl: "/static/",
       paths: {
           "jquery": "jquery/dist/jquery",
-          "bootstrap": "bootstrap/dist/js/bootstrap",
+          "jquery.bootstrap": "bootstrap/dist/js/bootstrap",
           "sprintf": "sprintf-js/dist/sprintf.min"
       },
+      shim: {
+          "jquery.bootstrap": {
+              deps: ["jquery"]
+          }
+      },
     });
-    require( ["jquery", "bootstrap", "sprintf", "kbpo/js/defs"],
-        function($, bootstrap, pp, defs) {
+    require( ["jquery", "jquery.bootstrap", "sprintf", "kbpo/js/defs"],
+        function($, _, pp, defs) {
           function renderWikiLink(txt) {
             return txt.replace(/_/g, " ");
           }
@@ -164,6 +169,7 @@
             for(var i = 0; i < rows.length; i++) {
               $("#predictions").append(renderRow(rows[i]));
             }
+            $('[data-toggle="tooltip"]').tooltip();
           });
         }
     );

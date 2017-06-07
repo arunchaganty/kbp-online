@@ -87,4 +87,11 @@ CREATE TABLE suggested_link (
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE suggested_link IS 'Entity links suggested by Stanford CoreNLP';
 
+CREATE SEQUENCE corpus_state_id_seq;
+CREATE TABLE corpus_state (
+    id INTEGER PRIMARY KEY DEFAULT nextval('corpus_state_id_seq'),
+    corpus_tag TEXT NOT NULL,
+    state TEXT NOT NULL
+);
+
 COMMIT;

@@ -55,4 +55,3 @@ CREATE OR REPLACE VIEW evaluation_mention_response_flat AS (
     FROM evaluation_mention_response AS response 
     LEFT JOIN mturk_assignment_flat AS assignment ON response.assignment_id = assignment.id 
 );
-

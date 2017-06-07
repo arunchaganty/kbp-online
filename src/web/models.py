@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from .kbpo_models import Document, DocumentTag, Submission
+from .kbpo_models import Document, DocumentTag, Submission, SubmissionScore
 
 # Defining a user for submissions.
 class User(AbstractUser):
@@ -9,12 +9,20 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['first_name', 'last_name', 'affiliation', 'email',]
 
 class SubmissionUser(models.Model):
-    submission = models.OneToOneField(Submission, primary_key=True)
+    submission = models.OneToOneField(Submission, related_name="user", primary_key=True)
     user = models.ForeignKey(User)
 
 class SubmissionState(models.Model):
-    submission = models.OneToOneField(Submission, primary_key=True)
-    status = models.TextField(default='pending-upload')
+    CHOICES = (
+        ('pending-upload', "Pending processing and upload into database"),
+        ('pending-sampling', "Pending sampling"),
+        ('pending-annotation', "Waiting for crowdworkers to annotate submission"),
+        ('pending-scoring', "Pending scoring"),
+        ('done', "Done!"),
+        )
+
+    submission = models.OneToOneField(Submission, related_name="state", primary_key=True)
+    status = models.CharField(max_length=20, default='pending-upload', choices=CHOICES)
     message = models.TextField(blank=True, default='')
 
     objects = models.Manager()

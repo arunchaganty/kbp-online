@@ -5,8 +5,10 @@ import gzip
 import logging
 
 from celery import shared_task
+from django.core.exceptions import ObjectDoesNotExist
 from kbpo.entry import validate, upload_submission
-from .models import Submission, SubmissionState
+from web.models import Submission, SubmissionState
+from kbpo.evaluation_api import get_updated_scores, update_score
 
 logger = logging.getLogger(__name__)
 
@@ -53,3 +55,24 @@ def process_response(assignment_id):
     Processes an mturk response.
     """
     pass
+
+@shared_task
+def score_submission(submission_id):
+    """
+    Updates scores of all submissions
+    """
+    try:
+        submission = Submission.objects.get(id=submission_id)
+        state = SubmissionState.objects.get(submission_id=submission_id)
+    except ObjectDoesNotExist:
+        return
+
+    try:
+        for (submission_id, score_type), metric in get_updated_scores(submission.corpus_tag):
+            update_score(submission_id, score_type, metric)
+        state.status = "done"
+        state.save()
+    except Exception as e:
+        state.status = "error"
+        state.message = e
+        state.save()

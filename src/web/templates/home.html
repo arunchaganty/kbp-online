@@ -72,11 +72,18 @@
       baseUrl: "/static/",
       paths: {
           "jquery": "jquery/dist/jquery",
-          "moment": "moment/moment"
-      },
+          "jquery.bootstrap": "bootstrap/dist/js/bootstrap.min",
+          "moment": "moment/moment",
+          "sprintf": "sprintf-js/dist/sprintf.min"
+    },
+    shim: {
+        "jquery.bootstrap": {
+            deps: ["jquery"]
+        }
+    },
     });
-    require( ["jquery", "moment"],
-        function($, moment) {
+    require( ["jquery", "moment", "sprintf", "jquery.bootstrap"],
+        function($, moment, pp) {
           function renderMonthYear(dt){
             dt1 = moment(dt);
             return dt1.format('MMM YYYY')
@@ -99,11 +106,17 @@
                           .html(row.details)))
                   )
               .append($("<td>")
-                .html(row.P))
+                .html(pp.sprintf(
+                  "<a href='#' data-toggle='tooltip' title='%0.1f - %0.1f%%'>%0.1f%%</a>",
+                  100 * row["P-range"][0],  100 * row["P-range"][1], 100 * row["P"])))
               .append($("<td>")
-                .html(row.R))
+                .html(pp.sprintf(
+                  "<a href='#' data-toggle='tooltip' title='%0.1f - %0.1f%%'>%0.1f%%</a>",
+                  100 * row["R-range"][0],  100 * row["R-range"][1], 100 * row["R"])))
               .append($("<td>")
-                .html(row.F1))
+                .html(pp.sprintf(
+                  "<a href='#' data-toggle='tooltip' title='%0.1f - %0.1f%%'>%0.1f%%</a>",
+                  100 * row["F1-range"][0],  100 * row["F1-range"][1], 100 * row["F1"])))
                 ;
             return tr;
           }
@@ -112,6 +125,7 @@
             for(var i = 0; i < rows['submissions'].length; i++) {
               $("#submissions").append(renderRow(rows['submissions'][i], i));
             }
+            $('[data-toggle="tooltip"]').tooltip();
           });
         }
     );

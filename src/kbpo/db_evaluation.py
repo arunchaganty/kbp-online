@@ -12,14 +12,15 @@ from . import db
 logger = logging.getLogger(__name__)
 
 def get_exhaustive_samples(corpus_tag):
+    """
+    Use the document_sample table to get which documents have been exhaustively sampled.
+    """
     rows = db.select("""
         SELECT e.doc_id, e.subject_id, e.object_id, e.relation, e.weight
         FROM evaluation_relation e,
-             evaluation_batch b 
-        WHERE e.question_batch_id = b.id
-         AND b.batch_type = 'exhaustive_relations'
-         AND b.corpus_tag = %(tag)s
-         AND e.weight > 0.5 AND e.relation <> 'no_relation'
+        JOIN document_sample s ON (e.doc_id = s.doc_id)
+        JOIN document_tag t ON (e.doc_id = t.doc_id AND t.tag = %(corpus_tag)s)
+        WHERE e.weight > 0.5 AND e.relation <> 'no_relation'
         """, tag=corpus_tag)
     return [((row.subject_id, row.relation, row.object_id), 1.0) for row in rows]
 

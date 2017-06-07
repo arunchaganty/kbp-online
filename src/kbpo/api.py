@@ -2,10 +2,14 @@
 Utilities connecting the web interface to database
 Interfacing with database API
 """
+import logging
 from datetime import date, datetime
 
 from . import db
 from . import defs
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def get_documents(corpus_tag):
     """
@@ -428,43 +432,30 @@ def get_submission_entries(submission_id):
     """
     entries = []
     for i, row in enumerate(db.select("""
-        SELECT 
-               r.doc_id,
-               d.title,
-               t.tag AS corpus_tag,
-               s.gloss AS sentence,
-               s.span AS sentence_span,
-               m.span AS subject_span,
-               m.mention_type AS subject_type,
-               m.gloss AS subject_gloss,
-               ml.link_name AS subject_link,
-               eml.link_name AS subject_link_gold,
-               lower(ml.link_name) = wikify(lower(COALESCE(eml.link_name, ml.link_name))) AS subject_link_correct,
-               em.weight > 0.5 AS subject_correct,
-               n.span AS object_span,
-               n.mention_type AS object_type,
-               n.gloss AS object_gloss,
-               nl.link_name AS object_link,
-               enl.link_name AS object_link_gold,
-               lower(nl.link_name) = wikify(lower(COALESCE(enl.link_name, nl.link_name))) AS object_link_correct,
-               en.weight > 0.5 AS object_correct,
-               r.relation AS predicate_name,
-               er.relation AS predicate_gold
-        FROM submission_relation r
-        JOIN submission_mention m ON (r.submission_id = m.submission_id AND r.doc_id = m.doc_id AND r.subject = m.span)
-        JOIN submission_mention n ON (r.submission_id = n.submission_id AND r.doc_id = n.doc_id AND r.object = n.span)
-        JOIN submission_link ml ON (m.submission_id = ml.submission_id AND m.doc_id = ml.doc_id AND m.canonical_span = ml.span)
-        JOIN submission_link nl ON (n.submission_id = nl.submission_id AND n.doc_id = nl.doc_id AND n.canonical_span = nl.span)
-        JOIN evaluation_relation er  ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
-        JOIN evaluation_mention em ON (m.doc_id = em.doc_id AND m.span = em.span)
-        JOIN evaluation_mention en ON (n.doc_id = en.doc_id AND n.span = en.span)
-        LEFT JOIN evaluation_link eml ON (ml.doc_id = eml.doc_id AND ml.span = eml.span AND eml.weight > 0.5)
-        LEFT JOIN evaluation_link enl ON (nl.doc_id = enl.doc_id AND nl.span = enl.span AND enl.weight > 0.5)
-        JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
-        JOIN document d ON (r.doc_id = d.id)
-        JOIN document_tag t ON (r.doc_id = t.doc_id)
-        WHERE r.submission_id = %(submission_id)s
-        ORDER BY r.doc_id, r.subject, r.object
+        SELECT doc_id,
+               title,
+               corpus_tag,
+               sentence,
+               sentence_span,
+               subject_span,
+               subject_type,
+               subject_gloss,
+               subject_link,
+               subject_link_gold,
+               subject_link_correct,
+               subject_correct,
+               object_span,
+               object_type,
+               object_gloss,
+               object_link,
+               object_link_gold,
+               object_link_correct,
+               object_correct,
+               predicate_name,
+               predicate_gold
+        FROM submission_entries
+        WHERE submission_id = %(submission_id)s
+        ORDER BY doc_id, subject_span, object_span
         """, submission_id=submission_id)):
         entry = {
             "id": i,
@@ -534,32 +525,41 @@ def test_get_submission_entries():
 
 def get_leaderboard():
     """Get scores for all submissions"""
-    #TODO: Take score_type into account
     entries = []
-    for row in db.select(
-    """
-    SELECT 
-    sub.id, 
-    sub.updated, 
-    sub.name, 
-    sub.corpus_tag, 
-    sub.details, 
-    (sc.score).precision,
-    (sc.score).recall, 
-    (sc.score).f1
-    FROM submission_score AS sc 
-    JOIN submission AS sub ON sub.id = sc.submission_id 
-    ORDER BY (sc.score).f1 DESC;"""):
+    for row in db.select("""
+        WITH latest_scores AS (SELECT DISTINCT ON (submission_id)
+            submission_id, score, left_interval, right_interval
+            FROM submission_score
+            ORDER BY submission_id, updated DESC)
+        SELECT 
+        sub.id, 
+        sub.updated, 
+        sub.name, 
+        sub.corpus_tag, 
+        sub.details, 
+        sc.score,
+        sc.left_interval,
+        sc.right_interval 
+        FROM latest_scores AS sc 
+        JOIN submission AS sub ON sub.id = sc.submission_id 
+        ORDER BY (sc.score).f1 DESC;"""):
         entry = {
-                'id': row.id,
-                'name': row.name,
-                'details': row.details,
-                'timestamp': row.updated, 
-                'corpus': row.corpus_tag, 
-                'P': row.precision, 'R': row.recall, 'F1': row.f1
-                }
+            'id': row.id,
+            'name': row.name,
+            'details': row.details,
+            'timestamp': row.updated,
+            'corpus': row.corpus_tag,
+            'P': row.score.precision, 'R': row.score.recall, 'F1': row.score.f1,
+            'P-range': [row.left_interval.precision, row.right_interval.precision],
+            'R-range': [row.left_interval.recall, row.right_interval.recall],
+            'F1-range': [row.left_interval.f1, row.right_interval.f1],
+            }
         entries.append(entry)
     return {'submissions': entries}
+
+def test_get_leaderboard():
+    obj = get_leaderboard()
+    assert len(obj) > 0
 
 def get_corpus_listing(corpus_tag):
     """
