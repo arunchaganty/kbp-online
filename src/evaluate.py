@@ -12,8 +12,9 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
+from kbpo import api
 from kbpo import evaluation
-from kbpo import db_evaluation as dbe
+from kbpo import distribution
 from kbpo.sample_util import sample_uniformly_with_replacement
 
 logger = logging.getLogger(__name__)
@@ -22,22 +23,29 @@ logging.basicConfig(level=logging.INFO)
 
 def load_data(args):
     logger.info("Loading data")
-    Y0 = dbe.get_exhaustive_samples(args.corpus_tag)
-    logger.info("Found %d exhaustive samples", len(Y0))
-    Rs, Ps, Xhs = [], [], []
-    for submission in dbe.get_submissions():
+
+    Ps_r = distribution.submission_relation(args.corpus_tag)
+    Ps_e = distribution.submission_entity(args.corpus_tag)
+
+    Rs, Ps, Xhs, Y0 = [], [], [], []
+    for submission in api.get_submissions(args.corpus_tag):
         Rs.append("relation:{}".format(submission.id))
-        Ps.append(dbe.compute_relation_distribution(args.corpus_tag, submission.id))
-        Xhs.append(dbe.get_submission_samples(args.corpus_tag, 'relation', submission.id))
+        Ps.append(Ps_r[submission.id])
+        Xhs.append(distribution.Xh(submission.id, 'relation'))
+        Y0.append(distribution.Y0(args.corpus_tag, submission.id))
         logger.info("Found %d selective relation samples for %d with mass %.2f", len(Xhs[-1]), submission.id,
-                sum(Ps[-1][x] for x,_ in Xhs[-1]))
+                    sum(Ps[-1][x] for x, _ in Xhs[-1]))
+        logger.info("Found %d exhaustive samples", len(Y0[-1]))
 
         Rs.append("entity:{}".format(submission.id))
-        Ps.append(dbe.compute_entity_distribution(args.corpus_tag, submission.id))
-        Xhs.append(dbe.get_submission_samples(args.corpus_tag, 'entity', submission.id))
+        Ps.append(Ps_e[submission.id])
+        Xhs.append(distribution.Xh(submission.id, 'entity'))
+        Y0.append(distribution.Y0(args.corpus_tag, submission.id))
         logger.info("Found %d selective entity samples for %d with mass %.2f", len(Xhs[-1]), submission.id,
-                sum(Ps[-1][x] for x,_ in Xhs[-1]))
-    P0 = Counter(set(x for X in Xhs + [Y0,] for x, fx in X if fx == 1.0)) # uniform for now.
+                    sum(Ps[-1][x] for x,_ in Xhs[-1]))
+        logger.info("Found %d exhaustive samples", len(Y0[-1]))
+    #Counter(set(x for X in Xhs + [Y0,] for x, fx in X if fx == 1.0)) # uniform for now.
+    P0 = defaultdict(lambda: 1.0) # uniform for now.
     return Rs, P0, Ps, Y0, Xhs
 
 # Actually call the code.

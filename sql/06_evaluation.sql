@@ -146,7 +146,13 @@ CREATE MATERIALIZED VIEW submission_entries AS (
     lower(nl.link_name) = wikify(lower(COALESCE(enl.link_name, nl.link_name))) AS object_link_correct,
     en.weight > 0.5 AS object_correct,
     r.relation AS predicate_name,
-    er.relation AS predicate_gold
+    er.relation AS predicate_gold,
+    r.relation = er.relation AS predicate_correct,
+        lower(ml.link_name) = wikify(lower(COALESCE(eml.link_name, ml.link_name))) 
+        AND em.weight > 0.5
+        AND lower(nl.link_name) = wikify(lower(COALESCE(enl.link_name, nl.link_name)))
+        AND en.weight > 0.5
+        AND r.relation = er.relation AS correct
     FROM submission_relation r
     JOIN submission_mention m ON (r.submission_id = m.submission_id AND r.doc_id = m.doc_id AND r.subject = m.span)
     JOIN submission_mention n ON (r.submission_id = n.submission_id AND r.doc_id = n.doc_id AND r.object = n.span)
