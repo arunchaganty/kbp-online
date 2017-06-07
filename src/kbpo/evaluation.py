@@ -13,32 +13,8 @@ from . import counter_utils
 
 logger = logging.getLogger(__name__)
 
-class MixtureCounter(object):
-    """
-    Presents the mixture of a set of counters.
-    Is readonly
-    """
-
-    def __init__(self, W, P):
-        assert len(W) == len(P)
-        self.m = len(P)
-        self.W = W
-        self.P = P
-        self._keys = set()
-        for i in range(self.m):
-            self._keys.update(P[i].keys())
-
-    def keys(self):
-        return self._keys
-
-    def __iter__(self):
-        return iter(self._keys)
-
-    def __getitem__(self, x):
-        return sum(self.W[i] * self.P[i][x] for i in range(self.m))
-
 # Simplest possible estimation procedures that assume access to the
-# distribution (P) or (U).
+# distribution (P) or (P0).
 def weighted_precision(P, Xs):
     """
     Compute precision without the complex weighting strategy.
@@ -52,25 +28,25 @@ def weighted_precision(P, Xs):
         pis.append(pi_i)
     return pis
 
-def weighted_recall(U, P, Y):
+def weighted_recall(P0, P, Y):
     """
     Compute precision without the complex weighting strategy.
     """
     m = len(P)
     rhos = []
-    Z = sum(U[x] for x, _ in Y)
+    Z = sum(P0[x] for x, _ in Y)
     for i in range(m):
         rho_i = 0.
         for x, fx in Y:
             assert fx == 1.
             gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
-            rho_i += U[x] * gxi
+            rho_i += P0[x] * gxi
         rhos.append(rho_i/Z)
     return rhos
 
-def weighted_score(U, P, Y0, Xs):
+def weighted_score(P0, P, Y0, Xs):
     ps = weighted_precision(P, Xs)
-    rs = weighted_recall(U, P, Y0)
+    rs = weighted_recall(P0, P, Y0)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s
 
@@ -78,6 +54,9 @@ def weighted_score(U, P, Y0, Xs):
 def simple_precision(Xhs):
     """
     Compute precision without the complex weighting strategy.
+
+    @Xhs - a list of m lists of samples of [x, f(x)] drawn from some distribution; one for every system.
+    @returns: a list of m precisions
     """
     m = len(Xhs)
     pis = []
@@ -88,13 +67,19 @@ def simple_precision(Xhs):
         pis.append(pi_i)
     return pis
 
-def simple_recall(U, P, Y0):
+def simple_recall(P0, P, Y0):
+    """
+    @P0 - an unnormalized distribution Counter over all possible instances.
+    @P - a list of M counters, giving p_i distributions for each system.
+    @Y0 - a list of m lists, with [x, g(x)] samples over Y; one for each system.
+    @returns: a list of m recalls
+    """
     m = len(P)
 
     Z = 0.
     for n, (x, fx) in enumerate(Y0):
         assert fx == 1.
-        Z += (U[x] - Z)/(n+1)
+        Z += (P0[x] - Z)/(n+1)
 
     rhos = []
     for i in range(m):
@@ -102,13 +87,13 @@ def simple_recall(U, P, Y0):
         for n, (x, fx) in enumerate(Y0):
             assert fx == 1.
             gxi = 1.0 if x in P[i] and P[i][x] > 0 else 0.
-            rho_i += (U[x]*gxi - rho_i)/(n+1)
+            rho_i += (P0[x]*gxi - rho_i)/(n+1)
         rhos.append(rho_i / Z)
     return rhos
 
-def simple_score(U, P, Y0, Xhs):
+def simple_score(P0, P, Y0, Xhs):
     ps = simple_precision(Xhs)
-    rs = simple_recall(U, P, Y0)
+    rs = simple_recall(P0, P, Y0)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s
 
@@ -227,7 +212,7 @@ def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
     r"""
     Compute precision for a collection of samples, where
         P = [Counter], each element of P is a distribution over instances in $\sX$.
-        Xs = [[x]], a list of samples drawn from each distribution.
+        Xs = [[x, f(x)]], a list of samples drawn from each distribution.
     Returns:
     $\pi_i = \sum_{j=1}^{m} w_{ij}/n_j \sum_{x \in \Xh_j} p_i(x)/q_i(x) f(x)$, where
         $q_i(x) = \sum_{j=1}^{m} w_{ij} p_{j}(x)$ and
@@ -253,7 +238,7 @@ def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
         pis.append(pi_i)
     return pis
 
-def pooled_recall(U, P, Xhs, W=None, Q=None, method="heuristic"):
+def pooled_recall(P0, P, Xhs, W=None, Q=None, method="heuristic"):
     r"""
     \nu_i =
         \sum_{j} w_{j} \sum_{x \in Y_j} u(x)/q(x) g_i(x)/
@@ -277,41 +262,41 @@ def pooled_recall(U, P, Xhs, W=None, Q=None, method="heuristic"):
                 gx = 1.0 if fx > 0. else 0.0
                 gxi = 1.0 if x in P[i] and fx > 0. else 0.0
 
-                nu_ij += (U[x]/Q[i][x]*gxi - nu_ij)/(n_j+1)
-                Z_ij += (U[x]/Q[i][x]*gx - Z_ij)/(n_j+1)
+                nu_ij += (P0[x]/Q[i][x]*gxi - nu_ij)/(n_j+1)
+                Z_ij += (P0[x]/Q[i][x]*gx - Z_ij)/(n_j+1)
             nu_i += W[i][j] * nu_ij
             Z_i += W[i][j] * Z_ij
         nu_i = nu_i / Z_i if Z_i > 0 else 0
         nus.append(nu_i)
     return nus
 
-def pool_recall(U, P, Y0):
+def pool_recall(P0, P, Y0):
     r"""
     Estimates the recall of the pool:
-    \thetah = \frac{1}{Y0} \sum_{x \in Y_0} U(x) I[x \in X]
+    \thetah = \frac{1}{Y0} \sum_{x \in Y_0} P0(x) I[x \in X]
     """
     m = len(P)
 
     Z = 0.
     for n, (x, fx) in enumerate(Y0):
         assert fx == 1.
-        Z += (U[x] - Z)/(n+1)
+        Z += (P0[x] - Z)/(n+1)
 
     theta = 0.
     for n, (x, fx) in enumerate(Y0):
         assert fx == 1.0
         gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
-        theta += (U[x]*gx - theta)/(n+1)
+        theta += (P0[x]*gx - theta)/(n+1)
     return theta/Z
 
-def joint_recall(U, P, Y0, Xhs, W=None, Q=None):
-    theta = pool_recall(U, P, Y0)
-    nus = pooled_recall(U, P, Xhs, W=W, Q=Q)
+def joint_recall(P0, P, Y0, Xhs, W=None, Q=None):
+    theta = pool_recall(P0, P, Y0)
+    nus = pooled_recall(P0, P, Xhs, W=W, Q=Q)
     rhos = [theta * nu_i for nu_i in nus]
     return rhos
 
-def joint_score(U, P, Y0, Xhs, W=None, Q=None):
+def joint_score(P0, P, Y0, Xhs, W=None, Q=None):
     ps = joint_precision(P, Xhs, W=W, Q=Q)
-    rs = joint_recall(U, P, Y0, Xhs, W=W, Q=Q)
+    rs = joint_recall(P0, P, Y0, Xhs, W=W, Q=Q)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s

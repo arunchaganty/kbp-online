@@ -37,12 +37,12 @@ def load_data(args):
         Xhs.append(dbe.get_submission_samples(args.corpus_tag, 'entity', submission.id))
         logger.info("Found %d selective entity samples for %d with mass %.2f", len(Xhs[-1]), submission.id,
                 sum(Ps[-1][x] for x,_ in Xhs[-1]))
-    U = Counter(set(x for X in Xhs + [Y0,] for x, fx in X if fx == 1.0)) # uniform for now.
-    return Rs, U, Ps, Y0, Xhs
+    P0 = Counter(set(x for X in Xhs + [Y0,] for x, fx in X if fx == 1.0)) # uniform for now.
+    return Rs, P0, Ps, Y0, Xhs
 
 # Actually call the code.
 def do_evaluate(args):
-    Rs, U, Ps, Y0, Xhs = load_data(args)
+    Rs, P0, Ps, Y0, Xhs = load_data(args)
     m = len(Rs)
 
     W = evaluation.compute_weights(Ps, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
@@ -53,9 +53,9 @@ def do_evaluate(args):
     metrics = defaultdict(list)
 
     if args.mode == "simple":
-        ps, rs, f1s = evaluation.simple_score(U, Ps, Y0, Xhs)
+        ps, rs, f1s = evaluation.simple_score(P0, Ps, Y0, Xhs)
     elif args.mode == "joint":
-        ps, rs, f1s = evaluation.joint_score(U, Ps, Y0, Xhs, W=W, Q=Q)
+        ps, rs, f1s = evaluation.joint_score(P0, Ps, Y0, Xhs, W=W, Q=Q)
 
     for i in range(m):
         metrics[Rs[i]].append([ps[i], rs[i], f1s[i]])
@@ -65,9 +65,9 @@ def do_evaluate(args):
         Xhs_ = [sample_uniformly_with_replacement(X, len(X)) for X in Xhs]
 
         if args.mode == "simple":
-            ps, rs, f1s = evaluation.simple_score(U, Ps, Y0_, Xhs_)
+            ps, rs, f1s = evaluation.simple_score(P0, Ps, Y0_, Xhs_)
         elif args.mode == "joint":
-            ps, rs, f1s = evaluation.joint_score(U, Ps, Y0_, Xhs_, W=W, Q=Q)
+            ps, rs, f1s = evaluation.joint_score(P0, Ps, Y0_, Xhs_, W=W, Q=Q)
         for i in range(m):
             metrics[Rs[i]].append([ps[i], rs[i], f1s[i]])
 
