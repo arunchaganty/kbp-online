@@ -54,3 +54,9 @@ EvaluationRelationResponse = namedtuple('EvaluationRelationResponse', [
     'relation',
     'weight'
 ])
+
+Score = namedtuple('Score', [
+    'p', 'r', 'f1',
+    'p_left', 'r_left', 'f1_left',
+    'p_right', 'r_right', 'f1_right',
+    ])

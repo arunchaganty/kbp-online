@@ -72,12 +72,15 @@ CREATE INDEX submission_relation_subject_idx ON submission_relation(doc_id, subj
 CREATE INDEX submission_relation_object_idx ON submission_relation(doc_id, object);
 
 -- submission_score 
+CREATE SEQUENCE submission_score_id_seq;
 CREATE TABLE  submission_score (
+  id INTEGER PRIMARY KEY DEFAULT nextval('submission_score_id_seq'),
   submission_id INTEGER NOT NULL REFERENCES submission,
   updated TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
   score_type TEXT NOT NULL,
   score SCORE,
-  PRIMARY KEY (submission_id, score_type)
+  left_interval SCORE,
+  right_interval SCORE
 ); -- DISTRIBUTED BY (submission_id);
 COMMENT ON TABLE submission_score IS 'Summary of scores for a system.';
 CREATE INDEX submission_score_submission_idx ON submission_score(submission_id);

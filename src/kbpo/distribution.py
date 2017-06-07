@@ -225,44 +225,81 @@ def test_submission_entity_relation():
 #    Z = sum(P.values())
 #    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
-def Y0(corpus_tag, submission_id):
+def Y0(corpus_tag, submission_id=None):
     """
     Use the document_sample table to get which documents have been exhaustively sampled.
     """
+    if submission_id is not None:
+        assert get_submission(submission_id).corpus_tag == corpus_tag, "Submission {} is not on corpus {}".format(submission_id, corpus_tag)
+        where = "AND s.id = %(submission_id)s"
+    else:
+        where = ""
+
+    ret = defaultdict(list)
     rows = db.select("""
-        SELECT r.doc_id, r.subject, r.object, COALESCE(s.subject_correct AND s.subject_link_correct AND s.object_correct AND s.object_link_correct AND predicate_name = predicate_gold, FALSE) AS gx
-        FROM document_sample d
+        SELECT s.id AS submission_id, r.doc_id, r.subject, r.object, COALESCE(s_.correct, FALSE) AS gx
+        FROM submission s
+        JOIN document_sample d ON (true)
         JOIN document_tag t ON (d.doc_id = t.doc_id AND t.tag = %(corpus_tag)s)
         JOIN evaluation_relation r ON (d.doc_id = r.doc_id)
-        LEFT JOIN submission_entries s ON (r.doc_id = s.doc_id AND r.subject = s.subject_span AND r.object = s.object_span AND s.submission_id = %(submission_id)s)
-        ORDER BY r.doc_id, r.subject, r.object
-        """, corpus_tag=corpus_tag, submission_id=submission_id)
-    return [((row.doc_id, (row.subject.lower, row.subject.upper), (row.object.lower, row.object.upper)), row.gx) for row in rows]
+        LEFT JOIN submission_entries s_ ON (s.id = submission_id AND r.doc_id = s_.doc_id AND r.subject = s_.subject_span AND r.object = s_.object_span)
+        WHERE s.corpus_tag = %(corpus_tag)s {where}
+        ORDER BY s.id, r.doc_id, r.subject, r.object
+        """.format(where=where), corpus_tag=corpus_tag, submission_id=submission_id)
+    for row in rows:
+        ret[row.submission_id].append(((row.doc_id, (row.subject.lower, row.subject.upper), (row.object.lower, row.object.upper)), row.gx))
+    return ret
 
 def test_Y0():
     corpus_tag = 'kbp2016'
-    Y0_ = [Y0(corpus_tag, submission_id) for submission_id in [1,2,3]]
-    for Y in Y0_:
+    Y0_ = Y0(corpus_tag)
+    for Y in Y0_.values():
         assert len(Y) == 1733
-    for Ys in zip(Y0_):
+    for Ys in zip(Y0_.values()):
         assert len(set(y[0] for y in Ys)) == 1
 
-def Xh(submission_id, distribution_type):
+def test_Y0_by_id():
+    corpus_tag = 'kbp2016'
+    submission_id = 1
+    Y = Y0(corpus_tag, submission_id)[submission_id]
+    assert len(Y) == 1733
+
+def Xh(corpus_tag, distribution_type, submission_id = None):
+    if submission_id is not None:
+        assert get_submission(submission_id).corpus_tag == corpus_tag, "Submission {} is not on corpus {}".format(submission_id, corpus_tag)
+        where = "AND b.submission_id = %(submission_id)s"
+    else:
+        where = ""
+
+    ret = defaultdict(list)
     rows = db.select("""
-        SELECT d.doc_id, d.subject, d.object, s.correct AS fx
+        SELECT b.submission_id, d.doc_id, d.subject, d.object, s.correct AS fx
         FROM sample_batch b
         JOIN submission_sample d ON (b.id = d.batch_id)
         JOIN submission_entries s ON (d.doc_id = s.doc_id AND d.subject = s.subject_span AND d.object = s.object_span AND b.submission_id = s.submission_id)
-        WHERE b.submission_id = %(submission_id)s
-          AND b.distribution_type = %(distribution_type)s
+        WHERE b.distribution_type = %(distribution_type)s {where}
         ORDER BY d.doc_id, d.subject, d.object
-          """, submission_id=submission_id, distribution_type=distribution_type)
-    return [((row.doc_id, (row.subject.lower, row.subject.upper), (row.object.lower, row.object.upper)), row.fx) for row in rows]
+          """.format(where=where), submission_id=submission_id, distribution_type=distribution_type)
+    for row in rows:
+        ret[row.submission_id].append(((row.doc_id, (row.subject.lower, row.subject.upper), (row.object.lower, row.object.upper)), row.fx))
+    return ret
 
 def test_Xhs():
-    submission_id = 1
+    corpus_tag = 'kbp2016'
     distribution_type = "relation"
-    Xh_ = Xh(submission_id, distribution_type)
+    submission_id = 1
+    Xhs = Xh(corpus_tag, distribution_type)
+    assert len(Xhs) == 3
+    # TODO: KNOWN BUG 
+    # something is wrong in how we ended up turking output
+    assert len(Xhs[submission_id]) == 366
+
+
+def test_Xhs_by_id():
+    corpus_tag = 'kbp2016'
+    distribution_type = "relation"
+    submission_id = 1
+    Xh_ = Xh(corpus_tag, distribution_type, submission_id)[submission_id]
     # TODO: KNOWN BUG 
     # something is wrong in how we ended up turking output
     assert len(Xh_) == 366

@@ -7,7 +7,7 @@ Database utilities.
 import logging
 import re
 import psycopg2
-from psycopg2.extras import execute_values, NumericRange
+from psycopg2.extras import execute_values, NumericRange, register_composite
 from .params.db.default import _PARAMS
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,7 @@ def connect(params=_PARAMS):
     with conn:
         with conn.cursor() as _cur:
             _cur.execute("SET search_path TO kbpo;")
+    register_composite('kbpo.score', conn, True)
     return conn
 
 CONN = None
@@ -33,6 +34,7 @@ def select(sql, cur=None, **kwargs):
     if cur is None:
         with CONN:
             with CONN.cursor() as cur:
+                #register_composite('kbpo.score', cur)
                 cur.execute(sql, kwargs)
                 yield from cur
     else:

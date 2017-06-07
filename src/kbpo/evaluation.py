@@ -8,8 +8,11 @@ import logging
 from collections import Counter
 
 import numpy as np
+from tqdm import trange
 
 from . import counter_utils
+from .sample_util import sample_uniformly_with_replacement
+from .schema import Score
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +96,37 @@ def simple_score(P0, P, Y0, Xhs):
     rs = simple_recall(P0, Y0)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s
+
+def simple_score_with_intervals(P0, Ps, Y0, Xhs, num_epochs=100, interval=90):
+    data = [[] for _ in Ps]
+
+    logger.info("Computing base metrics")
+    ps, rs, f1s = simple_score(P0, Ps, Y0, Xhs)
+    for i, row in enumerate(zip(ps, rs, f1s)):
+        data[i].append(row)
+
+    logger.info("Bootstrapping")
+    GX = [{x: gx for x, gx in Y} for Y in Y0]
+    for _ in range(num_epochs):
+        # Create a bootstrap sample of Y0_X by getting a new batch of X
+        Y0_ = [x for x, _ in sample_uniformly_with_replacement(Y0[0], len(Y0[0]))]
+        Y0_ = [[(x, GX[i][x]) for x in Y0_] for i, Y in enumerate(Y0)]
+        Xhs_ = [sample_uniformly_with_replacement(X, len(X)) for X in Xhs]
+        ps, rs, f1s = simple_score(P0, Ps, Y0_, Xhs_)
+        for i, row in enumerate(zip(ps, rs, f1s)):
+            data[i].append(row)
+    ret = []
+    for dat in data:
+        dat = np.array(dat)
+        p, r, f1 = dat[0]
+        p_l, r_l, f1_l = np.percentile(dat[1:], 100-interval, 0)
+        p_r, r_r, f1_r = np.percentile(dat[1:], interval, 0)
+
+        ret.append(Score(
+            p, r, f1,
+            p_l, r_l, f1_l,
+            p_r, r_r, f1_r,))
+    return ret
 
 # Weight matrix computation
 def compute_weights(P, Xhs, method="heuristic"):
@@ -321,3 +355,43 @@ def joint_score(P0, P, Y0, Xhs, W=None, Q=None):
     rs = joint_recall(P0, P, Y0, Xhs, W=W, Q=Q)
     f1s = [2 * p * r / (p + r) if p + r > 0. else 0. for p, r in zip(ps, rs)]
     return ps, rs, f1s
+
+def joint_score_with_intervals(P0, Ps, Y0, Xhs, W=None, Q=None, num_epochs=100, interval=90):
+    data = [[] for _ in Ps]
+
+    logger.info("Precomputing weights")
+    if W is None:
+        W = compute_weights(Ps, Xhs, "heuristic")
+    if Q is None:
+        Q = construct_proposal_distribution(W, Ps)
+
+    logger.info("Computing base metrics")
+    ps, rs, f1s = joint_score(P0, Ps, Y0, Xhs, W=W, Q=Q)
+    for i, row in enumerate(zip(ps, rs, f1s)):
+        data[i].append(row)
+
+    logger.info("Bootstrapping")
+    GX = [{x: gx for x, gx in Y} for Y in Y0]
+    for _ in range(num_epochs):
+        # Create a bootstrap sample of Y0_X by getting a new batch of X
+        Y0_ = [x for x, _ in sample_uniformly_with_replacement(Y0[0], len(Y0[0]))]
+        Y0_ = [[(x, GX[i][x]) for x in Y0_] for i, Y in enumerate(Y0)]
+        Xhs_ = [sample_uniformly_with_replacement(X, len(X)) for X in Xhs]
+
+        ps, rs, f1s = joint_score(P0, Ps, Y0_, Xhs_, W=W, Q=Q)
+        for i, row in enumerate(zip(ps, rs, f1s)):
+            data[i].append(row)
+
+    ret = []
+    for dat in data:
+        dat = np.array(dat)
+        p, r, f1 = dat[0]
+        p_l, r_l, f1_l = np.percentile(dat[1:], 100-interval, 0)
+        p_r, r_r, f1_r = np.percentile(dat[1:], interval, 0)
+
+        ret.append(Score(
+            p, r, f1,
+            p_l, r_l, f1_l,
+            p_r, r_r, f1_r,))
+
+    return ret
