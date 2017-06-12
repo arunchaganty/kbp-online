@@ -8,17 +8,21 @@ from collections import Counter, defaultdict, namedtuple
 from psycopg2.extras import NumericRange
 import math
 import numpy as np
+import itertools
 
 import datetime
 from tqdm import tqdm
 import urllib.parse
+from .fleiss import computeKappa
 urllib.parse.unquote('Hern%C3%A1n_Barcos')
 
 from . import db
 from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance, EvaluationMentionResponse, EvaluationLinkResponse, EvaluationRelationResponse, getNumericRange
 
+from .defs import RELATION_TYPES, INVERTED_RELATIONS, ALL_RELATIONS
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+import pandas as pd
 
 
 def parse_selective_relations_response(question, responses):
@@ -70,6 +74,12 @@ def parse_selective_relations_response(question, responses):
         if "linkCorrect" in response["object"]["entity"]:
             links.append(LinkInstance(doc_id, object_span, urllib.parse.unquote(response["object"]["entity"]["link"]), 1.0 if response["object"]["entity"]["linkCorrect"] == "Yes" else 0.0))
 
+        if response["relation"] not in ALL_RELATIONS:
+            #To correct for systematic mistakes from the past
+            if response["relation"] == 'per:sibling':
+                response["relation"] = 'per:siblings'
+            else:
+                logger.error("Unsupported relation %s", response['relation'])
         relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
 
@@ -570,6 +580,101 @@ def test_sanitize_mention_response():
     for test_case in test_cases:
         assert sanitize_mention_response(test_case[0]) == test_case[1]
 
+def _IAA_mention_response(question_batch_id, total_raters = 3):
+    """Compute IAA for different number of raters for the given @question_batch_id"""
+
+    relation_responses = db.select("""
+    SELECT r.*, ss.mention_type AS subject_type, so.mention_type AS object_type 
+    FROM evaluation_relation_response r 
+    JOIN evaluation_mention AS ss 
+        ON ss.doc_id = r.doc_id AND ss.span = r.subject 
+    JOIN evaluation_mention AS so 
+        ON so.doc_id = r.doc_id and so.span = r.object where r.question_batch_id = %(question_batch_id)s
+    ORDER BY question_id;""", question_batch_id = question_batch_id)
+    relationtype2relations = defaultdict(list)
+    for rel, types in RELATION_TYPES.items():
+        #if not isinstance(types[0] , list):
+        #    subject_type = [types[0]]
+        #else:
+        #    subject_type = types[0]
+        if not isinstance(types[1] , list):
+            object_type = [types[1]]
+        else:
+            object_type = types[1]
+        for ot in object_type:
+            relationtype2relations[types[0], ot].append(rel)
+            if rel in INVERTED_RELATIONS:
+                inv_rel = [x for x in INVERTED_RELATIONS[rel] if ot.lower() == x[:3]][0]
+                relationtype2relations[(ot, types[0])].append(inv_rel)
+    relationtype2relations = {k: list(set(v)) for k, v in relationtype2relations.items()}
+    print(relationtype2relations)
+
+    relation_responses = list(relation_responses)
+    #n_questions = 
+    for nraters in range(3, total_raters+1, 2):
+        kappa_df = []
+        for raters in itertools.combinations(range(total_raters), nraters):
+            relationtype2votes = {k: [] for k, v in relationtype2relations.items()}
+            rater_id = -1
+            prev_question = None
+            question_num = 0
+            votes = []
+            for response in relation_responses:
+                if response.question_id != prev_question:
+                    if prev_question is not None:
+                        append = True
+                        vote_vector = np.zeros(shape = (len(relationtype2relations[(s_type, o_type)])+1))
+                        for v in votes:
+                            if v == 'no_relation':
+                                rel_index = len(relationtype2relations[(s_type, o_type)])
+                            else:
+                                if v not in relationtype2relations[(s_type, o_type)]:
+                                    logger.error("Unsupported relation %s for subject type %s and object type %s (All supported relations are %s)", v , s_type, o_type, relationtype2relations[s_type, o_type])
+                                    append = False
+                                    break
+                                rel_index = relationtype2relations[(s_type, o_type)].index(v)
+                            vote_vector[rel_index]+=1
+                        if append:
+                            relationtype2votes[(s_type, o_type)].append(vote_vector)
+                        #append
+
+                    s_type = response.subject_type
+                    o_type = response.object_type
+                    rater_id = 0 
+                    votes = []
+                else:
+                    rater_id += 1
+                assert s_type == response.subject_type
+                assert o_type == response.object_type
+                if rater_id in raters:
+                    votes.append(response.relation)
+                prev_question = response.question_id
+
+            #for k, v in relationtype2votes.items():
+            #    print(k,set([x.shape for x in v]))
+            relationtype2votes = {k: np.array(v) for k, v in relationtype2votes.items() if len(v)>0}
+            #print(relationtype2votes)
+            relationtype2kappa = {}
+            for k, votes in relationtype2votes.items():
+            #    print(k, votes.shape)
+                relationtype2kappa[k] = computeKappa(votes)
+                #relationtype2kappa[k] = votes.max(axis=1)/len(raters)
+            #print(relationtype2kappa)
+            #print(np.hstack(relationtype2kappa.values()))
+            #kappa_df.append(relationtype2kappa)
+            print([(k,v )for k,v in relationtype2kappa.items()])
+            print([(k, relationtype2votes[k].shape[0]) for k,v in relationtype2kappa.items()])
+            kappa_df.append({'weighted_average': float(sum([relationtype2votes[k].shape[0]*v for k,v in relationtype2kappa.items() if not np.isnan(v)]))/sum([relationtype2votes[k].shape[0] for k in relationtype2kappa.keys()])})
+            #kappa_df.append({'majority_agreement':np.mean(np.hstack(relationtype2kappa.values()))})
+            #print(relationtype2kappa)
+        
+        kappa_df = pd.DataFrame(kappa_df)
+        print(kappa_df.mean())
+        #print(kappa_df.std())
+
+
+
+
 def sanitize_mention_response_table():
     """Make sure mention responses are correct and correct them if possible"""
     db.execute(
@@ -660,12 +765,60 @@ def sanitize_mention_response_table():
     #    for rand_idx in np.random.randint(len(vs), size = 5): 
     #        print([vs[rand_idx], k])
 
+def verify_evaluation_mention_response():
+    """Looks at extracted mention responses and applies basic filtering to approve or reject HITs"""
+
+    mention_counts = db.select("""
+        SELECT question_id, array_agg(assignment_id) as assignment_ids, array_agg(count) as counts, 
+        percentile_disc(0.50) WITHIN GROUP (ORDER BY count) as median,
+        avg(count) as avg, stddev(count) as stddev
+        FROM (SELECT question_id, assignment_id, count(*) as count FROM evaluation_mention_response GROUP BY assignment_id, question_id) AS t GROUP BY question_id;
+        """)
+        #percentile_disc(0.50) WITHIN GROUP (ORDER BY count)  as median 
+    assignment2z = {}
+    values = []
+    for row in mention_counts:
+        #d = np.array([count - row.median for count in row.counts])
+        #ad = np.abs(d)
+        #mad = np.median(ad)
+        #if mad == 0:
+        #    if row.stddev == 0:
+        #        zs = np.zeros((len(row.counts)))
+        #    else:
+        #        zs = (np.array(row.counts) - row.avg)/row.stddev
+        #else: 
+        #    zs = d / (1.486*mad)
+        #if not all(modified_z_score == 0):
+            #print(row.assignment_ids, row.counts, modified_z_score)
+        #row.stddev = np.median(abs(np.array(row.counts) - row.avg)
+        zs = (np.array(row.counts))/row.avg
+        #if np.any(zs<0.50):
+            #print(row.assignment_ids, row.counts, row.avg, zs)
+        #if np.any(np.array(row.counts)==1):
+        #    print(row.assignment_ids, row.counts, mad, zs)
+        for assignment_id, z in zip(row.assignment_ids, zs):
+            assignment2z[assignment_id] = z 
+
+    for assignment_id, z in tqdm(assignment2z.items()):
+        flag = z > 0.50
+        values.append(db.mogrify(b"(%(assignment_id)s, %(flag)s)", flag = flag, assignment_id = assignment_id))
+    args_str = b','.join(values)
+    db.execute(b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values """+args_str+b""" ) AS c(assignment_id, flag) where c.assignment_id = id;""")
+
+        
+        
+
+
 if __name__ == '__main__':
     #sanitize_mention_response_table()
     #merge_evaluation_table('mention', mode='all')
-    parse_responses()
-    merge_evaluation_table('link', mode='all')
+    #parse_responses()
+    #merge_evaluation_table('link', mode='all')
     #test_sanitize_mention_response()
+    #_IAA_mention_response(12, 3)
+    #_IAA_mention_response(6, 5)
+    verify_evaluation_mention_response()
+    
         
 
 
