@@ -405,12 +405,12 @@ def merge_evaluation_relations(row):
     assert len(row) > 0.
     # Choose the most frequent char_begin and char_end.
     relation = majority_element(row.relations)
-    n_assignments = max(max([int(json.loads(params)['max_assignments']) for params in row.params]), len(row.weights))
+    n_assignments = max(max([int(params['max_assignments']) for params in row.params]), len(row.weights))
 
     #param = majority_element(row.params)
     weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/n_assignments
 
-    return row.question_id, row.question_batch_id, row.doc_id, row.subject_id, row.object_id, relation, weight
+    return {'question_id': row.question_id, 'question_batch_id': row.question_batch_id, 'doc_id': row.doc_id, 'subject': row.subject, 'object': row.object, 'relation': relation, 'weight': weight}
 
 ## TODO: Fix to handle overlapping mentions, etc. -- basically this approach is broken.
 #def update_evaluation_mention():
@@ -484,11 +484,12 @@ def update_evaluation_relation():
         with db.CONN.cursor() as cur:
             cur.execute("""TRUNCATE evaluation_relation;""")
             # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT question_id, question_batch_id, doc_id, subject_id, object_id, array_agg(relation) AS relations, array_agg(weight) as weights, array_agg(params) as params FROM evaluation_relation_response as r, mturk_assignment as a, mturk_batch as b WHERE r.assignment_id = a.id AND a.batch_id = b.id GROUP BY question_id, question_batch_id, doc_id, subject_id, object_id""")
+            cur.execute("""SELECT array_agg(question_id) as question_id , array_agg(question_batch_id) as question_batch_id, doc_id, subject, object, array_agg(relation) AS relations, array_agg(weight) as weights, array_agg(params) as params FROM evaluation_relation_response as r, mturk_assignment as a, mturk_batch as b WHERE r.assignment_id = a.id AND a.batch_id = b.id GROUP BY doc_id, subject, object""")
             # Take the majority vote on this mention iff count > 1.
             values = [merge_evaluation_relations(row) for row in tqdm(cur, total=cur.rowcount)]
+            print(values[0:2])
             logger.info("%d rows of evaluation_relation_response merged into %d rows", cur.rowcount, len(values))
-            db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject_id, object_id, relation, weight) VALUES %s""", values)
+            db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject, object, relation, weight) VALUES %s""", values, template = "(%(question_id)s, %(question_batch_id)s, %(doc_id)s, %(subject)s, %(object)s, %(relation)s, %(weight)s)")
 
 def update_summary():
     """
@@ -765,9 +766,40 @@ def sanitize_mention_response_table():
     #    for rand_idx in np.random.randint(len(vs), size = 5): 
     #        print([vs[rand_idx], k])
 
+def verify_evaluation_relation_response():
+    """Flag workers and their assignments based on consistent disagreement with the consensus"""
+    worker_agreement_with_majority = db.select("""
+    SELECT worker_id, array_agg(assignment_id) as assignment_ids, count(*) AS total, count(case when relation <> majority_relation then 1 end) AS disagree, count(case when relation = majority_relation then 1 end) AS agree
+    FROM (
+        SELECT id, worker_id, weight, relation, majority_relation, disagreed_assignment.assignment_id FROM (
+            SELECT assignment_id, r.weight, rr.relation AS relation, r.relation as majority_relation 
+            FROM evaluation_relation as r  
+                RIGHT JOIN evaluation_relation_response as rr 
+                    ON r.doc_id = rr.doc_id AND r.subject = rr.subject AND r.object = rr.object 
+            WHERE r.weight > 0.5
+            ) as disagreed_assignment 
+            JOIN mturk_assignment AS assignment ON assignment.id = disagreed_assignment.assignment_id
+        ) as t 
+    GROUP BY worker_id;
+    """)
+
+    assignment2flag = {}
+    for row in worker_agreement_with_majority:
+        flag = not (float(row.disagree)/row.total > 0.2 and row.disagree > 10)
+        if not flag:
+            print(row)
+        for assignment_id in row.assignment_ids:
+            assignment2flag[assignment_id] = flag
+
+
+    values = [{'assignment_id':k, 'flag': v} for k, v in assignment2flag.items()]
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+    
+
 def verify_evaluation_mention_response():
     """Looks at extracted mention responses and applies basic filtering to approve or reject HITs"""
-
     mention_counts = db.select("""
         SELECT question_id, array_agg(assignment_id) as assignment_ids, array_agg(count) as counts, 
         percentile_disc(0.50) WITHIN GROUP (ORDER BY count) as median,
@@ -798,12 +830,15 @@ def verify_evaluation_mention_response():
         #    print(row.assignment_ids, row.counts, mad, zs)
         for assignment_id, z in zip(row.assignment_ids, zs):
             assignment2z[assignment_id] = z 
+    values = []
 
     for assignment_id, z in tqdm(assignment2z.items()):
         flag = z > 0.50
-        values.append(db.mogrify(b"(%(assignment_id)s, %(flag)s)", flag = flag, assignment_id = assignment_id))
-    args_str = b','.join(values)
-    db.execute(b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values """+args_str+b""" ) AS c(assignment_id, flag) where c.assignment_id = id;""")
+        values.append({'flag' : flag, 'assignment_id' : assignment_id})
+    #args_str = b','.join(values)
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
 
         
         
@@ -817,7 +852,9 @@ if __name__ == '__main__':
     #test_sanitize_mention_response()
     #_IAA_mention_response(12, 3)
     #_IAA_mention_response(6, 5)
-    verify_evaluation_mention_response()
+    #verify_evaluation_mention_response()
+    verify_evaluation_relation_response()
+    #update_evaluation_relation()
     
         
 
