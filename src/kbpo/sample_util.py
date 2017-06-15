@@ -40,8 +40,8 @@ def sample_with_replacement(P, num_samples, X=None):
         P_ = [P[x] for x, _ in X]
     assert abs(sum(P_) - 1.) < 1e-6
 
-    Xh_ = np.random.multinomial(num_samples, P_)
-    Xh = [X[i] for i, ni in enumerate(Xh_) for _ in range(ni)]
+    ixs = list(range(len(X)))
+    Xh = [X[i] for i in np.random.choice(ixs, num_samples, replace=True, p=P_)]
     assert len(Xh) == num_samples
     return Xh
 
@@ -63,7 +63,6 @@ def test_sample_with_replacement():
     P_ = normalize(P_)
     assert np.allclose([P['a'], P['b'], P['c'], P['d']], [P_['a'], P_['b'], P_['c'], P_['d']], 1e-1)
 
-
 def sample_without_replacement(P, num_samples, X=None):
     """
     Draw num_samples from X using the distribution P without replacement.
@@ -84,9 +83,9 @@ def sample_without_replacement(P, num_samples, X=None):
         P_ = np.array([P[x] for x,_ in X])
     assert abs(sum(P_) - 1.) < 1e-6
 
-    U = np.random.rand(len(X))
-    ixs = np.argsort(-P_**U)
-    Xh = [X[i] for i in ixs[:num_samples]]
+    # Sample from P_
+    ixs = list(range(len(X)))
+    Xh = [X[i] for i in np.random.choice(ixs, num_samples, replace=False, p=P_)]
     assert len(Xh) == num_samples
     return Xh
 
