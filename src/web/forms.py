@@ -19,8 +19,9 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
     """
     A knowledge base submitted by the user.
     """
-    file_format = forms.ChoiceField(choices=[("tac", "TAC-KBP KB format"), ("mfile", "Mention-based KB format")], help_text="")
+    file_format = forms.ChoiceField(choices=[("tackb", "TAC-KBP KB format"), ("mfile", "Mention-based KB format")], help_text="")
     knowledge_base = forms.FileField(help_text="The file to be uploaded. Please ensure that it is gzipped.")
+
     class Meta:
         model = Submission
         fields = ['name', 'details', 'corpus_tag',]
@@ -33,6 +34,9 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
     def clean_knowledge_base(self):
         data = self.cleaned_data['knowledge_base']
+        # Store a copy.
+        self.cleaned_data["original_kb"] = data
+
         if 'gzip' not in data.content_type:
             raise forms.ValidationError("Received a file with Content-Type: {}; please ensure the file is properly gzipped". format(data.content_type))
 
@@ -40,18 +44,11 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             raise forms.ValidationError("Submitted file is larger than our current file size limit of {}MB. Please ensure that you are submitted the correct file, if not contact us at {}".format(int(self.MAX_SIZE / 1024 / 1024), ""))
 
         try:
+            self.original_file = data
             # Check that the file is gzipped.
             with gzip.open(data, 'rt') as f:
                 # Check that it has the right format, aka validate it.
-
-                # TODO: Save validation errors in a better format and display them.
-                if self.cleaned_data["file_format"] == "tac":
-                    # TODO: Convert file from tac format to mfile.
-                    raise forms.ValidationError("Sorry, can not currently process TAC-KBP KB format")
-                elif self.cleaned_data["file_format"] == "mfile":
-                    data = validate(f)
-                else:
-                    raise ValueError("Unexpected file-format: {}".format(self.cleaned_data["file_format"]))
+                data = validate(f, self.cleaned_data["file_format"])
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
@@ -64,6 +61,11 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             data = self.cleaned_data['knowledge_base']
             with gzip.open(instance.uploaded_filename, 'wt') as f:
                 data.to_stream(csv.writer(f, delimiter='\t'))
+
+            data = self.cleaned_data['original_kb']
+            with gzip.open(instance.original_filename, 'wt') as f:
+                data.to_stream(csv.writer(f, delimiter='\t'))
+
         except OSError as e:
             logger.exception(e)
             instance.delete()

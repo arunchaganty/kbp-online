@@ -107,6 +107,13 @@ class Submission(models.Model):
         """
         return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}-{}.m.gz'.format(self.name, self.id))
 
+    @property
+    def original_filename(self):
+        """
+        Load the uploaded filename from the server.
+        """
+        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}-{}.original.gz'.format(self.name, self.id))
+
 class SubmissionMention(models.Model):
     submission = models.ForeignKey(Submission, models.DO_NOTHING)
     doc = models.ForeignKey(Document, models.DO_NOTHING)
