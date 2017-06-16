@@ -3,9 +3,73 @@
 {% load bootstrap3 %}
 
 {% block content %}
-<div class="col-md-4"></div>
-<div id="content-main" class="col-md-4">
-  <form method="post" action="" enctype="multipart/form-data">
+<div id="content-main" class="col-md-10">
+  {% bootstrap_messages %}
+  {# Table of errors #}
+  {% if form.log %}
+  <h1>Validation Log</h1>
+  <table class="table table-striped table-hover">
+    <thead>
+      <th width="10%">Line #</th>
+      <th>Message</th>
+    </thead>
+    <tbody>
+      {% for line, message in form.log.errors %}
+      <tr class="danger">
+        <td>{{line}}</td>
+        <td>{{message}}</td>
+      </tr>
+      {% endfor %}
+
+      {% for line, message in form.log.warnings %}
+      <tr class="warning">
+        <td>{{line}}</td>
+        <td>{{message}}</td>
+      </tr>
+      {% endfor %}
+
+      {% for line, message in form.log.info %}
+      <tr class="info">
+        <td>{{line}}</td>
+        <td>{{message}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h1>View Submissions</h1>
+  <table class="table table-striped table-hover">
+    <thead>
+      <th>#</th>
+      <th>Name</th>
+      <th>Description</th>
+      <th>Corpus</th>
+      <th>Submitted</th>
+      <th>Status</th>
+      <th>Download</th>
+      <th>Delete</th>
+    </thead>
+    <tbody>
+      {% for submission in submissions %}
+      <tr>
+        <td>{{forloop.counter}}</td>
+        <td>{{submission.submission.name}}</td>
+        <td>{{submission.submission.details}}</td>
+        <td>{{submission.submission.corpus_tag}}</td>
+        <td>{{submission.submission.updated}}</td>
+        <td>{{submission.submission.state.status}}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>New submission</h2>
+  <p>Please read our documentation <a href="#">here</a> for more details on the submission formats.</p>
+
+  <form class="form" method="post" action="" enctype="multipart/form-data">
     {% csrf_token %}
     {% bootstrap_form form %}
     {% buttons %}
@@ -15,6 +79,5 @@
     {% endbuttons %}
   </form>
 </div>
-<div class="col-md-4"></div>
 
 {% endblock %}

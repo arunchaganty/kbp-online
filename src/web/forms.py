@@ -5,7 +5,7 @@ import logging
 from django import forms
 from registration.forms import RegistrationForm
 
-from kbpo.entry import validate
+from kbpo.entry import validate, ListLogger
 from .models import User, Submission
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,9 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
     """
     file_format = forms.ChoiceField(choices=[("tackb", "TAC-KBP KB format"), ("mfile", "Mention-based KB format")], help_text="")
     knowledge_base = forms.FileField(help_text="The file to be uploaded. Please ensure that it is gzipped.")
+
+    original_file = None
+    log = None
 
     class Meta:
         model = Submission
@@ -48,7 +51,11 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             # Check that the file is gzipped.
             with gzip.open(data, 'rt') as f:
                 # Check that it has the right format, aka validate it.
-                data = validate(f, self.cleaned_data["file_format"])
+                log = ListLogger()
+                data = validate(f, self.cleaned_data["file_format"], logger=log)
+                self.log = log
+                if len(log.errors) > 0:
+                    raise forms.ValidationError("Error validating file (see below)")
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
