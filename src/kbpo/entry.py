@@ -27,12 +27,14 @@ class ListLogger():
         self.warnings = []
         self.errors = []
         self.infos = []
+
+    #Assumes the text to be of the form (Line %d :<error_msg>)
     def warning(self, text, *args):
-        self.warnings.append(text % args)
+        self.warnings.append((args[0], text[9:] % args[1:]))
     def error(self, text, *args):
-        self.errors.append(text % args)
+        self.errors.append((args[0], text[9:] % args[1:]))
     def info(self, text, *args):
-        self.infos.append(text % args)
+        self.infos.append((args[0], text[9:] % args[1:]))
 
     def __str__(self):
         return str(self.errors) + str(self.warnings) + str(self.info)
