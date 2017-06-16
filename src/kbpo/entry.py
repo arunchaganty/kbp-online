@@ -435,41 +435,6 @@ def validate(fstream, input_format = 'mfile', logger = logger):
     mfile = verify_relations(mfile)
     return mfile
 
-def upload_submission(submission_id, mfile):
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            # Create the submission
-            mentions, links, relations = [], [], []
-            for mention_id in mfile.mention_ids:
-                mention_type, gloss, canonical_id = mfile.get_type(mention_id), mfile.get_gloss(mention_id), mfile.get_cmention(mention_id)
-                mention_id, canonical_id = mention_id, canonical_id
-                doc_id = mention_id.doc_id
-                mentions.append((submission_id, doc_id, mention_id, canonical_id, mention_type, gloss))
-            for row in mfile.links:
-                mention_id = row.subj
-                doc_id = mention_id.doc_id
-                link_name = row.obj
-                weight = row.weight
-                links.append((submission_id, doc_id, mention_id, link_name, weight))
-            for row in mfile.relations:
-                subject_id = row.subj
-                object_id = row.obj
-                doc_id = subject_id.doc_id
-
-                relation = row.reln
-                provs = list(row.prov) if row.prov else []
-                weight = row.weight
-                relations.append((submission_id, doc_id, subject_id, object_id, relation, provs, weight))
-
-            # mentions
-            db.execute_values(cur, """INSERT INTO submission_mention (submission_id, doc_id, mention_id, canonical_id, mention_type, gloss) VALUES %s """, mentions)
-
-            # links
-            db.execute_values(cur, """INSERT INTO submission_link (submission_id, doc_id, mention_id, link_name, confidence) VALUES %s """, links)
-
-            # relations
-            db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject_id, object_id, relation, provenances, confidence) VALUES %s """, relations)
-
 # TODO: make into a test.
 if __name__ == '__main__':
     logging.basicConfig(filename = '/tmp/tmp')
