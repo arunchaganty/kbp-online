@@ -287,7 +287,7 @@ class MFile(_MFile):
                         logger.error("LINE %d: No mention found for object %s in relation provenances %s", row.line_num, row.obj, row.prov)
                     #TODO: throw error
                 else:
-                    relations.append(Entry(s_prov, mapped_reln, o_prov, r_prov, row.weight))
+                    relations.append(Entry(s_prov, mapped_reln, o_prov, [cls.parse_prov(x) for x in split_prov], row.weight))
         return cls(mentions, links, canonical_mentions, relations)
 
     @classmethod
