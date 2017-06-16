@@ -233,7 +233,8 @@ class MFile(_MFile):
 
         def first_entity_prov(reln_prov, entity):
             for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
-                if m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.begin+2000:
+                #if m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.begin+2000:
+                if m.prov.begin >= reln_prov.begin:
                     return m.prov
 
         ##relations
