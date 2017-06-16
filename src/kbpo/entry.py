@@ -12,6 +12,7 @@ import csv
 import re
 import logging
 from collections import namedtuple, defaultdict
+from  string import Formatter
 
 from .defs import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS
 from .schema import Provenance
@@ -20,7 +21,22 @@ from . import db
 import sys
 from tqdm import tqdm
 
-logging.basicConfig(filename = '/tmp/tmp')
+#logging.basicConfig(filename = '/tmp/tmp')
+class ListLogger():
+    def __init__(self):
+        self.warnings = []
+        self.errors = []
+        self.infos = []
+    def warning(self, text, *args):
+        self.warnings.append(text % args)
+    def error(self, text, *args):
+        self.errors.append(text % args)
+    def info(self, text, *args):
+        self.infos.append(text % args)
+
+    def __str__(self):
+        return str(self.errors) + str(self.warnings) + str(self.info)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -74,7 +90,7 @@ class MFile(_MFile):
         return "{}:{}-{}".format(*prov)
 
     @classmethod
-    def from_mfile_stream(cls, stream):
+    def from_mfile_stream(cls, stream, logger = logger):
         mentions = []
         links = []
         canonical_mentions = []
@@ -103,7 +119,7 @@ class MFile(_MFile):
         return cls(mentions, links, canonical_mentions, relations)
 
     @classmethod
-    def from_tac_stream(cls, stream):
+    def from_tac_stream(cls, stream, logger = logger):
         mentions = []
         links = []
         canonical_mentions = []
@@ -257,7 +273,7 @@ class MFile(_MFile):
         return cls(mentions, links, canonical_mentions, relations)
 
     @classmethod
-    def from_stream(cls, stream, input_format='mfile'):
+    def from_stream(cls, stream, input_format='mfile', logger = logger):
         """
         Split input into type, link, canonical_mention and relation definitions.
         @input_format can be mfile or tackb
@@ -275,9 +291,9 @@ class MFile(_MFile):
                 <m1:prov> link <wiki-link> weight
         """
         if input_format == 'tac':
-            return cls.from_tac_stream(stream)
+            return cls.from_tac_stream(stream, logger)
         elif input_format == 'mfile':
-            return cls.from_mfile_stream(stream)
+            return cls.from_mfile_stream(stream, logger)
         else:
             raise ValueError("Invalid file format, should be tackb or mfile")
 
@@ -393,8 +409,8 @@ def verify_relations(mfile):
 
 # TODO: make this validator 10x more robust
 # TODO: have validator report errors (using a list).
-def validate(fstream, input_format = 'mfile'):
-    mfile = MFile.from_stream(csv.reader(fstream, delimiter='\t'), input_format)
+def validate(fstream, input_format = 'mfile', logger = logger):
+    mfile = MFile.from_stream(csv.reader(fstream, delimiter='\t'), input_format, logger)
     mfile = verify_mention_ids(mfile)
     mfile = verify_canonical_mentions(mfile)
     mfile = verify_relations(mfile)
@@ -438,5 +454,7 @@ def upload_submission(submission_id, mfile):
 # TODO: make into a test.
 if __name__ == '__main__':
     #mfile = MFile.from_stream(csv.reader(sys.stdin, delimiter='\t'), input_format)
-    validate(sys.stdin, input_format = 'tackb')
+    testLogger = ListLogger()
+    validate(sys.stdin, input_format = 'tac', logger = testLogger)
+    print(testLogger)
     #test_sanitize_mention_response()
