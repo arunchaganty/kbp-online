@@ -233,7 +233,7 @@ class MFile(_MFile):
 
         def first_entity_prov(reln_prov, entity):
             for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
-                if m.prov.begin >= reln_prov.begin:
+                if m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.begin+2000:
                     return m.prov
 
         ##relations
@@ -265,21 +265,22 @@ class MFile(_MFile):
                     links.append(Entry(o_prov, 'link', row.obj, None, row.weight))
                     for idx in range(1,len(split_prov)):
                         r_prov = cls.parse_prov(split_prov[idx])
-                        m = first_overlapping_entity_prov(r_prov, row.subj)
+                        m = first_entity_prov(r_prov, row.subj)
                         if m is not None:
                             s_prov = m
                             break
                 else:
                     for idx in range(len(split_prov)):
                         r_prov = cls.parse_prov(split_prov[idx])
-                        s_prov = first_overlapping_entity_prov(r_prov, row.subj)
-                        o_prov = first_contained_entity_prov(r_prov, row.obj)
+                        s_prov = first_entity_prov(r_prov, row.subj)
+                        o_prov = first_entity_prov(r_prov, row.obj)
                         if s_prov is not None and o_prov is not None:
                             break
 
                 if s_prov is None or o_prov is None:
                     if s_prov is None:
                         logger.error("LINE %d: No mention found for subject %s in relation provenances %s", row.line_num, row.subj, row.prov)
+                        logger.error(row)
                         print(row)
                     if o_prov is None:
                         logger.error("LINE %d: No mention found for object %s in relation provenances %s", row.line_num, row.obj, row.prov)
