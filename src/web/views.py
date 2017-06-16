@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponseRedirect, Http404
 from django.contrib import messages
 
 from kbpo import api
+from kbpo import entry
 
 from .forms import KnowledgeBaseSubmissionForm
 from .models import Submission, SubmissionUser, SubmissionState
@@ -35,7 +36,8 @@ def submit(request):
     else:
         form = KnowledgeBaseSubmissionForm()
 
-    return render(request, 'submit.html', {'form': form})
+    submissions = SubmissionUser.objects.filter(user=request.user)
+    return render(request, 'submit.html', {'form': form, 'submissions': submissions})
 
 def explore_corpus(request, corpus_tag, doc_id=None):
     """
