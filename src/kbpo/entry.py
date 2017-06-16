@@ -396,11 +396,12 @@ def verify_relations(mfile):
         if reln not in ALL_RELATIONS:
             continue
 
+        # TODO: change consistent.
         if reln in INVERTED_RELATIONS:
             for reln_ in INVERTED_RELATIONS[reln]:
                 if reln_.startswith(mfile.get_type(obj).lower()):
                     r_ = r._replace(subj=obj, reln=reln_, obj=subj)
-                    if (obj, subj) not in keys:
+                    if (obj, subj) not in keys: # Uh oh.
                         logger.info("Adding symmetrized relation %s: %s", r_, r)
                         keys.add((obj,subj))
                         relations_.add(r_)
@@ -453,6 +454,7 @@ def upload_submission(submission_id, mfile):
 
 # TODO: make into a test.
 if __name__ == '__main__':
+    logging.basicConfig(filename = '/tmp/tmp')
     #mfile = MFile.from_stream(csv.reader(sys.stdin, delimiter='\t'), input_format)
     testLogger = ListLogger()
     validate(sys.stdin, input_format = 'tac', logger = testLogger)
