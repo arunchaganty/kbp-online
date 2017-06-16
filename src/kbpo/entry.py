@@ -21,14 +21,14 @@ from . import db
 import sys
 from tqdm import tqdm
 
-#logging.basicConfig(filename = '/tmp/tmp')
+logging.basicConfig(filename = '/tmp/tmp')
 class ListLogger():
     def __init__(self):
         self.warnings = []
         self.errors = []
         self.infos = []
 
-    #Assumes the text to be of the form (Line %d :<error_msg>)
+    #Assumes the text to be of the form (Line %d: <error_msg>)
     def warning(self, text, *args):
         self.warnings.append((args[0], text[9:] % args[1:]))
     def error(self, text, *args):
@@ -154,6 +154,8 @@ class MFile(_MFile):
             counter += 1
             if counter == 1:
                 continue
+            if row == '':
+                continue
             assert len(row) <= 5, "Invalid number of columns, %d instead of %d"%(len(row), 5)
             row = row + [None] * (5-len(row)) + [counter]
             reln = row[1]
@@ -224,6 +226,17 @@ class MFile(_MFile):
                 if m.prov.begin >= reln_prov.begin and m.prov.end <= reln_prov.end:
                     return m.prov
 
+        def first_overlapping_entity_prov(reln_prov, entity):
+            for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
+                if (m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.end) or (m.prov.end >= reln_prov.begin and m.prov.end <= reln_prov.end):
+                    return m.prov
+
+        def first_entity_prov(reln_prov, entity):
+            for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
+                #if m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.begin+2000:
+                if m.prov.begin >= reln_prov.begin:
+                    return m.prov
+
         ##relations
         all_relations = set(RELATION_MAP.keys()) - set(['no_relation'])
         ignored_relations = set(['per:alternate_names', 'org:alternate_names'])
@@ -241,6 +254,7 @@ class MFile(_MFile):
                     logger.error("LINE %d: No provenance for relation", row.line_num)
                     continue
 
+                s_prov = None
                 o_prov = None
                 r_prov = None
                 if mapped_reln in STRING_VALUED_RELATIONS:
@@ -252,22 +266,24 @@ class MFile(_MFile):
                     links.append(Entry(o_prov, 'link', row.obj, None, row.weight))
                     for idx in range(1,len(split_prov)):
                         r_prov = cls.parse_prov(split_prov[idx])
-                        m = first_contained_entity_prov(r_prov, row.subj)
+                        m = first_entity_prov(r_prov, row.subj)
                         if m is not None:
                             s_prov = m
                             break
                 else:
                     for idx in range(len(split_prov)):
                         r_prov = cls.parse_prov(split_prov[idx])
-                        s_prov = first_contained_entity_prov(r_prov, row.subj)
-                        o_prov = first_contained_entity_prov(r_prov, row.obj)
+                        s_prov = first_entity_prov(r_prov, row.subj)
+                        o_prov = first_entity_prov(r_prov, row.obj)
                         if s_prov is not None and o_prov is not None:
                             break
 
                 if s_prov is None or o_prov is None:
                     if s_prov is None:
                         logger.error("LINE %d: No mention found for subject %s in relation provenances %s", row.line_num, row.subj, row.prov)
-                    if s_prov is None:
+                        logger.error(row)
+                        print(row)
+                    if o_prov is None:
                         logger.error("LINE %d: No mention found for object %s in relation provenances %s", row.line_num, row.obj, row.prov)
                     #TODO: throw error
                 else:
@@ -292,7 +308,7 @@ class MFile(_MFile):
                 <m1:prov> canonical_mention <m2:prov> weight
                 <m1:prov> link <wiki-link> weight
         """
-        if input_format == 'tac':
+        if input_format == 'tackb':
             return cls.from_tac_stream(stream, logger)
         elif input_format == 'mfile':
             return cls.from_mfile_stream(stream, logger)
@@ -457,8 +473,8 @@ def upload_submission(submission_id, mfile):
 # TODO: make into a test.
 if __name__ == '__main__':
     logging.basicConfig(filename = '/tmp/tmp')
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
     #mfile = MFile.from_stream(csv.reader(sys.stdin, delimiter='\t'), input_format)
-    testLogger = ListLogger()
-    validate(sys.stdin, input_format = 'tac', logger = testLogger)
-    print(testLogger)
+    validate(sys.stdin, input_format = 'tackb', logger = logger)
     #test_sanitize_mention_response()
