@@ -14,6 +14,7 @@ class SubmissionUser(models.Model):
 
 class SubmissionState(models.Model):
     CHOICES = (
+        ('error', "Error"),
         ('pending-upload', "Pending processing and upload into database"),
         ('pending-sampling', "Pending sampling"),
         ('pending-annotation', "Waiting for crowdworkers to annotate submission"),

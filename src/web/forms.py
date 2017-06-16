@@ -5,6 +5,7 @@ import logging
 from django import forms
 from registration.forms import RegistrationForm
 
+from kbpo import db
 from kbpo.entry import validate, ListLogger
 from .models import User, Submission
 
@@ -47,18 +48,23 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             raise forms.ValidationError("Submitted file is larger than our current file size limit of {}MB. Please ensure that you are submitted the correct file, if not contact us at {}".format(int(self.MAX_SIZE / 1024 / 1024), ""))
 
         try:
+
+            # Get list of doc_ids
+            doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=self.cleaned_data["corpus_tag"]))
+
             self.original_file = data
             # Check that the file is gzipped.
             with gzip.open(data, 'rt') as f:
                 # Check that it has the right format, aka validate it.
                 log = ListLogger()
-                data = validate(f, self.cleaned_data["file_format"], logger=log)
+                data = validate(f, self.cleaned_data["file_format"], doc_ids=doc_ids, logger=log)
                 self.log = log
                 if len(log.errors) > 0:
                     raise forms.ValidationError("Error validating file (see below)")
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
+        self.cleaned_data['knowledge_base'] = data
         return data
 
     def save(self, commit=True):
@@ -71,9 +77,9 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
             data = self.cleaned_data['original_kb']
             with gzip.open(instance.original_filename, 'wt') as f:
-                data.to_stream(csv.writer(f, delimiter='\t'))
-
-        except OSError as e:
+                with gzip.open(instance.original_filename, 'rt') as g:
+                    f.write(g.read())
+        except (AttributeError, OSError)  as e:
             logger.exception(e)
             instance.delete()
         return instance
