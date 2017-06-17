@@ -7,20 +7,32 @@ mention_id link link_name * weight
 subject_id reln object_id prov weight
 """
 
-import sys
 import pdb
-import csv
+
+import os
 import re
+import sys
+import csv
 import logging
 from collections import namedtuple, defaultdict
 
 from tqdm import tqdm
 
-from .defs import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS
+from .defs import TYPES, RELATION_MAP, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS, standardize_relation
 from .schema import Provenance
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
+
+def parse_prov(prov):
+    if len(prov) == 0:
+        return None
+    doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
+    return Provenance(doc_id, int(beg), int(end))
+
+def to_prov(prov):
+    assert len(prov) == 3, "Invalid provenance format: {}".format(prov)
+    return "{}:{}-{}".format(*prov)
 
 class ListLogger():
     def __init__(self):
@@ -30,7 +42,7 @@ class ListLogger():
 
     #Assumes the text to be of the form (Line %d: <error_msg>)
     def _message(self, type_, text, *args):
-        if args[0].isnumeric() and text.find(":") > 0:
+        if isinstance(args[0], int) and text.find(":") > 0:
             line_no = args[0]
             text = text%(args)
             parts = text.split(":", 2)
@@ -85,15 +97,8 @@ class MFile(namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relat
         return self._cmention_map.get(m_id)
 
     def normalize_relation(self, entry):
-        subj, reln, obj = entry.subj, entry.reln, entry.obj
-        if reln in RELATIONS:
-            return entry
-        elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
-            for reln_ in INVERTED_RELATIONS[reln]:
-                if reln_.startswith(self.get_type(obj).lower()):
-                    return entry._replace(subj = obj, reln = reln_, obj = subj)
-        else:
-            raise ValueError("Couldn't map relation for {}".format(entry))
+        subj_, _, reln_, obj_, _ = standardize_relation(entry.subj, self.get_type(entry.subj), entry.reln, entry.obj, self.get_type(entry.obj))
+        return entry._replace(subj=subj_, reln=reln_, obj=obj_)
 
     @classmethod
     def parse_prov(cls, prov):
@@ -106,37 +111,6 @@ class MFile(namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relat
     def to_prov(cls, prov):
         assert len(prov) == 3, "Invalid provenance format: {}".format(prov)
         return "{}:{}-{}".format(*prov)
-
-    @classmethod
-    def from_mfile_stream(cls, stream, logger = _logger):
-        mentions = []
-        links = []
-        canonical_mentions = []
-        relations = []
-
-        for lineno, row in enumerate(stream):
-            if len(row) > 5:
-                logger.error("LINE %d: Invalid number of columns, %d instead of %d", lineno, len(row), 5)
-                continue
-            row = row + [None] * (5-len(row)) + [lineno,]
-            row = Entry(*row)
-            row = row._replace(
-                subj = cls.parse_prov(row.subj),
-                weight = float(row.weight) if row.weight else 0.0
-                )
-
-            if row.reln in TYPES:
-                mentions.append(row)
-            elif row.reln == "link":
-                links.append(row)
-            elif row.reln == "canonical_mention":
-                row = row._replace(obj = cls.parse_prov(row.obj))
-                canonical_mentions.append(row)
-            else:
-                provs = tuple(cls.parse_prov(p) for p in row.prov.split(',') if p)
-                row = row._replace(obj = cls.parse_prov(row.obj), prov=provs)
-                relations.append(row)
-        return cls(mentions, links, canonical_mentions, relations)
 
     @classmethod
     def from_tac_stream(cls, stream, logger = _logger):
@@ -303,6 +277,8 @@ class MFile(namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relat
                         logger.error("LINE %d: No mention found for object %s in relation provenances %s", row.line_num, row.obj, row.prov)
                 else:
                     relations.append(Entry(s_prov, mapped_reln, o_prov, tuple(cls.parse_prov(x) for x in split_prov), row.weight))
+        for mn in purge:
+            del self._relations[mn]
         return cls(mentions, links, canonical_mentions, relations)
 
     @classmethod
@@ -340,126 +316,233 @@ class MFile(namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relat
         for row in self.relations:
             stream.writerow([MFile.to_prov(row.subj), row.reln, MFile.to_prov(row.obj), ",".join([MFile.to_prov(p) for p in row.prov]), row.weight])
 
-def verify_doc_ids(mfile, doc_ids, logger=_logger):
-    mention_ids = set()
-    for prov in mfile.mention_ids:
-        if prov.doc_id not in doc_ids:
-            # TODO: Put line numbers in Entry and display here.
-            logger.warning("LINE %d: Document not in corpus: %s", 0, prov.doc_id)
-        else:
-            mention_ids.add(prov)
+class MFileReader(object):
+    def __init__(self):
+        self.logger = None
+        self._types = None
+        self._links = None
+        self._glosses = None
+        self._cmentions = None
+        self._relations = None
+        self._provenances = None
+        self._weights = None
+    
+    def _add_mention(self, row):
+        """
+        Adds a mention to the type and gloss dictionaries.
+        """
+        assert row.reln in TYPES
 
-    types = [entry for entry in mfile.types if entry.subj in mention_ids]
-    links = [entry for entry in mfile.links if entry.subj in mention_ids]
-    canonical_mentions = [entry for entry in mfile.canonical_mentions if entry.subj in mention_ids and entry.obj in mention_ids]
-    relations_ = [entry for entry in mfile.relations if entry.subj in mention_ids and entry.obj in mention_ids]
-    relations = []
-    for entry in relations_:
-        provs = []
-        for prov in entry.prov:
-            if prov.doc_id not in doc_ids:
-                logger.warning("LINE %d: Document not in corpus: %s", 0, prov.doc_id)
+        if row.subj in self._types:
+            if row.reln != self._types[row.subj]:
+                self.logger.error("LINE %d: Inconsistent mention type: %s -> %s (earlier: %s)", row.lineno, row.subj, row.reln, self._types[row.subj])
+            elif row.obj != self._glosses[row.subj]:
+                self.logger.error("LINE %d: Inconsistent mention gloss: %s -> %s (earlier: %s)", row.lineno, row.subj, row.obj, self._glosses[row.subj])
             else:
-                provs.append(prov)
-        relations.append(entry._replace(prov=tuple(provs)))
+                self.logger.warning("LINE %d: Duplicate mention definition: %s", row.lineno, row)
+        else:
+            self._types[row.subj] = row.reln
+            self._glosses[row.subj] = row.obj
 
-    return mfile._replace(types=types, links=links, canonical_mentions=canonical_mentions, relations=relations)
+    def _add_cmention(self, row):
+        assert row.reln == "canonical_mention"
 
-def verify_mention_ids(mfile, logger=_logger):
-    # Construct definitions of mentions.
-    if len(mfile.mention_ids) != len(mfile.types):
-        logger.warning("LINE %d: %d Duplicate definitions of mentions", 0, len(mfile.types) - len(mfile.mention_ids))
-        seen_ids = set([])
-        new_types = []
-        for row in mfile.types:
-            if row.subj not in seen_ids:
-                seen_ids.add(row.subj)
-                new_types.append(row)
-        mfile = mfile._replace(types=new_types)
+        if row.subj in self._cmentions:
+            if row.obj != self._cmentions[row.subj]:
+                self.logger.error("LINE %d: Inconsistent canonical mention: %s -> %s (earlier: %s)", row.lineno, row.subj, row.obj, self._cmentions[row.subj])
+            else:
+                self.logger.warning("LINE %d: Duplicate canonical mention definition: %s", row.lineno, row)
+        else:
+            self._cmentions[row.subj] = row.obj
+            self._weights[row.subj, 'cmention'] = row.weight
 
-    failed = False
-    for r in mfile.canonical_mentions:
-        subj, _, obj, _, _ = r
-        if subj not in mfile.mention_ids:
-            failed = True
-            logger.error("LINE %d: Couldn't find definition of mention %s in: %s", 0, subj, r)
-        if obj not in mfile.mention_ids:
-            failed = True
-            logger.error("LINE %d: Couldn't find definition of mention %s in: %s", 0, obj, r)
+    def _add_link(self, row):
+        assert row.reln == "link"
 
-    for r in mfile.links:
-        subj, _, _, _, _ = r
-        if subj not in mfile.mention_ids:
-            failed = True
-            logger.error("LINE %d: Couldn't find definition of mention %s in: %s", 0, subj, r)
+        if row.subj in self._links:
+            if row.obj != self._links[row.subj]:
+                self.logger.error("LINE %d: Inconsistent link: %s -> %s (earlier: %s)", row.lineno, row.subj, row.obj, self._links[row.subj])
+            else:
+                self.logger.warning("LINE %d: Duplicate link definition: %s", row.lineno, row)
+        else:
+            if row.obj.startswith("NILX"):
+                self.logger.warning("LINE %d: Using reserved NILX linkspace: %s", row.lineno, row)
+            self._links[row.subj] = row.obj
+            self._weights[row.subj, 'link'] = row.weight
 
-    for r in mfile.relations:
-        subj, _, obj, _, _ = r
-        if subj not in mfile.mention_ids:
-            failed = True
-            logger.error("LINE %d: Couldn't find definition of mention %s in: %s", 0, subj, r)
-        if obj not in mfile.mention_ids:
-            failed = True
-            logger.error("LINE %d: Couldn't find definition of mention %s in: %s", 0, obj, r)
-    #assert not failed, "Couldn't find definitions of some mentions"
-    return mfile
+    def _add_relation(self, row):
+        assert row.reln in ALL_RELATIONS
 
-def verify_canonical_mentions(mfile, logger=_logger):
-    # Construct definitions of mentions.
-    failed = False
-    for m in mfile.mention_ids:
-        if mfile.get_cmention(m) is None:
-            logger.error("LINE %d: Didn't have a canonical mention for %s", 0, m)
-            failed = True
-        if mfile.get_link(m) is None:
-            logger.error("LINE %d: Didn't have a link for %s", 0, m)
-            pdb.set_trace()
-            failed = True
-    # TODO: link the first mention of this entity as the
-    # canonical_mention
-    #assert not failed, "Couldn't find definitions of some mentions"
-    return mfile
+        if (row.subj, row.obj) in self._relations:
+            if row.reln != self._relations[row.subj, row.obj]:
+                self.logger.error("LINE %d: Inconsistent relation definition: (%s,%s) -> %s (earlier: %s)", row.lineno, row.subj, row.obj, row.reln, self._relations[row.subj, row.obj])
+            else:
+                self.logger.warning("LINE %d: Duplicate relation definition: %s", row.lineno, row)
+        else:
+            if len(row.prov) == 0:
+                self.logger.warning("LINE %d: Missing relation provenance, using between-mention span: %s", row.lineno, row)
+                self.prov = (Provenance(row.subj.doc_id, min(row.subj.begin, row.obj.begin), max(row.subj.end, row.obj.end),))
+            self._relations[row.subj, row.obj] = row.reln
+            self._provenances[row.subj, row.obj] = row.prov
+            self._weights[row.subj, row.obj] = row.weight
 
-def verify_relations(mfile, logger=_logger):
-    """
-    symmetrize relations
-    """
-    keys = set()
-    relations_ = set()
-    for r in mfile.relations:
-        subj, reln, obj = r.subj, r.reln, r.obj
+    def _check_doc_ids(self, row, doc_ids=None):
+        if doc_ids is not None and row.subj.doc_id not in doc_ids:
+            self.logger.warning("LINE %d: Ignoring mention outside corpus: %s", row.lineno, row)
+            return False
+        elif row.reln == "canonical_mention" and row.subj.doc_id != row.obj.doc_id:
+            self.logger.error("LINE %d: Canonical mention outside mention document: %s", row.lineno, row)
+            return False
+        elif row.reln in ALL_RELATIONS:
+            if row.subj.doc_id != row.obj.doc_id:
+                self.logger.error("LINE %d: object mention outside subject mention document: %s", row.lineno, row)
+                return False
+            elif any(row.subj.doc_id != p.doc_id for p in row.prov):
+                self.logger.error("LINE %d: provenance outside mention document: %s", row.lineno, row)
+                return False
+        return True
 
-        if reln not in ALL_RELATIONS:
-            logger.warning("LINE %d: Ignoring relation %s: %s", 0, reln, r)
-            continue
-        if (subj, obj) in keys:
-            logger.warning("LINE %d: Already have a relation between %s and %s", 0, subj, obj)
-            continue
-        keys.add((subj, obj))
-        relations_.add(r._replace(reln=RELATION_MAP[reln]))
-    logger.info("LINE %d: Found %d relations", 0, len(relations_))
+    def _verify_mentions_defined(self):
+        nil_count = 0
+        for m in self._types:
+            assert m in self._glosses
+            if m not in self._cmentions:
+                self.logger.warning("LINE %d: Missing canonical mention definition: Making %s a canonical mention", 0, m)
+                self._cmentions[m] = m
+                self._weights[m, "cmention"] = 0.0
+            if m not in self._links:
+                link = "NILX{}".format(nil_count)
+                self.logger.warning("LINE %d: Missing link definition: Making %s link to %s", 0, m, link)
+                self._links[m] = link
+                self._weights[m, "link"] = 0.0
 
-    # TODO: type check.
+        purge = set()
+        for m, n in self._cmentions.items():
+            if m not in self._types:
+                self.logger.error("LINE %d: Ignoring canonical_mention with missing mention: %s (in %s canonical_mention %s)", 0, m, m, n)
+                purge.add(m)
+            if n not in self._types:
+                self.logger.error("LINE %d: Ignoring canonical_mention with missing mention: %s (in %s canonical_mention %s)", 0, n, m, n)
+                purge.add(m)
+        for m in purge:
+            del self._cmentions[m]
+            del self._weights[m, 'cmention']
 
-    for r in mfile.relations:
-        subj, reln, obj = r.subj, r.reln, r.obj
+        purge = set()
+        for m, n in self._links.items():
+            if m not in self._types:
+                self.logger.error("LINE %d: Ignoring link with missing mention: %s (in %s link %s)", 0, m, m, n)
+                purge.add(m)
+        for m in purge:
+            del self._links[m]
+            del self._weights[m, 'link']
 
-        if reln not in ALL_RELATIONS:
-            continue
+        purge = set()
+        for (m, n), r in self._relations.items():
+            if m not in self._types:
+                self.logger.error("LINE %d: Ignoring relation with missing mention: %s (in %s %s %s)", 0, m, m, r, n)
+                purge.add((m,n))
+            if n not in self._types:
+                self.logger.error("LINE %d: Ignoring relation with missing mention: %s (in %s %s %s)", 0, n, m, r, n)
+                purge.add((m,n))
+        for mn in purge:
+            del self._relations[mn]
+            del self._provenances[mn]
+            del self._weights[mn]
 
-        # TODO: change consistent.
-        if reln in INVERTED_RELATIONS:
-            for reln_ in INVERTED_RELATIONS[reln]:
-                if reln_.startswith(mfile.get_type(obj).lower()):
-                    # TODO: Uh oh. It's possible it's in the keys but
-                    # without the right inverse relation
-                    if (obj, subj) not in keys:
-                        r_ = r._replace(subj=obj, reln=reln_, obj=subj)
-                        logger.info("LINE %d: Adding symmetrized relation %s: %s", 0, r_, r)
-                        keys.add((obj,subj))
-                        relations_.add(r_)
-    logger.info("LINE %d: End with %d relations", 0, len(relations_))
-    return mfile._replace(relations=relations_)
+    def _verify_relation_types(self):
+        purge = set()
+        for (m, n), r in self._relations.items():
+            if (self._types[m], self._types[n]) not in VALID_MENTION_TYPES:
+                self.logger.error("LINE %d: Inconsistent relation argument types: %s(%s) %s %s(%s) (execpted %s -> %s)", 0, m, self._types[m], r, n, self._types[n], n, *RELATION_MAP[r])
+                purge.add((m,n))
+        for mn in purge:
+            del self._relations[mn]
+
+    def _verify_symmetrized_relations(self):
+        add, add_prov, add_weights = dict(), dict(), dict()
+
+        for (m, n), r in self._relations.items():
+            if r in INVERTED_RELATIONS:
+                for r_ in INVERTED_RELATIONS[r]:
+                    if r_.startswith(self._types[n].lower()):
+                        if (n, m) not in self._relations and (n, m) not in add:
+                            self.logger.warning("LINE %d: Adding symmetrized relation: %s %s %s", 0, n, r_, m)
+                            add[n,m] = r_
+                            add_prov[n,m] = self._provenances[m,n]
+                            add_weights[n,m] = self._weights[m,n]
+                        elif (n, m) in self._relations and self._relations[n,m] != r_:
+                            self.logger.error("LINE %d: Inconsistent symmetric relations: %s %s %s symmetrized conflicts with %s %s %s", 0, m, r, n, n, self._relations[n,m], m)
+                        elif (n, m) in add and add[n,m] != r_:
+                            self.logger.error("LINE %d: Inconsistent symmetric relations: %s %s %s symmetrized conflicts with %s %s %s", 0, m, r, n, n, add[n,m], m)
+        for (n, m), r in add.items():
+            self._relations[n,m] = r
+            self._provenances[n,m] = add_prov[n,m]
+            self._weights[n,m] = add_weights[n,m]
+
+    def _build(self):
+        """
+        Constructs the final MFile from intermediate stuff
+        """
+        mentions, cmentions, links, relations = [], [], [], []
+        for m, t in sorted(self._types.items()):
+            mentions.append(Entry(m, t, self._glosses[m], None, None, None))
+            cmentions.append(Entry(m, 'canonical_mention', self._cmentions[m], None, self._weights[m, 'cmention'], None))
+            links.append(Entry(m, 'link', self._links[m], None, self._weights[m, 'link'], None))
+
+        for (m, n), r in sorted(self._relations.items()):
+            relations.append(Entry(m, r, n, self._provenances[m,n], self._weights[m, n], None))
+
+        return MFile(mentions, links, cmentions, relations)
+
+    def parse(self, fstream, doc_ids=None, logger=_logger):
+        """
+        Parses (and validates) an m-file in the file stream @fstream.
+        """
+        reader = csv.reader(fstream, delimiter="\t")
+
+        self.logger = logger
+        self._types = dict()
+        self._links = dict()
+        self._glosses = dict()
+        self._cmentions = dict()
+        self._relations = dict()
+        self._provenances = dict()
+        self._weights = dict()
+
+        # First pass of the data that builds the above tables.
+        for lineno, row in enumerate(reader):
+            if len(row) == 0: continue # Skip empty lines
+            if len(row) > 5:
+                logger.error("LINE %d: Invalid number of columns, %d instead of %d", lineno, len(row), 5)
+                continue
+            row = row + [None] * (5-len(row)) + [lineno,]
+            row = Entry(*row)
+            row = row._replace(subj = parse_prov(row.subj), weight = float(row.weight) if row.weight else 0.0)
+
+            if row.reln in TYPES:
+                if self._check_doc_ids(row):
+                    self._add_mention(row)
+            elif row.reln == "link":
+                if self._check_doc_ids(row):
+                    self._add_link(row)
+            elif row.reln == "canonical_mention":
+                row = row._replace(obj = parse_prov(row.obj))
+                if self._check_doc_ids(row):
+                    self._add_cmention(row)
+            elif row.reln in ALL_RELATIONS:
+                provs = tuple(parse_prov(p.strip()) for p in row.prov.split(',') if p)
+                row = row._replace( reln=RELATION_MAP[row.reln], obj = parse_prov(row.obj), prov=provs)
+                if self._check_doc_ids(row):
+                    self._add_relation(row)
+            else:
+                logger.warning("LINE %d: Ignoring relation: %s (not supported)", row.lineno, row.reln)
+        
+        self._verify_mentions_defined()
+        self._verify_relation_types()
+        self._verify_symmetrized_relations()
+
+        return self._build()
 
 # TODO: make this validator 10x more robust
 # TODO: have validator report errors (using a list).
@@ -472,11 +555,26 @@ def validate(fstream, input_format = 'mfile', logger=_logger, doc_ids=None):
     mfile = verify_relations(mfile, logger)
     return mfile
 
+def test_validate_mfile():
+    testdir = os.path.join(os.path.dirname(__file__), "testdata")
+    logger = ListLogger()
+    reader = MFileReader()
+
+    with open(os.path.join(testdir, "test_mfile_duplicate.m")) as f:
+        mfile = reader.parse(f, logger=logger)
+    assert len(mfile.types) == 2
+    assert len(mfile.canonical_mentions) == 2
+    assert len(mfile.links) == 2
+    assert len(mfile.relations) == 0
+
+def test_validate_tackb():
+    pass
+
 # TODO: make into a test.
 if __name__ == '__main__':
     logging.basicConfig(filename = '/tmp/tmp')
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    _logger = logging.getLogger(__name__)
+    _logger.setLevel(logging.DEBUG)
     #mfile = MFile.from_stream(csv.reader(sys.stdin, delimiter='\t'), input_format)
-    validate(sys.stdin, input_format = 'tackb', logger = logger)
+    validate(sys.stdin, input_format = 'tackb', logger=_logger)
     #test_sanitize_mention_response()

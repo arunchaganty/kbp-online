@@ -60,6 +60,7 @@ RELATION_MAP = {
     "org:date_founded":"org:date_founded",
     "org:date_dissolved":"org:date_dissolved",
     "org:founded_by":"org:founded_by",
+    "org:organizations_founded":"org:organizations_founded",
     "org:member_of":"org:member_of",
     "org:employees_or_members": "org:employees_or_members",
     "org:members":"org:members",
