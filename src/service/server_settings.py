@@ -40,13 +40,33 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/data/kbpo/web/django.log',
+        },
+        'kbpo': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/data/kbpo/web/kbpo.log',
+        },
+        'celery': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/data/kbpo/web/celery.log',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'kbpo': {
+            'handlers': ['file', 'kbpo'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'celery': {
+            'handlers': ['file', 'celery'],
             'level': 'INFO',
             'propagate': True,
         },
