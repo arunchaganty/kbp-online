@@ -8,7 +8,6 @@ from django.http import JsonResponse, HttpResponseRedirect, Http404
 from django.contrib import messages
 
 from kbpo import api
-from kbpo import entry
 
 from .forms import KnowledgeBaseSubmissionForm
 from .models import Submission, SubmissionUser, SubmissionState

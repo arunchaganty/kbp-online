@@ -106,9 +106,8 @@ def turk_submission(sample_batch_id):
         logger.warning("Trying to process submission %s, but state is %s", submission, state.status)
         return
     try:
-        #evaluation_batch_id = create_evaluation_batch_from_submission_sample(sample_batch_id)
-        #assert evaluation_batch_id is not None, "Evaluation batch not created"
-        evaluation_batch_id = 41
+        evaluation_batch_id = create_evaluation_batch_from_submission_sample(sample_batch_id)
+        assert evaluation_batch_id is not None, "Evaluation batch not created"
         mturk_connection = connect(MTURK_TARGET)
         create_batch(db, mturk_connection, evaluation_batch_id)
 

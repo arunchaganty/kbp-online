@@ -14,24 +14,24 @@
       <th>Message</th>
     </thead>
     <tbody>
-      {% for line, message in form.log.errors %}
+      {% for cat in form.log.errors %}
       <tr class="danger">
-        <td>{{line}}</td>
-        <td>{{message}}</td>
+        <td>{{cat|length}}</td>
+        <td>{{cat}}</td>
       </tr>
       {% endfor %}
 
-      {% for line, message in form.log.warnings %}
+      {% for cat in form.log.warnings %}
       <tr class="warning">
-        <td>{{line}}</td>
-        <td>{{message}}</td>
+        <td>{{cat|length}}</td>
+        <td>{{cat}}</td>
       </tr>
       {% endfor %}
 
-      {% for line, message in form.log.info %}
+      {% for cat in form.log.info %}
       <tr class="info">
-        <td>{{line}}</td>
-        <td>{{message}}</td>
+        <td>{{cat|length}}</td>
+        <td>{{cat}}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -6,7 +6,7 @@ from django import forms
 from registration.forms import RegistrationForm
 
 from kbpo import db
-from kbpo.entry import ListLogger
+from kbpo.parser import TacKbReader, MFileReader, ListLogger
 from .models import User, Submission
 
 logger = logging.getLogger(__name__)
@@ -50,9 +50,9 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=self.cleaned_data["corpus_tag"]))
 
         if self.cleaned_data["file_format"] == "tackb":
-            reader = parser.TacKbReader()
+            reader = TacKbReader()
         elif self.cleaned_data["file_format"] == "mfile":
-            reader = parser.MFileReader()
+            reader = MFileReader()
 
         try:
             self.original_file = data
@@ -76,7 +76,7 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         try:
             data = self.cleaned_data['knowledge_base']
             with gzip.open(instance.uploaded_filename, 'wt') as f:
-                data.to_stream(csv.writer(f, delimiter='\t'))
+                data.write(f)
 
             data = self.cleaned_data['original_kb']
             with gzip.open(instance.original_filename, 'wt') as f:
