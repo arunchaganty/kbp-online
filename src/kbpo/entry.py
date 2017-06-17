@@ -8,31 +8,20 @@ subject_id reln object_id prov weight
 """
 
 import pdb
-
+import gzip
 import os
 import re
-import sys
 import csv
 import logging
 from collections import namedtuple, defaultdict
 
 from tqdm import tqdm
 
-from .defs import TYPES, RELATION_MAP, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS, standardize_relation
+from .defs import TYPES, RELATION_MAP, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS, VALID_MENTION_TYPES, RELATION_TYPES, standardize_relation
 from .schema import Provenance
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-
-def parse_prov(prov):
-    if len(prov) == 0:
-        return None
-    doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
-    return Provenance(doc_id, int(beg), int(end))
-
-def to_prov(prov):
-    assert len(prov) == 3, "Invalid provenance format: {}".format(prov)
-    return "{}:{}-{}".format(*prov)
 
 class ListLogger():
     def __init__(self):
@@ -100,221 +89,16 @@ class MFile(namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relat
         subj_, _, reln_, obj_, _ = standardize_relation(entry.subj, self.get_type(entry.subj), entry.reln, entry.obj, self.get_type(entry.obj))
         return entry._replace(subj=subj_, reln=reln_, obj=obj_)
 
-    @classmethod
-    def parse_prov(cls, prov):
-        if len(prov) == 0:
-            return None
-        doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
-        return Provenance(doc_id, int(beg), int(end))
-
-    @classmethod
-    def to_prov(cls, prov):
-        assert len(prov) == 3, "Invalid provenance format: {}".format(prov)
-        return "{}:{}-{}".format(*prov)
-
-    @classmethod
-    def from_tac_stream(cls, stream, logger = _logger):
-        mentions = []
-        links = []
-        canonical_mentions = []
-        relations = []
-
-        class EntryLine(namedtuple('Entry', ['subj', 'reln', 'obj', 'prov', 'weight', 'line_num'])):
-            @property
-            def pair(self):
-                return (self.subj, self.obj)
-
-            @property
-            def inv_pair(self):
-                return (self.obj, self.subj)
-
-        class UniqueDict(dict):
-            def __setitem__(self, key, value):
-                if key not in self:
-                    dict.__setitem__(self, key, value)
-                else:
-                    raise KeyError("Key already exists")
-
-        raw_mentions = []
-        raw_nominal_mentions = []
-        raw_relations = []
-        subj_2_type = UniqueDict()
-        doc_id_subj_2_canonical_mention = UniqueDict()
-        subj_doc_id_2_mention = defaultdict(list)
-        for counter, row in enumerate(tqdm(stream)):
-            if counter == 0: continue
-            if row == '': continue
-
-            if len(row) > 5:
-                logger.error("LINE %d: Invalid number of columns, %d instead of %d", counter, len(row), 5)
-                continue
-
-            row = row + [None] * (5-len(row)) + [counter]
-            reln = row[1]
-            if reln == 'mention':
-                if row[3] is None:
-                    logger.error("LINE %d: No provenance for mention", counter)
-                    continue
-                row[3] = cls.parse_prov(row[3])
-                row = EntryLine(*row)
-                raw_mentions.append(row)
-                subj_doc_id_2_mention[(row.subj, row.prov.doc_id)].append(row)
-            elif reln == 'canonical_mention':
-                #raw_canonical_mentions.append(row)
-                if row[3] is None:
-                    logger.error("LINE %d: No provenance for mention", counter)
-                    continue
-                row[3] = cls.parse_prov(row[3])
-                row = EntryLine(*row)
-                try:
-                    doc_id_subj_2_canonical_mention[(row.prov.doc_id, row.subj)] = row
-                except KeyError:
-                    logger.warning("LINE %d: Duplicate canonical mention of entity %s, in document %d", counter, row.subj, row.prov.doc_id)
-                    continue
-                raw_mentions.append(row)
-
-            elif reln == 'nominal_mention':
-                row = EntryLine(*row)
-                raw_nominal_mentions.append(row)
-
-            elif reln == 'type':
-                #raw_types.append(row)
-                row = EntryLine(*row)
-                try:
-                    subj_2_type[row.subj] = row
-                except KeyError:
-                    if subj_2_type[row.subj].obj == row.obj:
-                        logger.warning("LINE %d: Duplicate type for entity %s", counter, row.subj)
-                        continue
-                    else:
-                        logger.error("LINE %d: Inconsistent types (with line %d) for entity %s", counter,subj_2_type[row.subj].line_num, row.subj)
-                        continue
-
-
-            else:
-                row = EntryLine(*row)
-                raw_relations.append(row)
-
-        #types
-        for row in tqdm(raw_mentions):
-            if row.subj not in subj_2_type:
-                logger.error("LINE %d: Type not found for mention %s", row.line_num, row.subj)
-            type_row = subj_2_type[row.subj]
-            mentions.append(Entry(row.prov, type_row.obj, row.obj, None, row.weight))
-
-        #canonical-mentions
-        for row in tqdm(raw_mentions):
-            if (row.prov.doc_id, row.subj) not in doc_id_subj_2_canonical_mention:
-                logger.error("LINE %d: Canonical mention not found for entity %s in document %d", row.line_num, row.subj, row.prov.doc_id)
-            canonical_row = doc_id_subj_2_canonical_mention[(row.prov.doc_id, row.subj)]
-            canonical_mentions.append(Entry(row.prov, 'canonical_mention', canonical_row.prov, None, canonical_row.weight))
-
-        #entity_links
-        for row in tqdm(raw_mentions):
-            links.append(Entry(row.prov, 'link', row.subj, None, row.weight))
-
-        def first_contained_entity_prov(reln_prov, entity):
-            for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
-                if m.prov.begin >= reln_prov.begin and m.prov.end <= reln_prov.end:
-                    return m.prov
-
-        def first_overlapping_entity_prov(reln_prov, entity):
-            for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
-                if (m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.end) or (m.prov.end >= reln_prov.begin and m.prov.end <= reln_prov.end):
-                    return m.prov
-
-        def first_entity_prov(reln_prov, entity):
-            for m in subj_doc_id_2_mention[(entity, reln_prov.doc_id)]:
-                #if m.prov.begin >= reln_prov.begin and m.prov.begin <= reln_prov.begin+2000:
-                if m.prov.begin >= reln_prov.begin:
-                    return m.prov
-
-        ##relations
-        all_relations = set(RELATION_MAP.keys()) - set(['no_relation'])
-        ignored_relations = set(['per:alternate_names', 'org:alternate_names'])
-        all_relations -= ignored_relations
-        for row in tqdm(raw_relations):
-            if row.reln not in all_relations:
-                if row.reln in ignored_relations:
-                    logger.warning("LINE %d: Ignored relation %s", row.line_num, row.reln)
-                else:
-                    logger.warning("LINE %d: Unsupported relation %s", row.line_num, row.reln)
-            else:
-                mapped_reln = RELATION_MAP[row.reln]
-                split_prov = row.prov.split(',')
-                if len(split_prov) == 0:
-                    logger.error("LINE %d: No provenance for relation", row.line_num)
-                    continue
-
-                s_prov = None
-                o_prov = None
-                r_prov = None
-                if mapped_reln in STRING_VALUED_RELATIONS:
-                    # First provenance would give object provenance
-                    o_prov = cls.parse_prov(split_prov[0])
-                    #TODO: make sure gloss is the same as the first provenance
-                    mentions.append(Entry(o_prov, STRING_VALUED_RELATIONS[mapped_reln], row.obj, None, row.weight))
-                    canonical_mentions.append(Entry(o_prov, 'canonical_mention', o_prov, None, row.weight))
-                    links.append(Entry(o_prov, 'link', row.obj, None, row.weight))
-                    for idx in range(1,len(split_prov)):
-                        r_prov = cls.parse_prov(split_prov[idx])
-                        m = first_entity_prov(r_prov, row.subj)
-                        if m is not None:
-                            s_prov = m
-                            break
-                else:
-                    for idx in range(len(split_prov)):
-                        r_prov = cls.parse_prov(split_prov[idx])
-                        s_prov = first_entity_prov(r_prov, row.subj)
-                        o_prov = first_entity_prov(r_prov, row.obj)
-                        if s_prov is not None and o_prov is not None:
-                            break
-
-                if s_prov is None or o_prov is None:
-                    if s_prov is None:
-                        logger.error("LINE %d: No mention found for subject %s in relation provenances %s", row.line_num, row.subj, row.prov)
-                    if o_prov is None:
-                        logger.error("LINE %d: No mention found for object %s in relation provenances %s", row.line_num, row.obj, row.prov)
-                else:
-                    relations.append(Entry(s_prov, mapped_reln, o_prov, tuple(cls.parse_prov(x) for x in split_prov), row.weight))
-        for mn in purge:
-            del self._relations[mn]
-        return cls(mentions, links, canonical_mentions, relations)
-
-    @classmethod
-    def from_stream(cls, stream, input_format='mfile', logger = _logger):
-        """
-        Split input into type, link, canonical_mention and relation definitions.
-        @input_format can be mfile or tackb
-            tackb input format is
-                :<e1> type <type>
-                :<e1> mention <string> <provenance>
-                :<e1> canonical_mention <string> <provenance>
-                :<e1> nominal_mention <string> <provenance> (ignored)
-                :<e1> <predicate> :<e2> <provenance> <weight>
-                :<e1> <predicate> <string> <provenance> <weight>
-            mfile input format is
-                <m1:prov> <predicate> <m2:prov> <rel:prov> weight
-                <m1:prov> <type> <gloss> weight
-                <m1:prov> canonical_mention <m2:prov> weight
-                <m1:prov> link <wiki-link> weight
-        """
-        if input_format == 'tackb':
-            return cls.from_tac_stream(stream, logger)
-        elif input_format == 'mfile':
-            return cls.from_mfile_stream(stream, logger)
-        else:
-            raise ValueError("Invalid file format, should be tackb or mfile")
-
-    def to_stream(self, stream):
+    def write(self, fstream):
+        writer = csv.writer(fstream, delimiter="\t")
         for row in self.types:
-            stream.writerow([MFile.to_prov(row.subj), row.reln, row.obj, row.prov, row.weight])
+            writer.writerow([str(row.subj), row.reln, row.obj, row.prov, row.weight])
         for row in self.links:
-            stream.writerow([MFile.to_prov(row.subj), row.reln, row.obj, row.prov, row.weight])
+            writer.writerow([str(row.subj), row.reln, row.obj, row.prov, row.weight])
         for row in self.canonical_mentions:
-            stream.writerow([MFile.to_prov(row.subj), row.reln, MFile.to_prov(row.obj), row.prov, row.weight])
+            writer.writerow([str(row.subj), row.reln, str(row.obj), row.prov, row.weight])
         for row in self.relations:
-            stream.writerow([MFile.to_prov(row.subj), row.reln, MFile.to_prov(row.obj), ",".join([MFile.to_prov(p) for p in row.prov]), row.weight])
+            writer.writerow([str(row.subj), row.reln, str(row.obj), ",".join([str(p) for p in row.prov]), row.weight])
 
 class MFileReader(object):
     def __init__(self):
@@ -454,7 +238,8 @@ class MFileReader(object):
         purge = set()
         for (m, n), r in self._relations.items():
             if (self._types[m], self._types[n]) not in VALID_MENTION_TYPES:
-                self.logger.error("LINE %d: Inconsistent relation argument types: %s(%s) %s %s(%s) (execpted %s -> %s)", 0, m, self._types[m], r, n, self._types[n], n, *RELATION_MAP[r])
+                self.logger.error("LINE %d: Inconsistent relation argument types: %s(%s) %s %s(%s) (execpted %s -> %s)",
+                                  0, m, self._types[m], r, n, self._types[n], n, *RELATION_TYPES[r])
                 purge.add((m,n))
         for mn in purge:
             del self._relations[mn]
@@ -495,6 +280,11 @@ class MFileReader(object):
 
         return MFile(mentions, links, cmentions, relations)
 
+    def _validate(self):
+        self._verify_mentions_defined()
+        self._verify_relation_types()
+        self._verify_symmetrized_relations()
+
     def parse(self, fstream, doc_ids=None, logger=_logger):
         """
         Parses (and validates) an m-file in the file stream @fstream.
@@ -511,14 +301,14 @@ class MFileReader(object):
         self._weights = dict()
 
         # First pass of the data that builds the above tables.
-        for lineno, row in enumerate(reader):
+        for lineno, row in enumerate(tqdm(reader)):
             if len(row) == 0: continue # Skip empty lines
             if len(row) > 5:
                 logger.error("LINE %d: Invalid number of columns, %d instead of %d", lineno, len(row), 5)
                 continue
             row = row + [None] * (5-len(row)) + [lineno,]
             row = Entry(*row)
-            row = row._replace(subj = parse_prov(row.subj), weight = float(row.weight) if row.weight else 0.0)
+            row = row._replace(subj = Provenance.from_str(row.subj), weight = float(row.weight) if row.weight else 0.0)
 
             if row.reln in TYPES:
                 if self._check_doc_ids(row):
@@ -527,33 +317,249 @@ class MFileReader(object):
                 if self._check_doc_ids(row):
                     self._add_link(row)
             elif row.reln == "canonical_mention":
-                row = row._replace(obj = parse_prov(row.obj))
+                row = row._replace(obj = Provenance.from_str(row.obj))
                 if self._check_doc_ids(row):
                     self._add_cmention(row)
-            elif row.reln in ALL_RELATIONS:
-                provs = tuple(parse_prov(p.strip()) for p in row.prov.split(',') if p)
-                row = row._replace( reln=RELATION_MAP[row.reln], obj = parse_prov(row.obj), prov=provs)
+            elif row.reln in RELATION_MAP:
+                provs = tuple(Provenance.from_str(p.strip()) for p in row.prov.split(',') if p)
+                row = row._replace(reln=RELATION_MAP[row.reln], obj = Provenance.from_str(row.obj), prov=provs)
                 if self._check_doc_ids(row):
                     self._add_relation(row)
             else:
                 logger.warning("LINE %d: Ignoring relation: %s (not supported)", row.lineno, row.reln)
-        
-        self._verify_mentions_defined()
-        self._verify_relation_types()
-        self._verify_symmetrized_relations()
 
         return self._build()
 
-# TODO: make this validator 10x more robust
-# TODO: have validator report errors (using a list).
-def validate(fstream, input_format = 'mfile', logger=_logger, doc_ids=None):
-    mfile = MFile.from_stream(csv.reader(fstream, delimiter='\t'), input_format, logger)
-    if doc_ids:
-        mfile = verify_doc_ids(mfile, doc_ids, logger)
-    mfile = verify_mention_ids(mfile, logger)
-    mfile = verify_canonical_mentions(mfile, logger)
-    mfile = verify_relations(mfile, logger)
-    return mfile
+class TacKbReader(MFileReader):
+    def __init__(self):
+        MFileReader.__init__(self)
+
+        # intermediate stuff.
+        self._entity_mentions = None
+        self._entity_cmentions = None
+        self._entity_types = None
+        self._entity_relations = None
+
+    def _add_entity_mention(self, row):
+        assert row.reln == "mention" or row.reln == "canonical_mention"
+
+        if row.prov in self._glosses and self._glosses[row.prov] != row.obj:
+            self.logger.error("LINE %d: Inconsistent mention definition: %s (earlier %s %s)", row.lineno, row, row.prov, self._glosses[row.prov])
+        else:
+            self._entity_mentions[row.subj, row.prov.doc_id].append(row.prov)
+            self._glosses[row.prov] = row.obj
+
+    def _add_entity_cmention(self, row):
+        assert row.reln == "canonical_mention"
+
+        if (row.subj, row.prov.doc_id) in self._entity_cmentions and self._entity_cmentions[row.subj, row.prov.doc_id] != row.prov:
+            prov_ = self._entity_cmentions[row.subj, row.prov.doc_id]
+            self.logger.error("LINE %d: Inconsistent canonical mention definition: %s (earlier %s %s)", row.lineno, row, prov_, self._glosses[prov_])
+        else:
+            self._entity_cmentions[row.subj, row.prov.doc_id] = row.prov
+        self._add_entity_mention(row)
+
+    def _add_entity_type(self, row):
+        assert row.reln == "type"
+
+        if row.subj in self._entity_types and self._entity_types[row.subj] != row.obj:
+            self.logger.error("LINE %d: Inconsistent type definition: %s (earlier %s)", row.lineno, row, self._entity_types[row.subj])
+        else:
+            self._entity_types[row.subj] = row.obj
+
+    def _add_entity_relation(self, row):
+        assert row.reln in ALL_RELATIONS
+        self._entity_relations[row.subj, row.obj].append(row)
+
+    def _verify_types(self):
+        # check that all entities' types have been defined.
+        purge = set()
+        for entity, doc_id in self._entity_mentions:
+            if entity not in self._entity_types:
+                self.logger.error("LINE %d: Type not found for entity %s", 0, entity)
+                purge.add((entity, doc_id))
+        for entity, doc_id in purge:
+            for m in self._entity_mentions[entity, doc_id]:
+                del self._glosses[m]
+            del self._entity_mentions[entity, doc_id]
+
+        purge = set()
+        for entity, doc_id in self._entity_cmentions:
+            if entity not in self._entity_types:
+                self.logger.error("LINE %d: Type not found for entity %s", 0, entity)
+                purge.add((entity, doc_id))
+        for entity, doc_id in purge:
+            del self._entity_cmentions[entity, doc_id]
+
+        purge = set()
+        for (subject, object_), rows in self._entity_relations.items():
+            is_string_relation = any(row.reln in STRING_VALUED_RELATIONS for row in rows)
+            if subject not in self._entity_types:
+                self.logger.error("LINE %d: Type not found for entity %s", 0, subject)
+                purge.add((subject, object_))
+            if not is_string_relation and object_ not in self._entity_types:
+                self.logger.error("LINE %d: Type not found for entity %s", 0, object_)
+                purge.add((subject, object_))
+        for entity, doc_id in purge:
+            del self._entity_relations[subject, object_]
+
+    def _verify_cmentions(self):
+        # check that all mentions in a document have atleast one canonical mention.
+        for entity, doc_id in self._entity_mentions:
+            for m in self._entity_mentions[entity, doc_id]: # contains every mention.
+                if (entity, m.doc_id) not in self._entity_cmentions:
+                    self.logger.warning("LINE %d: Missing canonical mention in document: not found for entity %s in document %s; using %s instead", 0, entity, m.doc_id, m)
+                    self._entity_cmentions[entity, m.doc_id] = m
+
+
+    def _find_first_contained_mention(self, entity, prov):
+        for m in self._entity_mentions[entity, prov.doc_id]:
+            if m.begin >= prov.begin and m.end <= prov.end:
+                return m
+
+    def _find_first_overlapping_mention(self, entity, prov):
+        for m in self._entity_mentions[entity, prov.doc_id]:
+            if (m.begin >= prov.begin and m.begin <= prov.end) or \
+                    (m.end >= prov.begin and m.end <= prov.end):
+                return m
+
+    def _find_first_subsequent_mention(self, entity, prov):
+        for m in self._entity_mentions[entity, prov.doc_id]:
+            if m.begin >= prov.begin:
+                return m
+
+    def _resolve_arguments(self, row, resolution_method=None):
+        """
+        Resolve arguments for row by searching through mentions near provenance.
+        """
+        if resolution_method is None:
+            resolution_method = self._find_first_subsequent_mention
+
+        if row.reln in STRING_VALUED_RELATIONS:
+            """
+            The provenance gives us the string value.
+            """
+            object_prov = row.prov[0]
+            object_gloss = row.obj
+            object_type = STRING_VALUED_RELATIONS[row.reln]
+
+            # Add a new mention for this object (won't be seen anywhere
+            # else)
+            if (object_prov.end - object_prov.begin) != len(object_gloss):
+                self.logger.warning("LINE %d: Provenance does not match string: %s (%d characters) maps to %s (%d characters)",
+                                    0, object_prov, object_prov.end - object_prov.begin, object_gloss, len(object_gloss))
+
+            # TODO: Check for inconsistency here?
+            self._types[object_prov] = object_type
+            self._glosses[object_prov] = object_gloss
+            self._cmentions[object_prov] = object_prov
+            self._weights[object_prov, 'cmention'] = 0.0
+            self._links[object_prov] = object_prov
+            self._weights[object_prov, 'link'] = 0.0
+
+            for prov in row.prov[1:]:
+                subject_prov = resolution_method(row.subj, prov)
+                if subject_prov is not None: break
+            else:
+                self.logger.error("LINE %d: Could not find provenance for subject: %s", row.lineno, row)
+                return
+        else:
+            for prov in row.prov:
+                subject_prov = resolution_method(row.subj, prov)
+                if subject_prov is not None: break
+            else:
+                self.logger.error("LINE %d: Could not find provenance for subject: %s", row.lineno, row)
+                return
+
+            for prov in row.prov:
+                object_prov = resolution_method(row.obj, prov)
+                if object_prov is not None: break
+            else:
+                self.logger.error("LINE %d: Could not find provenance for object: %s", row.lineno, row)
+                return
+
+        self._relations[subject_prov, object_prov] = row.reln
+        self._provenances[subject_prov, object_prov] = row.prov
+        self._weights[subject_prov, object_prov] = row.weight
+
+    def _resolve_relations(self, resolution_method=None):
+        if resolution_method is None:
+            resolution_method = self._find_first_subsequent_mention
+
+        for relations in tqdm(self._entity_relations.values(), desc="resolving entity relations"):
+            for row in relations:
+                self._resolve_arguments(row)
+
+    def _validate(self):
+        self._verify_types()
+        self._verify_cmentions()
+        self._resolve_relations()
+
+    def _build(self):
+        # Add mentions
+        for (entity, doc_id), mentions in self._entity_mentions.items():
+            entity_type = self._entity_types[entity]
+            for m in mentions:
+                self._types[m] = entity_type
+                # _glosses already handled.
+                self._cmentions[m] = self._entity_cmentions[entity, m.doc_id]
+                self._links[m] = entity
+
+        MFileReader._validate(self)
+        return MFileReader._build(self)
+
+    def parse(self, fstream, doc_ids=None, logger=_logger):
+        reader = csv.reader(fstream, delimiter="\t")
+
+        self.logger = logger
+        # intermediate stuff.
+        self._entity_mentions = defaultdict(list)
+        self._entity_cmentions = dict()
+        self._entity_types = dict()
+        self._entity_relations = defaultdict(list)
+
+        # Used in final outpuT
+        self._types = dict()
+        self._glosses = dict()
+        self._cmentions = dict()
+        self._links = dict()
+        self._relations = dict()
+        self._provenances = dict()
+        self._weights = dict()
+
+        # First pass of the data that builds the above tables.
+        for lineno, row in enumerate(tqdm(reader)):
+            if lineno == 0: continue # skip system header
+            if len(row) == 0: continue # skip empty lines
+
+            if len(row) > 5:
+                self.logger.error("LINE %d: Invalid number of columns, %d instead of %d", lineno, len(row), 5)
+                continue
+
+            row = row + [None] * (5-len(row)) + [lineno,]
+            row = Entry(*row)
+            row = row._replace(weight = float(row.weight) if row.weight else 0.0)
+            if row.reln == 'mention':
+                if row.prov is None:
+                    self.logger.error("LINE %d: No provenance for mention: %s", row.lineno, row)
+                    continue
+                row = row._replace(prov=Provenance.from_str(row.prov))
+                self._add_entity_mention(row)
+            elif row.reln == 'canonical_mention':
+                if row.prov is None:
+                    self.logger.error("LINE %d: No provenance for mention: %s", row.lineno, row)
+                    continue
+                row = row._replace(prov=Provenance.from_str(row.prov))
+                self._add_entity_cmention(row)
+            elif row.reln == 'type':
+                self._add_entity_type(row)
+            elif row.reln in RELATION_MAP:
+                row = row._replace(reln=RELATION_MAP[row.reln], prov=tuple(Provenance.from_str(p.strip()) for p in row.prov.split(",")))
+                self._add_entity_relation(row)
+            else:
+                self.logger.warning("LINE %d: Ignoring relation: %s (not supported)", row.lineno, row.reln)
+        self._validate()
+        return self._build()
 
 def test_validate_mfile():
     testdir = os.path.join(os.path.dirname(__file__), "testdata")
@@ -568,13 +574,19 @@ def test_validate_mfile():
     assert len(mfile.relations) == 0
 
 def test_validate_tackb():
-    pass
-
-# TODO: make into a test.
-if __name__ == '__main__':
     logging.basicConfig(filename = '/tmp/tmp')
-    _logger = logging.getLogger(__name__)
-    _logger.setLevel(logging.DEBUG)
-    #mfile = MFile.from_stream(csv.reader(sys.stdin, delimiter='\t'), input_format)
-    validate(sys.stdin, input_format = 'tackb', logger=_logger)
-    #test_sanitize_mention_response()
+
+    testdir = os.path.join(os.path.dirname(__file__), "testdata")
+    #logger = ListLogger()
+    reader = TacKbReader()
+
+    with gzip.open(os.path.join(testdir, "test_tac.kb.gz"), "rt") as f:
+        mfile = reader.parse(f, logger=_logger)
+
+    with gzip.open(os.path.join(testdir, "test_tac.kb.m.gz"), "wt") as f:
+        mfile.write(f)
+
+    assert len(mfile.types) == 2
+    assert len(mfile.canonical_mentions) == 2
+    assert len(mfile.links) == 2
+    assert len(mfile.relations) == 0

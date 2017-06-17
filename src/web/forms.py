@@ -6,7 +6,7 @@ from django import forms
 from registration.forms import RegistrationForm
 
 from kbpo import db
-from kbpo.entry import validate, ListLogger
+from kbpo.entry import ListLogger
 from .models import User, Submission
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,8 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             with gzip.open(data, 'rt') as f:
                 # Check that it has the right format, aka validate it.
                 log = ListLogger()
-                data = validate(f, self.cleaned_data["file_format"], doc_ids=doc_ids, logger=log)
+                #TODO
+                #data = validate(f, self.cleaned_data["file_format"], doc_ids=doc_ids, logger=log)
                 self.log = log
                 if len(log.errors) > 0:
                     raise forms.ValidationError("Error validating file (see below)")

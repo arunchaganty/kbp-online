@@ -50,7 +50,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         SubmissionUserInline,
         SubmissionStateInline,
         ]
-    actions = [reupload_submission, rescore_submission]
+    actions = [reupload_submission, resample_submission, returk_submission, rescore_submission]
 
     def _user(self, obj):
         return obj.user.user

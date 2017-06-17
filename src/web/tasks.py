@@ -8,7 +8,7 @@ from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
 
 from kbpo import db
-from kbpo.entry import validate
+#from kbpo.entry import validate
 from kbpo.api import upload_submission
 from web.models import Submission, SubmissionState
 from kbpo.evaluation_api import get_updated_scores, update_score
@@ -35,7 +35,9 @@ def validate_submission(submission_id):
     try:
         doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag))
         with gzip.open(submission.uploaded_filename, 'rt') as f:
-            mfile = validate(f, input_format='mfile', doc_ids=doc_ids)
+            #TODO
+            pass
+            #mfile = validate(f, input_format='mfile', doc_ids=doc_ids)
         upload_submission(submission_id, mfile)
 
         # Update state of submission.
