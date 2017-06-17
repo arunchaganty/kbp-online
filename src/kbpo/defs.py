@@ -19,8 +19,11 @@ ENTITY_SLOT_TYPES = set(["PER", "ORG", "GPE"])
 STRING_SLOT_TYPES = set(["DATE", "TITLE"])
 assert len((ENTITY_SLOT_TYPES | STRING_SLOT_TYPES) ^ set(TYPES)) == 0, "Inconsistency"
 
+# NOTE: We excluding alternate_names from consideration because (a) they
+# are replicated by entity linking, (b) it confuses turkers and (c) it's
+# a stupid relation anyways.
 RELATION_MAP = {
-    "per:alternate_names":"per:alternate_names",
+    #"per:alternate_names":"per:alternate_names",
 
     "per:place_of_birth":"per:place_of_birth",
     "per:city_of_birth":"per:place_of_birth",
@@ -42,6 +45,7 @@ RELATION_MAP = {
     "per:organizations_founded":"per:organizations_founded",
     "per:holds_shares_in":"per:holds_shares_in",
     "per:schools_attended":"per:schools_attended",
+    "per:top_member_employee_of":"per:employee_or_member_of",
     "per:employee_or_member_of":"per:employee_or_member_of",
     "per:parents":"per:parents",
     "per:children":"per:children",
@@ -50,7 +54,7 @@ RELATION_MAP = {
     "per:other_family":"per:other_family",
     "per:title":"per:title",
 
-    "org:alternate_names":"org:alternate_names",
+    #"org:alternate_names":"org:alternate_names",
 
     "org:place_of_headquarters":"org:place_of_headquarters",
     "org:city_of_headquarters":"org:place_of_headquarters",
@@ -60,7 +64,9 @@ RELATION_MAP = {
     "org:date_founded":"org:date_founded",
     "org:date_dissolved":"org:date_dissolved",
     "org:founded_by":"org:founded_by",
+    "org:organizations_founded":"org:organizations_founded",
     "org:member_of":"org:member_of",
+    "org:top_members_employees": "org:employees_or_members",
     "org:employees_or_members": "org:employees_or_members",
     "org:members":"org:members",
     "org:subsidiaries":"org:subsidiaries",
@@ -98,7 +104,7 @@ RELATION_MAP = {
     }
 ALL_RELATIONS = list(RELATION_MAP.values())
 RELATIONS = [
-    "per:alternate_names",
+    #"per:alternate_names",
     "per:place_of_birth",
     "per:place_of_residence",
     "per:place_of_death",
@@ -114,7 +120,7 @@ RELATIONS = [
     "per:siblings",
     "per:other_family",
     "per:title",
-    "org:alternate_names",
+    #"org:alternate_names",
     "org:place_of_headquarters",
     "org:date_founded",
     "org:date_dissolved",
@@ -164,6 +170,7 @@ INVERTED_RELATIONS = {
     "gpe:organizations_founded":["org:founded_by",],
     "gpe:member_of":["org:members"],
     "gpe:headquarters_in_place":["org:place_of_headquarters"],
+    "gpe:subsidiaries":["org:parents"],
     }
 
 RELATION_TYPES = {
@@ -191,7 +198,7 @@ RELATION_TYPES = {
     "org:member_of": ("ORG", "ORG"),
     "org:members": ("ORG", ["ORG", "GPE"]),
     "org:subsidiaries": ("ORG", "ORG"),
-    "org:parents": ("ORG", "ORG"),
+    "org:parents": ("ORG", ["ORG", "GPE"]),
     "org:shareholders": ("ORG", ["PER", "ORG", "GPE"]),
     "org:holds_shares_in": ("ORG", "ORG"),
     "org:employees_or_members": ("ORG", "PER"),
@@ -229,12 +236,17 @@ def _create_mention_types(types):
 
 VALID_MENTION_TYPES = _create_mention_types(RELATION_TYPES)
 
+def get_inverted_relation(reln, object_type):
+    assert reln in INVERTED_RELATIONS
+    for reln_ in INVERTED_RELATIONS[reln]:
+        if reln_.startswith(object_type.lower()):
+            return reln_
+
 def standardize_relation(subject, subject_type, reln, object_, object_type):
     if reln in RELATIONS:
         return subject, subject_type, reln, object_, object_type
     elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
-        for reln_ in INVERTED_RELATIONS[reln]:
-            if reln_.startswith(object_type.lower()):
-                return object_, object_type, reln, subject, subject_type
+        reln_ = get_inverted_relation(reln, object_type)
+        return object_, object_type, reln_, subject, subject_type
     else:
         raise ValueError("Couldn't map relation for {} {} {}".format(subject_type, reln, object_type))

@@ -1,15 +1,40 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, Submission, SubmissionUser, SubmissionState
-from web.tasks import score_submission
+from web import tasks
 
 admin.site.register(User, UserAdmin)
+
+def reupload_submission(_, __, queryset):
+    for row in queryset:
+        row.state.status = 'pending-upload'
+        row.state.message = ""
+        row.state.save()
+        tasks.process_submission.delay(row.id)
+reupload_submission.short_description = "Reupload submission."
+
+def resample_submission(_, __, queryset):
+    for row in queryset:
+        row.state.status = 'pending-sampling'
+        row.state.message = ""
+        row.state.save()
+        tasks.sample_submission.delay(row.id)
+resample_submission.short_description = "Resample submission (warning will create a new sample that may be turked)."
+
+def returk_submission(_, __, queryset):
+    for row in queryset:
+        row.state.status = 'pending-turking'
+        row.state.message = ""
+        row.state.save()
+        tasks.turk_submission.delay(row.id)
+returk_submission.short_description = "Returk submission (warning may cost money)."
 
 def rescore_submission(_, __, queryset):
     for row in queryset:
         row.state.status = 'pending-scoring'
+        row.state.message = ""
         row.state.save()
-        score_submission.delay(row.id)
+        tasks.score_submission.delay(row.id)
 rescore_submission.short_description = "Rescore submission using the latest data."
 
 class SubmissionUserInline(admin.TabularInline):
@@ -25,7 +50,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         SubmissionUserInline,
         SubmissionStateInline,
         ]
-    actions = [rescore_submission]
+    actions = [reupload_submission, resample_submission, returk_submission, rescore_submission]
 
     def _user(self, obj):
         return obj.user.user

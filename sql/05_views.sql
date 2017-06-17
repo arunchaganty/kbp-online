@@ -23,7 +23,6 @@ CREATE OR REPLACE VIEW mturk_assignment_flat AS (
          eval_batch.id AS question_batch_id,
          eval_batch.batch_type,
          eval_batch.corpus_tag, 
-         eval_batch.params AS eval_params,
          eval_batch.description AS eval_description,
          question.id AS question_id
   FROM mturk_assignment AS assignment

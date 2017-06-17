@@ -98,6 +98,7 @@ CREATE TABLE  mturk_assignment (
   response JSON NOT NULL, -- the raw response by the worker.
   comments TEXT, -- comments provided by the turker 
   ignored BOOLEAN NOT NULL DEFAULT FALSE, -- Should we ignore this entry for some reason?
+  verified BOOLEAN,
 ); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE mturk_assignment IS 'Keeps track HIT responses from turkers';
 

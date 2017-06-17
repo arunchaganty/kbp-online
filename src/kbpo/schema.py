@@ -3,8 +3,8 @@
 """
 Database schema as namedtuples
 """
+import re
 from collections import namedtuple
-from psycopg2.extras import NumericRange
 
 _Provenance = namedtuple("Provenance", ["doc_id", "begin", "end"])
 class Provenance(_Provenance):
@@ -12,11 +12,15 @@ class Provenance(_Provenance):
         assert begin <= end, "Invalid span, expected begin {} <= end {} for provenance {}:{}-{}".format(begin, end, doc_id, begin, end)
         return super(Provenance, cls).__new__(cls, doc_id, begin, end)
 
-def getNumericRange(begin, end):
-    if begin >= end:
-        raise IndexError(begin, end)
-    return NumericRange(begin, end)
+    def __str__(self):
+        return "{}:{}-{}".format(self.doc_id, self.begin, self.end)
 
+    @classmethod
+    def from_str(cls, prov):
+        if len(prov) == 0:
+            return None
+        doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
+        return cls(doc_id, int(beg), int(end))
 
 MentionInstance = namedtuple("MentionInstance", ["doc_id", "span", "canonical_span", "mention_type", "gloss", "weight"])
 LinkInstance = namedtuple("LinkInstance", ["doc_id", "span", "link_name", "weight"])

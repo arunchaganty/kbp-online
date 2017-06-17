@@ -85,11 +85,14 @@ CREATE TABLE  submission_score (
 COMMENT ON TABLE submission_score IS 'Summary of scores for a system.';
 CREATE INDEX submission_score_submission_idx ON submission_score(submission_id);
 
+DROP MATERIALIZED VIEW IF EXISTS submission_entity_relation CASCADE;
 CREATE MATERIALIZED VIEW submission_entity_relation AS (
     SELECT s.submission_id,
            s.doc_id,
            s.subject,
            s.object,
+           m.mention_type AS subject_type,
+           n.mention_type AS object_type,
            COALESCE(l.link_name, m.gloss) AS subject_entity,
            COALESCE(l_.link_name, n.gloss) AS object_entity,
            s.relation,
@@ -102,10 +105,11 @@ CREATE MATERIALIZED VIEW submission_entity_relation AS (
         LEFT OUTER JOIN submission_link l_ ON (s.submission_id = l_.submission_id AND s.doc_id = l_.doc_id AND n.canonical_span = l_.span)
 );
 
+DROP MATERIALIZED VIEW submission_statistics;
 CREATE MATERIALIZED VIEW submission_statistics AS (
     SELECT s.submission_id, subject_entity, relation, COUNT(*) 
     FROM submission_entity_relation s
-    GROUP BY s.submission_id, entity, relation
+    GROUP BY s.submission_id, subject_entity, relation
 );
 
 COMMIT;

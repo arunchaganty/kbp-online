@@ -10,6 +10,7 @@ from .counter_utils import normalize
 
 logger = logging.getLogger(__name__)
 
+## Document distributions
 def document_uniform(corpus_tag):
     """
     The uniform distribution over documents
@@ -70,7 +71,7 @@ def test_document_entity():
     Z = sum(P.values())
     assert abs(Z - 1.0) < 1.e-5, "Distribution for documents is not normalized: Z = {}".format(Z)
 
-# Get distributions.
+## Submission distributions
 def submission_instance(corpus_tag, submission_id=None):
     if submission_id is not None:
         assert get_submission(submission_id).corpus_tag == corpus_tag, "Submission {} is not on corpus {}".format(submission_id, corpus_tag)
@@ -225,6 +226,7 @@ def test_submission_entity_relation():
 #    Z = sum(P.values())
 #    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
+## Obtaining samples from database.
 def Y0(corpus_tag, submission_id=None):
     """
     Use the document_sample table to get which documents have been exhaustively sampled.
@@ -293,7 +295,6 @@ def test_Xhs():
     # TODO: KNOWN BUG 
     # something is wrong in how we ended up turking output
     assert len(Xhs[submission_id]) == 366
-
 
 def test_Xhs_by_id():
     corpus_tag = 'kbp2016'
