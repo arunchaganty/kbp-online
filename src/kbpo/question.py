@@ -76,6 +76,7 @@ def create_evaluation_batch_from_submission_sample(batch_id):
                         values)
     else:
         logger.warning("All the samples have already been asked as questions")
+    return evaluation_batch_id
 
     
 

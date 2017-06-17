@@ -2,6 +2,8 @@ from .base_settings import *
 
 # Debug
 DEBUG = True
+MTURK_TARGET = 'sandbox'
+MTURK_HOST = 'https://localhost:8000'
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases

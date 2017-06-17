@@ -2,6 +2,8 @@ from .base_settings import *
 
 # Host
 ALLOWED_HOSTS = ["kbpo.stanford.edu"]
+MTURK_TARGET = 'sandbox'
+MTURK_HOST = 'https://kbpo.stanford.edu'
 
 # Debug
 DEBUG = False
