@@ -126,6 +126,7 @@ def sample_submission(corpus_tag, submission_id, type_, n_samples):
             db.execute_values(cur, """
                 INSERT INTO submission_sample(batch_id, submission_id, doc_id, subject, object) VALUES %s
                 """, [(batch_id, submission_id, doc_id, db.Int4NumericRange(*subject), db.Int4NumericRange(*object_)) for doc_id, subject, object_ in relation_mentions])
+    return batch_id
 
 def test_sample_submission_instance():
     tag = 'kbp2016'

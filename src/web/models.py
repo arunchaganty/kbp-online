@@ -17,6 +17,7 @@ class SubmissionState(models.Model):
         ('error', "Error"),
         ('pending-upload', "Pending processing and upload into database"),
         ('pending-sampling', "Pending sampling"),
+        ('pending-turking', "Pending creation of HITs"),
         ('pending-annotation', "Waiting for crowdworkers to annotate submission"),
         ('pending-scoring', "Pending scoring"),
         ('done', "Done!"),

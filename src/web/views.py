@@ -194,8 +194,7 @@ def do_task(request):
         elif params["batch_type"] == "selective_relations":
             return render(request, 'interface_relation.html', {
                 'doc_id': doc.id,
-                'subject_id': params["mention_1"],
-                'object_id': params["mention_2"],
+                'mention_pair': '-'.join(map(str, params["mention_1"][1:]))+':'+'-'.join(map(str, params["mention_2"][1:])),
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
