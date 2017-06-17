@@ -289,7 +289,7 @@ class MFileReader(object):
         self._verify_relation_types()
         self._verify_symmetrized_relations()
 
-    def parse(self, fstream, doc_ids=None, logger=_logger):
+    def parse(self, fstream, doc_ids=None, logger=_logger, do_validate=True):
         """
         Parses (and validates) an m-file in the file stream @fstream.
         """
@@ -332,6 +332,8 @@ class MFileReader(object):
                     self._add_relation(row)
             else:
                 logger.info("LINE %d: Ignoring relation %s: (not supported)", row.lineno, row.reln)
+        if do_validate:
+            self._validate()
 
         return self._build()
 
@@ -535,17 +537,18 @@ class TacKbReader(MFileReader):
         self._verify_cmentions()
         self._resolve_relations()
 
-    def _build(self):
+    def _build(self, do_validate=True):
         # Add mentions
         for (entity, _), mentions in self._entity_mentions.items():
             entity_type = self._entity_types[entity]
             for m in mentions:
                 self._add_mention(m, gloss=self._glosses[m], type_=entity_type, cmention=self._entity_cmentions[entity, m.doc_id], link=entity)
 
-        MFileReader._validate(self)
+        if do_validate:
+            MFileReader._validate(self)
         return MFileReader._build(self)
 
-    def parse(self, fstream, doc_ids=None, logger=_logger):
+    def parse(self, fstream, doc_ids=None, logger=_logger, do_validate=True):
         reader = csv.reader(fstream, delimiter="\t")
 
         self.logger = logger
@@ -596,7 +599,9 @@ class TacKbReader(MFileReader):
                 self._add_entity_relation(row)
             else:
                 self.logger.info("LINE %d: Ignoring relation: %s (not supported)", row.lineno, row.reln)
-        self._validate()
+
+        if do_validate:
+            self._validate()
         return self._build()
 
 def test_validate_mfile():
