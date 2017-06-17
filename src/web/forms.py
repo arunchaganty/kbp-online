@@ -47,18 +47,20 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         if data.size > self.MAX_SIZE: # 20MB file.
             raise forms.ValidationError("Submitted file is larger than our current file size limit of {}MB. Please ensure that you are submitted the correct file, if not contact us at {}".format(int(self.MAX_SIZE / 1024 / 1024), ""))
 
+        doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=self.cleaned_data["corpus_tag"]))
+
+        if self.cleaned_data["file_format"] == "tackb":
+            reader = parser.TacKbReader()
+        elif self.cleaned_data["file_format"] == "mfile":
+            reader = parser.MFileReader()
+
         try:
-
-            # Get list of doc_ids
-            doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=self.cleaned_data["corpus_tag"]))
-
             self.original_file = data
             # Check that the file is gzipped.
             with gzip.open(data, 'rt') as f:
                 # Check that it has the right format, aka validate it.
                 log = ListLogger()
-                #TODO
-                #data = validate(f, self.cleaned_data["file_format"], doc_ids=doc_ids, logger=log)
+                data = reader.parse(f, doc_ids=doc_ids, logger=log)
                 self.log = log
                 if len(log.errors) > 0:
                     raise forms.ValidationError("Error validating file (see below)")

@@ -8,48 +8,15 @@ from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
 
 from kbpo import db
-#from kbpo.entry import validate
+from kbpo.parser import MFileReader
 from kbpo.api import upload_submission
 from web.models import Submission, SubmissionState
 from kbpo.evaluation_api import get_updated_scores, update_score
 
 logger = logging.getLogger(__name__)
 
-@shared_task
-def validate_submission(submission_id):
-    """
-    Handles the uploading of a submission.
-    """
-    assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
-    assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
-
-    submission = Submission.objects.get(id=submission_id)
-    state = SubmissionState.objects.get(submission_id=submission_id)
-
-    logger.info("Processing submission %s", submission_id)
-
-    if state.status != 'pending-upload':
-        logger.warning("Trying to process submission %s, but state is %s", submission, state.status)
-        return
-
-    try:
-        doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag))
-        with gzip.open(submission.uploaded_filename, 'rt') as f:
-            #TODO
-            pass
-            #mfile = validate(f, input_format='mfile', doc_ids=doc_ids)
-        upload_submission(submission_id, mfile)
-
-        # Update state of submission.
-        state.status = 'pending-sampling'
-        state.save()
-        sample_submission.delay(submission_id)
-    except Exception as e:
-        logger.exception(e)
-        state.status = 'error'
-        state.message = str(e)
-        state.save()
-
+# TODO: create a task for validate_submission and save log output
+# somewhere
 
 @shared_task
 def process_submission(submission_id):
@@ -69,9 +36,10 @@ def process_submission(submission_id):
         return
 
     try:
+        reader = MFileReader()
         doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag))
         with gzip.open(submission.uploaded_filename, 'rt') as f:
-            mfile = validate(f, input_format='mfile', doc_ids=doc_ids)
+            mfile = reader.parse(f, doc_ids=doc_ids, logger=logger)
         upload_submission(submission_id, mfile)
 
         # Update state of submission.

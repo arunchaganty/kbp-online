@@ -101,6 +101,7 @@ class MFile(namedtuple('_MFile', ['types', 'links', 'canonical_mentions', 'relat
 class MFileReader(object):
     def __init__(self):
         self.logger = None
+        self._doc_ids = None
         self._types = None
         self._links = None
         self._glosses = None
@@ -162,7 +163,8 @@ class MFileReader(object):
             self._provenances[row.subj, row.obj] = row.prov
             self._weights[row.subj, row.obj] = row.weight
 
-    def _check_doc_ids(self, row, doc_ids=None):
+    def _check_doc_ids(self, row):
+        doc_ids = self._doc_ids
         if doc_ids is not None and row.subj.doc_id not in doc_ids:
             self.logger.info("LINE %d: Ignoring mention outside corpus: %s", row.lineno, row)
             return False
@@ -294,6 +296,7 @@ class MFileReader(object):
         reader = csv.reader(fstream, delimiter="\t")
 
         self.logger = logger
+        self._doc_ids = doc_ids
         self._types = dict()
         self._links = dict()
         self._glosses = dict()
@@ -552,7 +555,8 @@ class TacKbReader(MFileReader):
         self._entity_types = dict()
         self._entity_relations = defaultdict(list)
 
-        # Used in final outpuT
+        # Used in final output
+        self._doc_ids = doc_ids
         self._types = dict()
         self._glosses = dict()
         self._cmentions = dict()
