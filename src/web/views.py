@@ -26,13 +26,17 @@ def submit(request):
         form = KnowledgeBaseSubmissionForm(request.POST, request.FILES)
         if form.is_valid():
             submission = form.save()
-            SubmissionUser(user=request.user, submission=submission).save()
-            SubmissionState(submission=submission).save()
+            SubmissionUser.objects.create(user=request.user, submission=submission).save()
+            SubmissionState.objects.create(submission=submission).save()
 
             process_submission.delay(submission.id)
 
-            messages.success(request, "Submission '{}' successfully uploaded, and pending evaluation.".format(form.cleaned_data['name']))
-            return redirect('home')
+            if len(form.log.warnings) > 0:
+                messages.warning(request, "Submission '{}' uploaded with {} errors and {} warnings and {} messages.".format(form.cleaned_data['name'],
+                    len(form.log.errors), len(form.log.warnings), len(form.log.infos)))
+            else:
+                messages.success(request, "Submission '{}' uploaded with {} errors and {} warnings and {} messages.".format(form.cleaned_data['name'],
+                    len(form.log.errors), len(form.log.warnings), len(form.log.infos)))
     else:
         form = KnowledgeBaseSubmissionForm()
 

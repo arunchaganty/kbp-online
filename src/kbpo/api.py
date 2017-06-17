@@ -611,3 +611,43 @@ def test_get_corpus_listing():
         "entityCount": 72,
         "relationCount": 119,
         }
+
+def upload_submission(submission_id, mfile):
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            # Create the submission
+            mentions, links, relations = [], [], []
+
+            def _p(prov):
+                return db.Int4NumericRange(prov.begin, prov.end)
+
+
+            for mention_id in mfile.mention_ids:
+                mention_type, gloss, canonical_id = mfile.get_type(mention_id), mfile.get_gloss(mention_id), mfile.get_cmention(mention_id)
+                mention_id, canonical_id = mention_id, canonical_id
+                doc_id = mention_id.doc_id
+                mentions.append((submission_id, doc_id, _p(mention_id), _p(canonical_id), mention_type, gloss))
+            for row in mfile.links:
+                mention_id = row.subj
+                doc_id = mention_id.doc_id
+                link_name = row.obj
+                weight = row.weight
+                links.append((submission_id, doc_id, _p(mention_id), link_name, weight))
+            for row in mfile.relations:
+                subject_id = row.subj
+                object_id = row.obj
+                doc_id = subject_id.doc_id
+
+                relation = row.reln
+                provs = list(row.prov) if row.prov else []
+                weight = row.weight
+                relations.append((submission_id, doc_id, _p(subject_id), _p(object_id), relation, [_p(prov) for prov in provs], weight))
+
+            # mentions
+            db.execute_values(cur, """INSERT INTO submission_mention (submission_id, doc_id, span, canonical_span, mention_type, gloss) VALUES %s """, mentions)
+
+            # links
+            db.execute_values(cur, """INSERT INTO submission_link (submission_id, doc_id, span, link_name, confidence) VALUES %s """, links)
+
+            # relations
+            db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject, object, relation, provenances, confidence) VALUES %s """, relations)
