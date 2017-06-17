@@ -109,6 +109,8 @@ def sample_submission(corpus_tag, submission_id, type_, n_samples):
         P = distribution.submission_relation(corpus_tag, submission_id)
     elif type_ == "entity":
         P = distribution.submission_entity(corpus_tag, submission_id)
+    elif type_ == "entity_relation":
+        P = distribution.submission_entity_relation(corpus_tag, submission_id)
     else:
         raise ValueError("Invalid submission sampling distribution type: {}".format(type_))
 
