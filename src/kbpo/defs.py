@@ -19,8 +19,11 @@ ENTITY_SLOT_TYPES = set(["PER", "ORG", "GPE"])
 STRING_SLOT_TYPES = set(["DATE", "TITLE"])
 assert len((ENTITY_SLOT_TYPES | STRING_SLOT_TYPES) ^ set(TYPES)) == 0, "Inconsistency"
 
+# NOTE: We excluding alternate_names from consideration because (a) they
+# are replicated by entity linking, (b) it confuses turkers and (c) it's
+# a stupid relation anyways.
 RELATION_MAP = {
-    "per:alternate_names":"per:alternate_names",
+    #"per:alternate_names":"per:alternate_names",
 
     "per:place_of_birth":"per:place_of_birth",
     "per:city_of_birth":"per:place_of_birth",
@@ -50,7 +53,7 @@ RELATION_MAP = {
     "per:other_family":"per:other_family",
     "per:title":"per:title",
 
-    "org:alternate_names":"org:alternate_names",
+    #"org:alternate_names":"org:alternate_names",
 
     "org:place_of_headquarters":"org:place_of_headquarters",
     "org:city_of_headquarters":"org:place_of_headquarters",
@@ -99,7 +102,7 @@ RELATION_MAP = {
     }
 ALL_RELATIONS = list(RELATION_MAP.values())
 RELATIONS = [
-    "per:alternate_names",
+    #"per:alternate_names",
     "per:place_of_birth",
     "per:place_of_residence",
     "per:place_of_death",
@@ -115,7 +118,7 @@ RELATIONS = [
     "per:siblings",
     "per:other_family",
     "per:title",
-    "org:alternate_names",
+    #"org:alternate_names",
     "org:place_of_headquarters",
     "org:date_founded",
     "org:date_dissolved",
