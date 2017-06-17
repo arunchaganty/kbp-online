@@ -74,6 +74,7 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
 
     try:
         sampling_batch_id = _sample_submission(submission.corpus_tag, submission_id, type_, n_samples)
+        # TODO: verify that the sampling actually led to non zero samples.
 
         #Update the status of submission
         state.status = 'pending-turking'

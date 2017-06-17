@@ -651,3 +651,8 @@ def upload_submission(submission_id, mfile):
 
             # relations
             db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject, object, relation, provenances, confidence) VALUES %s """, relations)
+
+            # refresh materialized views.
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_entity_relation""")
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_statistics""")
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
