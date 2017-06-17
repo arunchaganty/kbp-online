@@ -170,6 +170,7 @@ INVERTED_RELATIONS = {
     "gpe:organizations_founded":["org:founded_by",],
     "gpe:member_of":["org:members"],
     "gpe:headquarters_in_place":["org:place_of_headquarters"],
+    "gpe:subsidiaries":["org:parents"],
     }
 
 RELATION_TYPES = {
@@ -197,7 +198,7 @@ RELATION_TYPES = {
     "org:member_of": ("ORG", "ORG"),
     "org:members": ("ORG", ["ORG", "GPE"]),
     "org:subsidiaries": ("ORG", "ORG"),
-    "org:parents": ("ORG", "ORG"),
+    "org:parents": ("ORG", ["ORG", "GPE"]),
     "org:shareholders": ("ORG", ["PER", "ORG", "GPE"]),
     "org:holds_shares_in": ("ORG", "ORG"),
     "org:employees_or_members": ("ORG", "PER"),
@@ -235,12 +236,17 @@ def _create_mention_types(types):
 
 VALID_MENTION_TYPES = _create_mention_types(RELATION_TYPES)
 
+def get_inverted_relation(reln, object_type):
+    assert reln in INVERTED_RELATIONS
+    for reln_ in INVERTED_RELATIONS[reln]:
+        if reln_.startswith(object_type.lower()):
+            return reln_
+
 def standardize_relation(subject, subject_type, reln, object_, object_type):
     if reln in RELATIONS:
         return subject, subject_type, reln, object_, object_type
     elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
-        for reln_ in INVERTED_RELATIONS[reln]:
-            if reln_.startswith(object_type.lower()):
-                return object_, object_type, reln, subject, subject_type
+        reln_ = get_inverted_relation(reln, object_type)
+        return object_, object_type, reln_, subject, subject_type
     else:
         raise ValueError("Couldn't map relation for {} {} {}".format(subject_type, reln, object_type))
