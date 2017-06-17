@@ -17,7 +17,7 @@ from .fleiss import computeKappa
 urllib.parse.unquote('Hern%C3%A1n_Barcos')
 
 from . import db
-from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance, EvaluationMentionResponse, EvaluationLinkResponse, EvaluationRelationResponse, getNumericRange
+from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance, EvaluationMentionResponse, EvaluationLinkResponse, EvaluationRelationResponse
 
 from .defs import RELATION_TYPES, INVERTED_RELATIONS, ALL_RELATIONS
 logger = logging.getLogger(__name__)
@@ -32,14 +32,14 @@ def parse_selective_relations_response(question, responses):
         #subject_id = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
 
         try:
-            subject_span = getNumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+            subject_span = db.Int4NumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
         
         #subject_canonical_id = Provenance(doc_id, response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
         try:
-            subject_canonical_span = getNumericRange(response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
+            subject_canonical_span = db.Int4NumericRange(response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -48,7 +48,7 @@ def parse_selective_relations_response(question, responses):
 
         #object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         try:
-            object_span = getNumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
+            object_span = db.Int4NumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -56,7 +56,7 @@ def parse_selective_relations_response(question, responses):
 
         #object_canonical_id = Provenance(doc_id, response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
         try:
-            object_canonical_span = getNumericRange(response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
+            object_canonical_span = db.Int4NumericRange(response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
             continue
@@ -106,14 +106,14 @@ def parse_exhaustive_relations_response(question, responses):
     for response in responses:
         #subject = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
         try:
-            subject_span = getNumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+            subject_span = db.Int4NumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
 
         #object_ = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         try:
-            object_span = getNumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
+            object_span = db.Int4NumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -142,7 +142,7 @@ def parse_exhaustive_entities_response(question, response):
         try:
             #id_ = Provenance(doc_id,entity["doc_char_begin"], entity["doc_char_end"]) 
             try:
-                span = getNumericRange(entity["doc_char_begin"], entity["doc_char_end"])
+                span = db.Int4NumericRange(entity["doc_char_begin"], entity["doc_char_end"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
@@ -152,7 +152,7 @@ def parse_exhaustive_entities_response(question, response):
 
             #canonical_id = Provenance(doc_id, entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
             try:
-                canonical_span = getNumericRange(entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
+                canonical_span = db.Int4NumericRange(entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue

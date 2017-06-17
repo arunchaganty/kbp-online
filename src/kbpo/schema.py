@@ -5,7 +5,6 @@ Database schema as namedtuples
 """
 import re
 from collections import namedtuple
-from psycopg2.extras import NumericRange
 
 _Provenance = namedtuple("Provenance", ["doc_id", "begin", "end"])
 class Provenance(_Provenance):
@@ -22,12 +21,6 @@ class Provenance(_Provenance):
             return None
         doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
         return cls(doc_id, int(beg), int(end))
-
-def getNumericRange(begin, end):
-    if begin >= end:
-        raise IndexError(begin, end)
-    return NumericRange(begin, end)
-
 
 MentionInstance = namedtuple("MentionInstance", ["doc_id", "span", "canonical_span", "mention_type", "gloss", "weight"])
 LinkInstance = namedtuple("LinkInstance", ["doc_id", "span", "link_name", "weight"])
