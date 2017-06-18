@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from .kbpo_models import Document, DocumentTag, Submission, SubmissionScore
-from .kbpo_models import EvaluationBatch, EvaluationQuestion
+from .kbpo_models import EvaluationBatch, EvaluationQuestion, MturkBatch, MturkHit, MturkAssignment
 
 # Defining a user for submissions.
 class User(AbstractUser):
@@ -14,7 +14,7 @@ class SubmissionUser(models.Model):
     user = models.ForeignKey(User)
 
 class SubmissionState(models.Model):
-    CHOICES = (
+    CHOICES = [
         ('error', "Error"),
         ('pending-upload', "Validating and uploading into database"),
         ('pending-sampling', "Sampling instances"),
@@ -22,7 +22,7 @@ class SubmissionState(models.Model):
         ('pending-annotation', "Crowdsourcing"),
         ('pending-scoring', "Scoring"),
         ('done', "Evaluated"),
-        )
+        ]
 
     submission = models.OneToOneField(Submission, related_name="state", primary_key=True)
     status = models.CharField(max_length=20, default='pending-upload', choices=CHOICES)

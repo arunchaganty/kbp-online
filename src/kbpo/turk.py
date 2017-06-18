@@ -10,7 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto.mturk.question  import ExternalQuestion
 
-from service.settings import MTURK_HOST
+from service.settings import MTURK_HOST, MTURK_TARGET
 from . import db
 from . import api
 
@@ -22,7 +22,7 @@ _MTURK_PARAMS_FILE = 'kbpo/params/mturk_params.json'
 with open(_MTURK_PARAMS_FILE) as f:
     _MTURK_PARAMS = json.load(f)
 
-def connect(host_str, forced=False):
+def connect(host_str=MTURK_TARGET, forced=False):
     """
     Connect to mechanical turk to sandbox or actual depending on
     @host_str with prompt for actual unless @forced
@@ -126,6 +126,7 @@ def revoke_hit(conn, hit_id):
 
     conn.update_expiration_for_hit(HITId=hit_id, ExpireAt=datetime.now())
     conn.delete_hit(HITId=hit_id)
+    logger.info("Finished revoking mturk_hit %s", hit_id)
     return True
 
 _TEST_PARAMS = {
@@ -295,6 +296,7 @@ def revoke_batch(conn, batch_id):
                         SET state = %(state)s, message = %(message)s
                         WHERE id=%(hit_id)s
                         """, cur=cur, state="error", message=str(e), hit_id=row.id)
+    logger.info("Finished revoking mturk_batch %s", batch_id)
 
 def test_create_revoke_batch():
     """Test batch creation on the sandbox"""

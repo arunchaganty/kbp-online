@@ -196,8 +196,13 @@ class SubmissionScore(models.Model):
 # == Evaluation batch and question
 #- modified -v
 class EvaluationBatch(models.Model):
+    id = models.IntegerField(primary_key=True)
     created = models.DateTimeField(auto_now=True)
-    batch_type = models.TextField()
+    batch_type = models.TextField(choices=[
+        ('exhaustive_entities', 'Exhaustive entities'),
+        ('exhaustive_relations', 'Exhaustive relations'),
+        ('selective_relations', 'Selective relations'),
+        ])
     description = models.TextField()
     corpus_tag = models.TextField()
 
@@ -213,6 +218,12 @@ class EvaluationBatch(models.Model):
         """
         return api.get_evaluation_batch_status(self.id)
 
+    def __repr__(self):
+        return "<EvaluationBatch: {} on {}>".format(self.batch_type, self.corpus_tag)
+
+    def __str__(self):
+        return "EvaluationBatch {}".format(self.created)
+
 class EvaluationQuestion(models.Model):
     CHOICES = [
         ('pending-turking', 'Uploading to Amazon Mechanical Turk'),
@@ -220,10 +231,11 @@ class EvaluationQuestion(models.Model):
         ('pending-verification', 'Verifying annotations'),
         ('pending-aggregation', 'Aggregating annotations'), # Note, we might combine the above two step.
         ('done', 'Done'),
+        ('revoked', 'Revoked'),
         ('error', 'Error'),
         ]
-    id = models.TextField()
-    batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING, related_name='questions', primary_key=True)
+    id = models.TextField(primary_key=True)
+    batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING, related_name='questions')
     created = models.DateTimeField(auto_now=True)
 
     params = models.TextField()
@@ -241,6 +253,12 @@ class MturkBatch(models.Model):
     params = models.TextField()
     description = models.TextField(blank=True, null=True)
 
+    def __repr__(self):
+        return "<MTurkBatch {}>".format(self.id)
+
+    def __str__(self):
+        return "MTurkBatch {}".format(self.id)
+
     class Meta:
         managed = False
         db_table = 'mturk_batch'
@@ -253,10 +271,10 @@ class MturkHit(models.Model):
         ('error', 'Error'),
         ]
 
-    id = models.TextField()
-    batch = models.ForeignKey(MturkBatch, models.DO_NOTHING, primary_key=True)
-    question_batch = models.ForeignKey(EvaluationQuestion, models.DO_NOTHING)
-    question_id = models.TextField()
+    id = models.TextField(primary_key=True)
+    batch = models.ForeignKey(MturkBatch, models.DO_NOTHING)
+    question_batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING)
+    question = models.ForeignKey(EvaluationQuestion, models.DO_NOTHING)
     created = models.DateTimeField(auto_now=True)
     type_id = models.TextField(blank=True, null=True)
     price = models.FloatField(blank=True, null=True)
@@ -265,6 +283,13 @@ class MturkHit(models.Model):
 
     state = models.TextField(choices=CHOICES)
     message = models.TextField(null=True)
+
+    def __repr__(self):
+        return "<MTurkHIT {}>".format(self.id)
+
+    def __str__(self):
+        return "MTurkHIT {}".format(self.id)
+
 
     class Meta:
         managed = False
@@ -280,8 +305,8 @@ class MturkAssignment(models.Model):
         ('error', 'Error'),
         ]
     id = models.TextField(primary_key=True)
-    batch = models.ForeignKey('MturkHit', models.DO_NOTHING)
-    hit_id = models.TextField()
+    batch = models.ForeignKey(MturkBatch, models.DO_NOTHING)
+    hit = models.ForeignKey(MturkHit, models.DO_NOTHING)
     created = models.DateTimeField(auto_now=True)
     worker_id = models.TextField()
     worker_time = models.IntegerField()
@@ -291,6 +316,12 @@ class MturkAssignment(models.Model):
 
     state = models.TextField(choices=CHOICES)
     message = models.TextField()
+
+    def __repr__(self):
+        return "<MTurkAssignment {}>".format(self.id)
+
+    def __str__(self):
+        return "MTurkAssignment {}".format(self.id)
 
     class Meta:
         managed = False

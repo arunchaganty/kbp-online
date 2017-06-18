@@ -1,13 +1,15 @@
 """
 Routines to create questions.
 """
+import pdb
 import json
 import logging
 from hashlib import sha1
 from tqdm import tqdm
 
 from . import db
-
+from . import api
+from . import turk
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -219,8 +221,31 @@ def create_evaluation_batch_from_submission_sample(batch_id):
         logger.warning("All the samples have already been asked as questions")
     return evaluation_batch_id
 
-def revoke_question(question_id):
-    pass
+def revoke_question(question_batch_id, question_id, mturk_conn=None):
+    if mturk_conn is None:
+        mturk_conn = turk.connect()
 
-def revoke_question_batch(question_batch):
-    pass
+    # Revoke all mturk hits associated with this question.
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            for row in db.select("""
+                SELECT id
+                FROM mturk_hit
+                WHERE question_batch_id = %(question_batch_id)s AND question_id = %(question_id)s
+                """, cur=cur, question_batch_id=question_batch_id, question_id=question_id):
+                turk.revoke_hit(mturk_conn, row.id)
+            db.execute("""
+                UPDATE evaluation_question
+                SET state=%(state)s, message=%(message)s
+                WHERE id=%(question_id)s AND batch_id=%(question_batch_id)s
+                """, cur=cur, state="revoked", message="",
+                       question_batch_id=question_batch_id, question_id=question_id)
+
+def revoke_question_batch(question_batch_id, mturk_conn=None):
+    questions = api.get_questions(question_batch_id)
+    if mturk_conn is None:
+        mturk_conn = turk.connect()
+
+    # Revoke all mturk hits associated with this question.
+    for question in questions:
+        revoke_question(question_batch_id, question.id, mturk_conn=mturk_conn)
