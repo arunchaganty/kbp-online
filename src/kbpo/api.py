@@ -4,6 +4,7 @@ Interfacing with database API
 """
 import logging
 from datetime import date, datetime
+from collections import Counter
 
 from . import db
 from . import defs
@@ -656,3 +657,43 @@ def upload_submission(submission_id, mfile):
             cur.execute("""REFRESH MATERIALIZED VIEW submission_entity_relation""")
             cur.execute("""REFRESH MATERIALIZED VIEW submission_statistics""")
             cur.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
+
+def get_question_batch(question_batch_id):
+    return db.get("""
+        SELECT id, created, batch_type, corpus_tag, description FROM evaluation_batch
+        WHERE id = %(batch_id)s
+        """, batch_id=question_batch_id)
+
+def get_questions(question_batch_id):
+    return list(db.select("""
+        SELECT id, params from evaluation_question
+        WHERE batch_id = %(batch_id)s
+        ORDER BY id
+        """, batch_id=question_batch_id))
+
+def get_samples(sample_batch_id):
+    return list(db.select("""
+        SELECT submission_id, doc_id, subject, object
+        FROM submission_sample
+        WHERE batch_id = %(batch_id)
+        """, batch_id=sample_batch_id))
+
+def get_evaluation_batch_status(batch_id):
+    # Get's the summary of states of its questions
+    stats = list(db.select("""
+        SELECT state, COUNT(*) AS count
+        FROM evaluation_question
+        WHERE batch_id=%(batch_id)s
+        GROUP BY state
+        """, batch_id=batch_id))
+    return Counter({state: count for state, count in stats})
+
+def get_mturk_batch_status(batch_id):
+    # Get's the summary of states of its questions
+    stats = list(db.select("""
+        SELECT state, COUNT(*) AS count
+        FROM mturk_hit
+        WHERE batch_id=%(batch_id)s
+        GROUP BY state
+        """, batch_id=batch_id))
+    return Counter({state: count for state, count in stats})

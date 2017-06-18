@@ -9,13 +9,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from service.settings import MTURK_TARGET
 
 from kbpo import db
+from kbpo import api
 from kbpo.parser import MFileReader
-from kbpo.api import upload_submission
-from web.models import Submission, SubmissionState
 from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.question import create_evaluation_batch_from_submission_sample
 from kbpo.turk import connect, create_batch
+
+from .models import Submission, SubmissionState
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def process_submission(submission_id):
         doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag))
         with gzip.open(submission.uploaded_filename, 'rt') as f:
             mfile = reader.parse(f, doc_ids=doc_ids, logger=logger)
-        upload_submission(submission_id, mfile)
+        api.upload_submission(submission_id, mfile)
 
         # Update state of submission.
         state.status = 'pending-sampling'
@@ -62,8 +63,10 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
     """
     Takes care of sampling from a submission to create evaluation_question and evaluation_batch.
     """
-    assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
-    assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
+    assert Submission.objects.filter(id=submission_id).count() > 0,\
+            "Submission {} does not exist!".format(submission_id)
+    assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0,\
+            "SubmissionState {} does not exist!".format(submission_id)
     submission = Submission.objects.get(id=submission_id)
     state = SubmissionState.objects.get(submission_id=submission_id)
 
@@ -73,28 +76,29 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
         return
 
     try:
-        sampling_batch_id = _sample_submission(submission.corpus_tag, submission_id, type_, n_samples)
-        # TODO: verify that the sampling actually led to non zero samples.
+        sample_batch_id = _sample_submission(submission.corpus_tag, submission_id, type_, n_samples)
+        assert len(api.get_samples(sample_batch_id)) > 0, "Sample did not generate any samples!"
 
         #Update the status of submission
         state.status = 'pending-turking'
         state.save()
-        turk_submission.delay(sampling_batch_id)
-
+        turk_submission.delay(sample_batch_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
         state.message = str(e)
         state.save()
-    
 
 @shared_task
 def turk_submission(sample_batch_id):
     """
     Takes care of turking from a submission from _sample.
     """
-    submission_id = list(db.select("""SELECT submission_id FROM sample_batch WHERE id = %(batch_id)s""", batch_id = sample_batch_id))
-    assert len(submission_id)==1, "Sample batch {} does not exist!".format(sample_batch_id)
+    submission_id = list(db.select("""
+        SELECT submission_id FROM sample_batch WHERE id = %(batch_id)s
+        """, batch_id = sample_batch_id))
+    assert len(submission_id) == 1, "Sample batch {} does not exist!".format(sample_batch_id)
+
     submission_id = submission_id[0].submission_id
     assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
     assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
@@ -109,8 +113,11 @@ def turk_submission(sample_batch_id):
     try:
         evaluation_batch_id = create_evaluation_batch_from_submission_sample(sample_batch_id)
         assert evaluation_batch_id is not None, "Evaluation batch not created"
+        evaluation_batch = api.get_question_batch(evaluation_batch_id)
+        questions = api.get_questions(evaluation_batch_id)
+
         mturk_connection = connect(MTURK_TARGET)
-        create_batch(db, mturk_connection, evaluation_batch_id)
+        create_batch(mturk_connection, evaluation_batch.id, evaluation_batch.batch_type, questions)
 
         state.status = 'pending-annotation'
         state.save()

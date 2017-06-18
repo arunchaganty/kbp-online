@@ -2,11 +2,13 @@
 KBPO internal models.
 """
 import os
-import gzip
 
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+
+from kbpo import api
+
 from .fields import SpanField, ScoreField
 
 class Document(models.Model):
@@ -80,6 +82,7 @@ class SuggestedLink(models.Model):
         db_table = 'suggested_link'
         unique_together = (('doc', 'id'),)
 
+#- modified -v
 class Submission(models.Model):
     id = models.AutoField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
@@ -191,11 +194,10 @@ class SubmissionScore(models.Model):
         unique_together = (('submission', 'score_type'),)
 
 # == Evaluation batch and question
-
+#- modified -v
 class EvaluationBatch(models.Model):
     created = models.DateTimeField(auto_now=True)
     batch_type = models.TextField()
-    params = models.TextField()
     description = models.TextField()
     corpus_tag = models.TextField()
 
@@ -203,32 +205,36 @@ class EvaluationBatch(models.Model):
         managed = False
         db_table = 'evaluation_batch'
 
+    @property
+    def status(self):
+        r"""
+        Checks the status of an evaluation batch, which is simply the
+        state of all its children
+        """
+        return api.get_evaluation_batch_status(self.id)
+
 class EvaluationQuestion(models.Model):
+    CHOICES = [
+        ('pending-turking', 'Uploading to Amazon Mechanical Turk'),
+        ('pending-annotation', 'Crowdsourcing'),
+        ('pending-verification', 'Verifying annotations'),
+        ('pending-aggregation', 'Aggregating annotations'), # Note, we might combine the above two step.
+        ('done', 'Done'),
+        ('error', 'Error'),
+        ]
     id = models.TextField()
-    batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING, primary_key=True)
+    batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING, related_name='questions', primary_key=True)
     created = models.DateTimeField(auto_now=True)
+
     params = models.TextField()
+
+    state = models.TextField(choices=CHOICES)
+    message = models.TextField(null=True)
 
     class Meta:
         managed = False
         db_table = 'evaluation_question'
         unique_together = (('batch', 'id'),)
-
-class MturkAssignment(models.Model):
-    id = models.TextField(primary_key=True)
-    batch = models.ForeignKey('MturkHit', models.DO_NOTHING)
-    hit_id = models.TextField()
-    created = models.DateTimeField(auto_now=True)
-    worker_id = models.TextField()
-    worker_time = models.IntegerField()
-    status = models.TextField()
-    response = models.TextField()
-    ignored = models.BooleanField()
-    comments = models.TextField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'mturk_assignment'
 
 class MturkBatch(models.Model):
     created = models.DateTimeField(auto_now=True)
@@ -240,6 +246,13 @@ class MturkBatch(models.Model):
         db_table = 'mturk_batch'
 
 class MturkHit(models.Model):
+    CHOICES = [
+        ('pending-annotation', 'Crowdsourcing'),
+        ('pending-aggregation', 'Aggregating'),
+        ('done', 'Done'),
+        ('error', 'Error'),
+        ]
+
     id = models.TextField()
     batch = models.ForeignKey(MturkBatch, models.DO_NOTHING, primary_key=True)
     question_batch = models.ForeignKey(EvaluationQuestion, models.DO_NOTHING)
@@ -248,11 +261,40 @@ class MturkHit(models.Model):
     type_id = models.TextField(blank=True, null=True)
     price = models.FloatField(blank=True, null=True)
     units = models.IntegerField(blank=True, null=True)
+    max_assignments = models.IntegerField(blank=True, null=True)
+
+    state = models.TextField(choices=CHOICES)
+    message = models.TextField(null=True)
 
     class Meta:
         managed = False
         db_table = 'mturk_hit'
         unique_together = (('batch', 'id'),)
+
+class MturkAssignment(models.Model):
+    CHOICES = [
+        ('pending-validation', 'Validating'),
+        ('pending-payment', 'Paying'),
+        ('done', 'Done'),
+        ('rejected', 'Rejected'),
+        ('error', 'Error'),
+        ]
+    id = models.TextField(primary_key=True)
+    batch = models.ForeignKey('MturkHit', models.DO_NOTHING)
+    hit_id = models.TextField()
+    created = models.DateTimeField(auto_now=True)
+    worker_id = models.TextField()
+    worker_time = models.IntegerField()
+    response = models.TextField()
+    ignored = models.BooleanField()
+    comments = models.TextField(blank=True, null=True)
+
+    state = models.TextField(choices=CHOICES)
+    message = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = 'mturk_assignment'
 
 # == Response tables
 

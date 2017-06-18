@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+
 from .models import User, Submission, SubmissionUser, SubmissionState
-from web import tasks
+from .models import EvaluationBatch
+from . import tasks
 
 admin.site.register(User, UserAdmin)
 
@@ -60,3 +62,7 @@ class SubmissionAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'corpus_tag', '_user', '_status')
 admin.site.register(Submission, SubmissionAdmin)
+
+class EvaluationBatchAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(EvaluationBatch, EvaluationBatchAdmin)

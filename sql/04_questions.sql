@@ -21,7 +21,8 @@ CREATE TABLE evaluation_question (
 
   -- state can be "pending-turk", "pending-response",
   -- "pending-exhaustive", etc. "done" is resereved.
-  state TEXT NOT NULL, 
+  state TEXT NOT NULL, -- goes from pending-turk, pending-annotation to done, error or deleted
+  message TEXT NOT NULL, 
 
   params JSON NOT NULL, -- the parameters used for this question
   PRIMARY KEY (batch_id, id)
@@ -53,12 +54,6 @@ CREATE VIEW evaluation_relation_question AS (
       AND state <> 'done'
 )
 
-CREATE TYPE HIT_STATUS AS ENUM (
-    'Submitted' , 
-    'Approved' , 
-    'Rejected'
-);
-
 CREATE SEQUENCE mturk_batch_id_seq;
 CREATE TABLE  mturk_batch (
   id INTEGER PRIMARY KEY DEFAULT nextval('mturk_batch_id_seq'),
@@ -81,6 +76,9 @@ CREATE TABLE  mturk_hit (
   price REAL, -- provided to mturk
   units INTEGER, -- provided to mturk
 
+  state TEXT NOT NULL, -- goes from pending-annotation, pending-aggregation, to done, deleted or error
+  message TEXT NOT NULL -- error message
+
   CONSTRAINT question_exists FOREIGN KEY (question_batch_id, question_id) REFERENCES evaluation_question
 ); -- DISTRIBUTED BY (batch_id);
 COMMENT ON TABLE mturk_hit IS 'Keeps track of an individual hit';
@@ -94,11 +92,12 @@ CREATE TABLE  mturk_assignment (
 
   worker_id TEXT NOT NULL, -- provided by mturk
   worker_time INTEGER NOT NULL, -- provided by mturk (in seconds)
-  status HIT_STATUS NOT NULL, -- Have we paid the turker?
   response JSON NOT NULL, -- the raw response by the worker.
   comments TEXT, -- comments provided by the turker 
   ignored BOOLEAN NOT NULL DEFAULT FALSE, -- Should we ignore this entry for some reason?
-  verified BOOLEAN,
+
+  state TEXT NOT NULL, -- goes from pending-validation, pending-payment to done, reject or error
+  message TEXT NOT NULL -- error message
 ); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE mturk_assignment IS 'Keeps track HIT responses from turkers';
 

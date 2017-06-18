@@ -7,7 +7,7 @@ Database utilities.
 import logging
 import re
 import psycopg2
-from psycopg2.extras import execute_values, NumericRange, register_composite
+from psycopg2.extras import execute_values, NumericRange, register_composite, Json
 from .params.db.default import _PARAMS
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,18 @@ try:
     CONN = connect()
 except:
     logging.error("Unable to connect to database")
+
+def get(sql, cur=None, **kwargs):
+    """
+    Gets a single row from the SQL statement above.
+    """
+    if cur is None:
+        with CONN:
+            with CONN.cursor() as cur:
+                return get(sql, cur, **kwargs)
+    else:
+        cur.execute(sql, kwargs)
+        return cur.fetchone()
 
 def select(sql, cur=None, **kwargs):
     """Wrapper around psycopg execute function to yield the result of a SELECT statement"""
