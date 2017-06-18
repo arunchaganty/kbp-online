@@ -13,7 +13,7 @@ from kbpo import api
 from kbpo.parser import MFileReader
 from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
-from kbpo.question import create_evaluation_batch_from_submission_sample
+from kbpo.questions import create_evaluation_batch_from_submission_sample
 from kbpo.turk import connect, create_batch
 
 from .models import Submission, SubmissionState
