@@ -108,3 +108,5 @@ node_modules
 # Ignore symlinks.
 src/service/settings.py
 src/kbpo/params/db/default.py
+
+src/media
