@@ -32,10 +32,18 @@ resample_submission.short_description = "Resample submission (warning will creat
 
 def returk_submission(_, __, queryset):
     for row in queryset:
-        row.state.status = 'pending-turking'
-        row.state.message = ""
-        row.state.save()
-        tasks.turk_submission.delay(row.id)
+        # get the latest sample batch
+        batches = api.get_submission_sample_batches(row.id)
+        if len(batches) == 0:
+            row.state.status = 'error'
+            row.state.message = "Could not turk submission because there are no samples for it!"
+            row.state.save()
+        else:
+            batch_id = batches[0]
+            row.state.status = 'pending-turking'
+            row.state.message = ""
+            row.state.save()
+            tasks.turk_submission.delay(batch_id)
 returk_submission.short_description = "Returk submission (warning may cost money)."
 
 def rescore_submission(_, __, queryset):

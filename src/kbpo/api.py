@@ -671,11 +671,19 @@ def get_questions(question_batch_id):
         ORDER BY id
         """, batch_id=question_batch_id))
 
+def get_submission_sample_batches(submission_id):
+    return [row.id for row in db.select("""
+        SELECT b.id
+        FROM sample_batch b
+        WHERE submission_id = %(submission_id)s
+        ORDER BY created DESC
+        """, submission_id=submission_id)]
+
 def get_samples(sample_batch_id):
     return list(db.select("""
         SELECT submission_id, doc_id, subject, object
         FROM submission_sample
-        WHERE batch_id = %(batch_id)
+        WHERE batch_id = %(batch_id)s
         """, batch_id=sample_batch_id))
 
 def get_evaluation_batch_status(batch_id):
