@@ -16,7 +16,8 @@ class SubmissionUser(models.Model):
 class SubmissionState(models.Model):
     CHOICES = [
         ('error', "Error"),
-        ('pending-upload', "Validating and uploading into database"),
+        ('pending-validation', "Validating submission"),
+        ('pending-upload', "Uploading into database"),
         ('pending-sampling', "Sampling instances"),
         ('pending-turking', "Uploading to Amazon Mechanical Turk"),
         ('pending-annotation', "Crowdsourcing"),
@@ -26,7 +27,7 @@ class SubmissionState(models.Model):
     CHOICES_ = dict(CHOICES)
 
     submission = models.OneToOneField(Submission, related_name="state", primary_key=True)
-    status = models.CharField(max_length=20, default='pending-upload', choices=CHOICES)
+    status = models.CharField(max_length=20, default='pending-validation', choices=CHOICES)
     message = models.TextField(blank=True, default='')
 
     objects = models.Manager()

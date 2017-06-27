@@ -2,11 +2,11 @@ import csv
 import gzip
 import logging
 
+import pdb
 from django import forms
 from registration.forms import RegistrationForm
 
 from kbpo import db
-from kbpo.parser import TacKbReader, MFileReader, ListLogger
 from .models import User, Submission
 
 logger = logging.getLogger(__name__)
@@ -20,11 +20,8 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
     """
     A knowledge base submitted by the user.
     """
-    file_format = forms.ChoiceField(choices=[("tackb", "TAC-KBP KB format"), ("mfile", "Mention-based KB format")], help_text="")
+    file_format = forms.ChoiceField(choices=[("tackb2016", "TAC-KBP KB format (2015--2016)"), ("mfile", "Mention-based KB format")], help_text="")
     knowledge_base = forms.FileField(help_text="The file to be uploaded. Please ensure that it is gzipped.")
-
-    original_file = None
-    log = None
 
     class Meta:
         model = Submission
@@ -38,8 +35,6 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
     def clean_knowledge_base(self):
         data = self.cleaned_data['knowledge_base']
-        # Store a copy.
-        self.cleaned_data["original_kb"] = data
 
         if 'gzip' not in data.content_type:
             raise forms.ValidationError("Received a file with Content-Type: {}; please ensure the file is properly gzipped". format(data.content_type))
@@ -47,23 +42,10 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         if data.size > self.MAX_SIZE: # 20MB file.
             raise forms.ValidationError("Submitted file is larger than our current file size limit of {}MB. Please ensure that you are submitted the correct file, if not contact us at {}".format(int(self.MAX_SIZE / 1024 / 1024), ""))
 
-        doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=self.cleaned_data["corpus_tag"]))
-
-        if self.cleaned_data["file_format"] == "tackb":
-            reader = TacKbReader()
-        elif self.cleaned_data["file_format"] == "mfile":
-            reader = MFileReader()
-
         try:
-            self.original_file = data
             # Check that the file is gzipped.
             with gzip.open(data, 'rt') as f:
-                # Check that it has the right format, aka validate it.
-                log = ListLogger()
-                data = reader.parse(f, doc_ids=doc_ids, logger=log)
-                self.log = log
-                if len(log.errors) > 0:
-                    raise forms.ValidationError("Error validating file (see below)")
+                f.read() # Try to read the whole file as a way to ensure that it is a valid zip file.
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
@@ -75,13 +57,9 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
         try:
             data = self.cleaned_data['knowledge_base']
-            with gzip.open(instance.uploaded_filename, 'wt') as f:
-                data.write(f)
+            with gzip.open(data, 'rt') as f, gzip.open(instance.original_filename, 'wt') as g:
+                g.write(f.read())
 
-            data = self.cleaned_data['original_kb']
-            with gzip.open(instance.original_filename, 'wt') as f:
-                with gzip.open(instance.original_filename, 'rt') as g:
-                    f.write(g.read())
         except (AttributeError, OSError)  as e:
             logger.exception(e)
             instance.delete()

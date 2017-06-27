@@ -36,7 +36,7 @@ def submissions(request):
             SubmissionUser(user=request.user, submission=submission).save()
             SubmissionState(submission=submission).save()
 
-            tasks.validate_submission.delay(submission.id)
+            tasks.validate_submission.delay(submission.id, form.cleaned_data["file_format"])
 
             messages.info(request, "Submission '{}' uploaded and currently being validated. Please reload this page to see the latest status.".format(form.cleaned_data['name'],))
             redirect('submissions')

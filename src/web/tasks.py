@@ -39,7 +39,7 @@ def validate_submission(submission_id, file_format):
     logger.info("Validating submission %s", submission_id)
 
     if state.status != 'pending-validate':
-        logger.warning("Trying to validate submission %s, but state is %s", submission, state.status)
+        logger.warning("Trying to validate submission %s, but state is %s", submission.id, state.status)
         return
 
     try:
@@ -52,13 +52,13 @@ def validate_submission(submission_id, file_format):
             reader = TacKbReader()
 
         with gzip.open(submission.log_filename, "wt") as log_file:
-            logger = logging.Logger("validation")
-            logger.setLevel(logging.INFO)
-            logger.addHandler(logging.StreamHandler(log_file))
+            _logger = logging.Logger("validation")
+            _logger.setLevel(logging.INFO)
+            _logger.addHandler(logging.StreamHandler(log_file))
 
             with gzip.open(submission.original_filename, 'rt') as f:
                 # Check that it has the right format, aka validate it.
-                mfile = reader.parse(f, doc_ids=doc_ids, logger=logger)
+                mfile = reader.parse(f, doc_ids=doc_ids, logger=_logger)
         # TODO: We never stop the submission even if there are errors (maybe this should be reconsidered?)
 
         # Save parsed file.
@@ -89,7 +89,7 @@ def process_submission(submission_id):
     logger.info("Processing submission %s", submission_id)
 
     if state.status != 'pending-upload':
-        logger.warning("Trying to process submission %s, but state is %s", submission, state.status)
+        logger.warning("Trying to process submission %s, but state is %s", submission.id, state.status)
         return
 
     try:
@@ -160,7 +160,7 @@ def turk_submission(sample_batch_id):
     logger.info("Turking sample %s (submission %s)", sample_batch_id, submission_id)
 
     if state.status != 'pending-turking':
-        logger.warning("Trying to process submission %s, but state is %s", submission, state.status)
+        logger.warning("Trying to process submission %s, but state is %s", submission.id, state.status)
         return
     try:
         evaluation_batch_id = create_evaluation_batch_from_submission_sample(sample_batch_id)
