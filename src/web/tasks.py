@@ -72,7 +72,7 @@ def validate_submission(submission_id, file_format):
         # Update state of submission.
         state.status = 'pending-upload'
         state.save()
-        #process_submission.delay(submission_id)
+        process_submission.delay(submission_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
