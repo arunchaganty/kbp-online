@@ -32,8 +32,10 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             }
 
     MAX_SIZE = 20 * 1024 * 1024 # 20 MB
+    CHUNK_SIZE = 1024*1024
 
     def clean_knowledge_base(self):
+
         data = self.cleaned_data['knowledge_base']
 
         if 'gzip' not in data.content_type:
@@ -44,8 +46,12 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
         try:
             # Check that the file is gzipped.
-            with gzip.open(data, 'rt') as f:
-                f.read() # Try to read the whole file as a way to ensure that it is a valid zip file.
+            # Try to read the whole file as a way to ensure that it is a valid zip file.
+            with gzip.open(data.temporary_file_path(), 'rt') as f:
+                buf = f.read(self.CHUNK_SIZE)
+                while len(buf) > 0:
+                    buf = f.read(self.CHUNK_SIZE)
+
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
@@ -57,8 +63,11 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
         try:
             data = self.cleaned_data['knowledge_base']
-            with gzip.open(data, 'rt') as f, gzip.open(instance.original_filename, 'wt') as g:
-                g.write(f.read())
+            with gzip.open(data.temporary_file_path(), 'rt') as f, gzip.open(instance.original_filename, 'wt') as g:
+                buf = f.read(self.CHUNK_SIZE)
+                while len(buf) > 0:
+                    g.write(buf)
+                    buf = f.read(self.CHUNK_SIZE)
 
         except (AttributeError, OSError)  as e:
             logger.exception(e)

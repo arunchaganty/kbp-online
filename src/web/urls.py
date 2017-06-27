@@ -6,6 +6,7 @@ urlpatterns = [
     url(r'^submissions/(?P<submission_id>[0-9]+)/delete/$', views.submissions_delete, name='submissions_delete'),
     url(r'^submissions/(?P<submission_id>[0-9]+)/download/(?P<resource>log)/$', views.submissions_download, name='submissions_delete'),
     url(r'^submissions/(?P<submission_id>[0-9]+)/download/(?P<resource>kb)/$', views.submissions_download, name='submissions_delete'),
+    url(r'^submissions/(?P<submission_id>[0-9]+)/download/(?P<resource>mfile)/$', views.submissions_download, name='submissions_delete'),
 
     url(r'^explore/corpus/(?P<corpus_tag>[a-zA-Z_0-9.-]+)/(?P<doc_id>[a-zA-Z_0-9.]+)/$', views.explore_corpus, name='explore_corpus'),
     url(r'^explore/corpus/(?P<corpus_tag>[a-zA-Z_0-9.-]+)/$', views.explore_corpus, name='explore_corpus'),

@@ -1,11 +1,13 @@
+import os
 import json
 import logging
 from urllib.parse import urlencode
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.urlresolvers import reverse
-from django.http import JsonResponse, HttpResponseRedirect, Http404
+from django.http import JsonResponse, HttpResponseRedirect, Http404, StreamingHttpResponse
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 from kbpo import api
 
@@ -20,14 +22,40 @@ logger = logging.getLogger(__name__)
 def home(request):
     return render(request, 'home.html')
 
+@login_required
 def submissions_delete(request, submission_id):
+    # TODO: Remove from submission_* too.
     # Check that the submission is indeed that of the user.
-    pass
+    submission = get_object_or_404(Submission, id=submission_id)
+    if submission.user.user != request.user:
+        raise Http404("You do not have a submission with that id")
+    submission.delete()
+    return redirect("submissions")
 
+def stream_file(path):
+    fstream = open(path, "rb")
+    response = StreamingHttpResponse(fstream, content_type='application/gzip')
+    response['Content-Disposition'] = 'attachment; filename={}'.format(os.path.basename(path))
+    response['Content-Length'] = os.stat(path).st_size
+    return response
+
+@login_required
 def submissions_download(request, submission_id, resource):
-    # Check that the submission is indeed that of the user.
-    pass
+    submission = get_object_or_404(Submission, id=submission_id)
+    if submission.user.user != request.user:
+        raise Http404("You do not have a submission with that id")
 
+    if resource == "log" and os.path.exists(submission.log_filename):
+        return stream_file(submission.log_filename)
+    elif resource == "kb" and os.path.exists(submission.original_filename):
+        return stream_file(submission.original_filename)
+    elif resource == "mfile" and os.path.exists(submission.uploaded_filename):
+        return stream_file(submission.uploaded_filename)
+    else:
+        messages.error(request, "We could not find the `{}` for submission {}. Please contact the administrators for more details and assistance.".format(resource, submission_id))
+        return redirect("submissions")
+
+@login_required
 def submissions(request):
     if request.method == 'POST':
         form = KnowledgeBaseSubmissionForm(request.POST, request.FILES)
@@ -39,7 +67,7 @@ def submissions(request):
             tasks.validate_submission.delay(submission.id, form.cleaned_data["file_format"])
 
             messages.info(request, "Submission '{}' uploaded and currently being validated. Please reload this page to see the latest status.".format(form.cleaned_data['name'],))
-            redirect('submissions')
+            return redirect('submissions')
     else:
         form = KnowledgeBaseSubmissionForm()
 

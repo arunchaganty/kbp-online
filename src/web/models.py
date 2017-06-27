@@ -36,4 +36,4 @@ class SubmissionState(models.Model):
         return "<SubmissionState {}: {}>".format(self.submission_id, self.status)
 
     def __str__(self):
-        return self.CHOICES_[self.status]
+        return self.CHOICES_.get(self.status, self.status)

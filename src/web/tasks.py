@@ -36,20 +36,22 @@ def validate_submission(submission_id, file_format):
     submission = Submission.objects.get(id=submission_id)
     state = SubmissionState.objects.get(submission_id=submission_id)
 
+    # Get the right reader
+    if file_format == "mfile":
+        reader = MFileReader()
+    elif file_format == "tackb2016":
+        reader = TacKbReader()
+    else:
+        raise ValueError("Invalid file format: {}".format(file_format))
+
     logger.info("Validating submission %s", submission_id)
 
-    if state.status != 'pending-validate':
+    if state.status != 'pending-validation':
         logger.warning("Trying to validate submission %s, but state is %s", submission.id, state.status)
         return
 
     try:
         doc_ids = {r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag)}
-
-        # Get the right reader
-        if file_format == "mfile":
-            reader = MFileReader()
-        elif file_format == "tackb":
-            reader = TacKbReader()
 
         with gzip.open(submission.log_filename, "wt") as log_file:
             _logger = logging.Logger("validation")
@@ -60,14 +62,17 @@ def validate_submission(submission_id, file_format):
                 # Check that it has the right format, aka validate it.
                 mfile = reader.parse(f, doc_ids=doc_ids, logger=_logger)
         # TODO: We never stop the submission even if there are errors (maybe this should be reconsidered?)
+        assert len(mfile.types) > 0, "Uploaded submission file does not define any mentions"
+        assert len(mfile.relations) > 0, "Uploaded submission file does not define any relations"
 
         # Save parsed file.
         with gzip.open(submission.uploaded_filename, 'wt') as f:
             mfile.write(f)
+
         # Update state of submission.
-        state.status = 'pending-process'
+        state.status = 'pending-upload'
         state.save()
-        process_submission.delay(submission_id)
+        #process_submission.delay(submission_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'

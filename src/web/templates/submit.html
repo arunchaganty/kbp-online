@@ -60,15 +60,26 @@
         <td>{{submission.submission.updated}}</td>
         <td>{{submission.submission.state}}</td>
         <td>
+          <ul class="list-unstyled">
+          {% if submission.submission.original_file %}
+          <li>
+          <a href="/submissions/{{submission.submission.id}}/download/kb/">uploaded kb</a>
+          </li>
+          {% endif %}
           {% if submission.submission.log_file %}
+          <li>
           <a href="/submissions/{{submission.submission.id}}/download/log/">validation log</a>
+          </li>
           {% endif %}
           {% if submission.submission.uploaded_file %}
-          <a href="/submissions/{{submission.submission.id}}/download/kb/">kb</a>
+          <li>
+          <a href="/submissions/{{submission.submission.id}}/download/mfile/">validated kb</a>
+          </li>
           {% endif %}
+          </ul>
         </td>
         <td class="text-center">
-          <a href="/submissions/delete/{{submission.submission.id}}/">
+          <a href="/submissions/{{submission.submission.id}}/delete/">
             {% bootstrap_icon 'remove' %}
           </a>
         </td>
