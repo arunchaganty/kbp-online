@@ -3,6 +3,7 @@ KBPO internal models.
 """
 import os
 
+from django.core.files import File
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
@@ -104,18 +105,46 @@ class Submission(models.Model):
         db_table = 'submission'
 
     @property
+    def log_file(self):
+        if os.path.exists(self.log_filename):
+            return File(open(self.log_filename))
+        else:
+            return None
+
+    @property
+    def log_filename(self):
+        """
+        Load the uploaded filename from the server.
+        """
+        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}.m.log.gz'.format(self.id))
+
+    @property
+    def uploaded_file(self):
+        if os.path.exists(self.uploaded_filename):
+            return File(open(self.uploaded_filename))
+        else:
+            return None
+
+    @property
     def uploaded_filename(self):
         """
         Load the uploaded filename from the server.
         """
-        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}-{}.m.gz'.format(self.name, self.id))
+        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}.m.gz'.format(self.id))
+
+    @property
+    def original_file(self):
+        if os.path.exists(self.original_filename):
+            return File(open(self.original_filename))
+        else:
+            return None
 
     @property
     def original_filename(self):
         """
         Load the uploaded filename from the server.
         """
-        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}-{}.original.gz'.format(self.name, self.id))
+        return os.path.join(settings.MEDIA_ROOT, 'submissions', '{}.original.gz'.format(self.id))
 
 class SubmissionMention(models.Model):
     submission = models.ForeignKey(Submission, models.DO_NOTHING)

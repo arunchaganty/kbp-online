@@ -21,8 +21,9 @@ class SubmissionState(models.Model):
         ('pending-turking', "Uploading to Amazon Mechanical Turk"),
         ('pending-annotation', "Crowdsourcing"),
         ('pending-scoring', "Scoring"),
-        ('done', "Evaluated"),
+        ('done', "Evaluated!"),
         ]
+    CHOICES_ = dict(CHOICES)
 
     submission = models.OneToOneField(Submission, related_name="state", primary_key=True)
     status = models.CharField(max_length=20, default='pending-upload', choices=CHOICES)
@@ -30,5 +31,8 @@ class SubmissionState(models.Model):
 
     objects = models.Manager()
 
-    def __str__(self):
+    def __repr__(self):
         return "<SubmissionState {}: {}>".format(self.submission_id, self.status)
+
+    def __str__(self):
+        return self.CHOICES_[self.status]

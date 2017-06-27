@@ -58,9 +58,20 @@
         <td>{{submission.submission.details}}</td>
         <td>{{submission.submission.corpus_tag}}</td>
         <td>{{submission.submission.updated}}</td>
-        <td>{{submission.submission.state.status}}</td>
-        <td>-</td>
-        <td>-</td>
+        <td>{{submission.submission.state}}</td>
+        <td>
+          {% if submission.submission.log_file %}
+          <a href="/submissions/{{submission.submission.id}}/download/log/">validation log</a>
+          {% endif %}
+          {% if submission.submission.uploaded_file %}
+          <a href="/submissions/{{submission.submission.id}}/download/kb/">kb</a>
+          {% endif %}
+        </td>
+        <td class="text-center">
+          <a href="/submissions/delete/{{submission.submission.id}}/">
+            {% bootstrap_icon 'remove' %}
+          </a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

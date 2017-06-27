@@ -9,10 +9,10 @@ from django.contrib import messages
 
 from kbpo import api
 
+from . import tasks
 from .forms import KnowledgeBaseSubmissionForm
 from .models import Submission, SubmissionUser, SubmissionState
 from .models import Document, DocumentTag
-from .tasks import process_submission
 
 logger = logging.getLogger(__name__)
 
@@ -20,22 +20,26 @@ logger = logging.getLogger(__name__)
 def home(request):
     return render(request, 'home.html')
 
-def submit(request):
+def submissions_delete(request, submission_id):
+    # Check that the submission is indeed that of the user.
+    pass
+
+def submissions_download(request, submission_id, resource):
+    # Check that the submission is indeed that of the user.
+    pass
+
+def submissions(request):
     if request.method == 'POST':
         form = KnowledgeBaseSubmissionForm(request.POST, request.FILES)
         if form.is_valid():
             submission = form.save()
-            SubmissionUser.objects.create(user=request.user, submission=submission).save()
-            SubmissionState.objects.create(submission=submission).save()
+            SubmissionUser(user=request.user, submission=submission).save()
+            SubmissionState(submission=submission).save()
 
-            process_submission.delay(submission.id)
+            tasks.validate_submission.delay(submission.id)
 
-            if len(form.log.warnings) > 0:
-                messages.warning(request, "Submission '{}' uploaded with {} errors and {} warnings and {} messages.".format(form.cleaned_data['name'],
-                    len(form.log.errors), len(form.log.warnings), len(form.log.infos)))
-            else:
-                messages.success(request, "Submission '{}' uploaded with {} errors and {} warnings and {} messages.".format(form.cleaned_data['name'],
-                    len(form.log.errors), len(form.log.warnings), len(form.log.infos)))
+            messages.info(request, "Submission '{}' uploaded and currently being validated. Please reload this page to see the latest status.".format(form.cleaned_data['name'],))
+            redirect('submissions')
     else:
         form = KnowledgeBaseSubmissionForm()
 

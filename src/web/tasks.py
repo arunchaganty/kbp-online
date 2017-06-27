@@ -5,12 +5,15 @@ import gzip
 import logging
 
 from celery import shared_task
+
+from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
+
 from service.settings import MTURK_TARGET
 
 from kbpo import db
 from kbpo import api
-from kbpo.parser import MFileReader
+from kbpo.parser import MFileReader, TacKbReader
 from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.questions import create_evaluation_batch_from_submission_sample
@@ -22,6 +25,55 @@ logger = logging.getLogger(__name__)
 
 # TODO: create a task for validate_submission and save log output
 # somewhere
+@shared_task
+def validate_submission(submission_id, file_format):
+    """
+    Validates submission.
+    """
+    assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
+    assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
+
+    submission = Submission.objects.get(id=submission_id)
+    state = SubmissionState.objects.get(submission_id=submission_id)
+
+    logger.info("Validating submission %s", submission_id)
+
+    if state.status != 'pending-validate':
+        logger.warning("Trying to validate submission %s, but state is %s", submission, state.status)
+        return
+
+    try:
+        doc_ids = {r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag)}
+
+        # Get the right reader
+        if file_format == "mfile":
+            reader = MFileReader()
+        elif file_format == "tackb":
+            reader = TacKbReader()
+
+        with gzip.open(submission.log_filename, "wt") as log_file:
+            logger = logging.Logger("validation")
+            logger.setLevel(logging.INFO)
+            logger.addHandler(logging.StreamHandler(log_file))
+
+            with gzip.open(submission.original_filename, 'rt') as f:
+                # Check that it has the right format, aka validate it.
+                mfile = reader.parse(f, doc_ids=doc_ids, logger=logger)
+        # TODO: We never stop the submission even if there are errors (maybe this should be reconsidered?)
+
+        # Save parsed file.
+        with gzip.open(submission.uploaded_filename, 'wt') as f:
+            mfile.write(f)
+        # Update state of submission.
+        state.status = 'pending-process'
+        state.save()
+        process_submission.delay(submission_id)
+    except Exception as e:
+        logger.exception(e)
+        state.status = 'error'
+        state.message = str(e)
+        state.save()
+
 
 @shared_task
 def process_submission(submission_id):
