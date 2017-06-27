@@ -6,11 +6,21 @@ import os
 from django.core.files import File
 from django.db import models
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.search import SearchVector
 
 from kbpo import api
 
 from .fields import SpanField, ScoreField
+
+## Corpus
+class CorpusState(models.Model):
+    corpus_tag = models.TextField()
+    state = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = 'corpus_state'
 
 class Document(models.Model):
     id = models.TextField(primary_key=True)
@@ -20,8 +30,6 @@ class Document(models.Model):
     doc_length = models.IntegerField(blank=True, null=True)
     doc_digest = models.TextField(blank=True, null=True)
     gloss = models.TextField(blank=True, null=True)
-
-    objects = models.Manager()
 
     class Meta:
         managed = False
@@ -34,6 +42,15 @@ class DocumentTag(models.Model):
     class Meta:
         managed = False
         db_table = 'document_tag'
+        unique_together = (('doc', 'tag'),)
+
+class DocumentIndex(models.Model):
+    doc_id = models.TextField(blank=True, null=True)
+    tsvector = SearchVector(blank=True, null=True)  # This field type is a guess.
+
+    class Meta:
+        managed = False
+        db_table = 'document_index'
 
 class Sentence(models.Model):
     """
@@ -42,24 +59,24 @@ class Sentence(models.Model):
     id = models.AutoField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
     doc = models.ForeignKey(Document, models.DO_NOTHING)
+    span = SpanField()
     sentence_index = models.SmallIntegerField()
+    gloss = models.TextField()
+    token_spans = ArrayField(SpanField())
     words = ArrayField(models.TextField())
     lemmas = ArrayField(models.TextField())
     pos_tags = ArrayField(models.TextField())
     ner_tags = ArrayField(models.TextField())
-    doc_char_begin = ArrayField(models.TextField())
-    doc_char_end = ArrayField(models.TextField())
-    gloss = models.TextField()
     dependencies = models.TextField()
 
     class Meta:
         managed = False
         db_table = 'sentence'
-        unique_together = (('doc', 'sentence_index'),)
+        unique_together = (('doc', 'span'),)
 
 class SuggestedMention(models.Model):
-    id = SpanField(primary_key=True)
     doc = models.ForeignKey(Document, models.DO_NOTHING)
+    span = SpanField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
     sentence_id = models.ForeignKey(Sentence)
     mention_type = models.TextField()
@@ -69,11 +86,11 @@ class SuggestedMention(models.Model):
     class Meta:
         managed = False
         db_table = 'suggested_mention'
-        unique_together = (('doc', 'id'),)
+        unique_together = (('doc', 'span'),)
 
 class SuggestedLink(models.Model):
-    id = SpanField(primary_key=True)
     doc = models.ForeignKey('SuggestedMention', models.DO_NOTHING)
+    span = SpanField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
     link_name = models.TextField()
     confidence = models.FloatField(default=1.0)
@@ -81,8 +98,9 @@ class SuggestedLink(models.Model):
     class Meta:
         managed = False
         db_table = 'suggested_link'
-        unique_together = (('doc', 'id'),)
+        unique_together = (('doc', 'span'),)
 
+## Submission
 #- modified -v
 class Submission(models.Model):
     id = models.AutoField(primary_key=True)
@@ -149,10 +167,9 @@ class Submission(models.Model):
 class SubmissionMention(models.Model):
     submission = models.ForeignKey(Submission, models.DO_NOTHING)
     doc = models.ForeignKey(Document, models.DO_NOTHING)
-    mention_id = SpanField(primary_key=True)
+    span = SpanField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
-
-    canonical_id = SpanField()
+    canonical_span = SpanField()
     mention_type = models.TextField()
     gloss = models.TextField()
 
@@ -165,14 +182,13 @@ class SubmissionMention(models.Model):
     class Meta:
         managed = False
         db_table = 'submission_mention'
-        unique_together = (('submission', 'doc', 'mention_id'),)
+        unique_together = (('submission', 'doc', 'span'),)
 
 class SubmissionLink(models.Model):
     submission = models.ForeignKey(Submission, models.DO_NOTHING)
     doc = models.ForeignKey(Document, models.DO_NOTHING)
-    mention_id = SpanField(primary_key=True)
+    span = SpanField()
     updated = models.DateTimeField(auto_now=True)
-
     link_name = models.TextField()
     confidence = models.FloatField()
 
@@ -185,18 +201,16 @@ class SubmissionLink(models.Model):
     class Meta:
         managed = False
         db_table = 'submission_link'
-        unique_together = (('submission', 'doc', 'mention_id'),)
+        unique_together = (('submission', 'doc', 'span'),)
 
 class SubmissionRelation(models.Model):
     submission = models.ForeignKey(Submission, models.DO_NOTHING)
     doc = models.ForeignKey(Document, models.DO_NOTHING)
-    subject_id = SpanField(primary_key=True)
-    object_id = SpanField(primary_key=True)
+    subject = SpanField(primary_key=True)
+    object = SpanField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
-
     relation = models.TextField()
-    subject_gloss = models.TextField()
-    object_gloss = models.TextField()
+    provenances = ArrayField(SpanField())
     confidence = models.FloatField()
 
     def __str__(self):
@@ -208,22 +222,21 @@ class SubmissionRelation(models.Model):
     class Meta:
         managed = False
         db_table = 'submission_relation'
-        unique_together = (('submission', 'doc', 'subject_id', 'object_id'),)
+        unique_together = (('submission', 'doc', 'subject', 'object'),)
 
 class SubmissionScore(models.Model):
     submission = models.OneToOneField(Submission, models.DO_NOTHING)
     updated = models.DateTimeField(auto_now=True)
-
     score_type = models.TextField()
     score = ScoreField()
+    left_interval = ScoreField()
+    right_interval = ScoreField()
 
     class Meta:
         managed = False
         db_table = 'submission_score'
-        unique_together = (('submission', 'score_type'),)
 
 # == Evaluation batch and question
-#- modified -v
 class EvaluationBatch(models.Model):
     id = models.IntegerField(primary_key=True)
     created = models.DateTimeField(auto_now=True)
@@ -232,8 +245,8 @@ class EvaluationBatch(models.Model):
         ('exhaustive_relations', 'Exhaustive relations'),
         ('selective_relations', 'Selective relations'),
         ])
-    description = models.TextField()
     corpus_tag = models.TextField()
+    description = models.TextField()
 
     class Meta:
         managed = False
@@ -266,9 +279,7 @@ class EvaluationQuestion(models.Model):
     id = models.TextField(primary_key=True)
     batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING, related_name='questions')
     created = models.DateTimeField(auto_now=True)
-
     params = models.TextField()
-
     state = models.TextField(choices=CHOICES)
     message = models.TextField(null=True)
 
@@ -279,7 +290,7 @@ class EvaluationQuestion(models.Model):
 
 class MturkBatch(models.Model):
     created = models.DateTimeField(auto_now=True)
-    params = models.TextField()
+    params = JSONField()
     description = models.TextField(blank=True, null=True)
 
     def __repr__(self):
@@ -299,7 +310,6 @@ class MturkHit(models.Model):
         ('done', 'Done'),
         ('error', 'Error'),
         ]
-
     id = models.TextField(primary_key=True)
     batch = models.ForeignKey(MturkBatch, models.DO_NOTHING)
     question_batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING)
@@ -309,9 +319,8 @@ class MturkHit(models.Model):
     price = models.FloatField(blank=True, null=True)
     units = models.IntegerField(blank=True, null=True)
     max_assignments = models.IntegerField(blank=True, null=True)
-
-    state = models.TextField(choices=CHOICES)
-    message = models.TextField(null=True)
+    state = models.TextField(blank=True, null=True)
+    message = models.TextField(blank=True, null=True)
 
     def __repr__(self):
         return "<MTurkHIT {}>".format(self.id)
@@ -339,10 +348,10 @@ class MturkAssignment(models.Model):
     created = models.DateTimeField(auto_now=True)
     worker_id = models.TextField()
     worker_time = models.IntegerField()
-    response = models.TextField()
+    response = JSONField()
     ignored = models.BooleanField()
+    verified = models.NullBooleanField()
     comments = models.TextField(blank=True, null=True)
-
     state = models.TextField(choices=CHOICES)
     message = models.TextField()
 
@@ -357,60 +366,59 @@ class MturkAssignment(models.Model):
         db_table = 'mturk_assignment'
 
 # == Response tables
-
 class EvaluationLink(models.Model):
-    question_batch = models.ForeignKey('EvaluationQuestion', models.DO_NOTHING)
-    question_id = models.TextField()
     doc = models.ForeignKey(Document, models.DO_NOTHING, primary_key=True)
-    mention_id = SpanField()
+    span = SpanField()
     created = models.DateTimeField(auto_now=True)
+    question_batch = models.ForeignKey('EvaluationQuestion', models.DO_NOTHING)
+    question_id = models.TextField() # Not linking to question because question needs (question_id, batch_id)
     link_name = models.TextField()
     weight = models.FloatField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'evaluation_link'
-        unique_together = (('doc', 'mention_id'),)
+        unique_together = (('doc', 'span'),)
 
 class EvaluationLinkResponse(models.Model):
     assignment = models.ForeignKey('MturkAssignment', models.DO_NOTHING)
-    question_batch = models.ForeignKey('EvaluationQuestion', models.DO_NOTHING)
-    question_id = models.TextField()
     doc = models.ForeignKey(Document, models.DO_NOTHING, primary_key=True)
-    mention_id = SpanField()
+    span = SpanField()
     created = models.DateTimeField(auto_now=True)
+    question_batch = models.ForeignKey('EvaluationBatch', models.DO_NOTHING)
+    question_id = models.TextField()
     link_name = models.TextField()
     weight = models.FloatField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'evaluation_link_response'
-        unique_together = (('doc', 'assignment', 'mention_id'),)
+        unique_together = (('assignment', 'doc', 'span'),)
 
 class EvaluationMention(models.Model):
     doc = models.ForeignKey(Document, models.DO_NOTHING, primary_key=True)
-    mention_id = SpanField()
+    span = SpanField()
     created = models.DateTimeField(auto_now=True)
-    canonical_id = SpanField()
+    question_id = models.TextField(blank=True, null=True)
+    question_batch_id = models.IntegerField(blank=True, null=True)
+    canonical_span = SpanField()
     mention_type = models.TextField()
     gloss = models.TextField(blank=True, null=True)
     weight = models.FloatField()
-    question_id = models.TextField(blank=True, null=True)
-    question_batch_id = models.IntegerField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'evaluation_mention'
-        unique_together = (('doc', 'mention_id'),)
+        unique_together = (('doc', 'span'),)
 
 class EvaluationMentionResponse(models.Model):
     assignment = models.ForeignKey('MturkAssignment', models.DO_NOTHING)
-    question_batch = models.ForeignKey('EvaluationQuestion', models.DO_NOTHING)
-    question_id = models.TextField()
     doc = models.ForeignKey(Document, models.DO_NOTHING, primary_key=True)
-    mention_id = SpanField()
+    span = SpanField()
     created = models.DateTimeField(auto_now=True)
-    canonical_id = SpanField()
+    question_batch = models.ForeignKey('EvaluationBatch', models.DO_NOTHING)
+    question_id = models.TextField()
+    canonical_span = SpanField()
     mention_type = models.TextField()
     gloss = models.TextField(blank=True, null=True)
     weight = models.FloatField()
@@ -418,35 +426,70 @@ class EvaluationMentionResponse(models.Model):
     class Meta:
         managed = False
         db_table = 'evaluation_mention_response'
-        unique_together = (('doc', 'assignment', 'mention_id'),)
+        unique_together = (('assignment', 'doc', 'span'),)
 
 class EvaluationRelation(models.Model):
     doc = models.ForeignKey(Document, models.DO_NOTHING)
-    subject_id = SpanField()
-    object_id = SpanField()
+    subject = SpanField()
+    object = SpanField()
     created = models.DateTimeField(auto_now=True)
+    question_batch_id = models.IntegerField()
+    question_id = models.TextField(primary_key=True)
     relation = models.TextField()
     weight = models.FloatField(blank=True, null=True)
-    question_id = models.TextField(primary_key=True)
-    question_batch_id = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'evaluation_relation'
-        unique_together = (('question_id', 'question_batch_id', 'doc', 'subject_id', 'object_id'),)
+        unique_together = (('doc', 'subject', 'object'),)
 
 class EvaluationRelationResponse(models.Model):
     assignment = models.ForeignKey('MturkAssignment', models.DO_NOTHING)
-    question_batch = models.ForeignKey(EvaluationQuestion, models.DO_NOTHING)
-    question_id = models.TextField()
     doc = models.ForeignKey(Document, models.DO_NOTHING, primary_key=True)
-    subject_id = SpanField()
-    object_id = SpanField()
+    subject = SpanField()
+    object = SpanField()
     created = models.DateTimeField(auto_now=True)
+    question_batch = models.ForeignKey(EvaluationBatch, models.DO_NOTHING)
+    question_id = models.TextField()
     relation = models.TextField()
     weight = models.FloatField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'evaluation_relation_response'
-        unique_together = (('doc', 'assignment', 'subject_id', 'object_id'),)
+        unique_together = (('assignment', 'object', 'doc', 'subject'),)
+
+## Sampling
+class SampleBatch(models.Model):
+    created = models.DateTimeField(auto_now=True)
+    submission = models.ForeignKey('Submission', models.DO_NOTHING, blank=True, null=True, related_name="sample_batches")
+    distribution_type = models.TextField()
+    corpus_tag = models.TextField()
+    params = JSONField()
+
+    class Meta:
+        managed = False
+        db_table = 'sample_batch'
+
+class DocumentSample(models.Model):
+    batch = models.ForeignKey('SampleBatch', models.DO_NOTHING)
+    doc = models.ForeignKey(Document, models.DO_NOTHING, primary_key=True)
+    created = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = 'document_sample'
+        unique_together = (('doc', 'batch'),)
+
+class SubmissionSample(models.Model):
+    batch = models.ForeignKey(SampleBatch, models.DO_NOTHING)
+    submission = models.ForeignKey(Submission, models.DO_NOTHING, primary_key=True, related_name='samples')
+    doc = models.ForeignKey(Document, models.DO_NOTHING)
+    subject = SpanField()
+    object = SpanField()
+    created = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = 'submission_sample'
+        unique_together = (('submission', 'doc', 'subject', 'object', 'batch'),)
