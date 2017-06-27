@@ -316,7 +316,7 @@ def test_get_submissions():
     assert [s.name for s in get_submissions(tag)] == ["patterns", "supervised", "rnn"]
 
 def get_submission(submission_id):
-    return next(db.select("""SELECT * FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id))
+    return next(db.select("""SELECT id, updated, name, corpus_tag, details FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id))
 
 def test_get_submission():
     submission_id = 1
@@ -398,18 +398,22 @@ def insert_assignment(
         status="Submitted", created=datetime.now()):
     batch_id = next(db.select("""SELECT batch_id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id))
 
-    db.execute("""
-        INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) 
-        VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(status)s)""",
-               assignment_id=assignment_id,
-               hit_id=hit_id,
-               batch_id=batch_id,
-               worker_id= worker_id,
-               created= created,
-               worker_time=int(float(worker_time)),
-               response=response,
-               comments=comments,
-               status=status)
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            db.execute("""
+                INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) RETURNING (id)
+                VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(status)s)""",
+                       cur=cur,
+                       assignment_id=assignment_id,
+                       hit_id=hit_id,
+                       batch_id=batch_id,
+                       worker_id= worker_id,
+                       created= created,
+                       worker_time=int(float(worker_time)),
+                       response=response,
+                       comments=comments,
+                       status=status)
+            return next(cur).id
 
 def get_hits(limit=None):
     if limit is None:
@@ -695,6 +699,13 @@ def get_evaluation_batch_status(batch_id):
         GROUP BY state
         """, batch_id=batch_id))
     return Counter({state: count for state, count in stats})
+
+def get_evaluation_batch(batch_id):
+    return next(db.select("""
+        SELECT id, corpus_tag, batch_type, description
+        FROM evaluation_batch
+        WHERE id=%(batch_id)s
+        """, batch_id=batch_id))
 
 def get_mturk_batch_status(batch_id):
     # Get's the summary of states of its questions
