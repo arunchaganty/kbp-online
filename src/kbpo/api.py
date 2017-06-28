@@ -22,7 +22,7 @@ def get_documents(corpus_tag):
         WHERE tag=%(tag)s
         ORDER BY doc_id
         """, tag=corpus_tag)
-    return (x.doc_id for x in values)
+    return [x.doc_id for x in values]
 
 def test_get_documents():
     docs = list(get_documents("kbp2016"))
@@ -45,11 +45,11 @@ def get_document(doc_id):
         "`": "'",
         }
 
-    doc_info = next(db.select("""
+    doc_info = db.get("""
         SELECT id, title, doc_date
         FROM document
         WHERE id = %(doc_id)s
-        """, doc_id=doc_id))
+        """, doc_id=doc_id)
     assert doc_info.id == doc_id
 
     sentences = []
@@ -316,7 +316,7 @@ def test_get_submissions():
     assert [s.name for s in get_submissions(tag)] == ["patterns", "supervised", "rnn"]
 
 def get_submission(submission_id):
-    return next(db.select("""SELECT id, updated, name, corpus_tag, details FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id))
+    return db.get("""SELECT id, updated, name, corpus_tag, details FROM submission WHERE id=%(submission_id)s""", submission_id=submission_id)
 
 def test_get_submission():
     submission_id = 1
@@ -395,25 +395,22 @@ def get_submission_relation_list(submission_id, count=1):
 def insert_assignment(
         assignment_id, hit_id, worker_id,
         worker_time, comments, response,
-        status="Submitted", created=datetime.now()):
-    batch_id = next(db.select("""SELECT batch_id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id))
+        state="pending-validation", created=datetime.now()):
+    batch_id = db.get("""SELECT batch_id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id)
 
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            db.execute("""
-                INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, status) RETURNING (id)
-                VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(status)s)""",
-                       cur=cur,
-                       assignment_id=assignment_id,
-                       hit_id=hit_id,
-                       batch_id=batch_id,
-                       worker_id= worker_id,
-                       created= created,
-                       worker_time=int(float(worker_time)),
-                       response=response,
-                       comments=comments,
-                       status=status)
-            return next(cur).id
+    db.execute("""
+        INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, state)
+        VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(state)s)""",
+               assignment_id=assignment_id,
+               hit_id=hit_id,
+               batch_id=batch_id,
+               worker_id= worker_id,
+               created= created,
+               worker_time=int(float(worker_time)),
+               response=db.Json(response),
+               comments=comments,
+               state=state)
+    return assignment_id
 
 def get_hits(limit=None):
     if limit is None:
@@ -422,14 +419,14 @@ def get_hits(limit=None):
         return db.select("""SELECT * FROM mturk_hit ORDER BY id LIMIT %(limit)s""", limit=limit)
 
 def get_hit(hit_id):
-    return next(db.select("""SELECT * FROM mturk_hit WHERE hit_id=%(hit_id)s""", hit_id=hit_id))
+    return db.get("""SELECT * FROM mturk_hit WHERE hit_id=%(hit_id)s""", hit_id=hit_id)
 
 def get_task_params(hit_id):
-    return next(db.select("""
+    return db.get("""
         SELECT params 
         FROM mturk_hit h 
         JOIN evaluation_question q ON (h.question_batch_id = q.batch_id AND h.question_id = q.id)
-        WHERE h.id=%(hit_id)s""", hit_id=hit_id)).params
+        WHERE h.id=%(hit_id)s""", hit_id=hit_id).params
 
 def get_submission_entries(submission_id):
     """
@@ -660,7 +657,9 @@ def upload_submission(submission_id, mfile):
             # refresh materialized views.
             cur.execute("""REFRESH MATERIALIZED VIEW submission_entity_relation""")
             cur.execute("""REFRESH MATERIALIZED VIEW submission_statistics""")
-            cur.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_relation_counts""")
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_entity_counts""")
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_entity_relation_counts""")
 
 def get_question_batch(question_batch_id):
     return db.get("""
@@ -669,11 +668,11 @@ def get_question_batch(question_batch_id):
         """, batch_id=question_batch_id)
 
 def get_questions(question_batch_id):
-    return list(db.select("""
+    return db.select("""
         SELECT id, params from evaluation_question
         WHERE batch_id = %(batch_id)s
         ORDER BY id
-        """, batch_id=question_batch_id))
+        """, batch_id=question_batch_id)
 
 def get_submission_sample_batches(submission_id):
     return [row.id for row in db.select("""
@@ -684,35 +683,35 @@ def get_submission_sample_batches(submission_id):
         """, submission_id=submission_id)]
 
 def get_samples(sample_batch_id):
-    return list(db.select("""
+    return db.select("""
         SELECT submission_id, doc_id, subject, object
         FROM submission_sample
         WHERE batch_id = %(batch_id)s
-        """, batch_id=sample_batch_id))
+        """, batch_id=sample_batch_id)
 
 def get_evaluation_batch_status(batch_id):
     # Get's the summary of states of its questions
-    stats = list(db.select("""
+    stats = db.select("""
         SELECT state, COUNT(*) AS count
         FROM evaluation_question
         WHERE batch_id=%(batch_id)s
         GROUP BY state
-        """, batch_id=batch_id))
+        """, batch_id=batch_id)
     return Counter({state: count for state, count in stats})
 
 def get_evaluation_batch(batch_id):
-    return next(db.select("""
+    return db.get("""
         SELECT id, corpus_tag, batch_type, description
         FROM evaluation_batch
         WHERE id=%(batch_id)s
-        """, batch_id=batch_id))
+        """, batch_id=batch_id)
 
 def get_mturk_batch_status(batch_id):
     # Get's the summary of states of its questions
-    stats = list(db.select("""
+    stats = db.select("""
         SELECT state, COUNT(*) AS count
         FROM mturk_hit
         WHERE batch_id=%(batch_id)s
         GROUP BY state
-        """, batch_id=batch_id))
+        """, batch_id=batch_id)
     return Counter({state: count for state, count in stats})

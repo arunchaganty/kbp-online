@@ -41,17 +41,19 @@ def get(sql, cur=None, **kwargs):
         cur.execute(sql, kwargs)
         return cur.fetchone()
 
+# NOTE: We aren't returning a generator because it is dangerous!
+# If some of these handles are left unconsumed, then the cursor may not
+# be closed and that causes hung transactions.
 def select(sql, cur=None, **kwargs):
     """Wrapper around psycopg execute function to yield the result of a SELECT statement"""
     if cur is None:
         with CONN:
             with CONN.cursor() as cur:
-                #register_composite('kbpo.score', cur)
                 cur.execute(sql, kwargs)
-                yield from cur
+                return [row for row in cur]
     else:
         cur.execute(sql, kwargs)
-        yield from cur
+        return [row for row in cur]
 
 def mogrify(sql, cur=None, verbose = True, **kwargs):
     """Wrapper around psycopg mogrigy function"""
