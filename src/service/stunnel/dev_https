@@ -1,0 +1,11 @@
+pid=
+
+cert = service/stunnel/stunnel.pem
+sslVersion = all
+foreground = no
+output = service/stunnel/stunnel.log
+
+[https]
+accept=8000
+connect=8001
+TIMEOUTclose=1
