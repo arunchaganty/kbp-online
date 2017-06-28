@@ -16,11 +16,14 @@ class Provenance(_Provenance):
         return "{}:{}-{}".format(self.doc_id, self.begin, self.end)
 
     @classmethod
-    def from_str(cls, prov):
+    def from_str(cls, prov, inclusive=False):
         if len(prov) == 0:
             return None
         doc_id, beg, end =  re.match(r"([A-Za-z0-9_.]+):([0-9]+)-([0-9]+)", prov).groups()
-        return cls(doc_id, int(beg), int(end))
+        beg, end = int(beg), int(end)
+        if inclusive:
+            end += 1
+        return cls(doc_id, beg, end)
 
 MentionInstance = namedtuple("MentionInstance", ["doc_id", "span", "canonical_span", "mention_type", "gloss", "weight"])
 LinkInstance = namedtuple("LinkInstance", ["doc_id", "span", "link_name", "weight"])
