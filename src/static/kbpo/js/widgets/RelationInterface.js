@@ -44,11 +44,40 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
             "object": (e.object).toJSON(),
           });
         });
+
+        var assignmentId = $("input[name='assignmentId'").val();
+        var hitId = $("input[name='hitId'").val();
+        var workerId = $("input[name='workerId'").val();
+        var csrftoken =  $("input[name='csrfmiddlewaretoken'").val();
         var data = JSON.stringify(relations);
-        $("#workerTime").attr('value', (new Date().getTime() - self.startTime) / 1000);
+        var workerTime = (new Date().getTime() - self.startTime) / 1000;
+        var comments = $("#comments").val();
+
+        $("#workerTime").attr('value', workerTime);
         $("#response").attr('value', data);
+
         self.doneListeners.forEach(function(cb) {cb(data);});
-        //return true;
+        if (assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE") {
+            alert("You must accept this HIT before submitting");
+            return false;
+        } else {
+            // Send out to server.
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: {
+                    "csrfmiddlewaretoken": csrftoken,
+                    "hitId": hitId,
+                    "assignmentId": assignmentId,
+                    "workerId": workerId,
+                    "response": data,
+                    "workerTime": workerTime,
+                    "comments": comments,
+                }
+            });
+
+            return true;
+        }
       });
     });
   };

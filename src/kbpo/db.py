@@ -17,8 +17,8 @@ def connect(params=_PARAMS):
     """Connect to database using @params"""
     conn = psycopg2.connect(**params)
     with conn:
-        with conn.cursor() as _cur:
-            _cur.execute("SET search_path TO kbpo;")
+        with conn.cursor() as cur:
+            cur.execute("SET search_path TO kbpo;")
     register_composite('kbpo.score', conn, True)
     return conn
 

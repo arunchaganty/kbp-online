@@ -201,8 +201,6 @@ def do_task(request):
             response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
             response = json.loads(response)
 
-            assignment_id = request.POST.get("assignmentId")
-            hit_id = request.POST.get("hitId")
             worker_id = request.POST.get("workerId")
             worker_time = request.POST.get("workerTime")
             comments = request.POST.get("comments")
@@ -220,6 +218,7 @@ def do_task(request):
                 comments=comments,
                 response=response)
             tasks.process_response.delay(assignment_id)
+            # Just in case someone is listening.
             return JsonResponse({"success": True})
         # Get the corresponding mturk_hit and evaluation_question to
         # render this
