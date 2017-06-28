@@ -105,11 +105,32 @@ CREATE MATERIALIZED VIEW submission_entity_relation AS (
         LEFT OUTER JOIN submission_link l_ ON (s.submission_id = l_.submission_id AND s.doc_id = l_.doc_id AND n.canonical_span = l_.span)
 );
 
-DROP MATERIALIZED VIEW submission_statistics;
+DROP MATERIALIZED VIEW IF EXISTS submission_statistics;
 CREATE MATERIALIZED VIEW submission_statistics AS (
     SELECT s.submission_id, subject_entity, relation, COUNT(*) 
     FROM submission_entity_relation s
     GROUP BY s.submission_id, subject_entity, relation
+);
+
+DROP MATERIALIZED VIEW IF EXISTS submission_relation_counts;
+CREATE MATERIALIZED VIEW submission_relation_counts AS (
+    SELECT submission_id, relation, SUM(count) AS count
+    FROM submission_statistics
+    GROUP BY submission_id, relation
+);
+
+DROP MATERIALIZED VIEW IF EXISTS submission_entity_counts;
+CREATE MATERIALIZED VIEW submission_entity_counts AS (
+    SELECT submission_id, subject_entity, SUM(count) AS count
+    FROM submission_statistics
+    GROUP BY submission_id, subject_entity
+);
+
+DROP MATERIALIZED VIEW IF EXISTS submission_entity_relation_counts;
+CREATE MATERIALIZED VIEW submission_entity_relation_counts AS (
+    SELECT submission_id, subject_entity, COUNT(*)
+    FROM submission_statistics
+    GROUP BY submission_id, subject_entity
 );
 
 COMMIT;
