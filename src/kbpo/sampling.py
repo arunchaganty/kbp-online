@@ -150,7 +150,7 @@ def test_sample_submission_instance():
     assert batch.corpus_tag == "kbp2016"
     assert batch.params == {"submission_id": submission_id, "type":"instance", "with_replacement": False}
 
-    relation_mentions = db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    relation_mentions = db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id)
     assert len(relation_mentions) == 20
 
 def test_sample_submission_relation():
