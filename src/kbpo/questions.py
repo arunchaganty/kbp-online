@@ -22,26 +22,46 @@ def create_questions_for_submission(submission_id):
     """
     questions = []
     for row in db.select("""
-        (SELECT DISTINCT doc_id, subject, object
+    WITH _sampled_relations AS (
+        (SELECT DISTINCT doc_id, LEAST(subject, object) AS subject, GREATEST(subject, object) AS object
         FROM submission_sample s
         WHERE s.submission_id = %(submission_id)s)
         EXCEPT (
             (SELECT doc_id, subject, object
                 FROM evaluation_question q
                 JOIN evaluation_relation_question r ON (q.id = r.id AND q.batch_id = r.batch_id)
-                WHERE q.state <> 'error')
+                WHERE (q.state <> 'error' OR q.state <> 'revoked'))
             UNION 
-            (SELECT doc_id, subject, object
-                FROM evaluation_relation q
-            )
-        );
+            (SELECT doc_id, object, subject
+                FROM evaluation_question q
+                JOIN evaluation_relation_question r ON (q.id = r.id AND q.batch_id = r.batch_id)
+                WHERE (q.state <> 'error' OR q.state <> 'revoked'))
+            UNION
+            (SELECT doc_id, subject, object FROM evaluation_relation q)
+            UNION
+            (SELECT doc_id, object, subject FROM evaluation_relation q)
+        ))
+        SELECT s.doc_id, s.subject, s.object, r.subject_type, r.object_type
+        FROM _sampled_relations s
+        JOIN submission_entity_relation r ON (
+            r.submission_id = %(submission_id)s
+            AND s.doc_id = r.doc_id AND s.subject = r.subject AND s.object = r.object);
+        ;
         """, submission_id=submission_id):
+        # In some cases, we will need to flip types.
+        if row.subject_type == 'ORG' and row.object_type == 'PER':
+            subject, object_ = row.object, row.subject
+        elif row.subject_type == 'GPE':
+            subject, object_ = row.object, row.subject
+        else:
+            subject, object_ = row.subject, row.object
+
         questions.append({
             "batch_type": "selective_relations",
             "submission_id": submission_id,
             "doc_id": row.doc_id,
-            "subject": (row.subject.lower, row.subject.upper),
-            "object": (row.object.lower, row.object.upper),
+            "subject": (subject.lower, subject.upper),
+            "object": (object_.lower, object_.upper),
             })
     return questions
 
@@ -157,20 +177,35 @@ def revoke_question(question_batch_id, question_id, mturk_conn=None):
         mturk_conn = turk.connect()
 
     # Revoke all mturk hits associated with this question.
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            for row in db.select("""
-                SELECT id
-                FROM mturk_hit
-                WHERE question_batch_id = %(question_batch_id)s AND question_id = %(question_id)s
-                """, cur=cur, question_batch_id=question_batch_id, question_id=question_id):
-                turk.revoke_hit(mturk_conn, row.id)
+    hits = db.select("""
+        SELECT id
+        FROM mturk_hit
+        WHERE question_batch_id = %(question_batch_id)s AND question_id = %(question_id)s
+        AND state <> 'revoked'
+        """, question_batch_id=question_batch_id, question_id=question_id)
+
+    had_errors = False
+    for row in hits:
+        try:
+            turk.revoke_hit(mturk_conn, row.id)
+
             db.execute("""
-                UPDATE evaluation_question
-                SET state=%(state)s, message=%(message)s
-                WHERE id=%(question_id)s AND batch_id=%(question_batch_id)s
-                """, cur=cur, state="revoked", message="",
-                       question_batch_id=question_batch_id, question_id=question_id)
+                UPDATE mturk_hit
+                SET state = %(state)s, message = %(message)s
+                WHERE id=%(hit_id)s
+                """, state="revoked", message="",
+                       hit_id=row.id)
+        except turk.HitMustBeReviewed as e:
+            logger.exception(e)
+            had_errors = True
+            continue
+    if not had_errors:
+        db.execute("""
+            UPDATE evaluation_question
+            SET state=%(state)s, message=%(message)s
+            WHERE id=%(question_id)s AND batch_id=%(question_batch_id)s
+            """, state="revoked", message="",
+                   question_batch_id=question_batch_id, question_id=question_id)
 
 def revoke_question_batch(question_batch_id, mturk_conn=None):
     questions = api.get_questions(question_batch_id)
@@ -178,5 +213,5 @@ def revoke_question_batch(question_batch_id, mturk_conn=None):
         mturk_conn = turk.connect()
 
     # Revoke all mturk hits associated with this question.
-    for question in questions:
+    for question in tqdm(questions, desc="revoking question batch"):
         revoke_question(question_batch_id, question.id, mturk_conn=mturk_conn)
