@@ -12,7 +12,7 @@
   <h1>Identify entities in the article <small>Select words and use the interface on the right.</small></h1>
 </div>
 <div class="row">
-  <form class ='input-group' id='mturk_form' action="" method="POST">
+  <form class ='input-group' id='mturk_form' action="{{mturk_form_target}}" method="POST">
   {% csrf_token %}
   <input type="hidden" name="assignmentId" value="{{assignment_id}}" />
   <input type="hidden" name="hitId" value="{{hit_id}}" />

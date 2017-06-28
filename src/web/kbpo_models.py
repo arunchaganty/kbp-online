@@ -308,6 +308,7 @@ class MturkHit(models.Model):
         ('pending-annotation', 'Crowdsourcing'),
         ('pending-aggregation', 'Aggregating'),
         ('done', 'Done'),
+        ('revoked', 'Revoked'),
         ('error', 'Error'),
         ]
     id = models.TextField(primary_key=True)

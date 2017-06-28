@@ -139,7 +139,7 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
         #Update the status of submission
         state.status = 'pending-turking'
         state.save()
-        turk_submission.delay(sample_batch_id)
+        turk_submission.delay(submission_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
