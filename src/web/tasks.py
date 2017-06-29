@@ -168,11 +168,11 @@ def turk_submission(submission_id, sample_batch_id=None):
         assert len(sample_batches) > 0, "No sample batches to turk for submission {}".format(submission_id)
 
         if sample_batch_id is not None:
-            assert any(batch.id == sample_batch_id for batch in sample_batches),\
+            assert any(batch == sample_batch_id for batch in sample_batches),\
                     "Sample batch {} is not part of submission {}".format(sample_batch_id, submission_id)
         else:
             # Pick the most recent sample batch.
-            sample_batch_id = sample_batches[0].id
+            sample_batch_id = sample_batches[0]
 
         evaluation_batch_id = create_evaluation_batch_for_submission_sample(submission_id, sample_batch_id)
         if evaluation_batch_id is None:
