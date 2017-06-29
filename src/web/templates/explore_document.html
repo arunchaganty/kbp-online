@@ -5,6 +5,11 @@
 
 {% block header %}
 <link rel="stylesheet" href="{% static 'kbpo/css/kbpo.css' %}">
+<style>
+  span.link-marker {
+    display: none;
+  }
+</style>
 {% endblock %}
 
 
@@ -15,6 +20,9 @@
   <div class="row">
   <h2>Explore the KBPOnline annotations</h2>
   </div>
+  <p>
+  In the document below, each mention span is highlighted. The icon to the right of the mention indicate type (PER<sup><i class="fa fa-fw fa-user"></i></sup>, ORG<sup><i class="fa fa-fw fa-building"></i></sup>, GPE<sup><i class="fa fa-fw fa-globe"></i></sup>, DATE<sup><i class="fa fa-fw fa-calendar"></i></sup>, TITLE<sup><i class="fa fa-fw fa-id-card-o"></i></sup>). The list on the right shows the relations that were identified in the document.
+  </p>
 
   <div class="row">
     <div id="interface"></div>

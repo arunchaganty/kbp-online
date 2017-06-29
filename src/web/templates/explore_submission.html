@@ -16,6 +16,9 @@
   <b>Description:</b> {{submission.details}}
   <input type="hidden" id="submission-id" value="{{submission.id}}">
   </p>
+  <p>
+  The table below lists relations from the indicated submission which have been annotated by crowdworkers. The rightmost columns indicate whether or not the subject and object are correctly identified and if the relation is correct.
+  </p>
 
   <table class="table table-hover">
     <colgroup>
@@ -26,11 +29,13 @@
     <col style="width:15%" />
     </colgroup>
     <thead>
+      <tr>
       <th>#</th>
       <th>Sentence</th>
       <th><span class="subject">Subject</span></th>
       <th>Predicate</th>
       <th><span class="object">Object</span></th>
+      </tr>
     </thead>
     <tbody id="predictions">
     </tbody>
@@ -137,7 +142,7 @@
               ret += MARKER.cross;
             }
 
-            ret += row.id;
+            ret += (row.id + 1);
             return ret;
           }
 
