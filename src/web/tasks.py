@@ -19,7 +19,7 @@ from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.questions import create_evaluation_batch_for_submission_sample
 from kbpo.turk import connect, create_batch, mturk_batch_payments
-from kbpo.web_data import parse_response, get_hit_id, check_hit_complete, verify_evaluation_mention_response, verify_evaluation_relation_response, merge_evaluation_table
+from kbpo.web_data import parse_response, get_hit_id, check_hit_complete, verify_evaluation_mention_response, verify_evaluation_relation_response, merge_evaluation_table, check_batch_complete
 
 from .models import Submission, SubmissionState
 
@@ -117,7 +117,7 @@ def process_submission(submission_id):
         state.save()
 
 @shared_task
-def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
+def sample_submission(submission_id, type_='entity_relation', n_samples = 5):
     #TODO: Get the correct number of samples inside this function
     """
     Takes care of sampling from a submission to create evaluation_question and evaluation_batch.
@@ -141,7 +141,7 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
         #Update the status of submission
         state.status = 'pending-turking'
         state.save()
-        turk_submission.delay(submission_id)
+        turk_submission.delay(submission_id, sample_batch_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'

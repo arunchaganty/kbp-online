@@ -123,7 +123,7 @@ def test_insert_evaluation_question():
     # TODO: Create a test database for this.
     raise NotImplementedError()
 
-def insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur=None):
+def insert_evaluation_batch(corpus_tag, batch_type, description, questions, sample_batch_id, cur=None):
     """
     Creates an evaluation batch with a set of questions.
     @questions is a list of parameters to launch tasks with.
@@ -133,7 +133,7 @@ def insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur=
     if cur is None:
         with db.CONN:
             with db.CONN.cursor() as cur:
-                return insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur)
+                return insert_evaluation_batch(corpus_tag, batch_type, description, questions, sample_batch_id, cur)
     else:
         # Create new batch.
         cur.execute("""
@@ -146,8 +146,8 @@ def insert_evaluation_batch(corpus_tag, batch_type, description, questions, cur=
 
         db.execute_values(
             cur,
-            """INSERT INTO evaluation_question(id, batch_id, state, params) VALUES %s""",
-            [(id_, batch_id, "pending-turking", params) for id_, params in zip(ids, questions)])
+            """INSERT INTO evaluation_question(id, batch_id, state, params, sample_batch_id) VALUES %s""",
+            [(id_, batch_id, "pending-turking", params, sample_batch_id) for id_, params in zip(ids, questions)])
 
         return batch_id
 
@@ -174,7 +174,7 @@ def create_evaluation_batch_for_submission_sample(submission_id, sample_batch_id
     # Create an evaluation_batch out of these questions.
     batch_type = 'selective_relations'
     description = "{} unique questions asked from submission {} ({})".format(len(questions), submission.name, submission_id)
-    evaluation_batch_id = insert_evaluation_batch(submission.corpus_tag, batch_type, description, questions)
+    evaluation_batch_id = insert_evaluation_batch(submission.corpus_tag, batch_type, description, questions, sample_batch_id)
     return evaluation_batch_id
 
 def revoke_question(question_batch_id, question_id, mturk_conn=None):
