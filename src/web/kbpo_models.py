@@ -13,6 +13,12 @@ from kbpo import api
 
 from .fields import SpanField, ScoreField
 
+CORPUS_NAMES = {
+    "kbp2014": "TAC-KBP 2014 corpus",
+    "kbp2015": "TAC-KBP 2015 corpus",
+    "kbp2016": "TAC-KBP 2016 corpus",
+    }
+
 ## Corpus
 class CorpusState(models.Model):
     corpus_tag = models.TextField()
@@ -122,6 +128,10 @@ class Submission(models.Model):
     class Meta:
         managed = False
         db_table = 'submission'
+
+    @property
+    def corpus_name(self):
+        return CORPUS_NAMES.get(self.corpus_tag, self.corpus_tag)
 
     @property
     def log_file(self):

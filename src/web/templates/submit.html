@@ -18,9 +18,8 @@
     <thead>
       <th>#</th>
       <th>Name</th>
-      <th>Corpus</th>
       <th>Timestamp</th>
-      <th>Current status</th>
+      <th>Status</th>
       <th>Download</th>
       <th>Remove</th>
     </thead>
@@ -28,27 +27,29 @@
       {% for submission in submissions %}
       <tr>
         <td>{{forloop.counter}}</td>
-        <td>{{submission.submission.name}} <br/>
+        <td>{{submission.submission.name}} <br />
+          <i>{{submission.submission.corpus_name}}</i> <br/>
           <small>{{submission.submission.details}}</small>
         </td>
-        <td>{{submission.submission.corpus_tag}}</td>
         <td>{{submission.submission.updated}}</td>
-        <td>{{submission.submission.state}}</td>
+        <td>
+          {{submission.submission.state}}
+        </td>
         <td>
           <ul class="list-unstyled">
           {% if submission.submission.original_file %}
           <li>
-          <a href="/submissions/{{submission.submission.id}}/download/kb/">uploaded kb</a>
+            <a href="/submissions/{{submission.submission.id}}/download/kb/">{%bootstrap_icon 'arrow-down'%} uploaded kb</a>
           </li>
           {% endif %}
           {% if submission.submission.log_file %}
           <li>
-          <a href="/submissions/{{submission.submission.id}}/download/log/">validation log</a>
+          <a href="/submissions/{{submission.submission.id}}/download/log/">{%bootstrap_icon 'arrow-down'%} validation log</a>
           </li>
           {% endif %}
           {% if submission.submission.uploaded_file %}
           <li>
-          <a href="/submissions/{{submission.submission.id}}/download/mfile/">validated kb</a>
+          <a href="/submissions/{{submission.submission.id}}/download/mfile/">{%bootstrap_icon 'arrow-down'%} validated kb</a>
           </li>
           {% endif %}
           </ul>
@@ -86,57 +87,275 @@
 {% endblock %}
 
 {% block help_content %}
-<h4>What sort of post-processing do you do?</h4>
+<div class="panel-group" id="help-accordion" role="tablist" aria-multiselectable="true">
+  <!-- Q1 --> 
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="help-q1">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#help-accordion" href="#q1" aria-expanded="false" aria-controls="q1">
+          Which entity types and relations are supported?
+        </a>
+      </h4>
+    </div>
+    <div id="q1" class="panel-collapse collapse" role="tabpanel" aria-labelledby="help-q1">
+      <div class="panel-body">
+        <p>
+          We only consider entities of types <tt>PER</tt> (person),
+          <tt>ORG</tt> (organization) and <tt>GPE</tt> (geo-political
+            entities), defined according to the <a
+           href="https://tac.nist.gov/2016/KBP/guidelines/TAC_KBP_2016_EDL_Guidelines_V1.1.pdf">TAC
+           KBP guidelines</a> (see section 3). 
+         We also consider mentions of <tt>DATE</tt> and <tt>TITLE</tt>
+         entities, which are respectively any date mention or a valid
+         argument for a <tt>per:title</tt> relation.
+        </p>
 
-<h4>Which relations do you (not) support?</h4>
-We use the relation schema defined in the TAC-KBP official guidelines, with a few minor modifications.
-First, we collapse different location relations such as <tt>per:city_of_birth</tt>and <tt>per:place_of_birth</tt> to <tt>per:place_of_birth</tt> (we do this conversion automatically).
-Secondly, we omit <tt>per:alternate_names</tt> and <tt>org:alternate_names</tt> (they are well-captured by the mention relations above) and infrequent relations such as <tt>per:cause_of_death</tt>. Here's a full list of the relations we support:
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Relation</th>
-      <th>Subject type</th>
-      <th>Object type</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+        <p>
+        We also use the relation schema defined in the <a
+          href="https://tac.nist.gov/2016/KBP/ColdStart/guidelines/TAC_KBP_2016_ColdStartTaskDescription_1.0.pdf">TAC-KBP
+          guidelines</a>, with a few minor modifications.
+          First, we collapse different location relations such as
+          <tt>per:city_of_birth</tt>and <tt>per:place_of_birth</tt> to
+          <tt>per:place_of_birth</tt> (we do this conversion
+          automatically).
+          Secondly, we omit <tt>per:alternate_names</tt> and
+          <tt>org:alternate_names</tt> (they are well-captured by the
+          mention relations above) and infrequent relations such as
+          <tt>per:cause_of_death</tt>. Here's a full list of the
+          relations we support:
+        </p>
 
-<h4>When should I expect to get my results?</h4>
-<p>
-Typically, the annotation process takes no more than a few hours.
-We will automatically email you when your scores are ready.
-</p>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Relation (Inverse relations)</th>
+              <th>Subject type</th>
+              <th>Object type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><tt>per:place_of_birth</tt> (<tt>gpe:births_in_place</tt>)</td>
+              <td>PER</td>
+              <td>GPE</td>
+            </tr>
+            <tr>
+              <td><tt>per:place_of_residence</tt> (<tt>gpe:residents_in_place</tt>)</td>
+              <td>PER</td>
+              <td>GPE</td>
+            </tr>
+            <tr>
+              <td><tt>per:place_of_death</tt> (<tt>gpe:deaths_in_place</tt>)</td>
+              <td>PER</td>
+              <td>GPE</td>
+            </tr>
+            <tr>
+              <td><tt>per:date_of_birth</tt></td>
+              <td>PER</td>
+              <td>DATE</td>
+            </tr>
+            <tr>
+              <td><tt>per:date_of_death</tt></td>
+              <td>PER</td>
+              <td>DATE</td>
+            </tr>
+            <tr>
+              <td><tt>per:organizations_founded</tt> (<tt>org:founded_by</tt>)</td>
+              <td>PER</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>per:holds_shares_in</tt> (<tt>org:shareholders</tt>)</td>
+              <td>PER</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>per:schools_attended</tt> (<tt>org:students</tt>)</td>
+              <td>PER</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>per:employee_or_member_of</tt> (<tt>org:employees_or_members</tt>)</td>
+              <td>PER</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>per:parents</tt> (<tt>per:children</tt>)</td>
+              <td>PER</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>per:children</tt> (<tt>per:parents</tt>)</td>
+              <td>PER</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>per:spouse</tt> (<tt>per:spouse</tt>)</td>
+              <td>PER</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>per:siblings</tt> (<tt>per:siblings</tt>)</td>
+              <td>PER</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>per:other_family</tt> (<tt>per:other_family</tt>)</td>
+              <td>PER</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>per:title</tt></td>
+              <td>PER</td>
+              <td>TITLE</td>
+            </tr>
+            <tr>
+              <td><tt>org:place_of_headquarters</tt> (<tt>gpe:headquarters_in_place</tt>)</td>
+              <td>ORG</td>
+              <td>GPE</td>
+            </tr>
+            <tr>
+              <td><tt>org:date_founded</tt></td>
+              <td>ORG</td>
+              <td>DATE</td>
+            </tr>
+            <tr>
+              <td><tt>org:date_dissolved</tt></td>
+              <td>ORG</td>
+              <td>DATE</td>
+            </tr>
+            <tr>
+              <td><tt>org:founded_by</tt> (<tt>per:organizations_founded</tt>, <tt>org:organizations_founded</tt>, <tt>gpe:organizations_founded</tt>)</td>
+              <td>ORG</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>org:member_of</tt> (<tt>org:members</tt>)</td>
+              <td>ORG</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>org:members</tt> (<tt>org:member_of</tt>, <tt>gpe:member_of</tt>)</td>
+              <td>ORG</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>org:subsidiaries</tt> (<tt>org:parents</tt>)</td>
+              <td>ORG</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>org:parents</tt> (<tt>org:subsidiaries</tt>)</td>
+              <td>ORG</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>org:shareholders</tt> (<tt>per:holds_shares_in</tt>, <tt>org:holds_shares_in</tt>, <tt>gpe:holds_shares_in</tt>)</td>
+              <td>ORG</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>org:holds_shares_in</tt> (<tt>org:shareholders</tt>)</td>
+              <td>ORG</td>
+              <td>ORG</td>
+            </tr>
+            <tr>
+              <td><tt>org:employees_or_members</tt> (<tt>per:employee_or_member_of</tt>)</td>
+              <td>ORG</td>
+              <td>PER</td>
+            </tr>
+            <tr>
+              <td><tt>org:students</tt> (<tt>per:schools_attended</tt>)</td>
+              <td>ORG</td>
+              <td>PER</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-<h4>What are the different formats about?</h4>
-<p>
-The primary format that we accept input is in official <a href="">TAC-KBP 2015--2016 format</a> (<i>Note: support for the new 2017 CS++ format is coming soon!</i>). The format is pretty straight forward; each line of the file contains at most 5 <i>tab-separated</i> columns:
-</p>
-<pre>
-  :Carrie_Fisher	type PER
-  :Carrie_Fisher	canonical_mention	"Carrie Fisher"	DocID1:321-333	1.0
-  :Carrie_Fisher	mention	"Carrie Fisher"	DocID1:321-333	1.0
-  :Debbie_Reynolds	type	PER	
-  :Debbie_Reynolds	canonical_mention	"Debbie Reynolds"	DocID1:360-364	1.0
-  :Debbie_Reynolds	mention	"Debbie Reynolds"	DocID1:360-364	1.0
-  :Debbie_Reynolds	per:children	:carrie_fisher	DocID1:321-364	0.0575
-</pre>
+  <!-- Q2 --> 
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="help-q3">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#help-accordion" href="#q3" aria-expanded="false" aria-controls="q3">
+        What are file formats are supported?
+        </a>
+      </h4>
+    </div>
+    <div id="q3" class="panel-collapse collapse" role="tabpanel" aria-labelledby="help-q3">
+      <div class="panel-body">
+        <p>
+        The primary format that we accept input is in official <a href="https://tac.nist.gov/2016/KBP/ColdStart/guidelines/TAC_KBP_2016_ColdStartTaskDescription_1.0.pdf">TAC-KBP 2015--2016 format</a>, and we can handle any output file that conforms to that format (<i>Note: support for the new 2017 CS++ format is coming soon!</i>). 
 
-<p>
-Each row begins with an <i>entity identifier</i>, e.g. <tt>:Carrie_Fisher</tt>, that starts with a colon (<tt>:</tt>).
-The second column is a relation keyword, either <tt>type</tt>, <tt>canonical_mention</tt>, <tt>mention</tt>, or one of X relations listed below.
-The third column is the argument to the relation, either an entity type; one of <tt>PER</tt>, <tt>ORG</tt> or <tt>GPE</tt>,
-a string ("Carrie Fisher", "actress") or another entity (<tt>:Debbie_Reynolds</tt>).
-The next line is the <i>provenance</i>, i.e. where in the document the mention or relation was found.
-</p>
+        The format is pretty straight forward; each line of the file contains at most 5 <i>tab-separated</i> columns:
+        </p>
+        <pre>
+:Carrie_Fisher	type PER
+:Carrie_Fisher	canonical_mention	"Carrie Fisher"	DocID1:321-333	1.0
+:Carrie_Fisher	mention	"Carrie Fisher"	DocID1:321-333	1.0
+:Carrie_Fisher	mention	"Fisher"	DocID1:601-607	1.0
+:Debbie_Reynolds	type	PER	
+:Debbie_Reynolds	canonical_mention	"Debbie Reynolds"	DocID1:650-664	1.0
+:Debbie_Reynolds	mention	"Debbie Reynolds"	DocID1:650-664	1.0
+:Carrie_Fisher	per:title	"actress"	DocID1:611-617,DocID1:601-617	0.0575
+:Debbie_Reynolds	per:children	:Carrie_Fisher	DocID1:601-664	0.0575
+        </pre>
+        <p>
+        Each row begins with an <i>entity identifier</i>, e.g. <tt>:Carrie_Fisher</tt>.
+        The second column is a relation keyword, either <tt>type</tt>, <tt>canonical_mention</tt>, <tt>mention</tt>, or one of the <a href="https://tac.nist.gov/2016/KBP/ColdStart/guidelines/TAC_KBP_2016_ColdStartTaskDescription_1.0.pdf">42 relations in the guidelines</a> (we'll take care of validating your input, converting types and relations into the schema we've described above).
+        The third column is the argument to the relation, either an entity type; one of <tt>PER</tt>, <tt>ORG</tt> or <tt>GPE</tt>,
+        a string ("Carrie Fisher", "actress") or another entity (<tt>:Debbie_Reynolds</tt>).
+        The fourth column describes the <i>provenance</i>, i.e. where in the document the mention or relation was found.
+        And finally, the last column is the confidence score for the relation or mention assertions.
+        </p>
 
-<p>
-We take care of automatically symmetrizing the relations you predict.
-We also support multiple justifications (in the 2017 format). 
-</p>
+        <p>
+        In a sole departure from the 2015--2016 TAC KB format, we support multiple justifications for relations.
+        </p>
+      </div>
+    </div>
+  </div>
 
-<h4>Why do my results look different from my official TAC-KBP scores?</h4>
+  <!-- Q5 --> 
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="help-q5">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#help-accordion" href="#q5" aria-expanded="false" aria-controls="q5">
+          What sort of post-processing do you do?
+        </a>
+      </h4>
+    </div>
+    <div id="q5" class="panel-collapse collapse" role="tabpanel" aria-labelledby="help-q5">
+      <div class="panel-body">
+        <p>
+        We validate the submitted knowledge bases to ensure that entities have consistent types, mentions have consistent canonical mentions and relations are between consistent types.
+        In the process, we also take care of filtering relations to those supported by our schema (see above) and symmetrize relations appropriately.
+        Most importantly, we <i>associate</i> a subject and object mention for every relation assertion: this allows us to display the right context to crowdworkers to have relations annotated.
+        You can review the decisions we've made by downloading the validation log.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q2 --> 
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="help-q2">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#help-accordion" href="#q2" aria-expanded="false" aria-controls="q2">
+         When can I expect to get my results?   
+        </a>
+      </h4>
+    </div>
+    <div id="q2" class="panel-collapse collapse" role="tabpanel" aria-labelledby="help-q2">
+      <div class="panel-body">
+        Typically, the annotation process takes no more than a few hours.
+        We will email you when your scores are ready.
+      </div>
+    </div>
+  </div>
+
+</div>
 
 {% endblock %}
