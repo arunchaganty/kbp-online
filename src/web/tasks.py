@@ -17,7 +17,7 @@ from kbpo import api
 from kbpo.parser import MFileReader, TacKbReader
 from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
-from kbpo.questions import create_evaluation_batch_from_submission_sample
+from kbpo.questions import create_evaluation_batch_for_submission_sample
 from kbpo.turk import connect, create_batch, mturk_batch_payments
 from kbpo.web_data import parse_response, get_hit_id, check_hit_complete, verify_evaluation_mention_response, verify_evaluation_relation_response, merge_evaluation_table
 
@@ -149,7 +149,7 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 500):
         state.save()
 
 @shared_task
-def turk_submission(submission_id):
+def turk_submission(submission_id, sample_batch_id=None):
     """
     Takes care of turking from a submission from _sample.
     """
@@ -167,8 +167,14 @@ def turk_submission(submission_id):
         sample_batches = api.get_submission_sample_batches(submission_id)
         assert len(sample_batches) > 0, "No sample batches to turk for submission {}".format(submission_id)
 
+        if sample_batch_id is not None:
+            assert any(batch.id == sample_batch_id for batch in sample_batches),\
+                    "Sample batch {} is not part of submission {}".format(sample_batch_id, submission_id)
+        else:
+            # Pick the most recent sample batch.
+            sample_batch_id = sample_batches[0].id
 
-        evaluation_batch_id = create_evaluation_batch_for_submission(submission_id)
+        evaluation_batch_id = create_evaluation_batch_for_submission_sample(submission_id, sample_batch_id)
         if evaluation_batch_id is None:
             logger.warning("Evaluation batch not created because all possible questions have been asked!")
         else:

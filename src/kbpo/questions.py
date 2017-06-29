@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # TODO: allow us to 'override' and add samples to questions that have already been answered.
-def create_questions_for_submission(submission_id):
+def create_questions_for_submission_sample(submission_id, sample_batch_id):
     """
     Produces questions for a submission, based on what's in the
     database.
@@ -25,7 +25,8 @@ def create_questions_for_submission(submission_id):
     WITH _sampled_relations AS (
         (SELECT DISTINCT doc_id, LEAST(subject, object) AS subject, GREATEST(subject, object) AS object
         FROM submission_sample s
-        WHERE s.submission_id = %(submission_id)s)
+        WHERE s.submission_id = %(submission_id)s
+          AND s.batch_id = %(sample_batch_id)s)
         EXCEPT (
             (SELECT doc_id, subject, object
                 FROM evaluation_question q
@@ -47,7 +48,7 @@ def create_questions_for_submission(submission_id):
             r.submission_id = %(submission_id)s
             AND s.doc_id = r.doc_id AND s.subject = r.subject AND s.object = r.object);
         ;
-        """, submission_id=submission_id):
+        """, submission_id=submission_id, sample_batch_id=sample_batch_id):
         # In some cases, we will need to flip types.
         if row.subject_type == 'ORG' and row.object_type == 'PER':
             subject, object_ = row.object, row.subject
@@ -154,14 +155,18 @@ def test_insert_evaluation_batch():
     # TODO: Create a test database for this.
     raise NotImplementedError()
 
-def create_evaluation_batch_for_submission(submission_id):
+def create_evaluation_batch_for_submission_sample(submission_id, sample_batch_id):
     submission = api.get_submission(submission_id)
 
     # First of all, make sure there are even samples for this submission.
-    assert len(api.get_submission_sample_batches(submission_id)) > 0,\
+    batches = api.get_submission_sample_batches(submission_id)
+    assert len(batches) > 0,\
             "No sample batches for submission {}".format(submission_id)
+    assert any(batch.id == sample_batch_id for batch in batches),\
+            "Sample batch {} is not part of submission {}".format(sample_batch_id, submission_id)
+
     # Now, get the questions.
-    questions = create_questions_for_submission(submission_id)
+    questions = create_questions_for_submission_sample(submission_id, sample_batch_id)
     if len(questions) == 0:
         logger.warning("There are unasked questions for submission %s!", submission_id)
         return None
