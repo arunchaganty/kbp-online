@@ -975,10 +975,4 @@ if __name__ == '__main__':
     #update_evaluation_relation()
     #merge_evaluation_table('relation', mode='hit', hit_id = '3GMLHYZ0LERIOM7FXJ458R5SMC7YU0')
     #print(get_question_id('3D1TUISJWIUWYMSAT1I30Z92D90IUK'))
-    
-        
-
-
-
-
-    
+    pass
