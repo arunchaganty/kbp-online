@@ -184,21 +184,11 @@ def test_parse_exhaustive_entities_response():
     assert links[0].id == Provenance("NYT_ENG_20130911.0085", 101, 106)
     assert links[0].link_name == "China"
 
-def parse_responses():
-# TODO: Include some awareness of timestamps
+def _parse_responses(rows):
+    """Parse responses for a subset of assignments"""
     evaluation_mentions = []
     evaluation_links = []
     evaluation_relations = []
-
-    rows = db.select("""
-SELECT a.id AS assignment_id, b.id AS question_batch_id, q.id AS question_id, b.batch_type, q.params AS question, a.response AS response
-FROM mturk_assignment a,
-     mturk_hit h,
-     evaluation_question q,
-     evaluation_batch b
-WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch_id AND b.id = q.batch_id
- AND NOT a.ignored""")
-
     for row in tqdm(rows): # Q: Should there be a fixed type?
         if len(row.response) == 0:
             logger.warning("Empty response : %s", row)
@@ -259,6 +249,37 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
     assert len(evaluation_mentions) == len(set(evaluation_mentions))
     assert len(evaluation_links) == len(set(evaluation_links))
     assert len(evaluation_relations) == len(set(evaluation_relations))
+    return evaluation_mentions, evaluation_links, evaluation_relations
+
+def parse_response(assignment_id):
+    """Parse a single mturk_assignment and insert into *_response tables"""
+    rows = db.select("""
+SELECT a.id AS assignment_id, b.id AS question_batch_id, q.id AS question_id, b.batch_type, q.params AS question, a.response AS response
+FROM mturk_assignment a,
+     mturk_hit h,
+     evaluation_question q,
+     evaluation_batch b
+WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch_id AND b.id = q.batch_id AND a.id = %(assignment_id)s
+ AND NOT a.ignored""", assignment_id = assignment_id)
+    evaluation_mentions, evaluation_links, evaluation_relations = _parse_responses(rows)
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, span, canonical_span, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
+            db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, weight) VALUES %s""", evaluation_links)
+            db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject, object, relation, weight) VALUES %s""", evaluation_relations)
+
+def parse_responses():
+    """Parse all mturk_assignments in the database and repopulate the *_response tables"""
+
+    rows = db.select("""
+SELECT a.id AS assignment_id, b.id AS question_batch_id, q.id AS question_id, b.batch_type, q.params AS question, a.response AS response
+FROM mturk_assignment a,
+     mturk_hit h,
+     evaluation_question q,
+     evaluation_batch b
+WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch_id AND b.id = q.batch_id
+ AND NOT a.ignored""")
+    evaluation_mentions, evaluation_links, evaluation_relations = _parse_responses(rows)
 
     with db.CONN:
         with db.CONN.cursor() as cur:
@@ -380,7 +401,7 @@ def _merge_evaluation_links(cur, doc_table):
     db.execute("""DELETE FROM evaluation_link AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""", cur=cur)
     db.execute(
         """
-        INSERT INTO evaluation_link (doc_id, span, question_batch_id, question_id, link_name, weight)
+        INSERT INTO evaluation_link (doc_id, span, question_batch_id, question_id, link_name, weight) 
         SELECT c.doc_id, c.span, d.question_batch_id, d.question_id, c.link_name, c.count/d.denominator as weight FROM 
             (SELECT lr.doc_id, span, link_name, sum(weight) as count
             FROM evaluation_link_response as lr
@@ -392,7 +413,23 @@ def _merge_evaluation_links(cur, doc_table):
         """, cur = cur)
     
 def _merge_evaluation_relations(cur, doc_table):
-    raise NotImplementedError
+    """
+    Merge evaluation_relation_responses to get modal relation
+        Compute winner by majority
+    """
+    db.execute("""DELETE FROM evaluation_relation AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""", cur=cur)
+    db.execute(
+        """
+        INSERT INTO evaluation_relation (doc_id, subject, object, question_batch_id, question_id, relation, weight) 
+        SELECT c.doc_id, c.subject, c.object, d.question_batch_id, d.question_id, c.relation, c.count/d.denominator as weight FROM 
+            (SELECT rr.doc_id, rr.subject, rr.object, rr.relation, sum(weight) as count
+            FROM evaluation_relation_response as rr
+            JOIN """+doc_table+""" as docs ON rr.doc_id = docs.doc_id
+            GROUP BY rr.doc_id, subject, object, relation) as c
+        JOIN _denominator as d
+            ON d.doc_id = c.doc_id AND d.subject = c.subject AND d.object = c.object
+        WHERE c.count/d.denominator > 0.5;
+        """, cur = cur)
 
 def merge_evaluation_links(row):
     assert len(row) > 0.
@@ -438,7 +475,7 @@ def merge_evaluation_relations(row):
 #            logger.info("%d rows of evaluation_mention_response merged into %d rows", cur.rowcount, len(values))
 #            db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
 
-def merge_evaluation_table(table, mode = 'update'):
+def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = None, mturk_batch_id = None):
     merging_tables = {table: 'evaluation_'+table+'_response' for table in ['mention', 'link', 'relation']}
     merging_funcs = {'mention': _merge_evaluation_mentions, 'link': _merge_evaluation_links, 'relation': _merge_evaluation_relations}
     pkey_fields = {'mention': ('doc_id', 'span'), 'link': ('doc_id', 'span'), 'relation': ('doc_id', 'subject', 'object')}
@@ -446,19 +483,43 @@ def merge_evaluation_table(table, mode = 'update'):
     
     with db.CONN: 
         with db.CONN.cursor() as cur:
-            if mode == 'all':
+            if mode == 'mturk_batch':
+                assert mturk_batch_id is not None, 'mturk_batch_id needs to be supplied'
+                mode = 'doc_list'
+                doc_list = [get_doc_id(x.id) for x in db.select("SELECT id FROM mturk_hit where batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)]
+            if mode == 'hit':
+                assert hit_id is not None, "hit_id need to be supplied"
+                mode = 'doc_list'
+                doc_list = [get_doc_id(hit_id),]
+                print('created doc_list')
+
+
+
+            if mode == 'doc_list':
+                assert doc_list is not None, "doc_list need to be supplied"
+                print('creating temp table')
+                db.execute_values(cur, """CREATE TEMP TABLE _docids_for_merging(doc_id) AS VALUES %s""", doc_list)
+                cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
+
+            elif mode == 'all':
                 cur.execute("CREATE TEMP TABLE _docids_for_merging AS (SELECT distinct doc_id FROM "+merging_tables[table]+");")
                 cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
-            #TODO: add update and doc_list modes
+
+            elif mode == 'update':
+            #TODO: add update modes
+                raise NotImplementedError
+
             db.execute("""
             DROP TABLE IF EXISTS _denominator;
             CREATE TEMP TABLE _denominator AS (
                 SELECT """+','.join(pkey_fields[table])+""", array_agg(question_id) as question_id, array_cat_agg(question_batch_id) as question_batch_id, sum(n_assignments) AS denominator
-                FROM (SELECT """+','.join(map(lambda x: 'm.'+x, pkey_fields[table]))+""", m.question_id, array_agg(DISTINCT m.question_batch_id) AS question_batch_id, m.batch_id, mode() WITHIN GROUP (ORDER BY m.mturk_batch_params#>>'{max_assignments}')::int as n_assignments
-                    FROM evaluation_mention_response_flat AS m JOIN 
-                    _docids_for_merging
-                    AS docs ON m.doc_id = docs.doc_id 
-                    GROUP BY """+','.join(map(lambda x: 'm.'+x, pkey_fields[table]))+""", m.batch_id, m.question_id) 
+                FROM (SELECT """+','.join(map(lambda x: 'm.'+x, pkey_fields[table]))+""", a.question_id, array_agg(DISTINCT a.question_batch_id) AS question_batch_id, a.batch_id, mode() WITHIN GROUP (ORDER BY a.mturk_batch_params#>>'{max_assignments}')::int as n_assignments
+                    FROM """+merging_tables[table]+""" AS m 
+                    JOIN _docids_for_merging AS docs 
+                        ON m.doc_id = docs.doc_id 
+                    LEFT JOIN mturk_assignment_flat AS a
+                        ON a.id = m.assignment_id
+                    GROUP BY """+','.join(map(lambda x: 'm.'+x, pkey_fields[table]))+""", a.batch_id, a.question_id) 
                     as temp GROUP BY """+','.join(pkey_fields[table])+"""
                 );
             """, cur)
@@ -771,14 +832,14 @@ def verify_evaluation_relation_response():
     worker_agreement_with_majority = db.select("""
     SELECT worker_id, array_agg(assignment_id) as assignment_ids, count(*) AS total, count(case when relation <> majority_relation then 1 end) AS disagree, count(case when relation = majority_relation then 1 end) AS agree
     FROM (
-        SELECT id, worker_id, weight, relation, majority_relation, disagreed_assignment.assignment_id FROM (
+        SELECT id AS assignment_id, worker_id, weight, relation, majority_relation FROM (
             SELECT assignment_id, r.weight, rr.relation AS relation, r.relation as majority_relation 
             FROM evaluation_relation as r  
                 RIGHT JOIN evaluation_relation_response as rr 
                     ON r.doc_id = rr.doc_id AND r.subject = rr.subject AND r.object = rr.object 
             WHERE r.weight > 0.5
-            ) as disagreed_assignment 
-            JOIN mturk_assignment AS assignment ON assignment.id = disagreed_assignment.assignment_id
+            ) as majority_relation 
+            JOIN mturk_assignment AS assignment ON assignment.id = majority_relation.assignment_id
         ) as t 
     GROUP BY worker_id;
     """)
@@ -792,56 +853,113 @@ def verify_evaluation_relation_response():
             assignment2flag[assignment_id] = flag
 
 
-    values = [{'assignment_id':k, 'flag': v} for k, v in assignment2flag.items()]
+    values = [{'assignment_id':k, 'flag': v, 'message': 'Incorrect relation'} for k, v in assignment2flag.items()]
     with db.CONN:
         with db.CONN.cursor() as cur:
             db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
     
 
-def verify_evaluation_mention_response():
+def verify_evaluation_mention_response(question_id = None):
     """Looks at extracted mention responses and applies basic filtering to approve or reject HITs"""
-    mention_counts = db.select("""
-        SELECT question_id, array_agg(assignment_id) as assignment_ids, array_agg(count) as counts, 
-        percentile_disc(0.50) WITHIN GROUP (ORDER BY count) as median,
-        avg(count) as avg, stddev(count) as stddev
-        FROM (SELECT question_id, assignment_id, count(*) as count FROM evaluation_mention_response GROUP BY assignment_id, question_id) AS t GROUP BY question_id;
-        """)
-        #percentile_disc(0.50) WITHIN GROUP (ORDER BY count)  as median 
+    if question_id is not None:
+        mention_counts = db.select("""
+            SELECT question_id, array_agg(assignment_id) as assignment_ids, array_agg(count) as counts, 
+            percentile_disc(0.50) WITHIN GROUP (ORDER BY count) as median,
+            avg(count) as avg, stddev(count) as stddev
+            FROM (SELECT question_id, assignment_id, count(*) as count FROM evaluation_mention_response WHERE question_id = %(question_id)s GROUP BY assignment_id, question_id) AS t GROUP BY question_id;
+            """, question_id = question_id)
+    else:
+        mention_counts = db.select("""
+            SELECT question_id, array_agg(assignment_id) as assignment_ids, array_agg(count) as counts, 
+            percentile_disc(0.50) WITHIN GROUP (ORDER BY count) as median,
+            avg(count) as avg, stddev(count) as stddev
+            FROM (SELECT question_id, assignment_id, count(*) as count FROM evaluation_mention_response GROUP BY assignment_id, question_id) AS t GROUP BY question_id;
+            """)
     assignment2z = {}
     values = []
     for row in mention_counts:
-        #d = np.array([count - row.median for count in row.counts])
-        #ad = np.abs(d)
-        #mad = np.median(ad)
-        #if mad == 0:
-        #    if row.stddev == 0:
-        #        zs = np.zeros((len(row.counts)))
-        #    else:
-        #        zs = (np.array(row.counts) - row.avg)/row.stddev
-        #else: 
-        #    zs = d / (1.486*mad)
-        #if not all(modified_z_score == 0):
-            #print(row.assignment_ids, row.counts, modified_z_score)
-        #row.stddev = np.median(abs(np.array(row.counts) - row.avg)
         zs = (np.array(row.counts))/row.avg
-        #if np.any(zs<0.50):
-            #print(row.assignment_ids, row.counts, row.avg, zs)
-        #if np.any(np.array(row.counts)==1):
-        #    print(row.assignment_ids, row.counts, mad, zs)
         for assignment_id, z in zip(row.assignment_ids, zs):
             assignment2z[assignment_id] = z 
     values = []
 
     for assignment_id, z in tqdm(assignment2z.items()):
         flag = z > 0.50
-        values.append({'flag' : flag, 'assignment_id' : assignment_id})
-    #args_str = b','.join(values)
+        values.append({'flag' : flag, 'assignment_id' : assignment_id, 'message': 'Too few mentions extracted for this document.'})
     with db.CONN:
         with db.CONN.cursor() as cur:
             db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
 
-        
-        
+def check_batch_complete(mturk_batch_id):
+    """Check if all assignments for an mturk_batch have been collected"""
+    rows = db.select("""
+    SELECT count(*) = (b.params->>'max_assignments')::int AS hit_complete 
+    FROM mturk_assignment AS a 
+    LEFT JOIN mturk_hit AS h 
+        ON a.hit_id = h.id 
+    LEFT JOIN mturk_batch as b 
+        ON a.batch_id = b.id 
+    WHERE a.batch_id = %(mturk_batch_id)s 
+    GROUP BY a.hit_id, b.params->>'max_assignments';
+    """, 
+    mturk_batch_id = mturk_batch_id)
+    #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
+    hit_completed = [x.hit_complete for x in rows]
+    print(hit_completed)
+    return all(hit_completed)
+
+def check_hit_complete(hit_id):
+    """Check if all assignments for a hit have been collected"""
+    rows = db.select("""
+    SELECT count(*) = (b.params->>'max_assignments')::int AS hit_complete 
+    FROM mturk_assignment AS a 
+    LEFT JOIN mturk_hit AS h 
+        ON a.hit_id = h.id 
+    LEFT JOIN mturk_batch as b 
+        ON a.batch_id = b.id 
+    WHERE a.hit_id = %(hit_id)s 
+    GROUP BY a.hit_id, b.params->>'max_assignments';
+    """, 
+    hit_id = hit_id)
+    #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
+    return next(rows).hit_complete
+def test_check_hit_compelte():
+    assert check_batch_complete(10) == True
+
+def test_check_hit_complete():
+    assert check_hit_complete('335VBRURDJUMYP2LZ7XK5SQYRJR9EC') == True
+
+def get_hit_id(assignment_id):
+    """Get hit_id for a given @assignment_id from the database"""
+    rows = db.select("""SELECT hit_id from mturk_assignment where id = %(assignment_id)s""", assignment_id = assignment_id)
+    return next(rows).hit_id
+
+def get_batch_id(assignment_id):
+    """Get hit_id for a given @assignment_id from the database"""
+    rows = db.select("""SELECT batch_id from mturk_assignment where id = %(assignment_id)s""", assignment_id = assignment_id)
+    return next(rows).batch_id
+
+def test_get_hit_id():
+    assert get_hit_id('3A1PQ49WVIBJFEOLBYVYZ90CY851HC') == '335VBRURDJUMYP2LZ7XK5SQYRJR9EC'
+
+def get_question_id(hit_id):
+    """Get question_id for a given @hit_id from the databse"""
+    rows = db.select("""SELECT question_id from mturk_hit where id = %(hit_id)s""", hit_id=hit_id)
+    return next(rows).question_id
+def test_get_question_id():
+    assert get_question_id('3D1TUISJWIUWYMSAT1I30Z92D90IUK') == '00868067917b9edfb2006a93c405d4f2a02f953e'
+
+
+def get_doc_id(hit_id):
+    """Get doc_id for a given @hit_id from the database"""
+    rows = db.select(""" 
+                        SELECT params->'doc_id' AS doc_id
+                        FROM mturk_hit AS h 
+                        LEFT JOIN evaluation_question AS q 
+                            ON q.id = h.question_id
+                        WHERE h.id = %(hit_id)s;
+                        """, hit_id = hit_id)
+    return next(rows).doc_id
 
 
 if __name__ == '__main__':
@@ -852,9 +970,11 @@ if __name__ == '__main__':
     #test_sanitize_mention_response()
     #_IAA_mention_response(12, 3)
     #_IAA_mention_response(6, 5)
-    #verify_evaluation_mention_response()
-    verify_evaluation_relation_response()
+    #verify_evaluation_mention_response('55c446b3716522c9734ddfd836c40fd1')
+    #verify_evaluation_relation_response()
     #update_evaluation_relation()
+    #merge_evaluation_table('relation', mode='hit', hit_id = '3GMLHYZ0LERIOM7FXJ458R5SMC7YU0')
+    #print(get_question_id('3D1TUISJWIUWYMSAT1I30Z92D90IUK'))
     
         
 
