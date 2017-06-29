@@ -204,9 +204,9 @@ def create_evaluation_batch_from_submission_sample(batch_id):
             with db.CONN.cursor() as cur:
                 description = "%d unique instances sampled from submission %s (%s) using distribution %s" % (len(list(new_questions)), name, details, distribution)
                 evaluation_batch_id = next(db.select("""
-                    INSERT INTO evaluation_batch (batch_type, corpus_tag, description) 
-                    VALUES (%(batch_type)s, %(corpus_tag)s, %(description)s) RETURNING id
-                    """, cur = cur, batch_type = 'selective_relations', corpus_tag = corpus_tag, description = description))
+                    INSERT INTO evaluation_batch (batch_type, corpus_tag, description, sample_batch_id) 
+                    VALUES (%(batch_type)s, %(corpus_tag)s, %(description)s, $(sample_batch_id)s) RETURNING id
+                    """, cur = cur, batch_type = 'selective_relations', corpus_tag = corpus_tag, description = description, sample_batch_id = batch_id))
                 values = []
                 for q in tqdm(list(new_questions)):
                     doc_id, m1, m2 = q

@@ -7,10 +7,11 @@ CREATE SEQUENCE evaluation_batch_id_seq;
 CREATE TABLE  evaluation_batch (
   id INTEGER PRIMARY KEY DEFAULT nextval('evaluation_batch_id_seq'),
   created TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc'),
-
+  sample_batch_id INTEGER NOT NULL , -- which sample_batch or corpus does this evaluation batch correspond to
   batch_type TEXT NOT NULL, -- which type of batch is this?
   corpus_tag TEXT NOT NULL, -- which corpus.
   description TEXT -- A string blob about what this batch is for.
+
 ); -- DISTRIBUTED BY (id);
 COMMENT ON TABLE evaluation_batch IS 'Keeps track of each distinct batch of questions that have been created according to a specific sampling scheme';
 
