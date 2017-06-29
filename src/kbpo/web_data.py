@@ -905,6 +905,9 @@ def check_batch_complete(mturk_batch_id):
     LEFT JOIN mturk_batch as b 
         ON a.batch_id = b.id 
     WHERE a.batch_id = %(mturk_batch_id)s 
+      AND (a.state = 'pending-validation'
+          OR a.state = 'pending-payment'
+          OR a.state = 'done')
     GROUP BY a.hit_id, b.params->>'max_assignments';
     """, 
     mturk_batch_id = mturk_batch_id)
@@ -923,6 +926,9 @@ def check_hit_complete(hit_id):
     LEFT JOIN mturk_batch as b 
         ON a.batch_id = b.id 
     WHERE a.hit_id = %(hit_id)s 
+      AND (a.state = 'pending-validation'
+          OR a.state = 'pending-payment'
+          OR a.state = 'done')
     GROUP BY a.hit_id, b.params->>'max_assignments';
     """, 
     hit_id = hit_id)
