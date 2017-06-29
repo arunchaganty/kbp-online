@@ -16,7 +16,8 @@ CREATE TABLE  submission (
 
     name TEXT NOT NULL, -- short textual identifier for this submission.
     corpus_tag TEXT NOT NULL,
-    details TEXT -- A more detailed description of the submission.
+    details TEXT, -- A more detailed description of the submission.
+    active BOOLEAN DEFAULT TRUE
 ); -- DISTRIBUTED BY (id);    
 COMMENT ON TABLE submission IS 'Summary of a submission';
 

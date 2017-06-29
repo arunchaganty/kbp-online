@@ -309,7 +309,7 @@ def test_get_evaluation_relations():
     assert relation['relation'] == 'per:place_of_residence'
 
 def get_submissions(corpus_tag):
-    return db.select("""SELECT * FROM submission WHERE corpus_tag=%(corpus_tag)s ORDER BY id""", corpus_tag=corpus_tag)
+    return db.select("""SELECT * FROM submission WHERE corpus_tag=%(corpus_tag)s AND active ORDER BY id""", corpus_tag=corpus_tag)
 
 def test_get_submissions():
     tag = 'kbp2016'

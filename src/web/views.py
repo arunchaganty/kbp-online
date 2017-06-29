@@ -24,13 +24,14 @@ def home(request):
     return render(request, 'home.html')
 
 @login_required
-def submissions_delete(request, submission_id):
+def submissions_remove(request, submission_id):
     # TODO: Remove from submission_* too.
     # Check that the submission is indeed that of the user.
     submission = get_object_or_404(Submission, id=submission_id)
     if submission.user.user != request.user:
         raise Http404("You do not have a submission with that id")
-    submission.delete()
+    submission.active = False
+    submission.save()
     return redirect("submissions")
 
 def stream_file(path):
@@ -72,7 +73,7 @@ def submissions(request):
     else:
         form = KnowledgeBaseSubmissionForm()
 
-    submissions = SubmissionUser.objects.filter(user=request.user)
+    submissions = SubmissionUser.objects.filter(user=request.user, submission__active=True)
     return render(request, 'submit.html', {'form': form, 'submissions': submissions})
 
 def explore_corpus(request, corpus_tag, doc_id=None):

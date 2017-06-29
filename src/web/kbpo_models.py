@@ -109,6 +109,7 @@ class Submission(models.Model):
     name = models.TextField()
     corpus_tag = models.TextField(verbose_name='Document corpus')
     details = models.TextField()
+    active = models.BooleanField(default=True)
 
     objects = models.Manager()
 

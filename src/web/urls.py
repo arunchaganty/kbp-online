@@ -3,7 +3,7 @@ from . import views
 
 urlpatterns = [
     url(r'^submissions/$', views.submissions, name='submissions'),
-    url(r'^submissions/(?P<submission_id>[0-9]+)/delete/$', views.submissions_delete, name='submissions_delete'),
+    url(r'^submissions/(?P<submission_id>[0-9]+)/remove/$', views.submissions_remove, name='submissions_remove'),
     url(r'^submissions/(?P<submission_id>[0-9]+)/download/(?P<resource>log)/$', views.submissions_download, name='submissions_delete'),
     url(r'^submissions/(?P<submission_id>[0-9]+)/download/(?P<resource>kb)/$', views.submissions_download, name='submissions_delete'),
     url(r'^submissions/(?P<submission_id>[0-9]+)/download/(?P<resource>mfile)/$', views.submissions_download, name='submissions_delete'),
