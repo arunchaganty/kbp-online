@@ -348,6 +348,7 @@ class MturkHit(models.Model):
 
 class MturkAssignment(models.Model):
     CHOICES = [
+        ('pending-extraction', 'Extracting'),
         ('pending-validation', 'Validating'),
         ('pending-payment', 'Paying'),
         ('done', 'Done'),
