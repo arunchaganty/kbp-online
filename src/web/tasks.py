@@ -172,7 +172,7 @@ def turk_submission(submission_id, sample_batch_id=None):
                     "Sample batch {} is not part of submission {}".format(sample_batch_id, submission_id)
         else:
             # Pick the most recent sample batch.
-            sample_batch_id = sample_batches[0].id
+            sample_batch_id = sample_batches[0]
 
         evaluation_batch_id = create_evaluation_batch_for_submission_sample(submission_id, sample_batch_id)
         if evaluation_batch_id is None:

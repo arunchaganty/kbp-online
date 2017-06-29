@@ -137,17 +137,17 @@ def insert_evaluation_batch(corpus_tag, batch_type, description, questions, samp
     else:
         # Create new batch.
         cur.execute("""
-            INSERT INTO evaluation_batch(corpus_tag, batch_type, description) VALUES %s
+            INSERT INTO evaluation_batch(corpus_tag, batch_type, description, sample_batch_id) VALUES %s
             RETURNING (id);
-            """, [(corpus_tag, batch_type, description)])
+            """, [(corpus_tag, batch_type, description, sample_batch_id)])
         batch_id, = next(cur)
         questions = [json.dumps(params, sort_keys=True) for params in questions]
         ids = [sha1(params.encode("utf-8")).hexdigest() for params in questions]
 
         db.execute_values(
             cur,
-            """INSERT INTO evaluation_question(id, batch_id, state, params, sample_batch_id) VALUES %s""",
-            [(id_, batch_id, "pending-turking", params, sample_batch_id) for id_, params in zip(ids, questions)])
+            """INSERT INTO evaluation_question(id, batch_id, state, params) VALUES %s""",
+            [(id_, batch_id, "pending-turking", params) for id_, params in zip(ids, questions)])
 
         return batch_id
 
@@ -162,7 +162,7 @@ def create_evaluation_batch_for_submission_sample(submission_id, sample_batch_id
     batches = api.get_submission_sample_batches(submission_id)
     assert len(batches) > 0,\
             "No sample batches for submission {}".format(submission_id)
-    assert any(batch.id == sample_batch_id for batch in batches),\
+    assert any(batch == sample_batch_id for batch in batches),\
             "Sample batch {} is not part of submission {}".format(sample_batch_id, submission_id)
 
     # Now, get the questions.
