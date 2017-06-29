@@ -2,7 +2,8 @@ from .base_settings import *
 
 # Host
 ALLOWED_HOSTS = ["kbpo.stanford.edu"]
-MTURK_TARGET = 'sandbox'
+MTURK_TARGET = 'actual'
+MTURK_FORM_TARGET = 'https://www.mturk.com/mturk/externalSubmit'
 MTURK_HOST = 'https://kbpo.stanford.edu'
 
 # Debug

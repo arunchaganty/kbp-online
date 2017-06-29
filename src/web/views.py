@@ -8,6 +8,7 @@ from django.core.urlresolvers import reverse
 from django.http import JsonResponse, HttpResponseRedirect, Http404, StreamingHttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 
 from kbpo import api
 
@@ -191,18 +192,33 @@ def do_task(request):
             params = api.get_task_params(hit_id)
         except StopIteration:
             raise Http404("HIT {} does not exist".format(hit_id))
+        assignment_id = request.GET.get("assignmentId")
+        if assignment_id is None:
+            raise Http404("AssignmentId not set")
 
         if request.POST:
+            print(request.POST)
             response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
             response = json.loads(response)
 
+            worker_id = request.POST.get("workerId")
+            worker_time = request.POST.get("workerTime")
+            comments = request.POST.get("comments")
+
+            if assignment_id is None:
+                return JsonResponse({"success": False, "reason": "No assignmentId"})
+            elif assignment_id == "ASSIGNMENT_ID_NOT_AVAILABLE":
+                return JsonResponse({"success": False, "reason": "Assignment id not available"})
+
             api.insert_assignment(
-                assignment_id=request.POST["assignmentId"],
-                hit_id=request.POST["hitId"],
-                worker_id=request.POST["workerId"],
-                worker_time=request.POST["workerTime"],
-                comments=request.POST["comments"],
+                assignment_id=assignment_id,
+                hit_id=hit_id,
+                worker_id=worker_id,
+                worker_time=worker_time,
+                comments=comments,
                 response=response)
+            tasks.process_response.delay(assignment_id)
+            # Just in case someone is listening.
             return JsonResponse({"success": True})
         # Get the corresponding mturk_hit and evaluation_question to
         # render this
@@ -214,6 +230,7 @@ def do_task(request):
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
+                'mturk_form_target': settings.MTURK_FORM_TARGET,
                 })
         elif params["batch_type"] == "exhaustive_relations":
             return render(request, 'interface_relation.html', {
@@ -221,14 +238,21 @@ def do_task(request):
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
+                'mturk_form_target': settings.MTURK_FORM_TARGET,
                 })
         elif params["batch_type"] == "selective_relations":
+            subject, object_ = tuple(params["subject"]), tuple(params["object"])
+            # ordering the mention pair needs types: so fixing in js.
+            #if object_ < subject:
+            #    subject, object_ = object_, subject
+
             return render(request, 'interface_relation.html', {
                 'doc_id': doc.id,
-                'mention_pair': '-'.join(map(str, params["mention_1"][1:]))+':'+'-'.join(map(str, params["mention_2"][1:])),
+                'mention_pair': '{}-{}:{}-{}'.format(subject[0], subject[1], object_[0], object_[1]),
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
-                'worker_id': request.GET["workerId"],
+                'worker_id': request.GET.get("workerId"),
+                'mturk_form_target': settings.MTURK_FORM_TARGET,
                 })
 
 ### API functions

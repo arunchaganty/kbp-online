@@ -39,7 +39,7 @@ def test_sample_document_uniform():
                    ALTER SEQUENCE sample_batch_id_seq RESTART;
                    """)
     sample_document_uniform(tag, 20)
-    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    batches = db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch""")
     assert len(batches) == 1
     batch = batches[0]
     assert batch.id == 1
@@ -48,7 +48,7 @@ def test_sample_document_uniform():
     assert batch.corpus_tag == "kbp2016"
     assert batch.params == {"type":"uniform", "with_replacement": False}
 
-    docs = list(db.select("""SELECT doc_id FROM document_sample WHERE batch_id=%(batch_id)s""", batch_id=batch.id))
+    docs = db.select("""SELECT doc_id FROM document_sample WHERE batch_id=%(batch_id)s""", batch_id=batch.id)
     assert len(docs) == 20
 
 def sample_document_entity(corpus_tag, n_samples, mention_table='evaluation_mention'):
@@ -89,7 +89,7 @@ def test_sample_document_entity():
     sample_document_uniform(tag, 20)
     sample_document_entity(tag, 20, mention_table="suggested_mention")
 
-    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    batches = db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch""")
     assert len(batches) == 2
     batch = batches[1]
     assert batch.id == 2
@@ -98,11 +98,13 @@ def test_sample_document_entity():
     assert batch.corpus_tag == "kbp2016"
     assert batch.params == {"type":"entity", "with_replacement": False}
 
-    docs = list(db.select("""SELECT doc_id FROM document_sample WHERE batch_id=%(batch_id)s""", batch_id=batch.id))
+    docs = db.select("""SELECT doc_id FROM document_sample WHERE batch_id=%(batch_id)s""", batch_id=batch.id)
     assert len(docs) == 20
 
+# TODO: compute sample size
 def sample_submission(corpus_tag, submission_id, type_, n_samples):
     # Get distribution
+    logger.info("Computing distributions")
     if type_ == "instance":
         P = distribution.submission_instance(corpus_tag, submission_id)
     elif type_ == "relation":
@@ -115,8 +117,10 @@ def sample_submission(corpus_tag, submission_id, type_, n_samples):
         raise ValueError("Invalid submission sampling distribution type: {}".format(type_))
 
     # Get samples
+    logger.info("Drawing samples")
     relation_mentions = sample_without_replacement(P[submission_id], n_samples)
 
+    logger.info("Loading samples into batch")
     with db.CONN:
         with db.CONN.cursor() as cur:
             cur.execute("""
@@ -137,7 +141,7 @@ def test_sample_submission_instance():
                    """)
     sample_submission(tag, submission_id, 'instance', 20)
 
-    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    batches = db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch""")
     assert len(batches) == 1
     batch = batches[0]
     assert batch.id == 1
@@ -146,7 +150,7 @@ def test_sample_submission_instance():
     assert batch.corpus_tag == "kbp2016"
     assert batch.params == {"submission_id": submission_id, "type":"instance", "with_replacement": False}
 
-    relation_mentions = list(db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    relation_mentions = db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id)
     assert len(relation_mentions) == 20
 
 def test_sample_submission_relation():
@@ -158,7 +162,7 @@ def test_sample_submission_relation():
                    """)
     sample_submission(tag, submission_id, 'relation', 20)
 
-    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    batches = db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch""")
     assert len(batches) == 1
     batch = batches[0]
     assert batch.id == 1
@@ -167,7 +171,7 @@ def test_sample_submission_relation():
     assert batch.corpus_tag == "kbp2016"
     assert batch.params == {"submission_id": submission_id, "type":"relation", "with_replacement": False}
 
-    relation_mentions = list(db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    relation_mentions = db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id)
     assert len(relation_mentions) == 20
 
 def test_sample_submission_entity():
@@ -179,7 +183,7 @@ def test_sample_submission_entity():
                    """)
     sample_submission(tag, submission_id, 'entity', 20)
 
-    batches = list(db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch"""))
+    batches = db.select("""SELECT id, submission_id, distribution_type, corpus_tag, params FROM sample_batch""")
     assert len(batches) == 1
     batch = batches[0]
     assert batch.id == 1
@@ -188,5 +192,5 @@ def test_sample_submission_entity():
     assert batch.corpus_tag == "kbp2016"
     assert batch.params == {"submission_id": submission_id, "type":"entity", "with_replacement": False}
 
-    relation_mentions = list(db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id))
+    relation_mentions = db.select("""SELECT doc_id, subject, object FROM submission_sample WHERE batch_id=%(batch_id)s AND submission_id=%(submission_id)s""", batch_id=batch.id, submission_id=submission_id)
     assert len(relation_mentions) == 20

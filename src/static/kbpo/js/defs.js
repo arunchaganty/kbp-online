@@ -25,29 +25,29 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "icon": "fa-times",
           "subject-types": ["PER", "ORG", "GPE"],
           "object-types": ["PER", "ORG", "GPE", "DATE", "NUM", "TITLE"]
-      }, 
-      {
-          "name": "per:age",
-          "short": "age",
-          "image": "age.svg",
-          "icon" : "fa-clock-o", 
-          "examples": [],
-          "template": "{subject} is {object} old.",
-          "subject-types": ["PER"],
-          "object-types": ["NUM"]
       },{
-          "name": "per:alternate_names",
-          "short": "alias",
-          "image": "alternate_names.svg",
-          "icon": "fa-address-book",
-          "examples": [
-            "{Dwayne Johnson}, popularly known as [The Rock], ...",
-              "{Cardozar} ([Snoop Dog]) announced his new song...",
-          ],
-          "template": "{subject} is also known as {object}.",
-          "subject-types": ["PER"],
-          "object-types": ["PER"]
-      },{
+      // 
+      //     "name": "per:age",
+      //     "short": "age",
+      //     "image": "age.svg",
+      //     "icon" : "fa-clock-o", 
+      //     "examples": [],
+      //     "template": "{subject} is {object} old.",
+      //     "subject-types": ["PER"],
+      //     "object-types": ["NUM"]
+      // },{
+      //    "name": "per:alternate_names",
+      //    "short": "alias",
+      //    "image": "alternate_names.svg",
+      //    "icon": "fa-address-book",
+      //    "examples": [
+      //      "{Dwayne Johnson}, popularly known as [The Rock], ...",
+      //        "{Cardozar} ([Snoop Dog]) announced his new song...",
+      //    ],
+      //    "template": "{subject} is also known as {object}.",
+      //    "subject-types": ["PER"],
+      //    "object-types": ["PER"]
+      //},{
           "name": "per:place_of_birth",
           "short": "born at",
           "image": "born.svg",
@@ -215,15 +215,15 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "template": "{subject} is a {object}.",
           "subject-types": ["PER"],
           "object-types": ["TITLE"]
-      },{
-          "name": "org:alternate_names",
-          "short": "alias",
-          "image": "alternate_names.svg", 
-          "icon": "fa-address-book",
-          "template": "{subject} is also known as {object}.",
-          "examples": ["{Quantum Computer Services} was renamed [Americal Online]"],
-          "subject-types": ["ORG"],
-          "object-types": ["ORG"]
+      // },{
+      //     "name": "org:alternate_names",
+      //     "short": "alias",
+      //     "image": "alternate_names.svg", 
+      //     "icon": "fa-address-book",
+      //     "template": "{subject} is also known as {object}.",
+      //     "examples": ["{Quantum Computer Services} was renamed [Americal Online]"],
+      //     "subject-types": ["ORG"],
+      //     "object-types": ["ORG"]
       },{
           "name": "org:place_of_headquarters",
           "short": "headquartered at",
@@ -316,7 +316,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "examples": [],
           "icon": "fa-line-chart",
           "subject-types": ["ORG"],
-          "object-types": ["ORG"]
+          "object-types": ["ORG", "GPE"]
       },{
           "name": "org:holds_shares_in",
           "short": "holds shares in",
@@ -326,6 +326,8 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "icon": "fa-line-chart",
           "subject-types": ["ORG"],
           "object-types": ["ORG"]
+      // ignoring org:employees_or_members -- we have per:employee_or_member_of
+      // ignoring org:students -- we have per:schools_attended 
     }];
 
     var RelationLabel = function(r) {

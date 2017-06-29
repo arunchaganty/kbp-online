@@ -1,7 +1,9 @@
 import json
+import time
 import math
 import logging
 from datetime import datetime
+import pdb
 
 import pytest
 from tqdm import tqdm
@@ -113,6 +115,9 @@ def create_hit(conn,
     logger.debug(["HIT created: ", response['HIT']['HITTypeId'], response['HIT']['HITId']])
     return response['HIT']['HITTypeId'], response['HIT']['HITId']
 
+class HitMustBeReviewed(Exception):
+    pass
+
 def revoke_hit(conn, hit_id):
     """
     Revokes a HIT by first expiring it and then trying to delete it.
@@ -125,6 +130,16 @@ def revoke_hit(conn, hit_id):
         return False
 
     conn.update_expiration_for_hit(HITId=hit_id, ExpireAt=datetime.now())
+    time.sleep(0.1)
+    hit = get_hit(conn, hit_id)
+
+    # Verify that the statis is Reviewable
+    assert hit["HITStatus"] == "Reviewable"
+    assignments_inflight = hit['MaxAssignments'] - (hit['NumberOfAssignmentsAvailable'] + hit['NumberOfAssignmentsCompleted'] + hit['NumberOfAssignmentsPending'])
+    if assignments_inflight > 0:
+        logger.error("HIT must be reviewed")
+        raise HitMustBeReviewed(hit_id)
+
     conn.delete_hit(HITId=hit_id)
     logger.info("Finished revoking mturk_hit %s", hit_id)
     return True
@@ -275,27 +290,35 @@ def revoke_batch(conn, batch_id):
     """
     Removes all HITs associated with an mturk_batch.
     """
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            assert db.get("""
-                SELECT EXISTS(SELECT * FROM mturk_batch WHERE id=%(batch_id)s)
-                """, cur=cur, batch_id=batch_id).exists, "No such batch exists."
-            # Get all hits with batch.
-            for row in db.select("""
-                SELECT id
-                FROM mturk_hit
-                WHERE batch_id = %(batch_id)s
-                """, cur=cur, batch_id=batch_id):
-
-                try:
-                    revoke_hit(conn, row.id)
-                except ClientError as e:
-                    logger.exception(e)
-                    db.execute("""
-                        UPDATE mturk_hit
-                        SET state = %(state)s, message = %(message)s
-                        WHERE id=%(hit_id)s
-                        """, cur=cur, state="error", message=str(e), hit_id=row.id)
+    assert db.get("""SELECT EXISTS(SELECT * FROM mturk_batch WHERE id=%(batch_id)s)
+        """, batch_id=batch_id).exists, "No such batch exists."
+    hits = db.select("""
+        SELECT id
+        FROM mturk_hit
+        WHERE batch_id = %(batch_id)s
+          AND state <> 'revoked'
+        """, batch_id=batch_id)
+    for row in tqdm(hits, desc="Revoking batch"):
+        # TODO: deal with assignments that are not yet paid and
+        try:
+            revoke_hit(conn, row.id)
+            db.execute("""
+                UPDATE mturk_hit
+                SET state = %(state)s, message = %(message)s
+                WHERE id=%(hit_id)s
+                """, state="revoked", message='', hit_id=row.id)
+            logger.info("Revoked HIT %s", row.id)
+        except HitMustBeReviewed as e:
+            logger.exception(e)
+            continue
+        except ClientError as e:
+            logger.exception(e)
+            db.execute("""
+                UPDATE mturk_hit
+                SET state = %(state)s, message = %(message)s
+                WHERE id=%(hit_id)s
+                """, state="error", message=str(e), hit_id=row.id)
+            continue
     logger.info("Finished revoking mturk_batch %s", batch_id)
 
 def test_create_revoke_batch():

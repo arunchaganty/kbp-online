@@ -174,7 +174,7 @@ INVERTED_RELATIONS = {
     }
 
 RELATION_TYPES = {
-    "per:alternate_names": ("PER", "PER"),
+    #"per:alternate_names": ("PER", "PER"),
     "per:place_of_birth": ("PER", "GPE"),
     "per:place_of_residence": ("PER", "GPE"),
     "per:place_of_death": ("PER", "GPE"),
@@ -190,7 +190,7 @@ RELATION_TYPES = {
     "per:siblings": ("PER", "PER"),
     "per:other_family": ("PER", "PER"),
     "per:title": ("PER", "TITLE"),
-    "org:alternate_names": ("ORG", "ORG"),
+    #"org:alternate_names": ("ORG", "ORG"),
     "org:place_of_headquarters": ("ORG", "GPE"),
     "org:date_founded": ("ORG", "DATE"),
     "org:date_dissolved": ("ORG", "DATE"),
@@ -213,8 +213,8 @@ for k,v in RELATION_TYPES.items():
         STRING_VALUED_RELATIONS[k] = list(string_types)[0]
 
 #Special case where the string valued slow actually refers to an entity
-STRING_VALUED_RELATIONS['per:alternate_names'] = 'PER'
-STRING_VALUED_RELATIONS['org:alternate_names'] = 'ORG'
+#STRING_VALUED_RELATIONS['per:alternate_names'] = 'PER'
+#STRING_VALUED_RELATIONS['org:alternate_names'] = 'ORG'
 #print(STRING_VALUED_RELATIONS)
 
 def _create_mention_types(types):

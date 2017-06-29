@@ -621,18 +621,18 @@ class TacKbReader(MFileReader):
                 if row.prov is None:
                     self.logger.info(Messages.INVALID_MENTION_PROVENANCE, lineno=lineno)
                     continue
-                row = row._replace(prov=Provenance.from_str(row.prov))
+                row = row._replace(prov=Provenance.from_str(row.prov, inclusive=True))
                 self._add_entity_mention(row)
             elif row.reln == 'canonical_mention':
                 if row.prov is None:
                     self.logger.info(Messages.INVALID_MENTION_PROVENANCE, lineno=lineno)
                     continue
-                row = row._replace(prov=Provenance.from_str(row.prov))
+                row = row._replace(prov=Provenance.from_str(row.prov, inclusive=True))
                 self._add_entity_cmention(row)
             elif row.reln == 'type':
                 self._add_entity_type(row)
             elif row.reln in RELATION_MAP:
-                row = row._replace(reln=RELATION_MAP[row.reln], prov=tuple(Provenance.from_str(p.strip()) for p in row.prov.split(",")))
+                row = row._replace(reln=RELATION_MAP[row.reln], prov=tuple(Provenance.from_str(p.strip(), inclusive=True) for p in row.prov.split(",")))
                 self._add_entity_relation(row)
             else:
                 self.logger.info(Messages.IGNORE_RELATION_UNSUPPORTED, lineno=lineno, reln=row.reln)

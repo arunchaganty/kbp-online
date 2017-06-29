@@ -191,16 +191,12 @@ def submission_entity_relation(corpus_tag, submission_id=None):
 
     distribution = defaultdict(Counter)
     for row in db.select("""
-        WITH
-             _relation_counts AS (SELECT submission_id, relation, SUM(count) AS count FROM submission_statistics GROUP BY submission_id, relation),
-             _entity_counts AS (SELECT submission_id, subject_entity, SUM(count) AS count FROM submission_statistics GROUP BY submission_id, subject_entity),
-             _entity_relation_counts AS (SELECT submission_id, subject_entity, COUNT(*) FROM submission_statistics GROUP BY submission_id, subject_entity)
         SELECT s.submission_id, s.doc_id, s.subject, s.object, s.subject_entity, (erc.count/ec.count)/(rc.count) AS likelihood
         FROM submission_entity_relation s
         JOIN submission s_ ON (s_.id = s.submission_id AND s_.corpus_tag = %(corpus_tag)s)
-        JOIN _relation_counts rc ON (s.submission_id = rc.submission_id AND rc.relation = s.relation)
-        JOIN _entity_counts ec ON (s.submission_id = ec.submission_id AND ec.subject_entity = s.subject_entity)
-        JOIN _entity_relation_counts erc ON (s.submission_id = erc.submission_id AND erc.subject_entity = s.subject_entity)
+        JOIN submission_relation_counts rc ON (s.submission_id = rc.submission_id AND rc.relation = s.relation)
+        JOIN submission_entity_counts ec ON (s.submission_id = ec.submission_id AND ec.subject_entity = s.subject_entity)
+        JOIN submission_entity_relation_counts erc ON (s.submission_id = erc.submission_id AND erc.subject_entity = s.subject_entity)
         {where}
         """.format(where=where), corpus_tag=corpus_tag, submission_id=submission_id):
         distribution[row.submission_id][row.doc_id, (row.subject.lower, row.subject.upper), (row.object.lower, row.object.upper)] = float(row.likelihood)
