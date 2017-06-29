@@ -199,7 +199,7 @@ def process_response(assignment_id):
     Processes an mturk response to fill in evaluation_*_response tables
     """
     parse_response(assignment_id)
-    db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
+    db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s", 
                new_state = 'pending_validation', assignment_id = assignment_id)
 
     #Changed to batch_complete
@@ -208,11 +208,10 @@ def process_response(assignment_id):
     #if hit_complete:
     #    process_hit.delay(hit_id)
 
-    mturk_batch_id = next(db.select("SELECT batch_id FROM mturk_assignment WHERE id = %(assignment_id)s", assignment_id = assignment_id)).batch_id
+    mturk_batch_id = db.get("SELECT batch_id FROM mturk_assignment WHERE id = %(assignment_id)s", assignment_id=assignment_id).batch_id
     batch_complete = check_batch_complete(mturk_batch_id)
     if batch_complete:
         process_mturk_batch.delay(mturk_batch_id)
-    
 
 @shared_task
 def process_mturk_batch(mturk_batch_id):
@@ -233,7 +232,10 @@ def process_mturk_batch(mturk_batch_id):
     #TODO: Create a new mturk batch to cover rejected assignments
     verify_evaluation_mention_response()
     verify_evaluation_relation_response()
-    mturk_batch_payments(mturk_batch_id)
+
+    mturk_connection = connect(MTURK_TARGET)
+    mturk_batch_payments(mturk_connection, mturk_batch_id)
+
     db.execute("UPDATE mturk_hit SET state = 'done' WHERE batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)
     submission_id = next(db.select("""
      SELECT DISTINCT submission_id 

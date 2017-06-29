@@ -266,9 +266,9 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
     evaluation_mentions, evaluation_links, evaluation_relations = _parse_responses(rows)
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, """DELETE FROM evaluation_mention_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
-            db.execute_values(cur, """DELETE FROM evaluation_link_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
-            db.execute_values(cur, """DELETE FROM evaluation_relation_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
+            db.execute("""DELETE FROM evaluation_mention_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
+            db.execute("""DELETE FROM evaluation_link_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
+            db.execute("""DELETE FROM evaluation_relation_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
             db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, span, canonical_span, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
             db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, weight) VALUES %s""", evaluation_links)
             db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject, object, relation, weight) VALUES %s""", evaluation_relations)
@@ -915,7 +915,7 @@ def check_batch_complete(mturk_batch_id):
 
 def check_hit_complete(hit_id):
     """Check if all assignments for a hit have been collected"""
-    rows = db.select("""
+    row = db.get("""
     SELECT count(*) = (b.params->>'max_assignments')::int AS hit_complete 
     FROM mturk_assignment AS a 
     LEFT JOIN mturk_hit AS h 
@@ -927,7 +927,7 @@ def check_hit_complete(hit_id):
     """, 
     hit_id = hit_id)
     #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
-    return next(rows).hit_complete
+    return row.hit_complete
 def test_check_hit_compelte():
     assert check_batch_complete(10) == True
 
@@ -936,36 +936,31 @@ def test_check_hit_complete():
 
 def get_hit_id(assignment_id):
     """Get hit_id for a given @assignment_id from the database"""
-    rows = db.select("""SELECT hit_id from mturk_assignment where id = %(assignment_id)s""", assignment_id = assignment_id)
-    return next(rows).hit_id
+    return db.get("""SELECT hit_id from mturk_assignment where id = %(assignment_id)s""", assignment_id = assignment_id).hit_id
 
 def get_batch_id(assignment_id):
     """Get hit_id for a given @assignment_id from the database"""
-    rows = db.select("""SELECT batch_id from mturk_assignment where id = %(assignment_id)s""", assignment_id = assignment_id)
-    return next(rows).batch_id
+    return db.get("""SELECT batch_id from mturk_assignment where id = %(assignment_id)s""", assignment_id = assignment_id).batch_id
 
 def test_get_hit_id():
     assert get_hit_id('3A1PQ49WVIBJFEOLBYVYZ90CY851HC') == '335VBRURDJUMYP2LZ7XK5SQYRJR9EC'
 
 def get_question_id(hit_id):
     """Get question_id for a given @hit_id from the databse"""
-    rows = db.select("""SELECT question_id from mturk_hit where id = %(hit_id)s""", hit_id=hit_id)
-    return next(rows).question_id
+    return db.get("""SELECT question_id from mturk_hit where id = %(hit_id)s""", hit_id=hit_id).question_id
+
 def test_get_question_id():
     assert get_question_id('3D1TUISJWIUWYMSAT1I30Z92D90IUK') == '00868067917b9edfb2006a93c405d4f2a02f953e'
 
-
 def get_doc_id(hit_id):
     """Get doc_id for a given @hit_id from the database"""
-    rows = db.select(""" 
+    return db.get(""" 
                         SELECT params->'doc_id' AS doc_id
                         FROM mturk_hit AS h 
                         LEFT JOIN evaluation_question AS q 
                             ON q.id = h.question_id
                         WHERE h.id = %(hit_id)s;
-                        """, hit_id = hit_id)
-    return next(rows).doc_id
-
+                        """, hit_id = hit_id).doc_id
 
 if __name__ == '__main__':
     #sanitize_mention_response_table()
