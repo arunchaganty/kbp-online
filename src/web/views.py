@@ -160,14 +160,18 @@ def interface_relation(request, doc_id=None, subject_id=None, object_id=None, su
 
 def interface_submission(_, submission_id=None):
     if submission_id is None:
-        submission_id = Submission.objects.order_by('?').first().id
+        #submission_id = Submission.objects.order_by('?').first().id
+        submission_id = 25
         #submission_id = Submission.objects.first().id
         return redirect(
             "interface_submission",
             submission_id=submission_id)
     submission = get_object_or_404(Submission, id=submission_id)
 
-    reln = api.get_submission_relation_list(submission.id)[0]
+    relns = api.get_submission_relation_list(submission.id, 1)
+    # Get a random relation
+    reln = relns[0]
+
     return redirect(
         "interface_relation",
         doc_id=reln["doc_id"],
