@@ -25,6 +25,8 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
           self.elem.html(elem_.html());
           self.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
         });
+        // Flat out ignoring wiki linking because we don't have these
+        // yet.
         //this.wikiLinkWidget = CheckEntityLinkWidget(elem)
     };
 
@@ -76,8 +78,8 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
       div.on("click.kbpo.relationWidget", function(evt) {
         if (self.verifyLinks) {
           $(self.mentionPair.subject.elem).parent().removeClass("highlight");
-          self.canonicalLinkWidget.init(self.mentionPair.subject, function(){
-            self.canonicalLinkWidget.init(self.mentionPair.object, function(){self.done(reln);});
+          self.canonicalLinkWidget.init(self.mentionPair.subject, function() {
+            self.canonicalLinkWidget.init(self.mentionPair.object, function(){ self.done(reln);});
           });
         }
         else{

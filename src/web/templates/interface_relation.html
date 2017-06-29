@@ -69,30 +69,32 @@ div#relation-option-preview {
       "kbpo/js/widgets/RelationInterface",
       ],
       function($, DocWidget, InstructionWidget, RelationInterface) {
+        var docId = $("#doc-id").val();
+        var mentionPair = $("#mention-pair").val();
+        var verifyLinks = (mentionPair.length > 0);
+
         var docWidget = new DocWidget($("#document"));
         var instructionWidget = new InstructionWidget('entity_extraction', '/static/instructions/entity_extraction.html');
-        var iface = new RelationInterface(docWidget, $('#interface'), $("#relation-option-widget"), false);
+        var iface = new RelationInterface(docWidget, $('#interface'), $("#relation-option-widget"), verifyLinks);
+
         // Right now, docId is specified on the page.
-        var docId = $("#doc-id").val();
         $.getJSON("/api/document/" + docId, function(doc) {
           console.info("loaded document ", doc.id);
           docWidget.loadDocument(doc);
 
-          var mentionPair = $("#mention-pair").val();
-          var shouldVerify = false;
           // TODO: Change to evaluation-mention-pairs
+          // TODO: Change to submission mentions
           if (mentionPair.length > 0) {
             $.getJSON("/api/suggested-mention-pairs/" + docId + "/" + mentionPair, function(mentionPairs) {
               iface.loadMentionPairs(mentionPairs);
-              shouldVerify = true;
               console.info("loaded", mentionPairs.length, "mention pairs");
-              iface.run(shouldVerify);
+              iface.run();
             });
           } else {
             $.getJSON("/api/suggested-mention-pairs/" + docId, function(mentionPairs) {
               iface.loadMentionPairs(mentionPairs);
               console.info("loaded", mentionPairs.length, "mention pairs");
-              iface.run(shouldVerify);
+              iface.run();
             });
           }
         });
