@@ -367,12 +367,10 @@ def get_submission_relation_list(submission_id, count=1):
     """
     ret = []
     for row in db.select("""
-            SELECT r.doc_id, subject, m.mention_type AS subject_type, relation, object, n.mention_type AS object_type, provenances, confidence
-            FROM submission_relation r
-            JOIN submission_mention m ON (r.doc_id = m.doc_id AND r.subject = m.span)
-            JOIN submission_mention n ON (r.doc_id = n.doc_id AND r.object = n.span)
+            SELECT doc_id, subject, subject_type, relation, object, object_type, provenances, confidence
+            FROM submission_entity_relation r
             WHERE r.submission_id = %(submission_id)s
-            ORDER BY subject
+            ORDER BY doc_id, subject
             """, submission_id=submission_id):
         assert len(row.provenances) > 0, "Invalid submission entry does not have any provenances"
 
