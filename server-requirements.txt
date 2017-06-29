@@ -5,3 +5,8 @@ django-npm
 celery
 gunicorn
 psycopg2
+pandas
+boto3
+tqdm
+pytest
+boto
