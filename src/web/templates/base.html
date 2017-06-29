@@ -38,11 +38,12 @@
             <li {%if url_name == 'home' %} class="active" {% endif %} >
               <a href="/">{% bootstrap_icon "home" %} Home</a></li>
 
-            <!-- TODO: Make this a drop down menu of "submissions" or "corpus" -->
             <li class="dropdown {%if 'explore' in url_name %}active{% endif %}" >
               <a href="#"  class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% bootstrap_icon "globe" %} Explore <span class="caret"></span></a>
               <ul class="dropdown-menu">
+                <!-- Hidden, until we have a better link for this.
                 <li><a href="/">Submissions</a></li>
+                -->
                 <li><a href="/explore/corpus/kbp2015">TAC KBP 2015 Corpus</a></li>
                 <li><a href="/explore/corpus/kbp2016">TAC KBP 2016 Corpus</a></li>
               </ul>
