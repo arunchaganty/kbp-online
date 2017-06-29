@@ -312,8 +312,24 @@ def test_create_revoke_batch():
     mturk_batch_id = create_batch(conn, question_batch_id, question_batch.batch_type, questions[:10])
     revoke_batch(conn, mturk_batch_id)
 
-def retrieve_assignments():
-    raise NotImplementedError
 
-def approve_assignments():
-    raise NotImplementedError
+def mturk_batch_payments(conn, mturk_batch_id):
+    rows = list(db.select("""
+        SELECT id, verified, message
+        FROM mturk_assignment
+        WHERE batch_id = %(mturk_batch_id)s
+        """, mturk_batch_id = mturk_batch_id))
+    for row in rows:
+        if row.verified == True:
+            approve_assignment(conn, row.id)
+            db.execute("UPDATE mturk_assignment SET state = 'approved' WHERE id = %(assignment_id)s", assignment_id = row.id)
+        if row.verified == False:
+            reject_assignment(conn, row.id, row.message)
+            db.execute("UPDATE mturk_assignment SET state = 'rejected' WHERE id = %(assignment_id)s", assignment_id = row.id)
+
+def reject_assignment(conn, assignment_id, message = None):
+    conn.reject_assignment(assignmentId = assignment_id, message = message)
+def approve_assignment(conn, assignment_id):
+    conn.approve_assignment(assignmentId = assignment_id)
+
+
