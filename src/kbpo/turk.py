@@ -130,7 +130,6 @@ def revoke_hit(conn, hit_id):
         return False
 
     conn.update_expiration_for_hit(HITId=hit_id, ExpireAt=datetime.now())
-    time.sleep(0.1)
     hit = get_hit(conn, hit_id)
 
     # Verify that the statis is Reviewable
@@ -335,7 +334,6 @@ def test_create_revoke_batch():
     mturk_batch_id = create_batch(conn, question_batch_id, question_batch.batch_type, questions[:10])
     revoke_batch(conn, mturk_batch_id)
 
-
 def mturk_batch_payments(conn, mturk_batch_id):
     rows = list(db.select("""
         SELECT id, verified, message
@@ -350,9 +348,31 @@ def mturk_batch_payments(conn, mturk_batch_id):
             reject_assignment(conn, row.id, row.message)
             db.execute("UPDATE mturk_assignment SET state = 'rejected' WHERE id = %(assignment_id)s", assignment_id = row.id)
 
+class MTurkInvalidStatus(Exception):
+    pass
+
 def reject_assignment(conn, assignment_id, message = None):
-    conn.reject_assignment(assignmentId = assignment_id, message = message)
+    assn = conn.get_assignment(AssignmentId = assignment_id)
+    status = assn["Assignment"]["AssignmentStatus"]
+    if status == "Approved":
+        raise MTurkInvalidStatus("Assignment {} has already been approved!".format(assignment_id))
+    elif status == "Rejected":
+        return False
+    elif status != "Submitted":
+        raise MTurkInvalidStatus("Assignment should have status {}, but has status {}".format("Submitted", status))
+
+    conn.reject_assignment(AssignmentId = assignment_id, message = message)
+    return True
+
 def approve_assignment(conn, assignment_id):
-    conn.approve_assignment(assignmentId = assignment_id)
+    assn = conn.get_assignment(AssignmentId = assignment_id)
+    status = assn["Assignment"]["AssignmentStatus"]
+    if status == "Approved":
+        return False
+    elif status == "Rejected":
+        raise MTurkInvalidStatus("Assignment {} has already been rejected!".format(assignment_id))
+    elif status != "Submitted":
+        raise MTurkInvalidStatus("Assignment {} should have status {}, but has status {}".format(assignment_id, "Submitted", status))
 
-
+    conn.approve_assignment(AssignmentId = assignment_id)
+    return True
