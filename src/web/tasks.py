@@ -194,13 +194,25 @@ def turk_submission(submission_id, sample_batch_id=None):
         state.save()
 
 @shared_task
+def process_responses():
+    """
+    Processes all pending-extraction mturk responses to fill in evaluation_*_response tables
+    """
+    for row in db.select("""SELECT id FROM mturk_assignment WHERE state = 'pending-extraction'"""):
+        process_response(row.id)
+
+@shared_task
 def process_response(assignment_id):
     """
     Processes an mturk response to fill in evaluation_*_response tables
     """
-    parse_response(assignment_id)
-    db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
-               new_state = 'pending_validation', assignment_id = assignment_id)
+    try: 
+        parse_response(assignment_id)
+        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
+                   new_state = 'pending-validation', assignment_id = assignment_id)
+    except: 
+        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
+                   new_state = 'pending-extraction', assignment_id = assignment_id)
 
     #Changed to batch_complete
     #hit_id = get_hit_id(assignment_id)

@@ -266,9 +266,9 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
     evaluation_mentions, evaluation_links, evaluation_relations = _parse_responses(rows)
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, """DELETE FROM evaluation_mention_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
-            db.execute_values(cur, """DELETE FROM evaluation_link_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
-            db.execute_values(cur, """DELETE FROM evaluation_relation_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
+            db.execute("""DELETE FROM evaluation_mention_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
+            db.execute("""DELETE FROM evaluation_link_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
+            db.execute("""DELETE FROM evaluation_relation_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
             db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, span, canonical_span, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
             db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, weight) VALUES %s""", evaluation_links)
             db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject, object, relation, weight) VALUES %s""", evaluation_relations)
@@ -910,7 +910,6 @@ def check_batch_complete(mturk_batch_id):
     mturk_batch_id = mturk_batch_id)
     #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
     hit_completed = [x.hit_complete for x in rows]
-    print(hit_completed)
     return all(hit_completed)
 
 def check_hit_complete(hit_id):
