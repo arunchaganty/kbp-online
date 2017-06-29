@@ -5,57 +5,32 @@
 {% block content %}
 <div id="content-main" class="col-md-10">
   {% bootstrap_messages %}
-  {# Table of errors #}
-  {% if form.log %}
-  <h1>Validation Log</h1>
-  <table class="table table-striped table-hover">
-    <thead>
-      <th width="10%">Line #</th>
-      <th>Message</th>
-    </thead>
-    <tbody>
-      {% for cat in form.log.errors %}
-      <tr class="danger">
-        <td>{{cat|length}}</td>
-        <td>{{cat}}</td>
-      </tr>
-      {% endfor %}
+  <h1>My Submissions</h1>
+  <p>
+  You can keep track of the status of your submissions below.
+  Click the {% bootstrap_icon 'remove' %} remove links below to remove your system from the board.
+  If you see the status of 'error' below, please <a
+    href="mailto:kbp-online-owners@lists.stanford.edu">notify us</a> and
+  we'll get on it as soon as possible.
+  </p>
 
-      {% for cat in form.log.warnings %}
-      <tr class="warning">
-        <td>{{cat|length}}</td>
-        <td>{{cat}}</td>
-      </tr>
-      {% endfor %}
-
-      {% for cat in form.log.info %}
-      <tr class="info">
-        <td>{{cat|length}}</td>
-        <td>{{cat}}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% endif %}
-
-  <h1>View Submissions</h1>
   <table class="table table-striped table-hover">
     <thead>
       <th>#</th>
       <th>Name</th>
-      <th>Description</th>
       <th>Corpus</th>
-      <th>Submitted</th>
-      <th>Status</th>
+      <th>Timestamp</th>
+      <th>Current status</th>
       <th>Download</th>
-      <th>Delete</th>
+      <th>Remove</th>
     </thead>
     <tbody>
       {% for submission in submissions %}
       <tr>
         <td>{{forloop.counter}}</td>
-        <td>{{submission.submission.name}}</td>
-        <td>{{submission.submission.details}}</td>
+        <td>{{submission.submission.name}} <br/>
+          <small>{{submission.submission.details}}</small>
+        </td>
         <td>{{submission.submission.corpus_tag}}</td>
         <td>{{submission.submission.updated}}</td>
         <td>{{submission.submission.state}}</td>
@@ -79,7 +54,7 @@
           </ul>
         </td>
         <td class="text-center">
-          <a href="/submissions/{{submission.submission.id}}/delete/">
+          <a href="/submissions/{{submission.submission.id}}/remove/">
             {% bootstrap_icon 'remove' %}
           </a>
         </td>
@@ -89,7 +64,13 @@
   </table>
 
   <h2>New submission</h2>
-  <p>Please read our documentation <a href="#">here</a> for more details on the submission formats.</p>
+  <p><i>Almost there... just fill in the form below!</i>
+  <p>
+    Please check out our <a data-toggle="modal"
+      data-target="#help-modal">{% bootstrap_icon "question-sign" %}
+      help page</a> for more details on submission formats and the
+    post-processing we do on your submission.
+  </p>
 
   <form class="form" method="post" action="" enctype="multipart/form-data">
     {% csrf_token %}
@@ -101,5 +82,61 @@
     {% endbuttons %}
   </form>
 </div>
+
+{% endblock %}
+
+{% block help_content %}
+<h4>What sort of post-processing do you do?</h4>
+
+<h4>Which relations do you (not) support?</h4>
+We use the relation schema defined in the TAC-KBP official guidelines, with a few minor modifications.
+First, we collapse different location relations such as <tt>per:city_of_birth</tt>and <tt>per:place_of_birth</tt> to <tt>per:place_of_birth</tt> (we do this conversion automatically).
+Secondly, we omit <tt>per:alternate_names</tt> and <tt>org:alternate_names</tt> (they are well-captured by the mention relations above) and infrequent relations such as <tt>per:cause_of_death</tt>. Here's a full list of the relations we support:
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Relation</th>
+      <th>Subject type</th>
+      <th>Object type</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<h4>When should I expect to get my results?</h4>
+<p>
+Typically, the annotation process takes no more than a few hours.
+We will automatically email you when your scores are ready.
+</p>
+
+<h4>What are the different formats about?</h4>
+<p>
+The primary format that we accept input is in official <a href="">TAC-KBP 2015--2016 format</a> (<i>Note: support for the new 2017 CS++ format is coming soon!</i>). The format is pretty straight forward; each line of the file contains at most 5 <i>tab-separated</i> columns:
+</p>
+<pre>
+  :Carrie_Fisher	type PER
+  :Carrie_Fisher	canonical_mention	"Carrie Fisher"	DocID1:321-333	1.0
+  :Carrie_Fisher	mention	"Carrie Fisher"	DocID1:321-333	1.0
+  :Debbie_Reynolds	type	PER	
+  :Debbie_Reynolds	canonical_mention	"Debbie Reynolds"	DocID1:360-364	1.0
+  :Debbie_Reynolds	mention	"Debbie Reynolds"	DocID1:360-364	1.0
+  :Debbie_Reynolds	per:children	:carrie_fisher	DocID1:321-364	0.0575
+</pre>
+
+<p>
+Each row begins with an <i>entity identifier</i>, e.g. <tt>:Carrie_Fisher</tt>, that starts with a colon (<tt>:</tt>).
+The second column is a relation keyword, either <tt>type</tt>, <tt>canonical_mention</tt>, <tt>mention</tt>, or one of X relations listed below.
+The third column is the argument to the relation, either an entity type; one of <tt>PER</tt>, <tt>ORG</tt> or <tt>GPE</tt>,
+a string ("Carrie Fisher", "actress") or another entity (<tt>:Debbie_Reynolds</tt>).
+The next line is the <i>provenance</i>, i.e. where in the document the mention or relation was found.
+</p>
+
+<p>
+We take care of automatically symmetrizing the relations you predict.
+We also support multiple justifications (in the 2017 format). 
+</p>
+
+<h4>Why do my results look different from my official TAC-KBP scores?</h4>
 
 {% endblock %}

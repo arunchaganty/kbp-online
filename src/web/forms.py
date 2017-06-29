@@ -27,7 +27,8 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         model = Submission
         fields = ['name', 'details', 'corpus_tag',]
         widgets = {
-            'name': forms.TextInput(),
+            'name': forms.TextInput(attrs={'placeholder': 'A short identifying description of your system (e.g. "Selective Attention Neural Network")'}),
+            'details': forms.Textarea(attrs={'placeholder': 'A brief description of what identifies this model or iteration.', 'rows': 4}),
             'corpus_tag': forms.Select(choices=(('kbp2016','KBP 2016 corpus'),)),
             }
 

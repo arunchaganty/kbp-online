@@ -107,7 +107,7 @@ class Submission(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     name = models.TextField()
-    corpus_tag = models.TextField()
+    corpus_tag = models.TextField(verbose_name='Document corpus')
     details = models.TextField()
 
     objects = models.Manager()
