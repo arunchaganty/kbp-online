@@ -1,4 +1,5 @@
 """
+    
 Celery tasks
 """
 import gzip
@@ -17,7 +18,8 @@ from kbpo.parser import MFileReader, TacKbReader
 from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.questions import create_evaluation_batch_from_submission_sample
-from kbpo.turk import connect, create_batch
+from kbpo.turk import connect, create_batch, mturk_batch_payments
+from kbpo.web_data import parse_response, get_hit_id, check_hit_complete, verify_evaluation_mention_response, verify_evaluation_relation_response, merge_evaluation_table
 
 from .models import Submission, SubmissionState
 
@@ -184,12 +186,64 @@ def turk_submission(sample_batch_id):
         state.status = 'error'
         state.message = str(e)
         state.save()
+
 @shared_task
 def process_response(assignment_id):
     """
-    Processes an mturk response.
+    Processes an mturk response to fill in evaluation_*_response tables
     """
-    pass
+    parse_response(assignment_id)
+    db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
+               new_state = 'pending_validation', assignment_id = assignment_id)
+
+    #Changed to batch_complete
+    #hit_id = get_hit_id(assignment_id)
+    #hit_complete = check_hit_complete(hit_id)
+    #if hit_complete:
+    #    process_hit.delay(hit_id)
+
+    mturk_batch_id = next(db.select("SELECT batch_id FROM mturk_assignment WHERE id = %(assignment_id)s", assignment_id = assignment_id)).batch_id
+    batch_complete = check_batch_complete(mturk_batch_id)
+    if batch_complete:
+        process_mturk_batch.delay(mturk_batch_id)
+    
+
+@shared_task
+def process_mturk_batch(mturk_batch_id):
+    """
+    First verifies if the reponses for a hit are sane
+    then aggregates them to fill evaluation_* tables
+    """
+    merge_evaluation_table('mention', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
+    merge_evaluation_table('link', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
+    merge_evaluation_table('relation', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
+
+    #verify_evaluation_relation_response depdends on mejority relation directly
+    #And verify_evaluation_mention_response looks at deviation from median, 
+    #so it depends on majority counts. Hence it doesn't seem like we can actually benifit from
+    #merging only validated responses. The point of validation is then simply to discourage
+    #spammers in the long run and doesn't help much in the correctness of the current batch
+    #The only other alternative is to create a new mturk batch to cover the rejected assignments
+    #TODO: Create a new mturk batch to cover rejected assignments
+    verify_evaluation_mention_response()
+    verify_evaluation_relation_response()
+    mturk_batch_payments(mturk_batch_id)
+    db.execute("UPDATE mturk_hit SET state = 'done' WHERE batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)
+    submission_id = next(db.select("""
+     SELECT DISTINCT submission_id 
+     FROM mturk_hit 
+     LEFT JOIN evaluation_batch ON evaluation_batch.id = mturk_hit.question_batch_id 
+     LEFT JOIN submission_sample ON submission_sample.batch_id = evaluation_batch.sample_batch_id
+     WHERE mturk_hit.batch_id = %(mturk_batch_id)s;
+     """, mturk_batch_id = mturk_batch_id)).submission_id
+    assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
+    assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
+
+    submission = Submission.objects.get(id=submission_id)
+    state = SubmissionState.objects.get(submission_id=submission_id)
+    state.status = 'pending-scoring'
+    state.save()
+    score_submission.delay(submission_id)
 
 @shared_task
 def score_submission(submission_id):
