@@ -66,13 +66,13 @@ def parse_selective_relations_response(question, responses):
 
         assert "canonicalCorrect" in response["subject"]["entity"]
         if "canonicalCorrect" in response["subject"]["entity"]:
-            mentions.append(MentionInstance(doc_id, subject_span, subject_canonical_span, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] == "Yes" else 0.0))
+            mentions.append(MentionInstance(doc_id, subject_span, subject_canonical_span, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] else 0.0))
         if "canonicalCorrect" in response["object"]["entity"]:
-            mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] == "Yes" else 0.0))
+            mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
         if "linkCorrect" in response["subject"]["entity"]:
-            links.append(LinkInstance(doc_id, subject_span, urllib.parse.unquote(response["subject"]["entity"]["link"]), 1.0 if response["subject"]["entity"]["linkCorrect"] == "Yes" else 0.0))
+            links.append(LinkInstance(doc_id, subject_span, urllib.parse.unquote(response["subject"]["entity"]["link"]), 1.0 if response["subject"]["entity"]["linkCorrect"] else 0.0))
         if "linkCorrect" in response["object"]["entity"]:
-            links.append(LinkInstance(doc_id, object_span, urllib.parse.unquote(response["object"]["entity"]["link"]), 1.0 if response["object"]["entity"]["linkCorrect"] == "Yes" else 0.0))
+            links.append(LinkInstance(doc_id, object_span, urllib.parse.unquote(response["object"]["entity"]["link"]), 1.0 if response["object"]["entity"]["linkCorrect"] else 0.0))
 
         if response["relation"] not in ALL_RELATIONS:
             #To correct for systematic mistakes from the past
@@ -89,7 +89,7 @@ def test_parse_selective_relations_response():
     # - the linking could be wrong.
     # - the relation could be wrong.
     question = {"mention_2": ["NYT_ENG_20130911.0085", "2803", "2809"], "doc_id": "NYT_ENG_20130911.0085", "batch_type": "selective_relations", "mention_1": ["NYT_ENG_20130911.0085", "2778", "2783"]}
-    response = {"subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":2803,"doc_char_end":2809,"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","doc_char_begin":2803,"doc_char_end":2809,"canonicalCorrect":"Yes","linkCorrect":"No"}},"relation":"per:sibling","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":"Yes","linkCorrect":"No"}}}
+    response = {"subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":2803,"doc_char_end":2809,"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","doc_char_begin":2803,"doc_char_end":2809,"canonicalCorrect":True,"linkCorrect":"No"}},"relation":"per:sibling","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":True,"linkCorrect":"No"}}}
     subject_id = Provenance('NYT_ENG_20130911.0085', 2803, 2809)
     subject_canonical_id = Provenance('NYT_ENG_20130911.0085', 2803, 2809)
     object_id = Provenance('NYT_ENG_20130911.0085', 2778, 2783)
@@ -266,6 +266,9 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
     evaluation_mentions, evaluation_links, evaluation_relations = _parse_responses(rows)
     with db.CONN:
         with db.CONN.cursor() as cur:
+            db.execute_values(cur, """DELETE FROM evaluation_mention_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
+            db.execute_values(cur, """DELETE FROM evaluation_link_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
+            db.execute_values(cur, """DELETE FROM evaluation_relation_response WHERE assignment_id = %(assignment_id)s""", assignment_id = assignment_id)
             db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, span, canonical_span, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
             db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, weight) VALUES %s""", evaluation_links)
             db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject, object, relation, weight) VALUES %s""", evaluation_relations)
