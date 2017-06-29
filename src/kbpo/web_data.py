@@ -32,14 +32,14 @@ def parse_selective_relations_response(question, responses):
         #subject_id = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
 
         try:
-            subject_span = db.Int4NumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+            subject_span = db.Int4NumericRange(*response["subject"]["span"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
         
         #subject_canonical_id = Provenance(doc_id, response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
         try:
-            subject_canonical_span = db.Int4NumericRange(response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
+            subject_canonical_span = db.Int4NumericRange(*response["subject"]["entity"]["span"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -48,7 +48,7 @@ def parse_selective_relations_response(question, responses):
 
         #object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         try:
-            object_span = db.Int4NumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
+            object_span = db.Int4NumericRange(*response["object"]["span"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -56,7 +56,7 @@ def parse_selective_relations_response(question, responses):
 
         #object_canonical_id = Provenance(doc_id, response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
         try:
-            object_canonical_span = db.Int4NumericRange(response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
+            object_canonical_span = db.Int4NumericRange(*response["object"]["entity"]["span"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
             continue
@@ -89,7 +89,7 @@ def test_parse_selective_relations_response():
     # - the linking could be wrong.
     # - the relation could be wrong.
     question = {"mention_2": ["NYT_ENG_20130911.0085", "2803", "2809"], "doc_id": "NYT_ENG_20130911.0085", "batch_type": "selective_relations", "mention_1": ["NYT_ENG_20130911.0085", "2778", "2783"]}
-    response = {"subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":2803,"doc_char_end":2809,"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","doc_char_begin":2803,"doc_char_end":2809,"canonicalCorrect":"Yes","linkCorrect":"No"}},"relation":"per:sibling","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":2778,"doc_char_end":2783,"entity":{"gloss":"Ram Singh","link":"Ram_Singh","doc_char_begin":1703,"doc_char_end":1712,"canonicalCorrect":"Yes","linkCorrect":"No"}}}
+    response = {"subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":2803,"doc_char_end":2809,"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","doc_char_begin":2803,"doc_char_end":2809,"canonicalCorrect":"Yes","linkCorrect":"No"}},"relation":"per:sibling","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":"Yes","linkCorrect":"No"}}}
     subject_id = Provenance('NYT_ENG_20130911.0085', 2803, 2809)
     subject_canonical_id = Provenance('NYT_ENG_20130911.0085', 2803, 2809)
     object_id = Provenance('NYT_ENG_20130911.0085', 2778, 2783)
@@ -106,14 +106,14 @@ def parse_exhaustive_relations_response(question, responses):
     for response in responses:
         #subject = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
         try:
-            subject_span = db.Int4NumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+            subject_span = db.Int4NumericRange(*response["subject"]["span"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
 
         #object_ = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         try:
-            object_span = db.Int4NumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
+            object_span = db.Int4NumericRange(*response["object"]["span"])
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -121,6 +121,7 @@ def parse_exhaustive_relations_response(question, responses):
         relations.append(relation)
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
 
+#TODO: Change doc_char_begin and end to span
 def test_parse_exhaustive_relations_response():
     question = {"doc_id": "ENG_NW_001278_20130216_F00011Q88", "batch_type": "exhaustive_relations"}
     response = [{"subject":{"gloss":"\xa0Ahmed\xa0Omar","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":438,"doc_char_end":448,"entity":{"gloss":"\xa0Ahmed\xa0Omar","link":"","doc_char_begin":438,"doc_char_end":448}},"relation":"per:employee_or_member_of","object":{"gloss":"\xa0Health\xa0Ministry","type":{"idx":1,"name":"ORG","gloss":"Organization","icon":"fa-building","linking":"wiki-search"},"doc_char_begin":412,"doc_char_end":427,"entity":{"gloss":"\xa0Health\xa0Ministry","link":"Ministry_of_Health_(Egypt)","doc_char_begin":412,"doc_char_end":427}}},{"subject":{"gloss":"\xa0al-Jamaa\xa0al-\xa0Islamiya","type":{"idx":1,"name":"ORG","gloss":"Organization","icon":"fa-building","linking":"wiki-search"},"doc_char_begin":983,"doc_char_end":1004,"entity":{"gloss":"\xa0al-Jamaa\xa0al-\xa0Islamiya","link":"Al-Jama%27a_al-Islamiyya","doc_char_begin":983,"doc_char_end":1004}},"relation":"org:member_of","object":{"gloss":"\xa0Construction\xa0and\xa0Development\xa0Party","type":{"idx":1,"name":"ORG","gloss":"Organization","icon":"fa-building","linking":"wiki-search"},"doc_char_begin":1031,"doc_char_end":1065,"entity":{"gloss":"\xa0Construction\xa0and\xa0Development\xa0Party","link":"Building_and_Development_Party","doc_char_begin":1031,"doc_char_end":1065}}},{"subject":{"gloss":"\xa0Mohamed","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":1229,"doc_char_end":1236,"entity":{"gloss":"\xa0Mohamed","link":"Mohamed_Morsi","doc_char_begin":1229,"doc_char_end":1236}},"relation":"per:title","object":{"gloss":"\xa0President","type":{"idx":4,"name":"TITLE","gloss":"Title","icon":"fa-id-card-o","linking":""},"doc_char_begin":1219,"doc_char_end":1228,"entity":{"gloss":"\xa0President","link":"","doc_char_begin":1219,"doc_char_end":1228}}},{"subject":{"gloss":"\xa0Morsi","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":1237,"doc_char_end":1242,"entity":{"gloss":"\xa0Mohamed","link":"Mohamed_Morsi","doc_char_begin":1229,"doc_char_end":1236}},"relation":"per:title","object":{"gloss":"\xa0President","type":{"idx":4,"name":"TITLE","gloss":"Title","icon":"fa-id-card-o","linking":""},"doc_char_begin":1219,"doc_char_end":1228,"entity":{"gloss":"\xa0President","link":"","doc_char_begin":1219,"doc_char_end":1228}}}]
@@ -142,7 +143,7 @@ def parse_exhaustive_entities_response(question, response):
         try:
             #id_ = Provenance(doc_id,entity["doc_char_begin"], entity["doc_char_end"]) 
             try:
-                span = db.Int4NumericRange(entity["doc_char_begin"], entity["doc_char_end"])
+                span = db.Int4NumericRange(*entity["span"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
@@ -152,7 +153,7 @@ def parse_exhaustive_entities_response(question, response):
 
             #canonical_id = Provenance(doc_id, entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
             try:
-                canonical_span = db.Int4NumericRange(entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
+                canonical_span = db.Int4NumericRange(*entity["entity"]["span"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
@@ -167,6 +168,7 @@ def parse_exhaustive_entities_response(question, response):
 
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
 
+#TODO: doc_char_begin and end need to be replaced with a span in the test cases
 def test_parse_exhaustive_entities_response():
     question = {"doc_id": "NYT_ENG_20130911.0085", "batch_type": "exhaustive_entities"}
     response = [{"gloss": "China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 106, "doc_char_begin": 101, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 212, "doc_char_begin": 207, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 308, "doc_char_begin": 303, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 524, "doc_char_begin": 519, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 896, "doc_char_begin": 891, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 1232, "doc_char_begin": 1227, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "China", "entity": {"gloss": "China", "doc_char_end": 106, "link": "China", "doc_char_begin": 101}, "doc_char_end": 1308, "doc_char_begin": 1303, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "BEIJING", "entity": {"gloss": "BEIJING", "doc_char_end": 282, "link": "Beijing", "doc_char_begin": 275}, "doc_char_end": 282, "doc_char_begin": 275, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0May\u00a015", "entity": {"gloss": "\u00a0May\u00a015", "doc_char_end": 290, "link": "2001-05-15", "doc_char_begin": 284}, "doc_char_end": 290, "doc_char_begin": 284, "type": {"gloss": "Date", "idx": 3, "linking": "date-picker", "name": "DATE", "icon": "fa-calendar"}}, {"gloss": "Xinhua", "entity": {"gloss": "Xinhua", "doc_char_end": 298, "link": "Xinhua_News_Agency", "doc_char_begin": 292}, "doc_char_end": 298, "doc_char_begin": 292, "type": {"gloss": "Organization", "idx": 1, "linking": "wiki-search", "name": "ORG", "icon": "fa-building"}}, {"gloss": "\u00a0Ministry\u00a0of\u00a0Public\u00a0Security", "entity": {"gloss": "\u00a0Ministry\u00a0of\u00a0Public\u00a0Security", "doc_char_end": 338, "link": "Ministry_of_Public_Security_(China)", "doc_char_begin": 311}, "doc_char_end": 338, "doc_char_begin": 311, "type": {"gloss": "Organization", "idx": 1, "linking": "wiki-search", "name": "ORG", "icon": "fa-building"}}, {"gloss": "\u00a0MPS", "entity": {"gloss": "\u00a0Ministry\u00a0of\u00a0Public\u00a0Security", "doc_char_end": 338, "link": "Ministry_of_Public_Security_(China)", "doc_char_begin": 311}, "doc_char_end": 459, "doc_char_begin": 456, "type": {"gloss": "Organization", "idx": 1, "linking": "wiki-search", "name": "ORG", "icon": "fa-building"}}, {"gloss": "\u00a0MPS", "entity": {"gloss": "\u00a0Ministry\u00a0of\u00a0Public\u00a0Security", "doc_char_end": 338, "link": "Ministry_of_Public_Security_(China)", "doc_char_begin": 311}, "doc_char_end": 788, "doc_char_begin": 785, "type": {"gloss": "Organization", "idx": 1, "linking": "wiki-search", "name": "ORG", "icon": "fa-building"}}, {"gloss": "\u00a0Police\u00a0Force\u00a0of\u00a0Myanmar", "entity": {"gloss": "\u00a0Police\u00a0Force\u00a0of\u00a0Myanmar", "doc_char_end": 376, "link": "", "doc_char_begin": 353}, "doc_char_end": 376, "doc_char_begin": 353, "type": {"gloss": "Organization", "idx": 1, "linking": "wiki-search", "name": "ORG", "icon": "fa-building"}}, {"gloss": "\u00a0Nansan-Lougai", "entity": {"gloss": "\u00a0Nansan-Lougai", "doc_char_end": 495, "link": "", "doc_char_begin": 482}, "doc_char_end": 495, "doc_char_begin": 482, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Yunnan\u00a0Province", "entity": {"gloss": "\u00a0Yunnan\u00a0Province", "doc_char_end": 542, "link": "Yunnan_Province,_Republic_of_China", "doc_char_begin": 527}, "doc_char_end": 542, "doc_char_begin": 527, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Yunnan", "entity": {"gloss": "\u00a0Yunnan\u00a0Province", "doc_char_end": 542, "link": "Yunnan_Province,_Republic_of_China", "doc_char_begin": 527}, "doc_char_end": 709, "doc_char_begin": 703, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Kokang", "entity": {"gloss": "\u00a0Yunnan\u00a0Province", "doc_char_end": 542, "link": "Yunnan_Province,_Republic_of_China", "doc_char_begin": 527}, "doc_char_end": 572, "doc_char_begin": 566, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Yunnan", "entity": {"gloss": "\u00a0Yunnan\u00a0Province", "doc_char_end": 542, "link": "Yunnan_Province,_Republic_of_China", "doc_char_begin": 527}, "doc_char_end": 1220, "doc_char_begin": 1214, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Yunnan", "entity": {"gloss": "\u00a0Yunnan\u00a0Province", "doc_char_end": 542, "link": "Yunnan_Province,_Republic_of_China", "doc_char_begin": 527}, "doc_char_end": 1431, "doc_char_begin": 1425, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Ruili", "entity": {"gloss": "\u00a0Ruili", "doc_char_end": 717, "link": "Ruili", "doc_char_begin": 712}, "doc_char_end": 717, "doc_char_begin": 712, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Longchuan", "entity": {"gloss": "\u00a0Longchuan", "doc_char_end": 731, "link": "Longchuan", "doc_char_begin": 722}, "doc_char_end": 731, "doc_char_begin": 722, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a02007", "entity": {"gloss": "\u00a02007", "doc_char_end": 755, "link": "2007-12-XX", "doc_char_begin": 751}, "doc_char_end": 755, "doc_char_begin": 751, "type": {"gloss": "Date", "idx": 3, "linking": "date-picker", "name": "DATE", "icon": "fa-calendar"}}, {"gloss": "\u00a02008", "entity": {"gloss": "\u00a02008", "doc_char_end": 764, "link": "2008-12-XX", "doc_char_begin": 760}, "doc_char_end": 764, "doc_char_begin": 760, "type": {"gloss": "Date", "idx": 3, "linking": "date-picker", "name": "DATE", "icon": "fa-calendar"}}, {"gloss": "\u00a0April\u00a02009", "entity": {"gloss": "\u00a0April\u00a02009", "doc_char_end": 1300, "link": "2009-04-01", "doc_char_begin": 1290}, "doc_char_end": 1300, "doc_char_begin": 1290, "type": {"gloss": "Date", "idx": 3, "linking": "date-picker", "name": "DATE", "icon": "fa-calendar"}}, {"gloss": "\u00a0Vietnam", "entity": {"gloss": "\u00a0Vietnam", "doc_char_end": 1412, "link": "Vietnam", "doc_char_begin": 1405}, "doc_char_end": 1412, "doc_char_begin": 1405, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Laos", "entity": {"gloss": "\u00a0Laos", "doc_char_end": 1421, "link": "Laos", "doc_char_begin": 1417}, "doc_char_end": 1421, "doc_char_begin": 1417, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}, {"gloss": "\u00a0Guangxi\u00a0Zhuang\u00a0Autonomous\u00a0Region", "entity": {"gloss": "\u00a0Guangxi\u00a0Zhuang\u00a0Autonomous\u00a0Region", "doc_char_end": 1468, "link": "Guangxi", "doc_char_begin": 1436}, "doc_char_end": 1468, "doc_char_begin": 1436, "type": {"gloss": "City/State/Country", "idx": 2, "linking": "wiki-search", "name": "GPE", "icon": "fa-globe"}}]
