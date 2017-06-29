@@ -33,13 +33,13 @@
     <hr>
     <h4>How do I get started?</h4>
     <p>
-    All you'll need to do is to <a href="/register/">create an account</a> and <a href="/submit/">submit</a> your knowledge base!
-    We'll automatically sample from your predicted relations and have them annotated via <a href="https://mturk.amazon.com/">Amazon Mechanical Turk</a>.
+    All you'll need to do is to <a href="/register/">{% bootstrap_icon "user" %} create an account</a> and <a href="/submissions/">{% bootstrap_icon "upload" %} submit</a> your knowledge base!
+    We'll automatically sample from your predicted relations and have them annotated via <a href="https://mturk.amazon.com/">Amazon Mechanical Turk</a> (you can check out the interfaces we use through the <a href="/interface/entity/">{% bootstrap_icon "eye-open" %} annotate</a> menu above).
     </p>
 
     <p>
     As your predictions are annotated, your submission will be updated on the leader board to the right.
-    You can explore annotations made on the corpus and analyze your system's errors. 
+    You can <a href="/explore/corpus/kbp2016/">{% bootstrap_icon "globe" %} explore</a> annotations made on the corpus and analyze your system's errors too. 
     </p>
   </div>
 </div>
@@ -135,7 +135,7 @@
 {% endblock %}
 
 {% block help_content %}
-<h4>How do I get on the leaderboard?</h4>
+<h4>How do I get started and onto the leaderboard?</h4>
 <p>
 It's a simple three step process:
 <ol>
@@ -145,28 +145,29 @@ It's a simple three step process:
     <a href="/accounts/login/">{% bootstrap_icon "log-in" %} log in</a>.
   </li>
   <li>
-    Access the <a href="/submit/">{% bootstrap_icon "upload" %} submit</a> link and upload your knowledge base.
+    Access the <a href="/submissions/">{% bootstrap_icon "upload" %} submissions</a> link and upload your knowledge base.
   </li>
   <li>
     We will take care of automatically annotating your data using Amazon Mechanical Turk.
     Once we receive all the responses from annotators, we will score
     your submission and place it on the home page.
+    This process typically only takes a few hours and we will send you
+    an email when the annotations are ready!
   </li>
 </ol>
 </p>
 
 <h4>Can I take my name off of the leaderboard?</h4>
 <p>
-  Not yet, but you will be able to delete or hide your submissions from
-  the submit page. In the meantime, please contact us via email (details
-  below).
+  Yes -- simply access your submission through the "submissions" link at
+  the top and delete your submission there.
 </p>
 
 <h4>How do I report an issue or contact you?</h4>
 <p>
 If you have any technical problems with the website, please <a href="https://github.com/arunchaganty/kbp-online/issues">create a GitHub issue</a> so that we can track it.
 
-Otherwise, do contact us at <a href="mailto:arunchaganty@gmail.com">arunchaganty@gmail.com</a> with "KBPO" in the subject line.
+For any other questions or issues contact us at <a href="mailto:kbp-online-owners@lists.stanford.edu">kbp-online-owners@lists.stanford.edu</a>.
 </p>
 
 {% endblock %}

@@ -59,7 +59,7 @@
             {% if user.is_authenticated %}
               <li {%if url_name == 'submit' %} class="active" {% endif %} >
 
-                <a href="/submit/">{% bootstrap_icon "upload" %} Submit</a></li>
+                <a href="/submissions/">{% bootstrap_icon "upload" %} My Submissions</a></li>
               <li><a href="/accounts/logout/">{% bootstrap_icon "log-out" %} Logout</a></li>
             {% else %}
             <li {%if url_name == 'registration_register' %} class="active" {% endif %} >
