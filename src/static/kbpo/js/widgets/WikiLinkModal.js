@@ -13,8 +13,11 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
       self.resultLimit = 5;
       self.thumbSize = 50;
 
-      $('#submit-wiki-search').click(function(){self.populate(this.form.search_input.value);});
-      $('#no-wiki-link').click(function(){
+      $(elem_).find('#submit-wiki-search').on("click", function(evt){
+        var searchStr = self.elem.find("#wiki-search-input").val(); 
+        self.populate(searchStr);
+      });
+      $(elem_).find('#no-wiki-link').on("click", function(evt) {
         self.doneListeners.forEach(function(cb) {cb("");});
         self.hide();
       });

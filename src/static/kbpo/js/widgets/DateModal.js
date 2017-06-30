@@ -13,21 +13,21 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
       self.elem = elem;
       self.elem.find('input[type=radio][name=week-or-date]').change(function() {
         if (this.value == 'week') {
-          $('select[name=month]').prop('disabled', true);
-          $('select[name=day]').prop('disabled', true);
-          $('select[name=week]').prop('disabled', false);
+          self.elem.find('select[name=month]').prop('disabled', true);
+          self.elem.find('select[name=day]').prop('disabled', true);
+          self.elem.find('select[name=week]').prop('disabled', false);
         }
         else if (this.value == 'day') {
-          $('select[name=month]').prop('disabled', false);
-          $('select[name=day]').prop('disabled', false);
-          $('select[name=week]').prop('disabled', true);
+          self.elem.find('select[name=month]').prop('disabled', false);
+          self.elem.find('select[name=day]').prop('disabled', false);
+          self.elem.find('select[name=week]').prop('disabled', true);
         }
         else 
           //if (this.value == 'neither') 
         {
-          $('select[name=month]').prop('disabled', true);
-          $('select[name=day]').prop('disabled', true);
-          $('select[name=week]').prop('disabled', true);
+          self.elem.find('select[name=month]').prop('disabled', true);
+          self.elem.find('select[name=day]').prop('disabled', true);
+          self.elem.find('select[name=week]').prop('disabled', true);
         }
       });
       self.elem.find('input[type=radio][name=week-or-date][value=day]').click();

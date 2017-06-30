@@ -14,21 +14,23 @@ define(['jquery'], function ($) {
   CheckWikiLinkWidget.prototype.init = function(mention){
     this.mention = mention;
     this.entity = this.mention.entity;
+    // Skip if you have already verified your link
     if (this.entity.linkVerification !== undefined) {
       this.done();
       return;
     }
+    // would this work?
     this.canonicalMention = this.entity.mentions[0];
     this.elem.find('#mention-gloss').text(this.mention.text());
     this.elem.find('#canonical-gloss').text(this.canonicalMention.text());
 
     var self = this;
     this.elem.find('#correct-wiki-link').on("click.kbpo.checkWikiLinkWidget", function(evt) {
-      self.entity.linkCorrect = "Yes";
+      self.entity.linkCorrect = true;
       self.done();
     });
     this.elem.find('#wrong-wiki-link').on("click.kbpo.checkWikiLinkWidget", function(evt) {
-      self.entity.linkCorrect = "No";
+      self.entity.linkCorrect = true;
       self.done();
     });
 
@@ -44,9 +46,16 @@ define(['jquery'], function ($) {
       this.entity.linkCorrect = this.mention.type.name;
       return;
     }
+    var searchStr;
+    if (this.entity.link.substring(0,5) == "wiki:") { // Aha this is a wiki link!
+      searchStr = this.entity.link.substring(5);
+    } else {
+      searchStr = this.entity.gloss;
+    }
+
     $.ajax({
       url: 'https://en.wikipedia.org/w/api.php',
-      data: { action: 'query', titles: this.entity.link, format: 'json',prop: 'extracts|pageimages' , exintro:"", pithumbsize: 150},
+      data: { action: 'query', titles: searchStr, format: 'json',prop: 'extracts|pageimages' , exintro:"", pithumbsize: 150},
       dataType: 'jsonp'
     }).done(function(response) {
       var first = null;
