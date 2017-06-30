@@ -76,8 +76,7 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       var canonicalMention = mention.entity.mentions[0];
       var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
 
-      // Alright, launch the WikiModal!
-      self.wikiLinkModal.cb = function (link) {
+      var linkDone = function (link) {
         if (link !== null) {
           console.assert(link !== undefined);
           mention.entity.linkGold = link;
@@ -90,7 +89,17 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
           self.done(mentionPair.reln);
         }
       };
-      self.wikiLinkModal.show(entityStr);
+
+      if (mention.type.name === "TITLE") {
+        linkDone(mention.entity.link);
+      } else if (mention.type.name === "DATE") {
+        // TODO: launch date modeal
+        linkDone(mention.entity.link);
+      } else {
+        // Alright, launch the WikiModal!
+        self.wikiLinkModal.cb = function (link) {linkDone(link);};
+        self.wikiLinkModal.show(entityStr);
+      }
     };
 
     RelationOptionWidget.prototype.doCanonicalVerification = function(mentionPair, doSubject) {
