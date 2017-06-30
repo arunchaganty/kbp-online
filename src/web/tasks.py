@@ -206,6 +206,7 @@ def process_response(assignment_id):
     """
     Processes an mturk response to fill in evaluation_*_response tables
     """
+    logger.info("Running process_response")
     try: 
         parse_response(assignment_id)
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
@@ -231,6 +232,7 @@ def process_mturk_batch(mturk_batch_id):
     First verifies if the reponses for a hit are sane
     then aggregates them to fill evaluation_* tables
     """
+    logger.info("Running process_mturk_batch")
     merge_evaluation_table('mention', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
     merge_evaluation_table('link', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
     merge_evaluation_table('relation', mode='mturk_batch', mturk_batch_id = mturk_batch_id)

@@ -1022,7 +1022,7 @@ def check_batch_complete(mturk_batch_id):
     mturk_batch_id = mturk_batch_id)
     #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
     hit_completed = [x.hit_complete for x in rows]
-    return all(hit_completed)
+    return len(hit_completed) > 0 and all(hit_completed)
 
 def check_hit_complete(hit_id):
     """Check if all assignments for a hit have been collected"""
