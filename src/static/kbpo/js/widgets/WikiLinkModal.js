@@ -18,8 +18,8 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
         self.populate(searchStr);
       });
       $(elem_).find('#no-wiki-link').on("click", function(evt) {
-        self.doneListeners.forEach(function(cb) {cb("");});
         self.hide();
+        self.doneListeners.forEach(function(cb) {cb("");});
       });
 
       cb(elem_);

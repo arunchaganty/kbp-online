@@ -5,7 +5,7 @@
  */
 
 // TODO: Maybe move CheckEntityLinkWidget out?
-define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($, defs, util, CheckEntityLinkWidget) {
+define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkModal'], function ($, defs, util, CheckEntityLinkWidget, WikiLinkModal) {
     function getCandidateRelations(mentionPair) {
         var candidates = [];
         defs.RELATIONS.forEach(function (reln) {
@@ -25,10 +25,11 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
         util.getDOMFromTemplate('/static/kbpo/html/RelationOptionWidget.html', function(elem_) {
           self.elem.html(elem_.html());
           self.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
+
+          self.wikiLinkModal = new WikiLinkModal(function(elem_) {
+            self.elem.find("#modals").append(elem_);
+          });
         });
-        // Flat out ignoring wiki linking because we don't have these
-        // yet.
-        //this.wikiLinkWidget = CheckEntityLinkWidget(elem)
     };
 
     // initialize the interface using @mentionPair. On completion, call @cb.
@@ -63,6 +64,65 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
         div.html(previewText || "");
     };
 
+    RelationOptionWidget.prototype.doLinkingVerification = function(mentionPair, doSubject) {
+      console.assert(mentionPair.reln !== undefined);
+      var self = this;
+      var mention;
+      if (doSubject) {
+        mention = mentionPair.subject;
+      } else {
+        mention = mentionPair.object;
+      }
+      var canonicalMention = mention.entity.mentions[0];
+      var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
+
+      // Alright, launch the WikiModal!
+      self.wikiLinkModal.doneListeners.length = 0; // fscking javascript.
+      self.wikiLinkModal.doneListeners.push(function (link) {
+        mention.entity.linkGold = link;
+        if (doSubject) {
+          self.doCanonicalVerification(mentionPair, false);
+        } else {
+          self.done(mentionPair.reln);
+        }
+      });
+      self.wikiLinkModal.show(entityStr);
+    };
+
+    RelationOptionWidget.prototype.doCanonicalVerification = function(mentionPair, doSubject) {
+      var self = this;
+      console.assert(mentionPair.reln !== undefined);
+
+      var mention;
+      if (doSubject) {
+        mention = mentionPair.subject;
+      } else {
+        mention = mentionPair.object;
+      }
+      var canonicalMention = mention.entity.mentions[0];
+
+      // Preheat the entity linking widget in the background.
+      var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
+      self.wikiLinkModal.preload(entityStr);
+
+      // Check if this is a canonical mention
+      if (mention.span[0] === canonicalMention.span[0] && mention.span[1] === canonicalMention.span[1]) {
+        mention.canonicalCorrect = true; // tautologically.
+        self.doLinkingVerification(mentionPair, doSubject);
+      } else { // Uh, we need to verify this!
+        self.docWidget.centerOnMentionSpan(mention.entity.span);
+        // Call canonical entity
+        self.canonicalLinkWidget.init(mention, function(correctlyLinked) {
+          mention.entity.canonicalCorrect = correctlyLinked;
+          if (correctlyLinked) { // Wiki time!
+            self.doLinkingVerification(mentionPair, doSubject);
+          } else {
+            self.doCanonicalVerification(mentionPair, false);
+          }
+        });
+      }
+    };
+
     RelationOptionWidget.prototype.makeRelnOption = function(reln, id) {
       var self = this;
       var div = $("#relation-option").clone();
@@ -77,18 +137,15 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
       div.attr("id", "relation-option-" + id);
 
       div.on("click.kbpo.relationWidget", function(evt) {
+        $(self.mentionPair.subject).parent().removeClass("highlight");
+        self.mentionPair.reln = reln;
+
         if (self.verifyLinks) {
-          $(self.mentionPair.subject.elem).parent().removeClass("highlight");
-
-          self.docWidget.centerOnMentionSpan(self.mentionPair.subject.entity.span);
-          self.canonicalLinkWidget.init(self.mentionPair.subject, function() {
-
-            self.docWidget.centerOnMentionSpan(self.mentionPair.object.entity.span);
-            self.canonicalLinkWidget.init(self.mentionPair.object, function(){ self.done(reln);});
-          });
+          self.doCanonicalVerification(self.mentionPair, true);
         }
-        else{
+        else {
           self.done(reln);
+          return false;
         }
       });
       // Update widget text. 

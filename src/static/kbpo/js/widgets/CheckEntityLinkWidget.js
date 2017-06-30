@@ -4,34 +4,33 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', './CheckWikiLinkWidget'], function ($, CheckWikiLinkWidget) {
+define(['jquery'], function ($) {
     var CheckEntityLinkWidget = function(elem){
         this.elem = elem;
-        // TODO: Fix this.
-        this.linkVerificationWidget = new CheckWikiLinkWidget($(elem).find("#wiki-verification-modal"));
     };
     CheckEntityLinkWidget.prototype.init = function(mention, cb){
         this.mention = mention;
         this.canonicalMention = this.mention.entity.mentions[0];
-        this.linkVerificationWidget.init(mention);
         this.cb = cb;
-        //Check if canonical mention is the same as this mention
+
+        //Check if canonical mention is the same as this mention --
+        // should already be checked!
         if (this.mention.span[0] == this.canonicalMention.span[0] && this.mention.span[1] == this.canonicalMention.span[1]){
             this.done(true);
             return;
         }
+
         this.elem.find("#relation-options").empty(); // Clear.
         this.elem.find("#relation-option-preview").empty(); // Clear.
         this.elem.find("#relation-examples").empty();
         var yesDiv = this.makeRelnOption(0, "Yes", "fa-check", "DarkGreen");
         var noDiv = this.makeRelnOption(1, "No", "fa-times", "coral");
-        if (this.mention.canonicalCorrect !== null && this.mention.canonicalCorrect == true) yesDiv.addClass("btn-primary"); 
-        if (this.mention.canonicalCorrect !== null && this.mention.canonicalCorrect == false) noDiv.addClass("btn-primary"); 
+        if (this.mention.canonicalCorrect !== null && this.mention.canonicalCorrect === true) yesDiv.addClass("btn-primary"); 
+        if (this.mention.canonicalCorrect !== null && this.mention.canonicalCorrect === false) noDiv.addClass("btn-primary"); 
         this.elem.find("#relation-options").append(yesDiv);
         this.elem.find("#relation-options").append(noDiv);
         this.updateText(this.renderTemplate(this.mention));
 
-        //this.mention.tokens.forEach(function(t) {$(t).addClass("subject highlight");});
         this.canonicalMention.tokens.forEach(function(t) {$(t).addClass("canonical highlight");});
         $(this.canonicalMention.elem).parent().addClass("highlight");
     };
@@ -56,30 +55,13 @@ define(['jquery', './CheckWikiLinkWidget'], function ($, CheckWikiLinkWidget) {
 
     // The widget selection is done -- send back results.
     CheckEntityLinkWidget.prototype.done = function(correctlyLinked) {
-        // Clear the innards of the html.
-        this.elem.find("#relation-options").empty();
-        this.elem.find("#relation-option-preview").empty();
-        this.elem.find("#relation-examples").empty();
-        this.mention.entity.canonicalCorrect = correctlyLinked;
         var self = this;
+        this.mention.entity.canonicalCorrect = correctlyLinked;
 
-        if (correctlyLinked == true) {
-            //Now verify wiki linking
-            this.linkVerificationWidget.cb = function(){
-                if (self.cb) {
-                    self.cb(correctlyLinked);
-                } else {
-                    console.log("[Warning] Relation chosen but no callback", chosen_reln);
-                }
-            };
-            this.linkVerificationWidget.show();
-        }
-        else {
-            if (this.cb) {
-                this.cb(correctlyLinked);
-            } else {
-                console.log("[Warning] Relation chosen but no callback", chosen_reln);
-            }
+        if (this.cb) {
+            this.cb(correctlyLinked);
+        } else {
+            console.log("[Warning] Relation chosen but no callback", chosen_reln);
         }
     };
 
