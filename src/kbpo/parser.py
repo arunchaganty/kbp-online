@@ -329,6 +329,12 @@ class MFileReader(object):
         self._verify_relation_types()
         self._verify_symmetrized_relations()
 
+    def _namespace_links(self):
+        for subj in self._links:
+            if self._types[subj] == 'DATE':
+                self._links[subj] = 'date:'+self._links[subj]
+
+
     def parse(self, fstream, doc_ids=None, logger=_logger, do_validate=True):
         """
         Parses (and validates) an m-file in the file stream @fstream.
@@ -372,8 +378,12 @@ class MFileReader(object):
                     self._add_relation(row)
             else:
                 self.logger.info(Messages.IGNORE_RELATION_UNSUPPORTED, lineno=row.lineno, reln=row.reln)
+
+
         if do_validate:
             self._validate()
+
+        self._namespace_links()
 
         return self._build()
 
@@ -678,3 +688,6 @@ def test_validate_tackb():
 
     with TemporaryFile() as f, gzip.open(f, "wt") as g:
         mfile.write(g)
+
+if __name__ == '__main__':
+    test_validate_mfile()
