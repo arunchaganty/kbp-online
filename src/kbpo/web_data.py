@@ -28,7 +28,7 @@ import pandas as pd
 def parse_selective_relations_response(question, responses):
     mentions, links, relations = [], [], []
     for response in responses:
-        if 'response_version' in response and response['response_version'] == 0.2:
+        if 'version' in response and response['version'] == 0.2:
             doc_id = question["doc_id"]
 
             try:
@@ -42,7 +42,7 @@ def parse_selective_relations_response(question, responses):
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
-            subject_type = response["subject"]["type"]["name"].strip()
+            subject_type = response["subject"]["type"].strip()
             subject_gloss = response["subject"]["gloss"].strip()
 
             try:
@@ -58,7 +58,7 @@ def parse_selective_relations_response(question, responses):
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
                 continue
 
-            object_type = response["object"]["type"]["name"].strip()
+            object_type = response["object"]["type"].strip()
             object_gloss = response["object"]["gloss"].strip()
 
             assert "canonicalCorrect" in response["subject"]["entity"]
@@ -181,7 +181,7 @@ def test_parse_selective_relations_response():
     assert links_ == expected_links_
     assert relations_ == sorted(set([RelationInstance(doc_id, subject_span, object_span, "per:siblings", 1.0)]))
 
-    response = {"response_version":0.2, "subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2803,2809],"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","span":[2803,2809],"canonicalCorrect":True,"linkGold":"Mukesh_Dhirubhai_Ambani"}},"relation":"per:siblings","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":True,"linkGold":None}}}
+    response = {"version":0.2, "subject":{"gloss":"Mukesh","type":"PER","span":[2803,2809],"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","span":[2803,2809],"canonicalCorrect":True,"linkGold":"Mukesh_Dhirubhai_Ambani"}},"relation":"per:siblings","object":{"gloss":"Singh","type":"PER","span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":True,"linkGold":None}}}
 
     mentions_, links_, relations_ = parse_selective_relations_response(question, [response])
     assert mentions_ == sorted(set([MentionInstance('NYT_ENG_20130911.0085', subject_span, subject_canonical_span, 'PER', 'Mukesh', 1.0), MentionInstance(doc_id, object_span, object_canonical_span, 'PER', 'Singh', 1.0)]))
