@@ -79,6 +79,7 @@ CREATE TABLE  evaluation_link (
   -- implicit constraint is that wiki:NULL exists only if no other wiki link is correct
   correct BOOLEAN NOT NULL, --whether the link was judged to be correct or incorrect
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
+  correct BOOLEAN,
 
   PRIMARY KEY (doc_id, span),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0)
@@ -126,50 +127,89 @@ CREATE TABLE  evaluation_relation (
 COMMENT ON TABLE evaluation_relation IS 'Table containing mentions within a document, aggregated from all the responses';
 CREATE INDEX evaluation_relation_pair_idx ON evaluation_relation(doc_id, object);
 
+DROP MATERIALIZED VIEW IF EXISTS evaluation_mention_link;
+CREATE MATERIALIZED VIEW evaluation_mention_link AS (
+ SELECT 
+    m.doc_id,
+    m.span,
+    m.mention_type,
+    m.gloss,
+    COALESCE(l.link_name, m.gloss) AS entity,
+    m.weight AS mention_weight,
+    l.weight AS link_weight,
+    l.correct AS link_correct
+   FROM evaluation_mention m 
+   LEFT JOIN evaluation_link l ON m.doc_id = l.doc_id AND m.span = l.span
+);
+
+DROP MATERIALIZED VIEW IF EXISTS evaluation_entity_relation;
+CREATE MATERIALIZED VIEW evaluation_entity_relation AS (
+ SELECT 
+    r.doc_id,
+    r.subject,
+    r.object,
+    m.mention_type AS subject_type,
+    n.mention_type AS object_type,
+    m.entity AS subject_entity,
+    n.entity AS object_entity,
+    m.link_correct AS subject_entity_correct,
+    n.link_correct AS object_entity_correct,
+    r.relation,
+    r.weight AS relation_weight,
+    r.confidence
+   FROM evaluation_relation r
+     JOIN evaluation_mention_link m ON r.doc_id = m.doc_id AND r.subject = m.span
+     JOIN evaluation_mention_link n ON r.doc_id = n.doc_id AND r.object = n.span
+);
+
+DROP MATERIALIZED VIEW IF EXISTS submission_entries;
 CREATE MATERIALIZED VIEW submission_entries AS (
-    SELECT 
+    SELECT DISTINCT ON (r.submission_id, r.doc_id, r.subject, r.object)
+    -- Keys
     r.submission_id,
     r.doc_id,
+    r.subject,
+    r.object,
+
+    -- Document viewing stuff
     d.title,
     t.tag AS corpus_tag,
     s.gloss AS sentence,
     s.span AS sentence_span,
-    m.span AS subject_span,
-    m.mention_type AS subject_type,
-    m.gloss AS subject_gloss,
-    ml.link_name AS subject_link,
-    eml.link_name AS subject_link_gold,
-    lower(ml.link_name) = wikify(lower(COALESCE(eml.link_name, ml.link_name))) AS subject_link_correct,
-    em.weight > 0.5 AS subject_correct,
-    n.span AS object_span,
-    n.mention_type AS object_type,
-    n.gloss AS object_gloss,
-    nl.link_name AS object_link,
-    enl.link_name AS object_link_gold,
-    lower(nl.link_name) = wikify(lower(COALESCE(enl.link_name, nl.link_name))) AS object_link_correct,
-    en.weight > 0.5 AS object_correct,
+
+    -- Entity linking stuff
+    r.subject_type,
+    r.subject_gloss,
+    r.subject_canonical_gloss,
+    r.subject_entity,
+
+    r.object_type,
+    r.object_gloss,
+    r.object_canonical_gloss,
+    r.object_entity,
+
+    -- Relations
     r.relation AS predicate_name,
     er.relation AS predicate_gold,
+
+    -- Labels
+    er.subject_entity_correct,
+    er.object_entity_correct,
     r.relation = er.relation AS predicate_correct,
-        lower(ml.link_name) = wikify(lower(COALESCE(eml.link_name, ml.link_name))) 
-        AND em.weight > 0.5
-        AND lower(nl.link_name) = wikify(lower(COALESCE(enl.link_name, nl.link_name)))
-        AND en.weight > 0.5
-        AND r.relation = er.relation AS correct
-    FROM submission_relation r
-    JOIN submission_mention m ON (r.submission_id = m.submission_id AND r.doc_id = m.doc_id AND r.subject = m.span)
-    JOIN submission_mention n ON (r.submission_id = n.submission_id AND r.doc_id = n.doc_id AND r.object = n.span)
-    JOIN submission_link ml ON (m.submission_id = ml.submission_id AND m.doc_id = ml.doc_id AND m.canonical_span = ml.span)
-    JOIN submission_link nl ON (n.submission_id = nl.submission_id AND n.doc_id = nl.doc_id AND n.canonical_span = nl.span)
-    JOIN evaluation_relation er  ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
-    JOIN evaluation_mention em ON (m.doc_id = em.doc_id AND m.span = em.span)
-    JOIN evaluation_mention en ON (n.doc_id = en.doc_id AND n.span = en.span)
-    LEFT JOIN evaluation_link eml ON (ml.doc_id = eml.doc_id AND ml.span = eml.span AND eml.weight > 0.5)
-    LEFT JOIN evaluation_link enl ON (nl.doc_id = enl.doc_id AND nl.span = enl.span AND enl.weight > 0.5)
+    er.subject_entity_correct AND er.object_entity_correct AND r.relation = er.relation AS correct
+
+    FROM submission_entity_relation r
+    -- In the current format of the linking, we have two rows, one for
+    -- the entity link, and the other for the entity gloss
+    -- match OR the subject's canonical gloss will match. 
+    JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object 
+      AND (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity)
+      AND (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity)
+    )
     JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
     JOIN document d ON (r.doc_id = d.id)
     JOIN document_tag t ON (r.doc_id = t.doc_id)
-    ORDER BY r.doc_id, r.subject, r.object
+    ORDER BY r.submission_id, r.doc_id, r.subject, r.object
 );
 
 COMMIT;

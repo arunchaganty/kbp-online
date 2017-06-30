@@ -18,7 +18,7 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
 
     util.getDOMFromTemplate('/static/kbpo/html/RelationInterface.html', function(elem_) {
       self.root.html(elem_.html());
-      self.optionWidget = new RelationOptionWidget(optionElem, verifyLinks);
+      self.optionWidget = new RelationOptionWidget(optionElem, docWidget, verifyLinks);
       self.listWidget = new RelationListWidget($("#relation-list-widget"));
 
       self.listWidget.mouseEnterListeners.push(function(p) {self.highlightExistingMentionPair(p);});
@@ -98,10 +98,21 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
         self.docWidget.addMention(subject);
         mentions[subject.span] = subject;
       }
+      if (mentions[mentionPair.subject.entity.span] === undefined) {
+        subject_canonical = defs.Mention.fromJSON(mentionPair.subject.entity, self.docWidget);
+        self.docWidget.addMention(subject_canonical);
+        mentions[subject_canonical.span] = subject_canonical;
+      }
+
       if (mentions[mentionPair.object.span] === undefined) {
         object = defs.Mention.fromJSON(mentionPair.object, self.docWidget);
         self.docWidget.addMention(object);
         mentions[object.span] = object;
+      }
+      if (mentions[mentionPair.object.entity.span] === undefined) {
+        object_canonical = defs.Mention.fromJSON(mentionPair.object.entity, self.docWidget);
+        self.docWidget.addMention(object_canonical);
+        mentions[object_canonical.span] = object_canonical;
       }
     }
 

@@ -31,6 +31,7 @@ CREATE TABLE evaluation_question (
 COMMENT ON TABLE evaluation_question IS 'Keeps track of an individual question part of an evaluation batch';
 
 -- Views that keep track of inflight requests.
+DROP VIEW IF EXISTS evaluation_doc_question;
 CREATE VIEW evaluation_doc_question AS (
     SELECT q.id,
            q.batch_id,
@@ -42,13 +43,21 @@ CREATE VIEW evaluation_doc_question AS (
       AND state <> 'done'
 )
 
+DROP VIEW IF EXISTS evaluation_relation_question;
 CREATE VIEW evaluation_relation_question AS (
     SELECT q.id,
            q.batch_id,
            q.created,
            q.params->>'doc_id' AS doc_id,
-           int4range((params#>>'{mention_1,1}')::integer, (params#>>'{mention_1,2}')::integer) AS subject,
-           int4range((params#>>'{mention_2,1}')::integer, (params#>>'{mention_2,2}')::integer) AS object
+           --int4range((params#>>'{mention_1,1}')::integer, (params#>>'{mention_1,2}')::integer) AS subject,
+           --int4range((params#>>'{mention_2,1}')::integer, (params#>>'{mention_2,2}')::integer) AS object,
+           int4range((params#>>'{subject,span,0}')::integer, (params#>>'{subject,span,1}')::integer) AS subject,
+           int4range((params#>>'{object,span,0}')::integer, (params#>>'{object,span,1}')::integer) AS object,
+           params#>>'{subject,entity,gloss}' AS subject_canonical_gloss,
+           params#>>'{object,entity,gloss}' AS object_canonical_gloss,
+           params#>>'{subject,entity,link}' AS subject_entity,
+           params#>>'{object,entity,link}' AS object_entity,
+           q.state, q.message
     FROM evaluation_question q, evaluation_batch b
     WHERE q.batch_id = b.id
       AND b.batch_type = 'selective_relations'

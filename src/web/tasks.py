@@ -208,10 +208,10 @@ def process_response(assignment_id):
     """
     try: 
         parse_response(assignment_id)
-        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
+        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
                    new_state = 'pending-validation', assignment_id = assignment_id)
     except: 
-        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE assignment_id = %(assignment_id)s", 
+        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
                    new_state = 'pending-extraction', assignment_id = assignment_id)
 
     #Changed to batch_complete
@@ -247,15 +247,16 @@ def process_mturk_batch(mturk_batch_id):
 
     mturk_connection = connect(MTURK_TARGET)
     mturk_batch_payments(mturk_connection, mturk_batch_id)
+    db.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
 
     db.execute("UPDATE mturk_hit SET state = 'done' WHERE batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)
-    submission_id = next(db.select("""
+    submission_id = db.get("""
      SELECT DISTINCT submission_id 
      FROM mturk_hit 
      LEFT JOIN evaluation_batch ON evaluation_batch.id = mturk_hit.question_batch_id 
      LEFT JOIN submission_sample ON submission_sample.batch_id = evaluation_batch.sample_batch_id
      WHERE mturk_hit.batch_id = %(mturk_batch_id)s;
-     """, mturk_batch_id = mturk_batch_id)).submission_id
+     """, mturk_batch_id = mturk_batch_id).submission_id
     assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
     assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
 

@@ -232,6 +232,7 @@ def do_task(request):
         if params["batch_type"] == "exhaustive_entities":
             return render(request, 'interface_entity.html', {
                 'doc_id': doc.id,
+                'params': json.dumps(params),
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
@@ -240,6 +241,7 @@ def do_task(request):
         elif params["batch_type"] == "exhaustive_relations":
             return render(request, 'interface_relation.html', {
                 'doc_id': doc.id,
+                'params': json.dumps(params),
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
@@ -254,6 +256,7 @@ def do_task(request):
             return render(request, 'interface_relation.html', {
                 'doc_id': doc.id,
                 'mention_pair': '{}-{}:{}-{}'.format(subject[0], subject[1], object_[0], object_[1]),
+                'params': json.dumps(params),
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET.get("workerId"),

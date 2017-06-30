@@ -86,24 +86,44 @@ CREATE TABLE  submission_score (
 COMMENT ON TABLE submission_score IS 'Summary of scores for a system.';
 CREATE INDEX submission_score_submission_idx ON submission_score(submission_id);
 
+DROP MATERIALIZED VIEW IF EXISTS submission_mention_link CASCADE;
+CREATE MATERIALIZED VIEW submission_mention_link AS (
+ SELECT 
+    m.submission_id,
+    m.doc_id,
+    m.span,
+    m.mention_type,
+    m.gloss,
+    n.span AS canonical_span,
+    n.gloss AS canonical_gloss,
+    COALESCE(l.link_name, n.gloss) AS entity
+   FROM submission_mention m
+   JOIN submission_mention n ON (m.submission_id = n.submission_id AND m.doc_id = n.doc_id AND m.canonical_span = n.span)
+   LEFT JOIN submission_link l ON (m.submission_id = l.submission_id AND m.doc_id = l.doc_id AND m.canonical_span = l.span)
+);
+
 DROP MATERIALIZED VIEW IF EXISTS submission_entity_relation CASCADE;
 CREATE MATERIALIZED VIEW submission_entity_relation AS (
     SELECT s.submission_id,
            s.doc_id,
            s.subject,
            s.object,
+           m.gloss AS subject_gloss,
+           n.gloss AS object_gloss,
+           m.canonical_span AS subject_canonical,
+           n.canonical_span AS  object_canonical,
+           m.canonical_gloss AS subject_canonical_gloss,
+           n.canonical_gloss AS  object_canonical_gloss,
            m.mention_type AS subject_type,
            n.mention_type AS object_type,
-           COALESCE(l.link_name, m.gloss) AS subject_entity,
-           COALESCE(l_.link_name, n.gloss) AS object_entity,
+           m.entity AS subject_entity,
+           n.entity AS object_entity,
            s.relation,
            s.provenances,
            s.confidence
         FROM submission_relation s
-        JOIN submission_mention m ON (s.submission_id = m.submission_id AND s.doc_id = m.doc_id AND s.subject = m.span)
-        LEFT OUTER JOIN submission_link l ON (s.submission_id = l.submission_id AND s.doc_id = l.doc_id AND m.canonical_span = l.span)
-        JOIN submission_mention n ON (s.submission_id = n.submission_id AND s.doc_id = n.doc_id AND s.object = n.span)
-        LEFT OUTER JOIN submission_link l_ ON (s.submission_id = l_.submission_id AND s.doc_id = l_.doc_id AND n.canonical_span = l_.span)
+        JOIN submission_mention_link m ON (s.submission_id = m.submission_id AND s.doc_id = m.doc_id AND s.subject = m.span)
+        JOIN submission_mention_link n ON (s.submission_id = n.submission_id AND s.doc_id = n.doc_id AND s.object = n.span)
 );
 
 DROP MATERIALIZED VIEW IF EXISTS submission_statistics;

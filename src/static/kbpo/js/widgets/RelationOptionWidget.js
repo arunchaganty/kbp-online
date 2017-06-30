@@ -16,8 +16,9 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
 
     /**
      * The relation widget is controlled by the RelationInterface. */
-    var RelationOptionWidget = function(elem, verifyLinks) {
+    var RelationOptionWidget = function(elem, docWidget, verifyLinks) {
         this.elem = elem;
+        this.docWidget = docWidget;
         this.verifyLinks = verifyLinks || false;
 
         var self = this;
@@ -78,7 +79,11 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget'], function ($,
       div.on("click.kbpo.relationWidget", function(evt) {
         if (self.verifyLinks) {
           $(self.mentionPair.subject.elem).parent().removeClass("highlight");
+
+          self.docWidget.centerOnMentionSpan(self.mentionPair.subject.entity.span);
           self.canonicalLinkWidget.init(self.mentionPair.subject, function() {
+
+            self.docWidget.centerOnMentionSpan(self.mentionPair.object.entity.span);
             self.canonicalLinkWidget.init(self.mentionPair.object, function(){ self.done(reln);});
           });
         }

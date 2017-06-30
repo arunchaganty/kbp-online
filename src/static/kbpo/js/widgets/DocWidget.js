@@ -191,7 +191,11 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
     var topPosRel = elem.offsetTop;
     var parentPosRel = this.elem.offset().top;
     this.elem.scrollTop(topPosRel - parentPosRel);
-  }
+  };
+
+  DocWidget.prototype.centerOnMentionSpan = function(span) {
+      this.centerOnMention(this.getMention(span));
+  };
 
   // Listeners
   DocWidget.prototype.highlightListeners = [];
