@@ -19,7 +19,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
         self.elem.append(elem_);
       });
       self.wikiLinkModal = new WikiLinkModal(function(elem_) {
-        self.wikiLinkModal.doneListeners.push(function(link) {self.processLinkingDone(link);});
+        self.wikiLinkModal.cb = function(link) {self.processLinkingDone(link);};
         self.elem.append(elem_);
       });
 

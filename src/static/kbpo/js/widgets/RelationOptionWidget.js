@@ -77,8 +77,7 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
 
       // Alright, launch the WikiModal!
-      self.wikiLinkModal.doneListeners.length = 0; // fscking javascript.
-      self.wikiLinkModal.doneListeners.push(function (link) {
+      self.wikiLinkModal.cb = function (link) {
         if (link !== null) {
           console.assert(link !== undefined);
           mention.entity.linkGold = link;
@@ -90,7 +89,7 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
         } else {
           self.done(mentionPair.reln);
         }
-      });
+      };
       self.wikiLinkModal.show(entityStr);
     };
 

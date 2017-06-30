@@ -18,14 +18,13 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
         self.populate(searchStr);
       });
       $(elem_).find('#no-wiki-link').on("click", function(evt) {
-        self.hide();
-        self.doneListeners.forEach(function(cb) {cb(null);});
+        self.done(null);
       });
 
       cb(elem_);
     });
   }
-  WikiLinkModal.prototype.doneListeners = [];
+  WikiLinkModal.prototype.cb = null;
 
   WikiLinkModal.prototype.fetchResults = function(term) {
     return $.ajax({
@@ -56,8 +55,13 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
     $('#wiki-linking-modal').modal('show');
   };
 
-  WikiLinkModal.prototype.hide = function() {
-    $('#wiki-linking-modal').modal('hide');
+  WikiLinkModal.prototype.done = function(link) {
+    var self = this;
+    $('#wiki-linking-modal').modal('hide').on('hidden.bs.modal', function() {
+        if (self.cb !== null) {
+            self.cb(link);
+        }
+    });
     $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
   };
 
@@ -69,8 +73,7 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
     var triggerDoneListeners = function(evt) {
       var url = $(this).siblings('.list-group-item-heading').children('a').attr('href');
       var name = url.substr(url.lastIndexOf('/') + 1);
-      self.hide();
-      self.doneListeners.forEach(function(cb) {cb(name);});
+      self.done(name);
     };
 
     this.fetchResults(mentionText).done(function(searchResults) {
