@@ -26,7 +26,7 @@ class Provenance(_Provenance):
         return cls(doc_id, beg, end)
 
 MentionInstance = namedtuple("MentionInstance", ["doc_id", "span", "canonical_span", "mention_type", "gloss", "weight"])
-LinkInstance = namedtuple("LinkInstance", ["doc_id", "span", "link_name", "weight"])
+LinkInstance = namedtuple("LinkInstance", ["doc_id", "span", "link_name", "correct", "weight"])
 RelationInstance = namedtuple("RelationInstance", ["doc_id", "subject", "object", "relation", "weight"])
 
 EvaluationMentionResponse = namedtuple('EvaluationMentionResponse', [

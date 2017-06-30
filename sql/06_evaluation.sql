@@ -55,7 +55,8 @@ CREATE TABLE  evaluation_link_response (
   question_batch_id INTEGER NOT NULL REFERENCES evaluation_batch,
   question_id TEXT NOT NULL,
 
-  link_name TEXT NOT NULL,
+  link_name TEXT, -- can be wiki:<wiki_link> or gloss:<canonical_gloss> or NULL
+  correct BOOLEAN NOT NULL, --whether the link was judged to be correct or incorrect
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
   PRIMARY KEY (assignment_id, doc_id, span),
@@ -74,7 +75,9 @@ CREATE TABLE  evaluation_link (
   question_batch_id INTEGER[] NOT NULL,
   question_id TEXT[] NOT NULL, -- this can be used to identify responses
 
-  link_name TEXT NOT NULL,
+  link_name TEXT NOT NULL, -- can be wiki:<wiki_link> or gloss:<canonical_gloss> or wiki:NULL
+  -- implicit constraint is that wiki:NULL exists only if no other wiki link is correct
+  correct BOOLEAN NOT NULL, --whether the link was judged to be correct or incorrect
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
 
   PRIMARY KEY (doc_id, span),

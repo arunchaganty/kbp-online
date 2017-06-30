@@ -19,7 +19,7 @@ urllib.parse.unquote('Hern%C3%A1n_Barcos')
 from . import db
 from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance, EvaluationMentionResponse, EvaluationLinkResponse, EvaluationRelationResponse
 
-from .defs import RELATION_TYPES, INVERTED_RELATIONS, ALL_RELATIONS
+from .defs import RELATION_TYPES, INVERTED_RELATIONS, ALL_RELATIONS, ENTITY_SLOT_TYPES
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 import pandas as pd
@@ -28,59 +28,133 @@ import pandas as pd
 def parse_selective_relations_response(question, responses):
     mentions, links, relations = [], [], []
     for response in responses:
-        doc_id = question["doc_id"]
-        #subject_id = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+        if 'response_version' in response and response['response_version'] == 0.2:
+            doc_id = question["doc_id"]
 
-        try:
-            subject_span = db.Int4NumericRange(*response["subject"]["span"])
-        except IndexError as e:
-            logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
-            continue
-        
-        #subject_canonical_id = Provenance(doc_id, response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
-        try:
-            subject_canonical_span = db.Int4NumericRange(*response["subject"]["entity"]["span"])
-        except IndexError as e:
-            logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
-            continue
-        subject_type = response["subject"]["type"]["name"].strip()
-        subject_gloss = response["subject"]["gloss"].strip()
+            try:
+                subject_span = db.Int4NumericRange(*response["subject"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
+                continue
+            
+            try:
+                subject_canonical_span = db.Int4NumericRange(*response["subject"]["entity"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
+                continue
+            subject_type = response["subject"]["type"]["name"].strip()
+            subject_gloss = response["subject"]["gloss"].strip()
 
-        #object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
-        try:
-            object_span = db.Int4NumericRange(*response["object"]["span"])
-        except IndexError as e:
-            logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
-            continue
+            try:
+                object_span = db.Int4NumericRange(*response["object"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
+                continue
 
 
-        #object_canonical_id = Provenance(doc_id, response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
-        try:
-            object_canonical_span = db.Int4NumericRange(*response["object"]["entity"]["span"])
-        except IndexError as e:
-            logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
-            continue
+            try:
+                object_canonical_span = db.Int4NumericRange(*response["object"]["entity"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
+                continue
 
-        object_type = response["object"]["type"]["name"].strip()
-        object_gloss = response["object"]["gloss"].strip()
+            object_type = response["object"]["type"]["name"].strip()
+            object_gloss = response["object"]["gloss"].strip()
 
-        assert "canonicalCorrect" in response["subject"]["entity"]
-        if "canonicalCorrect" in response["subject"]["entity"]:
+            assert "canonicalCorrect" in response["subject"]["entity"]
+            assert "canonicalCorrect" in response["object"]["entity"]
+            assert "linkGold" in response["subject"]["entity"]
+            assert "linkGold" in response["object"]["entity"]
+
+            #Don't care about this anymore
             mentions.append(MentionInstance(doc_id, subject_span, subject_canonical_span, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] else 0.0))
-        if "canonicalCorrect" in response["object"]["entity"]:
-            mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
-        if "linkCorrect" in response["subject"]["entity"]:
-            links.append(LinkInstance(doc_id, subject_span, urllib.parse.unquote(response["subject"]["entity"]["link"]), 1.0 if response["subject"]["entity"]["linkCorrect"] else 0.0))
-        if "linkCorrect" in response["object"]["entity"]:
-            links.append(LinkInstance(doc_id, object_span, urllib.parse.unquote(response["object"]["entity"]["link"]), 1.0 if response["object"]["entity"]["linkCorrect"] else 0.0))
+            #This is what we care about
 
-        if response["relation"] not in ALL_RELATIONS:
-            #To correct for systematic mistakes from the past
-            if response["relation"] == 'per:sibling':
-                response["relation"] = 'per:siblings'
-            else:
+            mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
+
+            if subject_type in ENTITY_SLOT_TYPES:
+                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+response['subject']['entity']['gloss'], response['subject']['entity']['canonicalCorrect'], 1.0))
+                if response['subject']['entity']['link'] is not None and (response['subject']['entity']['linkGold'] is None or urllib.parse.unquote(response['subject']['entity']['link']) != urllib.parse.unquote(response['subject']['entity']['linkGold'])): 
+                    links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), False, 1.0))
+
+                if response['subject']['entity']['linkGold'] is not None:
+                    links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["linkGold"]), True, 1.0))
+                else:
+                    links.append(LinkInstance(doc_id, subject_span, 'wiki:NULL', True, 1.0))
+
+            if object_type in ENTITY_SLOT_TYPES:
+                links.append(LinkInstance(doc_id, object_span, 'gloss:'+response['object']['entity']['gloss'], response['object']['entity']['canonicalCorrect'], 1.0))
+                if response['object']['entity']['link'] is not None and (response['object']['entity']['linkGold'] is None or urllib.parse.unquote(response['object']['entity']['link']) != urllib.parse.unquote(response['object']['entity']['linkGold'])): 
+                    links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), False, 1.0))
+
+                if response['object']['entity']['linkGold'] is not None:
+                    links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["linkGold"]), True, 1.0))
+                else:
+                    links.append(LinkInstance(doc_id, object_span, 'wiki:NULL', True, 1.0))
+
+            if response["relation"] not in ALL_RELATIONS:
                 logger.error("Unsupported relation %s", response['relation'])
-        relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
+            relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
+
+        #Version 0.1
+        else:
+            doc_id = question["doc_id"]
+            #subject_id = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+
+            try:
+                subject_span = db.Int4NumericRange(*response["subject"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
+                continue
+            
+            #subject_canonical_id = Provenance(doc_id, response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
+            try:
+                subject_canonical_span = db.Int4NumericRange(*response["subject"]["entity"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
+                continue
+            subject_type = response["subject"]["type"]["name"].strip()
+            subject_gloss = response["subject"]["gloss"].strip()
+
+            #object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
+            try:
+                object_span = db.Int4NumericRange(*response["object"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
+                continue
+
+
+            #object_canonical_id = Provenance(doc_id, response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
+            try:
+                object_canonical_span = db.Int4NumericRange(*response["object"]["entity"]["span"])
+            except IndexError as e:
+                logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
+                continue
+
+            object_type = response["object"]["type"]["name"].strip()
+            object_gloss = response["object"]["gloss"].strip()
+
+            assert "canonicalCorrect" in response["subject"]["entity"]
+            if "canonicalCorrect" in response["subject"]["entity"]:
+                mentions.append(MentionInstance(doc_id, subject_span, subject_canonical_span, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] else 0.0))
+                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+response["subject"]["entity"]["gloss"], response['subject']['entity']['canonicalCorrect'] , 1.0))
+            if "canonicalCorrect" in response["object"]["entity"]:
+                mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
+                links.append(LinkInstance(doc_id, object_span, 'gloss:'+response["object"]["entity"]["gloss"], response['object']['entity']['canonicalCorrect'] , 1.0))
+            if "linkCorrect" in response["subject"]["entity"]:
+                links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), True if response["subject"]["entity"]["linkCorrect"]=='Yes' else False, 1.0))
+            if "linkCorrect" in response["object"]["entity"]:
+                links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), True if response["object"]["entity"]["linkCorrect"]=='Yes' else False,  1.0))
+
+            if response["relation"] not in ALL_RELATIONS:
+                #To correct for systematic mistakes from the past
+                if response["relation"] == 'per:sibling':
+                    response["relation"] = 'per:siblings'
+                else:
+                    logger.error("Unsupported relation %s", response['relation'])
+            relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
+
+
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
 
 def test_parse_selective_relations_response():
@@ -89,16 +163,37 @@ def test_parse_selective_relations_response():
     # - the linking could be wrong.
     # - the relation could be wrong.
     question = {"mention_2": ["NYT_ENG_20130911.0085", "2803", "2809"], "doc_id": "NYT_ENG_20130911.0085", "batch_type": "selective_relations", "mention_1": ["NYT_ENG_20130911.0085", "2778", "2783"]}
-    response = {"subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"doc_char_begin":2803,"doc_char_end":2809,"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","doc_char_begin":2803,"doc_char_end":2809,"canonicalCorrect":True,"linkCorrect":"No"}},"relation":"per:sibling","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":True,"linkCorrect":"No"}}}
-    subject_id = Provenance('NYT_ENG_20130911.0085', 2803, 2809)
-    subject_canonical_id = Provenance('NYT_ENG_20130911.0085', 2803, 2809)
-    object_id = Provenance('NYT_ENG_20130911.0085', 2778, 2783)
-    object_canonical_id = Provenance('NYT_ENG_20130911.0085', 1703, 1712)
+    response = {"subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2803,2809],"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","span":[2803,2809],"canonicalCorrect":True,"linkCorrect":"No"}},"relation":"per:sibling","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":True,"linkCorrect":"No"}}}
+    doc_id = 'NYT_ENG_20130911.0085'
+    subject_span = db.Int4NumericRange(2803, 2809)
+    subject_canonical_span = db.Int4NumericRange(2803, 2809)
+    object_span = db.Int4NumericRange(2778, 2783)
+    object_canonical_span = db.Int4NumericRange(1703, 1712)
 
-    mentions_, links_, relations_ = parse_selective_relations_response(question, response)
-    assert mentions_ == [MentionInstance(subject_id, subject_canonical_id, 'PER', 'Mukesh', 1.0), MentionInstance(object_id, object_canonical_id, 'PER', 'Singh', 1.0)]
-    assert links_ == [LinkInstance(subject_id, "Mukesh_Ambani", 0.0), LinkInstance(object_id, "Ram_Singh", 0.0)]
-    assert relations_ == [RelationInstance(subject_id, object_id, "per:sibling", 1.0)]
+    mentions_, links_, relations_ = parse_selective_relations_response(question, [response])
+    assert mentions_ == sorted(set([MentionInstance('NYT_ENG_20130911.0085', subject_span, subject_canonical_span, 'PER', 'Mukesh', 1.0), MentionInstance(doc_id, object_span, object_canonical_span, 'PER', 'Singh', 1.0)]))
+    expected_links_ = sorted(set([
+                                 LinkInstance(doc_id, subject_span, "gloss:Mukesh", True, 1.0), 
+                                 LinkInstance(doc_id, subject_span, "wiki:Mukesh_Ambani", False, 1.0), 
+                                 LinkInstance(doc_id, object_span, "gloss:Ram Singh", True, 1.0), 
+                                 LinkInstance(doc_id, object_span, "wiki:Ram_Singh", False, 1.0), 
+                                 ]))
+    assert links_ == expected_links_
+    assert relations_ == sorted(set([RelationInstance(doc_id, subject_span, object_span, "per:siblings", 1.0)]))
+
+    response = {"response_version":0.2, "subject":{"gloss":"Mukesh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2803,2809],"entity":{"gloss":"Mukesh","link":"Mukesh_Ambani","span":[2803,2809],"canonicalCorrect":True,"linkGold":"Mukesh_Dhirubhai_Ambani"}},"relation":"per:siblings","object":{"gloss":"Singh","type":{"idx":0,"name":"PER","gloss":"Person","icon":"fa-user","linking":"wiki-search"},"span":[2778,2783],"entity":{"gloss":"Ram Singh","link":"Ram_Singh","span":[1703,1712],"canonicalCorrect":True,"linkGold":None}}}
+
+    mentions_, links_, relations_ = parse_selective_relations_response(question, [response])
+    assert mentions_ == sorted(set([MentionInstance('NYT_ENG_20130911.0085', subject_span, subject_canonical_span, 'PER', 'Mukesh', 1.0), MentionInstance(doc_id, object_span, object_canonical_span, 'PER', 'Singh', 1.0)]))
+    expected_links_= sorted(set([LinkInstance(doc_id, subject_span, "gloss:Mukesh", True, 1.0), 
+                      LinkInstance(doc_id, subject_span, "wiki:Mukesh_Ambani", False, 1.0), 
+                      LinkInstance(doc_id, subject_span, "wiki:Mukesh_Dhirubhai_Ambani", True, 1.0), 
+                      LinkInstance(doc_id, object_span, "gloss:Ram Singh", True, 1.0), 
+                      LinkInstance(doc_id, object_span, "wiki:Ram_Singh", False, 1.0), 
+                      LinkInstance(doc_id, object_span, "wiki:NULL", True, 1.0)]))
+
+    assert links_ == expected_links_
+    assert relations_ == sorted(set([RelationInstance(doc_id, subject_span, object_span, "per:siblings", 1.0)]))
 
 def parse_exhaustive_relations_response(question, responses):
     mentions, links, relations = [], [], []
@@ -140,6 +235,7 @@ def parse_exhaustive_entities_response(question, response):
     links = []
     relations = []
     for entity in response:
+        #Version 0.1
         try:
             #id_ = Provenance(doc_id,entity["doc_char_begin"], entity["doc_char_end"]) 
             try:
@@ -160,9 +256,16 @@ def parse_exhaustive_entities_response(question, response):
             mention = MentionInstance(doc_id, span, canonical_span, type_, gloss, 1.0)
             mentions.append(mention)
 
-            if span == canonical_span:
-                link = LinkInstance(doc_id, span, urllib.parse.unquote(entity["entity"]["link"]), 1.0)
-                links.append(link)
+            if type_ in ENTITY_SLOT_TYPES:
+                if entity['entity']['link'] is not None:
+                    links.append(LinkInstance(doc_id, span, 'wiki:'+urllib.parse.unquote(entity["entity"]["link"]), 1.0))
+                else:
+                    links.append(LinkInstance(doc_id, span, 'wiki:NULL', 1.0))
+                links.append(LinkInstance(doc_id, span, 'gloss:'+urllib.parse.unquote(entity["entity"]["gloss"]), 1.0))
+
+            elif type_ == 'DATE':
+                links.append(LinkInstance(doc_id, span, 'date:'+urllib.parse.unquote(entity["entity"]["link"]), 1.0))
+
         except AssertionError as e:
             logger.error("Could not process response {}: {}".format(entity, e))
 
@@ -402,18 +505,24 @@ def _merge_evaluation_links(cur, doc_table):
         Compute the winner by majority
         Does not guarantee that every evaluation mention will have a link
         Does not map to winning spans because links are highly sensitive to spans
+
+        It is implicitly guaranteed that correct and incorrect links will not coexist. 
+        This is because all such links are grouped by link_name and correct and either
+        correct = True or correct = False will be in majority. 
+        This would not have held if the denominator was calculated separately for separate questions. 
+        However, we calculate denominator over all questions which have these link names as the answers (yay)
     """
     db.execute("""DELETE FROM evaluation_link AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""", cur=cur)
     db.execute(
         """
-        INSERT INTO evaluation_link (doc_id, span, question_batch_id, question_id, link_name, weight) 
-        SELECT c.doc_id, c.span, d.question_batch_id, d.question_id, c.link_name, c.count/d.denominator as weight FROM 
-            (SELECT lr.doc_id, span, link_name, sum(weight) as count
+        INSERT INTO evaluation_link (doc_id, span, question_batch_id, question_id, link_name, correct, weight) 
+        SELECT c.doc_id, c.span, d.question_batch_id, d.question_id, c.link_name, c.correct, c.count/d.denominator as weight FROM 
+            (SELECT lr.doc_id, span, link_name, correct, sum(weight) as count
             FROM evaluation_link_response as lr
             JOIN """+doc_table+""" as docs ON lr.doc_id = docs.doc_id
-            GROUP BY lr.doc_id, span, link_name) AS c
+            GROUP BY lr.doc_id, span, link_name, correct) AS c
         JOIN _denominator as d
-            ON d.doc_id = c.doc_id AND d.span = c.span
+            ON d.doc_id = c.doc_id AND d.span = c.span AND d.link_name = c.link_name
         WHERE c.count/d.denominator > 0.5;
         """, cur = cur)
     
@@ -483,7 +592,7 @@ def merge_evaluation_relations(row):
 def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = None, mturk_batch_id = None):
     merging_tables = {table: 'evaluation_'+table+'_response' for table in ['mention', 'link', 'relation']}
     merging_funcs = {'mention': _merge_evaluation_mentions, 'link': _merge_evaluation_links, 'relation': _merge_evaluation_relations}
-    pkey_fields = {'mention': ('doc_id', 'span'), 'link': ('doc_id', 'span'), 'relation': ('doc_id', 'subject', 'object')}
+    pkey_fields = {'mention': ('doc_id', 'span'), 'link': ('doc_id', 'span', 'link_name'), 'relation': ('doc_id', 'subject', 'object')}
 
     
     with db.CONN: 
@@ -980,4 +1089,5 @@ if __name__ == '__main__':
     #update_evaluation_relation()
     #merge_evaluation_table('relation', mode='hit', hit_id = '3GMLHYZ0LERIOM7FXJ458R5SMC7YU0')
     #print(get_question_id('3D1TUISJWIUWYMSAT1I30Z92D90IUK'))
+    test_parse_selective_relations_response()
     pass
