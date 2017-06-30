@@ -82,6 +82,7 @@ div#relation-option-preview {
         var docWidget = new DocWidget($("#document"));
         var instructionWidget = new InstructionWidget('entity_extraction', '/static/instructions/entity_extraction.html');
         var iface = new RelationInterface(docWidget, $('#interface'), $("#relation-option-widget"), verifyLinks);
+        document.iface = iface; // Helps with debugging.
 
         // Right now, docId is specified on the page.
         $.getJSON("/api/document/" + docId, function(doc) {

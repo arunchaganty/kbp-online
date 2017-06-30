@@ -79,7 +79,12 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       // Alright, launch the WikiModal!
       self.wikiLinkModal.doneListeners.length = 0; // fscking javascript.
       self.wikiLinkModal.doneListeners.push(function (link) {
-        mention.entity.linkGold = link;
+        if (link !== null) {
+          console.assert(link !== undefined);
+          mention.entity.linkGold = link;
+        } else { // Couldn't find a link.
+          mention.entity.linkGold = null;
+        }
         if (doSubject) {
           self.doCanonicalVerification(mentionPair, false);
         } else {
@@ -110,10 +115,12 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
         mention.canonicalCorrect = true; // tautologically.
         self.doLinkingVerification(mentionPair, doSubject);
       } else { // Uh, we need to verify this!
+        mention.entity.linkGold = null;
         self.docWidget.centerOnMentionSpan(mention.entity.span);
         // Call canonical entity
         self.canonicalLinkWidget.init(mention, function(correctlyLinked) {
           mention.entity.canonicalCorrect = correctlyLinked;
+          mention.entity.linkGold = null;
           if (correctlyLinked) { // Wiki time!
             self.doLinkingVerification(mentionPair, doSubject);
           } else if (doSubject) {

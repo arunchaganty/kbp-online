@@ -96,6 +96,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
                 "entity": {
                     "span": _tuple(row.subject_canonical),
                     "gloss": row.subject_canonical_gloss,
+                    "type": row.subject_type,
                     "link": row.subject_entity,
                     }
                 },
@@ -106,6 +107,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
                 "entity": {
                     "span": _tuple(row.object_canonical),
                     "gloss": row.object_canonical_gloss,
+                    "type": row.subject_type,
                     "link": row.object_entity,
                     }
                 },

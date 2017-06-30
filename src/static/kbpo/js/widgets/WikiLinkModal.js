@@ -19,7 +19,7 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
       });
       $(elem_).find('#no-wiki-link').on("click", function(evt) {
         self.hide();
-        self.doneListeners.forEach(function(cb) {cb("");});
+        self.doneListeners.forEach(function(cb) {cb(null);});
       });
 
       cb(elem_);

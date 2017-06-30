@@ -475,21 +475,22 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
     Mention.prototype.toJSON = function() {
         var val = {
             "gloss": this.gloss,
-                "type": this.type,
+                "type": this.type.name,
                 "span": this.span,
                 "entity": (this.entity) ? {
                     "gloss": this.entity.gloss,
+                    "type": this.type.name,
                     "link": this.entity.link,
                     "span": this.entity.span,
                     "canonicalCorrect": this.canonicalCorrect, 
-                    "linkCorrect": this.linkCorrect
+                    "linkGold": this.linkGold,
                 } : null
         };
         if (this.entity.canonicalCorrect !== undefined){
             val.entity.canonicalCorrect = this.entity.canonicalCorrect;
         }
-        if (this.entity.linkCorrect !== undefined){
-            val.entity.linkCorrect = this.entity.linkCorrect;
+        if (this.entity.linkGold !== undefined){
+            val.entity.linkGold = this.entity.linkGold;
         }
         return val;
     };

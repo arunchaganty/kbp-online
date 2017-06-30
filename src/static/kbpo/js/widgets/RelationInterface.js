@@ -5,6 +5,43 @@
  */
 
 define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget', './RelationListWidget'], function ($, defs, util, DocWidget, RelationOptionWidget, RelationListWidget) {
+
+  VERSION = 0.2;
+
+  function checkResponse(resp) {
+    console.assert(resp.version === VERSION, "Version incorrectly set");
+    console.assert(resp.doc_id !== undefined);
+    console.assert(resp.subject !== undefined);
+    console.assert(resp.object !== undefined);
+    console.assert(resp.relation !== undefined);
+    
+    var mentions = [resp.subject, resp.object];
+    var entities = [];
+    var i;
+    for (i=0; i < mentions.length; i++) {
+      if(mentions[i] === undefined) continue;
+      mention = mentions[i];
+      console.assert(mention.type !== undefined);
+      console.assert(mention.span !== undefined);
+      console.assert(mention.gloss !== undefined);
+      console.assert(mention.entity !== undefined);
+      if (mention.entity !== undefined) {
+        entities.push(mention.entity);
+      }
+    }
+    for (i=0; i < entities.length; i++) {
+      if(entities[i] === undefined) continue;
+      entity = entities[i];
+      console.assert(entity.type !== undefined);
+      console.assert(entity.span !== undefined);
+      console.assert(entity.gloss !== undefined);
+      console.assert(entity.link !== undefined);
+      console.assert(entity.linkGold !== undefined);
+      console.assert(entity.canonicalCorrect !== undefined);
+    }
+  }
+
+
   /**
    * Stores actual relations and iterates through every mention pair in
    * the document, controlling various UI elements.
@@ -36,9 +73,12 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
       });
 
       $("#done").on("click.kbpo.interface", function (evt) {
+        var docId = self.docWidget.doc.id;
         var relations = [];
         self.mentionPairs.forEach(function(e){
           relations.push({
+            "version": VERSION,
+            "doc_id": docId,
             "subject": (e.subject).toJSON(),
             "relation": e.relation.name,
             "object": (e.object).toJSON(),
@@ -50,6 +90,7 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
         var workerId = $("input[name='workerId'").val();
         var csrftoken =  $("input[name='csrfmiddlewaretoken'").val();
         var data = JSON.stringify(relations);
+        relations.forEach(checkResponse);
         var workerTime = (new Date().getTime() - self.startTime) / 1000;
         var comments = $("#comments").val();
 
@@ -93,6 +134,14 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
     var mentionPair, subject, object;
     for (var i = 0; i < mentionPairs.length; i++) {
       mentionPair = mentionPairs[i];
+      if (mentionPair.subject.entity.type === undefined) {
+        mentionPair.subject.entity.type = mentionPair.subject.type;
+      }
+      if (mentionPair.object.entity.type === undefined) {
+        mentionPair.object.entity.type = mentionPair.object.type;
+      }
+
+
       if (mentions[mentionPair.subject.span] === undefined) {
         subject = defs.Mention.fromJSON(mentionPair.subject, self.docWidget);
         self.docWidget.addMention(subject);
