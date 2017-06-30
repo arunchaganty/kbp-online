@@ -79,7 +79,7 @@ def parse_selective_relations_response(question, responses):
 
                 if response['subject']['entity']['linkGold'] is not None:
                     links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["linkGold"]), True, 1.0))
-                else:
+                elif response['subject']['entity']['canonicalCorrect']:
                     links.append(LinkInstance(doc_id, subject_span, 'wiki:NULL', True, 1.0))
 
             if object_type in ENTITY_SLOT_TYPES:
@@ -89,7 +89,7 @@ def parse_selective_relations_response(question, responses):
 
                 if response['object']['entity']['linkGold'] is not None:
                     links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["linkGold"]), True, 1.0))
-                else:
+                elif response['subject']['entity']['canonicalCorrect']:
                     links.append(LinkInstance(doc_id, object_span, 'wiki:NULL', True, 1.0))
 
             if response["relation"] not in ALL_RELATIONS:
