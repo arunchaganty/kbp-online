@@ -116,8 +116,10 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
           mention.entity.canonicalCorrect = correctlyLinked;
           if (correctlyLinked) { // Wiki time!
             self.doLinkingVerification(mentionPair, doSubject);
-          } else {
+          } else if (doSubject) {
             self.doCanonicalVerification(mentionPair, false);
+          } else {
+            self.done(mentionPair.reln);
           }
         });
       }

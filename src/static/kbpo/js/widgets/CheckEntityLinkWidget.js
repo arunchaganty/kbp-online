@@ -47,7 +47,7 @@ define(['jquery'], function ($) {
   
         div.on("click.kbpo.entityLinkWidget", function(evt) {
             var ret = (text == "Yes") ? true : false;
-            self.done(ret);
+            return self.done(ret);
         });
 
         return div;
@@ -59,9 +59,10 @@ define(['jquery'], function ($) {
         this.mention.entity.canonicalCorrect = correctlyLinked;
 
         if (this.cb) {
-            this.cb(correctlyLinked);
+            return this.cb(correctlyLinked);
         } else {
             console.log("[Warning] Relation chosen but no callback", chosen_reln);
+            return true;
         }
     };
 
