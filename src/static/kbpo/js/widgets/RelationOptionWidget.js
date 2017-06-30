@@ -5,7 +5,7 @@
  */
 
 // TODO: Maybe move CheckEntityLinkWidget out?
-define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkModal'], function ($, defs, util, CheckEntityLinkWidget, WikiLinkModal) {
+define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkModal', './DateModal'], function ($, defs, util, CheckEntityLinkWidget, WikiLinkModal, DateModal) {
     function getCandidateRelations(mentionPair) {
         var candidates = [];
         defs.RELATIONS.forEach(function (reln) {
@@ -27,6 +27,9 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
           self.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
 
           self.wikiLinkModal = new WikiLinkModal(function(elem_) {
+            self.elem.find("#modals").append(elem_);
+          });
+          self.dateModal = new DateModal(function(elem_) {
             self.elem.find("#modals").append(elem_);
           });
         });
@@ -74,7 +77,6 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
         mention = mentionPair.object;
       }
       var canonicalMention = mention.entity.mentions[0];
-      var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
 
       var linkDone = function (link) {
         if (link !== null) {
@@ -94,9 +96,13 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
         linkDone(mention.entity.link);
       } else if (mention.type.name === "DATE") {
         // TODO: launch date modeal
+        self.dateModal.doneListeners.length = 0; // fscking javascript
+        self.dateModal.doneListeners.push(function (link) {linkDone(link);});
+        self.dateModal.show(mention.gloss, mention.entity.link);
         linkDone(mention.entity.link);
       } else {
         // Alright, launch the WikiModal!
+        entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
         self.wikiLinkModal.cb = function (link) {linkDone(link);};
         self.wikiLinkModal.show(entityStr);
       }
@@ -114,9 +120,15 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       }
       var canonicalMention = mention.entity.mentions[0];
 
-      // Preheat the entity linking widget in the background.
-      var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
-      self.wikiLinkModal.preload(entityStr);
+
+      // Preheat entity linking
+      if (mention.type.name === "TITLE") {
+      } else if (mention.type.name === "DATE") {
+      } else {
+        // Preheat the entity linking widget in the background.
+        var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
+        self.wikiLinkModal.preload(entityStr);
+      }
 
       // Check if this is a canonical mention
       if (mention.span[0] === canonicalMention.span[0] && mention.span[1] === canonicalMention.span[1]) {
