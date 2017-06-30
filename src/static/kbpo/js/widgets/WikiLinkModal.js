@@ -57,6 +57,7 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
 
   WikiLinkModal.prototype.done = function(link) {
     var self = this;
+    $('#wiki-linking-modal').modal('hide').off('hidden.bs.modal');
     $('#wiki-linking-modal').modal('hide').on('hidden.bs.modal', function() {
         if (self.cb !== null) {
             self.cb(link);
