@@ -14,57 +14,119 @@ from . import turk
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+QUESTION_VERSION=0.2
+
+def _tuple(span):
+    return span.lower, span.upper
+
 # TODO: allow us to 'override' and add samples to questions that have already been answered.
 def create_questions_for_submission_sample(submission_id, sample_batch_id):
     """
     Produces questions for a submission, based on what's in the
     database.
     """
-    questions = []
-    for row in db.select("""
-    WITH _sampled_relations AS (
-        (SELECT DISTINCT doc_id, LEAST(subject, object) AS subject, GREATEST(subject, object) AS object
+    # Group by doc_id, subject, object
+    question_groups = {}
+    for q in db.select("""
+        SELECT s.doc_id, s.subject, s.object, 
+               r.subject_type, r.object_type,
+               r.subject_gloss, r.object_gloss,
+               r.subject_canonical_gloss, r.object_canonical_gloss,
+               r.subject_canonical, r.object_canonical,
+               r.subject_entity, r.object_entity
         FROM submission_sample s
-        WHERE s.submission_id = %(submission_id)s
-          AND s.batch_id = %(sample_batch_id)s)
-        EXCEPT (
-            (SELECT doc_id, subject, object
-                FROM evaluation_question q
-                JOIN evaluation_relation_question r ON (q.id = r.id AND q.batch_id = r.batch_id)
-                WHERE (q.state <> 'error' OR q.state <> 'revoked'))
-            UNION 
-            (SELECT doc_id, object, subject
-                FROM evaluation_question q
-                JOIN evaluation_relation_question r ON (q.id = r.id AND q.batch_id = r.batch_id)
-                WHERE (q.state <> 'error' OR q.state <> 'revoked'))
-            UNION
-            (SELECT doc_id, subject, object FROM evaluation_relation q)
-            UNION
-            (SELECT doc_id, object, subject FROM evaluation_relation q)
-        ))
-        SELECT s.doc_id, s.subject, s.object, r.subject_type, r.object_type
-        FROM _sampled_relations s
         JOIN submission_entity_relation r ON (
-            r.submission_id = %(submission_id)s
-            AND s.doc_id = r.doc_id AND s.subject = r.subject AND s.object = r.object);
+            r.submission_id = s.submission_id
+            AND s.doc_id = r.doc_id AND s.subject = r.subject AND s.object = r.object)
+        WHERE s.submission_id = %(submission_id)s
+          AND s.batch_id = %(sample_batch_id)s
         ;
         """, submission_id=submission_id, sample_batch_id=sample_batch_id):
-        # In some cases, we will need to flip types.
-        if row.subject_type == 'ORG' and row.object_type == 'PER':
-            subject, object_ = row.object, row.subject
-        elif row.subject_type == 'GPE':
-            subject, object_ = row.object, row.subject
-        else:
-            subject, object_ = row.subject, row.object
+        question_groups[q.doc_id, _tuple(q.subject), _tuple(q.object)] = q
 
-        questions.append({
+    # Go through and remove any of these from possible_questions
+    for q in db.select("""
+        SELECT doc_id, subject, object, subject_canonical_gloss, object_canonical_gloss, subject_entity, object_entity
+            FROM evaluation_relation_question r
+            WHERE (state <> 'error' OR state <> 'revoked')
+            """):
+        key = (q.doc_id, _tuple(q.subject), _tuple(q.object))
+        if key not in question_groups: continue
+
+        q_ = question_groups[key]
+        # If you find a match, then break out of this loop
+        if (q.subject_canonical_gloss in q_.subject_canonical_gloss or q.subject_entity == q_.subject_entity) and \
+                (q.object_canonical_gloss == q_.object_canonical_gloss or q.object_entity == q_.object_entity):
+            del question_groups[key]
+        # Flip the entity order
+        if (q.object_canonical_gloss in q_.subject_canonical_gloss or q.object_entity == q_.subject_entity) and \
+                (q.suobject_canonical_gloss == q_.object_canonical_gloss or q.subject_entity == q_.object_entity):
+            del question_groups[key]
+
+    for q in db.select("""
+        SELECT doc_id, subject, object,
+            subject_entity AS subject_canonical_gloss, object_entity AS object_canonical_gloss,
+            subject_entity AS subject_entity, object_entity AS object_entity
+            FROM evaluation_entity_relation r
+            """):
+        key = (q.doc_id, _tuple(q.subject), _tuple(q.object))
+        if key not in question_groups: continue
+
+        q_ = question_groups[key]
+        # If you find a match, then break out of this loop
+        if (q.subject_canonical_gloss == q_.subject_canonical_gloss or q.subject_entity == q_.subject_entity) and \
+                (q.object_canonical_gloss == q_.object_canonical_gloss or q.object_entity == q_.object_entity):
+            del question_groups[key]
+        # Flip the entity order
+        if (q.object_canonical_gloss in q_.subject_canonical_gloss or q.object_entity == q_.subject_entity) and \
+                (q.subject_canonical_gloss == q_.object_canonical_gloss or q.subject_entity == q_.object_entity):
+            del question_groups[key]
+
+    questions = []
+    for row in question_groups.values():
+        # In some cases, we will need to flip types.
+        question = {
             "batch_type": "selective_relations",
             "submission_id": submission_id,
             "doc_id": row.doc_id,
-            "subject": (subject.lower, subject.upper),
-            "object": (object_.lower, object_.upper),
-            })
+            "subject": {
+                "span": _tuple(row.subject),
+                "gloss": row.subject_gloss,
+                "type": row.subject_type,
+                "entity": {
+                    "span": _tuple(row.subject_canonical),
+                    "gloss": row.subject_canonical_gloss,
+                    "link": row.subject_entity,
+                    }
+                },
+            "object": {
+                "span": _tuple(row.object),
+                "gloss": row.object_gloss,
+                "type": row.object_type,
+                "entity": {
+                    "span": _tuple(row.object_canonical),
+                    "gloss": row.object_canonical_gloss,
+                    "link": row.object_entity,
+                    }
+                },
+            }
+        # Flip types to be nice to Javascript.
+        if row.subject_type == 'ORG' and row.object_type == 'PER':
+            question["subject"], question["object"] = question["object"], question["subject"]
+        elif row.subject_type == 'GPE':
+            question["subject"], question["object"] = question["object"], question["subject"]
+        else:
+            pass
+
+        questions.append(question)
+
     return questions
+
+def test_create_questions_for_submission_sample():
+    submission_id = 25
+    sample_batch_id = 19
+    questions = create_questions_for_submission_sample(submission_id, sample_batch_id)
+    assert len(questions) > 100
 
 def create_questions_for_corpus(corpus_tag):
     """

@@ -18,16 +18,19 @@ def get_updated_scores(corpus_tag, mode='joint', interval=90, num_epochs=500):
     systems = []
     Ps, Xhs, Y0 = [], [], []
 
+    #TODO:  Have per relation scores also computed.
     logger.info("Getting distributions")
     Ps_ = {
-        "entity": PD.submission_entity(corpus_tag),
-        "relation": PD.submission_relation(corpus_tag),
+        #"entity": PD.submission_entity(corpus_tag),
+        #"relation": PD.submission_relation(corpus_tag),
+        "entity_relation": PD.submission_entity_relation(corpus_tag),
         }
 
     logger.info("Getting samples")
     Y0_ = PD.Y0(corpus_tag)
 
-    for score_type in ["entity", "relation"]:
+    #for score_type in ["entity", "relation"]:
+    for score_type in ["entity_relation"]:
         for submission_id, Xh in PD.Xh(corpus_tag, score_type).items():
             Ps.append(Ps_[score_type][submission_id])
             Xhs.append(Xh)
@@ -35,13 +38,14 @@ def get_updated_scores(corpus_tag, mode='joint', interval=90, num_epochs=500):
             systems.append((submission_id, score_type))
     P0 = defaultdict(lambda: 1.0) # TODO: maybe this should change?
 
+    logger.info("Scoring %s systems", len(Ps))
     if mode == "joint":
         metrics = evaluation.joint_score_with_intervals(P0, Ps, Y0, Xhs, interval=interval, num_epochs=num_epochs)
     elif mode == "simple":
         metrics = evaluation.simple_score_with_intervals(P0, Ps, Y0, Xhs, interval=interval, num_epochs=num_epochs)
     else:
         raise ValueError("Unknown scoring mode {}", mode)
-
+    logger.info("Done!")
     return list(zip(systems, metrics))
 
 def update_score(submission_id, score_type, entry, cur=None):

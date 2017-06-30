@@ -481,33 +481,32 @@ def merge_evaluation_relations(row):
 #            db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
 
 def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = None, mturk_batch_id = None):
-    merging_tables = {table: 'evaluation_'+table+'_response' for table in ['mention', 'link', 'relation']}
+    merging_tables = {table_: 'evaluation_'+table_+'_response' for table_ in ['mention', 'link', 'relation']}
     merging_funcs = {'mention': _merge_evaluation_mentions, 'link': _merge_evaluation_links, 'relation': _merge_evaluation_relations}
     pkey_fields = {'mention': ('doc_id', 'span'), 'link': ('doc_id', 'span'), 'relation': ('doc_id', 'subject', 'object')}
 
-    
-    with db.CONN: 
+    with db.CONN:
         with db.CONN.cursor() as cur:
             if mode == 'mturk_batch':
                 assert mturk_batch_id is not None, 'mturk_batch_id needs to be supplied'
                 mode = 'doc_list'
-                doc_list = [get_doc_id(x.id) for x in db.select("SELECT id FROM mturk_hit where batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)]
+                doc_list = [(get_doc_id(x.id),) for x in db.select("SELECT id FROM mturk_hit where batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)]
             if mode == 'hit':
                 assert hit_id is not None, "hit_id need to be supplied"
                 mode = 'doc_list'
-                doc_list = [get_doc_id(hit_id),]
+                doc_list = [(get_doc_id(hit_id),)]
                 print('created doc_list')
-
 
 
             if mode == 'doc_list':
                 assert doc_list is not None, "doc_list need to be supplied"
                 print('creating temp table')
-                db.execute_values(cur, """CREATE TEMP TABLE _docids_for_merging(doc_id) AS VALUES %s""", doc_list)
+                cur.execute("""CREATE TEMPORARY TABLE _docids_for_merging(doc_id TEXT);""")
+                db.execute_values(cur, """INSERT INTO _docids_for_merging VALUES %s""", doc_list)
                 cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
 
             elif mode == 'all':
-                cur.execute("CREATE TEMP TABLE _docids_for_merging AS (SELECT distinct doc_id FROM "+merging_tables[table]+");")
+                cur.execute("CREATE TEMPORARY TABLE _docids_for_merging AS (SELECT distinct doc_id FROM {});".format(merging_tables[table]))
                 cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
 
             elif mode == 'update':
@@ -529,6 +528,7 @@ def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = Non
                 );
             """, cur)
             merging_funcs[table](cur, '_docids_for_merging')
+            cur.execute("""DROP TABLE _docids_for_merging;""")
 
 
 def _update_evaluation_link():

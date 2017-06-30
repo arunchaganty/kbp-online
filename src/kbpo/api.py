@@ -420,6 +420,9 @@ def get_hit(hit_id):
     return db.get("""SELECT * FROM mturk_hit WHERE hit_id=%(hit_id)s""", hit_id=hit_id)
 
 def get_task_params(hit_id):
+    """
+    Gets parameters from the task.
+    """
     return db.get("""
         SELECT params 
         FROM mturk_hit h 

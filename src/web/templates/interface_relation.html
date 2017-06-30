@@ -33,6 +33,7 @@ div#relation-option-preview {
 
   <input type="hidden" name="docId" id="doc-id" value="{{doc_id}}" />
   <input type="hidden" name="mentionPair" id="mention-pair" value="{{mention_pair}}" />
+  <input type="hidden" name="params" id="params" value="{{params}}" />
 
   <div class="col-md-8">
     <div class="row">
@@ -69,9 +70,14 @@ div#relation-option-preview {
       "kbpo/js/widgets/RelationInterface",
       ],
       function($, DocWidget, InstructionWidget, RelationInterface) {
+        // THIS ONLY WORKS IN LATEST VERSIONS OF TASKS.
+        var params = JSON.parse($("#params").val());
+
         var docId = $("#doc-id").val();
         var mentionPair = $("#mention-pair").val();
         var verifyLinks = (mentionPair.length > 0);
+
+        console.assert(params["doc_id"] === docId);
 
         var docWidget = new DocWidget($("#document"));
         var instructionWidget = new InstructionWidget('entity_extraction', '/static/instructions/entity_extraction.html');
@@ -82,16 +88,13 @@ div#relation-option-preview {
           console.info("loaded document ", doc.id);
           docWidget.loadDocument(doc);
 
-          // TODO: Change to evaluation-mention-pairs
-          // TODO: Change to submission mentions
           if (mentionPair.length > 0) {
-            $.getJSON("/api/suggested-mention-pairs/" + docId + "/" + mentionPair, function(mentionPairs) {
-              iface.loadMentionPairs(mentionPairs);
-              console.info("loaded", mentionPairs.length, "mention pairs");
-              iface.run();
-            });
+            mentionPairs = [{"subject": params["subject"], "object": params["object"]}];
+            iface.loadMentionPairs(mentionPairs);
+            console.info("loaded", mentionPairs.length, "mention pairs");
+            iface.run();
           } else {
-            $.getJSON("/api/suggested-mention-pairs/" + docId, function(mentionPairs) {
+            $.getJSON("/api/evaluation-mention-pairs/" + docId, function(mentionPairs) {
               iface.loadMentionPairs(mentionPairs);
               console.info("loaded", mentionPairs.length, "mention pairs");
               iface.run();
