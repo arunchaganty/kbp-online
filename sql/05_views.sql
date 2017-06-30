@@ -23,13 +23,16 @@ CREATE OR REPLACE VIEW mturk_assignment_flat AS (
          eval_batch.id AS question_batch_id,
          eval_batch.batch_type,
          eval_batch.corpus_tag, 
+         eval_batch.sample_batch_id,
          eval_batch.description AS eval_description,
-         question.id AS question_id
+         question.id AS question_id,
+         sample.submission_id AS submission_id
   FROM mturk_assignment AS assignment
   LEFT JOIN mturk_hit AS hit ON assignment.hit_id = hit.id
   LEFT JOIN mturk_batch AS batch ON hit.batch_id = batch.id
   LEFT JOIN evaluation_question AS question ON question.id = hit.question_id AND question.batch_id = hit.question_batch_id
   LEFT JOIN evaluation_batch AS eval_batch ON question.batch_id = eval_batch.id
+  LEFT JOIN submission_sample AS sample ON sample.batch_id = eval_batch.sample_batch_id
 );
 
 CREATE OR REPLACE VIEW mturk_assignment_flat_readable AS (
