@@ -36,8 +36,7 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
       self.daySelect = self.elem.find('select[name=day]');
       self.yearSelect = self.elem.find('select[name=year]');
       self.elem.find('#link-date-submit').click(function(){
-        self.hide();
-        self.doneListeners.forEach(function(cb_) {cb_(self.getSelectedDateString());});
+        self.done();
       });
 
       cb(elem);
@@ -74,8 +73,12 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
     $('#date-widget-modal').modal('show');
   };
 
-  DateModal.prototype.hide = function(mention){
-    $('#date-widget-modal').modal('hide');
+  DateModal.prototype.done = function() {
+    var self = this;
+    $('#date-widget-modal').modal('hide').on('hidden.bs.modal', function() {
+      var link = self.getSelectedDateString();
+        self.doneListeners.forEach(function(cb_) {cb_(link);});
+    });
   };
 
   DateModal.prototype.refreshDays = function(){
