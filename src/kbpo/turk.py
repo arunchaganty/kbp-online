@@ -133,7 +133,7 @@ def revoke_hit(conn, hit_id):
     hit = get_hit(conn, hit_id)
 
     # Verify that the statis is Reviewable
-    assert hit["HITStatus"] == "Reviewable" or hit["HITStatus"] == "UnassignableReviewable"
+    assert hit["HITStatus"] == "Reviewable" or hit["HITStatus"] == "Unassignable"
     assignments_inflight = hit['MaxAssignments'] - (hit['NumberOfAssignmentsAvailable'] + hit['NumberOfAssignmentsCompleted'] + hit['NumberOfAssignmentsPending'])
     if assignments_inflight > 0:
         logger.error("HIT must be reviewed")
