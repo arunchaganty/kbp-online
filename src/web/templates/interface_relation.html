@@ -18,6 +18,10 @@ div#relation-option-preview {
 </style>
 {% endblock %}
 
+{% if hidenav %}
+    {% block nav %}
+    {% endblock %}
+{% endif %}
 {% block content %}
 <div class="row">
   <h1>Identify relationships between entities <small>Use the buttons at the bottom of the screen.</small></h1>

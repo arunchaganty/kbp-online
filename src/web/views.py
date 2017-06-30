@@ -237,6 +237,7 @@ def do_task(request):
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
                 'mturk_form_target': settings.MTURK_FORM_TARGET,
+                'hidenav' : True,
                 })
         elif params["batch_type"] == "exhaustive_relations":
             return render(request, 'interface_relation.html', {
@@ -246,6 +247,7 @@ def do_task(request):
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET["workerId"],
                 'mturk_form_target': settings.MTURK_FORM_TARGET,
+                'hidenav' : True,
                 })
         elif params["batch_type"] == "selective_relations":
             subject, object_ = tuple(params["subject"]), tuple(params["object"])
@@ -261,6 +263,7 @@ def do_task(request):
                 'hit_id': request.GET["hitId"],
                 'worker_id': request.GET.get("workerId"),
                 'mturk_form_target': settings.MTURK_FORM_TARGET,
+                'hidenav' : True,
                 })
 
 ### API functions
