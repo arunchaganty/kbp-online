@@ -31,8 +31,6 @@ define(['jquery', './CheckWikiLinkWidget'], function ($, CheckWikiLinkWidget) {
         this.elem.find("#relation-options").append(noDiv);
         this.updateText(this.renderTemplate(this.mention));
 
-        // TODO: somehow cause focus.
-        //centerOnMention(this.canonicalMention);
         //this.mention.tokens.forEach(function(t) {$(t).addClass("subject highlight");});
         this.canonicalMention.tokens.forEach(function(t) {$(t).addClass("canonical highlight");});
         $(this.canonicalMention.elem).parent().addClass("highlight");
