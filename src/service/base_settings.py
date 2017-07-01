@@ -123,7 +123,7 @@ LOGOUT_REDIRECT_URL = '/'
 # Celery setup
 CELERY_RESULT_BROKER = 'ampq'
 CELERY_RESULT_BACKEND = 'rpc'
-#CELERY_IMPORTS = ('web.tasks',)
+CELERY_WORKER_CONCURRENCY = 1
 
 # NPM setup
 NPM_ROOT_PATH = os.path.join(BASE_DIR, "static")
