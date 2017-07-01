@@ -135,8 +135,9 @@ CREATE MATERIALIZED VIEW evaluation_mention_link AS (
     m.mention_type,
     m.gloss,
     CASE
-        WHEN m.mention_type = 'TITLE' THEN m.gloss
-        ELSE COALESCE(l.link_name, m.gloss)
+        WHEN m.mention_type = 'TITLE' THEN 'gloss:' || m.gloss
+        WHEN m.mention_type = 'DATE' THEN COALESCE(l.link_name, 'date:' || m.gloss)
+        ELSE COALESCE(l.link_name, 'gloss:' || m.gloss)
     END AS entity,
     m.weight AS mention_weight,
     l.weight AS link_weight,
@@ -220,13 +221,59 @@ CREATE MATERIALIZED VIEW submission_entries AS (
     -- match OR the subject's canonical gloss will match. 
     JOIN _valid_entries v ON (r.submission_id = v.submission_id AND r.doc_id = v.doc_id AND r.subject = v.subject AND r.object = v.object)
     LEFT JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object 
-      AND (r.subject_entity = er.subject_entity OR 'gloss:' || r.subject_canonical_gloss = er.subject_entity)
-      AND (r.object_entity = er.object_entity OR 'gloss:' || r.object_canonical_gloss = er.object_entity)
+      AND (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity)
+      AND (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity)
     )
     JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
     JOIN document d ON (r.doc_id = d.id)
     JOIN document_tag t ON (r.doc_id = t.doc_id)
     ORDER BY r.submission_id, r.doc_id, r.subject, r.object, er.subject_entity_correct, er.object_entity_correct  
 );
+
+DROP MATERIALIZED VIEW IF EXISTS submission_entries_debug;
+CREATE MATERIALIZED VIEW submission_entries_debug AS (
+    SELECT
+    -- Keys
+    r.submission_id,
+    r.doc_id,
+    r.subject,
+    r.object,
+
+    -- Entity linking stuff
+    r.subject_type,
+    r.subject_gloss,
+    r.subject_canonical_gloss,
+    r.subject_entity,
+    er.subject_entity AS subject_gold_entity,
+    r.subject_canonical_gloss  = er.subject_entity OR r.subject_entity = er.subject_entity AS subject_link_correct,
+
+    r.object_type,
+    r.object_gloss,
+    r.object_canonical_gloss AS object_canonical_gloss,
+    r.object_entity,
+    er.object_entity AS object_gold_entity,
+
+    r.object_canonical_gloss  = er.object_entity OR r.object_entity = er.object_entity AS object_link_correct,
+
+    -- Relations
+    r.relation AS predicate_name,
+    er.relation AS predicate_gold,
+
+    -- Labels
+    er.subject_entity_correct,
+    er.object_entity_correct,
+    r.relation = er.relation AS predicate_correct
+
+    FROM submission_entity_relation r
+    -- In the current format of the linking, we have two rows, one for
+    -- the entity link, and the other for the entity gloss
+    -- match OR the subject's canonical gloss will match.
+    JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
+    JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
+    JOIN document d ON (r.doc_id = d.id)
+    JOIN document_tag t ON (r.doc_id = t.doc_id)
+    ORDER BY r.submission_id, r.doc_id, r.subject, r.object, er.subject_entity_correct, er.object_entity_correct
+);
+
 
 COMMIT;

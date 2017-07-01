@@ -95,8 +95,16 @@ CREATE MATERIALIZED VIEW submission_mention_link AS (
     m.mention_type,
     m.gloss,
     n.span AS canonical_span,
-    n.gloss AS canonical_gloss,
-    COALESCE(l.link_name, n.gloss) AS entity
+    CASE
+        WHEN n.mention_type = 'TITLE' THEN 'gloss:' || n.gloss
+        WHEN n.mention_type = 'DATE' THEN 'date:' || n.gloss
+        ELSE 'gloss:' || n.gloss
+    END AS canonical_gloss,
+    CASE
+        WHEN n.mention_type = 'TITLE' THEN 'gloss:' || n.gloss
+        WHEN n.mention_type = 'DATE' THEN COALESCE(l.link_name, 'date:' || n.gloss)
+        ELSE COALESCE(l.link_name, 'gloss:' || n.gloss)
+    END AS entity
    FROM submission_mention m
    JOIN submission_mention n ON (m.submission_id = n.submission_id AND m.doc_id = n.doc_id AND m.canonical_span = n.span)
    LEFT JOIN submission_link l ON (m.submission_id = l.submission_id AND m.doc_id = l.doc_id AND m.canonical_span = l.span)
