@@ -35,7 +35,7 @@ class Messages(Enum):
     # Syntax errors
     INVALID_LINE = Message("E01", "Invalid number of columns", "found %(original)s instead of %(expected)s; ignoring line")
     INVALID_MENTION_PROVENANCE = Message("E02", "Invalid mention definition, missing provenance", "; ignoring definition")
-    INVALID_RELATION_SELF = Message("E03","Invalid self-relation", "; ignoring relation")
+    INVALID_RELATION_SELF = Message("E03","Invalid self-relation", "for %(subject_id)s %(reln) %(object_id); ignoring relation")
     INVALID_RELATION_ARGUMENTS = Message("E04", "Invalid relation arguments", "%(reln)s expects %(expected_arg1)s and %(expected_arg2)s, got %(actual_arg1)s and %(actual_arg2)s; ignoring relation")
     INVALID_PROVENANCE = Message("E05", "Provenance does not match string", "%(string)s is %(string_len)s characters, while provenance %(prov)s is %(prov_len)s characters; ")
 
@@ -45,12 +45,12 @@ class Messages(Enum):
     DUPLICATE_DEFINITION = Message("W09", "Duplicate definition", "; ignoring duplicate definition")
 
     # Inconsistent definitions
-    INCONSISTENT_TYPE = Message("E11", "Inconsistent type", "%(new)s conflicts with %(original)s; keeping %(original)s")
-    INCONSISTENT_GLOSS = Message("E12", "Inconsistent gloss", "%(new)s conflicts with %(original)s; keeping %(original)s")
-    INCONSISTENT_CMENTION = Message("E13", "Inconsistent canonical_mention", "%(new)s conflicts with %(original)s; keeping %(original)s")
-    INCONSISTENT_LINK = Message("E14", "Inconsistent link", "%(new)s conflicts with %(original)s; keeping %(original)s")
-    INCONSISTENT_ENTITY = Message("E11", "Inconsistent entity", "%(new)s conflicts with %(original)s; keeping %(original)s")
-    INCONSISTENT_RELATION = Message("E15", "Inconsistent relation", "%(new)s conflicts with %(original)s; keeping %(original)s")
+    INCONSISTENT_TYPE = Message("E11", "Inconsistent type", "for %(mention_id)s %(new)s,%(new)s conflicts with %(original)s; keeping %(original)s")
+    INCONSISTENT_GLOSS = Message("E12", "Inconsistent gloss", "for %(mention_id)s %(new)s,%(new)s conflicts with %(original)s; keeping %(original)s")
+    INCONSISTENT_CMENTION = Message("E13", "Inconsistent canonical_mention", "for %(mention_id)s %(new)s,%(new)s conflicts with %(original)s; keeping %(original)s")
+    INCONSISTENT_LINK = Message("E14", "Inconsistent link", "for %(mention_id)s %(new)s, conflicts with %(original)s; keeping %(original)s")
+    INCONSISTENT_ENTITY = Message("E11", "Inconsistent entity", "for %(mention_id)s, %(new)s conflicts with %(original)s; keeping %(original)s")
+    INCONSISTENT_RELATION = Message("E15", "Inconsistent relation", "for %(subject_id)s and %(object_id)s, %(new)s conflicts with %(original)s; keeping %(original)s")
     INCONSISTENT_RELATION_SYMMETRIC = Message("E16","Inconsistent relation when symmetrized; %(new)s conflicts with %(original)s", "keeping %(original)s")
 
     # Missing definitions
@@ -155,9 +155,9 @@ class MFileReader(object):
 
         if row.subj in self._types:
             if row.reln != self._types[row.subj]:
-                self.logger.info(Messages.INCONSISTENT_TYPE, lineno=row.lineno, original=self._types[row.subj], new=row.reln)
+                self.logger.info(Messages.INCONSISTENT_TYPE, lineno=row.lineno, mention_id=row.subj, original=self._types[row.subj], new=row.reln)
             elif row.obj != self._glosses[row.subj]:
-                self.logger.info(Messages.INCONSISTENT_GLOSS, lineno=row.lineno, original=self._glosses[row.subj], new=row.obj)
+                self.logger.info(Messages.INCONSISTENT_GLOSS, lineno=row.lineno, mention_id=row.subj, original=self._glosses[row.subj], new=row.obj)
             else:
                 self.logger.info(Messages.DUPLICATE_DEFINITION, lineno=row.lineno)
         else:
@@ -169,7 +169,7 @@ class MFileReader(object):
 
         if row.subj in self._cmentions:
             if row.obj != self._cmentions[row.subj]:
-                self.logger.info(Messages.INCONSISTENT_CMENTION, lineno=row.lineno, original=self._cmentions[row.subj], new=row.obj)
+                self.logger.info(Messages.INCONSISTENT_CMENTION, lineno=row.lineno, mention_id=row.subj, original=self._cmentions[row.subj], new=row.obj)
             else:
                 self.logger.info(Messages.DUPLICATE_DEFINITION, lineno=row.lineno)
         else:
@@ -180,7 +180,7 @@ class MFileReader(object):
         assert row.reln == "link"
 
         if row.subj in self._links and row.obj != self._links[row.subj]:
-            self.logger.info(Messages.INCONSISTENT_LINK, lineno=row.lineno, original=self._links[row.subj], new=row.obj)
+            self.logger.info(Messages.INCONSISTENT_LINK, lineno=row.lineno, mention_id=row.subj, original=self._links[row.subj], new=row.obj)
         else:
             if row.obj.startswith("NILX"):
                 self.logger.info(Messages.INVALID_LINK_RESERVED, lineno=row.lineno)
@@ -191,7 +191,7 @@ class MFileReader(object):
         assert row.reln in ALL_RELATIONS
 
         if (row.subj, row.obj) in self._relations and row.reln != self._relations[row.subj, row.obj]:
-            self.logger.info(Messages.INCONSISTENT_RELATION, lineno=row.lineno, original="{} {} {}".format(row.subj, self._relations[row.subj, row.obj], row.obj), new="{} {} {}".format(row.subj, row.reln, row.obj))
+            self.logger.info(Messages.INCONSISTENT_RELATION, lineno=row.lineno, subject_id=row.subj, object_id=row.obj, original="{} {} {}".format(row.subj, self._relations[row.subj, row.obj], row.obj), new="{} {} {}".format(row.subj, row.reln, row.obj))
         else:
             if len(row.prov) == 0:
                 row = row._replace(prov = (Provenance(row.subj.doc_id, min(row.subj.begin, row.obj.begin), max(row.subj.end, row.obj.end),)))
@@ -296,6 +296,7 @@ class MFileReader(object):
                             continue
                         elif (n, m) in self._relations and self._relations[n,m] != r_:
                             self.logger.info(Messages.INCONSISTENT_RELATION_SYMMETRIC,
+                                     subject_id=m, object_id=n,
                                      new="{} {} {}".format(n, self._relations[n,m], m),
                                      original="{} {} {}".format(n, r_, m))
                         else:
@@ -401,7 +402,7 @@ class TacKbReader(MFileReader):
         assert row.reln == "mention" or row.reln == "canonical_mention"
 
         if row.prov in self._glosses and self._glosses[row.prov] != row.obj:
-            self.logger.info(Messages.INCONSISTENT_GLOSS, lineno=row.lineno, original=self._glosses[row.prov], new=row.obj)
+            self.logger.info(Messages.INCONSISTENT_GLOSS, lineno=row.lineno, mention_id=row.prov, original=self._glosses[row.prov], new=row.obj)
         else:
             self._entity_mentions[row.subj, row.prov.doc_id].add(row.prov)
             self._glosses[row.prov] = row.obj
@@ -411,7 +412,7 @@ class TacKbReader(MFileReader):
 
         if (row.subj, row.prov.doc_id) in self._entity_cmentions and self._entity_cmentions[row.subj, row.prov.doc_id] != row.prov:
             prov_ = self._entity_cmentions[row.subj, row.prov.doc_id]
-            self.logger.info(Messages.INCONSISTENT_CMENTION, lineno=row.lineno, original=prov_, new=row.prov)
+            self.logger.info(Messages.INCONSISTENT_CMENTION, lineno=row.lineno, mention_id=row.subj, original=prov_, new=row.prov)
         else:
             self._entity_cmentions[row.subj, row.prov.doc_id] = row.prov
         self._add_entity_mention(row)
@@ -420,7 +421,7 @@ class TacKbReader(MFileReader):
         assert row.reln == "type"
 
         if row.subj in self._entity_types and self._entity_types[row.subj] != row.obj:
-            self.logger.info(Messages.INCONSISTENT_TYPE, lineno=row.lineno, original=self._entity_types[row.subj,], new=row.obj)
+            self.logger.info(Messages.INCONSISTENT_TYPE, lineno=row.lineno, mention_id=row.subj, original=self._entity_types[row.subj,], new=row.obj)
         else:
             self._entity_types[row.subj] = row.obj
 
@@ -428,7 +429,7 @@ class TacKbReader(MFileReader):
         assert row.reln in ALL_RELATIONS
         # Check if this is a self-relation. Complain.
         if row.subj == row.obj:
-            self.logger.info(Messages.INVALID_RELATION_SELF, lineno=row.lineno)
+            self.logger.info(Messages.INVALID_RELATION_SELF, lineno=row.lineno, subject_id=row.subj, reln=row.reln, object_id=row.obj)
         else:
             self._entity_relations[row.subj, row.obj].append(row)
 
@@ -441,7 +442,7 @@ class TacKbReader(MFileReader):
         for (entity, doc_id), mentions in self._entity_mentions.items():
             for mention in mentions:
                 if mention in mention_map and mention_map[mention] != entity:
-                    self.logger.info(Messages.INCONSISTENT_ENTITY, original=mention_map[mention], new=entity)
+                    self.logger.info(Messages.INCONSISTENT_ENTITY, mention_id=mention, original=mention_map[mention], new=entity)
                     purge.add((entity, doc_id, mention))
                 mention_map[mention] = entity
         for entity, doc_id, mention in purge:
