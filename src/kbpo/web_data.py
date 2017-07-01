@@ -98,7 +98,8 @@ def parse_selective_relations_response(question, responses):
 
             if response["relation"] not in ALL_RELATIONS:
                 logger.error("Unsupported relation %s", response['relation'])
-            relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
+            else:
+                relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
 
         #Version 0.1
         else:
@@ -163,13 +164,15 @@ def parse_selective_relations_response(question, responses):
             if "linkCorrect" in response["object"]["entity"]:
                 links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), response["object"]["entity"]["linkCorrect"]=='Yes' or response["object"]["entity"]["linkCorrect"]==True,  1.0))
 
-            if response["relation"] not in ALL_RELATIONS:
+            if response["relation"] in ALL_RELATIONS:
+                relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
+            else:
                 #To correct for systematic mistakes from the past
                 if response["relation"] == 'per:sibling':
                     response["relation"] = 'per:siblings'
+                    relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
                 else:
                     logger.error("Unsupported relation %s", response['relation'])
-            relations.append(RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0))
 
 
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
@@ -237,8 +240,12 @@ def parse_exhaustive_relations_response(question, responses):
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
-        relation = RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0)
-        relations.append(relation)
+
+        if response["relation"] not in ALL_RELATIONS:
+            logger.error("Unsupported relation %s", response['relation'])
+        else:
+            relation = RelationInstance(doc_id, subject_span, object_span, response["relation"], 1.0)
+            relations.append(relation)
     return sorted(set(mentions)), sorted(set(links)), sorted(set(relations))
 
 #TODO: Change doc_char_begin and end to span
@@ -1161,7 +1168,7 @@ if __name__ == '__main__':
     #sanitize_mention_response_table()
     #parse_responses()
     #merge_evaluation_table('mention', mode='all')
-    merge_evaluation_table('link', mode='all')
+    #merge_evaluation_table('link', mode='all')
     #merge_evaluation_table('relation', mode='all')
     #test_sanitize_mention_response()
     #_IAA_mention_response(12, 3)
