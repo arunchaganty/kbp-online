@@ -182,6 +182,15 @@ def test_submission_entity():
         Z = sum(Ps[submission.id].values())
         assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
+def test_submission_entity_by_id():
+    tag = 'kbp2016'
+    submission = get_submissions(tag)[0]
+    Ps = submission_entity(tag, submission.id)
+    assert len(Ps) == 1 and submission.id in Ps
+    P = Ps[submission.id]
+    Z = sum(P.values())
+    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
+
 def submission_entity_relation(corpus_tag, submission_id=None):
     if submission_id is not None:
         assert get_submission(submission_id).corpus_tag == corpus_tag, "Submission {} is not on corpus {}".format(submission_id, corpus_tag)
@@ -212,15 +221,14 @@ def test_submission_entity_relation():
         Z = sum(Ps[submission.id].values())
         assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
-# TODO: For some reason this is really slow :?
-#def test_submission_entity_by_id():
-#    tag = 'kbp2016'
-#    submission = next(get_submissions(tag))
-#    Ps = submission_entity(tag, submission.id)
-#    assert len(Ps) == 1 and submission.id in Ps
-#    P = Ps[submission.id]
-#    Z = sum(P.values())
-#    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
+def test_submission_entity_relation_by_id():
+    tag = 'kbp2016'
+    submission = get_submissions(tag)[0]
+    Ps = submission_entity_relation(tag, submission.id)
+    assert len(Ps) == 1 and submission.id in Ps
+    P = Ps[submission.id]
+    Z = sum(P.values())
+    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
 ## Obtaining samples from database.
 def Y0(corpus_tag, submission_id=None):
@@ -234,7 +242,8 @@ def Y0(corpus_tag, submission_id=None):
         where = ""
 
     ret = defaultdict(list)
-    # TODO: NOOOOOO DONT DO THIS
+    # NOTE: This is perfectly OK to do, BECAUSE it is the exhaustive
+    # annotation.
     rows = db.select("""
         SELECT s.id AS submission_id, r.doc_id, r.subject, r.object, COALESCE(s_.correct, FALSE) AS gx
         FROM submission s
