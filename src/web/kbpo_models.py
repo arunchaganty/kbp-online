@@ -351,7 +351,10 @@ class MturkAssignment(models.Model):
         ('pending-extraction', 'Extracting'),
         ('pending-validation', 'Validating'),
         ('pending-payment', 'Paying'),
-        ('done', 'Done'),
+        ('pending-rejection-verification', 'Verifying Rejection'),
+        ('verified-rejection', 'Paying'),
+        ('pending-payment', 'Verifying Rejection'),
+        ('approved', 'Approved'),
         ('rejected', 'Rejected'),
         ('error', 'Error'),
         ]
