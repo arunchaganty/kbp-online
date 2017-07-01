@@ -240,7 +240,7 @@ def Y0(corpus_tag, submission_id=None):
         JOIN document_sample d ON (true)
         JOIN document_tag t ON (d.doc_id = t.doc_id AND t.tag = %(corpus_tag)s)
         JOIN evaluation_relation r ON (d.doc_id = r.doc_id)
-        LEFT JOIN submission_entries s_ ON (s.id = submission_id AND r.doc_id = s_.doc_id AND r.subject = s_.subject_span AND r.object = s_.object_span)
+        LEFT JOIN submission_entries s_ ON (s.id = submission_id AND r.doc_id = s_.doc_id AND r.subject = s_.subject AND r.object = s_.object)
         WHERE s.corpus_tag = %(corpus_tag)s {where}
         ORDER BY s.id, r.doc_id, r.subject, r.object
         """.format(where=where), corpus_tag=corpus_tag, submission_id=submission_id)
@@ -274,7 +274,7 @@ def Xh(corpus_tag, distribution_type, submission_id = None):
         SELECT b.submission_id, d.doc_id, d.subject, d.object, s.correct AS fx
         FROM sample_batch b
         JOIN submission_sample d ON (b.id = d.batch_id)
-        JOIN submission_entries s ON (d.doc_id = s.doc_id AND d.subject = s.subject_span AND d.object = s.object_span AND b.submission_id = s.submission_id)
+        JOIN submission_entries s ON (d.doc_id = s.doc_id AND d.subject = s.subject AND d.object = s.object AND b.submission_id = s.submission_id)
         WHERE b.distribution_type = %(distribution_type)s {where}
         ORDER BY d.doc_id, d.subject, d.object
           """.format(where=where), submission_id=submission_id, distribution_type=distribution_type)
