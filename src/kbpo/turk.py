@@ -15,6 +15,9 @@ from boto.mturk.question  import ExternalQuestion
 from service.settings import MTURK_HOST, MTURK_TARGET
 from . import db
 from . import api
+from django.core.mail import send_mail
+
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -336,20 +339,37 @@ def test_create_revoke_batch():
 
 def mturk_batch_payments(conn, mturk_batch_id):
     rows = list(db.select("""
-        SELECT id, verified, message
+        SELECT id, verified, state, message
         FROM mturk_assignment
         WHERE batch_id = %(mturk_batch_id)s
         """, mturk_batch_id = mturk_batch_id))
     for row in rows:
-        if row.verified == True:
+        if row.verified == True and row.state == 'pending-payment':
             approve_assignment(conn, row.id)
             db.execute("UPDATE mturk_assignment SET state = 'approved' WHERE id = %(assignment_id)s", assignment_id = row.id)
         if row.verified == False:
-            reject_assignment(conn, row.id, row.message)
-            db.execute("UPDATE mturk_assignment SET state = 'rejected' WHERE id = %(assignment_id)s", assignment_id = row.id)
+            if row.state == 'verified-rejection':
+                reject_assignment(conn, row.id, row.message)
+                db.execute("UPDATE mturk_assignment SET state = 'rejected' WHERE id = %(assignment_id)s", assignment_id = row.id)
+            elif row.state == 'pending-payment':
+                pending_reject_assignment(row.id, row.message)
+                db.execute("UPDATE mturk_assignment SET state = 'pending-rejection-verification' WHERE id = %(assignment_id)s", assignment_id = row.id)
+
 
 class MTurkInvalidStatus(Exception):
     pass
+
+def pending_reject_assignment(assignment_id, message = None):
+    send_mail(
+        subject='Assignment Pending Rejection',
+        message="""Assignment_id %s is pending rejection. 
+        To reject assignment, please change state to `verified-rejection`,
+        To approve assignment, please change verified to True and state to `pending-payment`
+        Message = %s
+        """% (assignment_id, message),
+        from_email='kbp-online-owners@lists.stanford.edu',
+        recipient_list=['kbp-online-owners@lists.stanford.edu'],
+    )
 
 def reject_assignment(conn, assignment_id, message = None):
     assn = conn.get_assignment(AssignmentId = assignment_id)
@@ -376,3 +396,6 @@ def approve_assignment(conn, assignment_id):
 
     conn.approve_assignment(AssignmentId = assignment_id)
     return True
+
+if __name__ == '__main__':
+    pending_reject_assignment('test_assignment_id', 'Test_message')
