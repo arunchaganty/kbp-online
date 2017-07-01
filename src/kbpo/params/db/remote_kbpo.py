@@ -10,4 +10,5 @@ _PARAMS = {
     'host':'localhost',
     'port': 5433,
     'cursor_factory': NamedTupleCursor,
+    'application_name': 'kbpo'
     }
