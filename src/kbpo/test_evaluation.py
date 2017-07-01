@@ -59,7 +59,7 @@ def generate_submission(precision=0.3, recall=0.2, population_size=1000):
     logger.info("Using %d true and %d false samples", nT, nF)
 
     X = T[:nT] + F[:nF]
-    P = counter_utils.normalize(Counter({x: 1./len(X) for x, _ in X}))
+    P = counter_utils.normalize(Counter({x: 1. for x, _ in X}))
     return P, X
 
 def test_generate_submission():
@@ -80,7 +80,7 @@ def generate_submission_set(precisions, recalls, population_size=1000):
 
 def test_simple_precision_wr():
     np.random.seed(42)
-    population_size, precision, recall = 1000, 0.5, 0.2
+    population_size, precision, recall = 10000, 0.5, 0.2
     P, X = generate_submission(precision, recall, population_size)
     n_samples = 100
     Xh = sample_with_replacement(P, n_samples, X=X)
@@ -89,7 +89,7 @@ def test_simple_precision_wr():
 
 def test_simple_precision_wor():
     np.random.seed(42)
-    population_size, precision, recall = 1000, 0.5, 0.2
+    population_size, precision, recall = 10000, 0.5, 0.2
     P, X = generate_submission(precision, recall, population_size)
     n_samples = 100
     Xh = sample_without_replacement(P, n_samples, X=X)
@@ -98,7 +98,7 @@ def test_simple_precision_wor():
 
 def test_simple_recall():
     np.random.seed(41)
-    population_size, precision, recall = 1000, 0.5, 0.2
+    population_size, precision, recall = 10000, 0.5, 0.2
     n_samples = 100
 
     P, _ = generate_submission(precision, recall, population_size)
@@ -110,7 +110,7 @@ def test_simple_recall():
 def test_joint_precision_wr():
     np.random.seed(42)
     n_samples = 100
-    population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
     Ps, Xs = generate_submission_set(precisions, recalls, population_size)
     Xhs = [sample_with_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
     precisions_ = joint_precision(Ps, Xhs)

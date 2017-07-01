@@ -234,6 +234,7 @@ def Y0(corpus_tag, submission_id=None):
         where = ""
 
     ret = defaultdict(list)
+    # TODO: NOOOOOO DONT DO THIS
     rows = db.select("""
         SELECT s.id AS submission_id, r.doc_id, r.subject, r.object, COALESCE(s_.correct, FALSE) AS gx
         FROM submission s

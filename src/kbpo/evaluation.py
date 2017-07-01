@@ -65,8 +65,11 @@ def simple_precision(Xhs):
     pis = []
     for i in range(m):
         pi_i = 0.
-        for n_i, (_, fx) in enumerate(Xhs[i]):
-            pi_i += (fx - pi_i)/(n_i+1)
+        n_i = 0
+        for (_, fx) in Xhs[i]:
+            if fx is not None: # skip null input.
+                pi_i += (fx - pi_i)/(n_i+1)
+                n_i += 1
         pis.append(pi_i)
     return pis
 
@@ -79,15 +82,16 @@ def simple_recall(P0, Y0):
     """
     assert len(Y0) > 0
 
-    Z = 0.
-    for n, (x, _) in enumerate(Y0[0]):
-        Z += (P0[x] - Z)/(n+1)
-
     rhos = []
     for Y0i in Y0:
         rho_i = 0.
-        for n, (x, gxi) in enumerate(Y0i):
-            rho_i += (P0[x]*gxi - rho_i)/(n+1)
+        Z = 0.
+        n = 0.
+        for x, gxi in Y0i:
+            if gxi is not None:
+                rho_i += (P0[x]*gxi - rho_i)/(n+1)
+                Z += (P0[x] - Z)/(n+1)
+                n += 1
         rhos.append(rho_i / Z)
     return rhos
 
@@ -135,7 +139,7 @@ def compute_weights(P, Xhs, method="heuristic"):
     $w_{ij} \propto n_j \sum_{x} p_i(x) p_j(x)$
     """
     m = len(P)
-    Ns = np.array([len(Xhs[i]) for i in range(m)])
+    Ns = np.array([sum(1 for _, fx in Xhs[i] if fx is not None) for i in range(m)])
 
     if method == "uniform":
         W = np.ones((m,m)) / m
@@ -252,7 +256,7 @@ def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
     m = len(P)
 
     if W is None:
-        W = compute_weights(P, method)
+        W = compute_weights(P, Xhs, method)
     if Q is None:
         Q = construct_proposal_distribution(W, P)
 
@@ -263,8 +267,11 @@ def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
         for j in range(m):
             if W[i][j] == 0.: continue # just ignore this set.
             pi_ij = 0.
-            for n_j, (x, fx) in enumerate(Xhs[j]):
-                pi_ij += (P[i][x]/Q[i][x]*fx - pi_ij)/(n_j+1)
+            n_j = 0
+            for x, fx in Xhs[j]:
+                if fx is not None:
+                    pi_ij += (P[i][x]/Q[i][x]*fx - pi_ij)/(n_j+1)
+                    n_j += 1
             pi_i += W[i][j] * pi_ij
         pis.append(pi_i)
     return pis
@@ -278,7 +285,7 @@ def pooled_recall(P0, P, Xhs, W=None, Q=None, method="heuristic"):
     """
     m = len(P)
     if W is None:
-        W = compute_weights(P, method)
+        W = compute_weights(P, Xhs, method)
     if Q is None:
         Q = construct_proposal_distribution(W, P)
 
@@ -289,12 +296,15 @@ def pooled_recall(P0, P, Xhs, W=None, Q=None, method="heuristic"):
         for j in range(m):
             if W[i][j] == 0.: continue # just ignore this set.
             nu_ij, Z_ij = 0., 0.
-            for n_j, (x, fx) in enumerate(Xhs[j]):
-                gx = 1.0 if fx > 0. else 0.0
-                gxi = 1.0 if x in P[i] and fx > 0. else 0.0
+            n_j = 0.
+            for x, fx in Xhs[j]:
+                if fx is not None:
+                    gx = 1.0 if fx > 0. else 0.0
+                    gxi = 1.0 if x in P[i] and fx > 0. else 0.0
 
-                nu_ij += (P0[x]/Q[i][x]*gxi - nu_ij)/(n_j+1)
-                Z_ij += (P0[x]/Q[i][x]*gx - Z_ij)/(n_j+1)
+                    nu_ij += (P0[x]/Q[i][x]*gxi - nu_ij)/(n_j+1)
+                    Z_ij += (P0[x]/Q[i][x]*gx - Z_ij)/(n_j+1)
+                    n_j += 1 
             nu_i += W[i][j] * nu_ij
             Z_i += W[i][j] * Z_ij
         nu_i = nu_i / Z_i if Z_i > 0 else 0
@@ -311,7 +321,9 @@ def _merge_Y0(Y0):
     n = len(Y0[0])
     for i in range(n):
         x = Y0[0][i][0]
-        gx = max(Y0[j][i][1] for j in range(m))
+        # handles the null case by defaulting to 0; this is ok because
+        # gx = 0 only if NONE of the systems got this element.
+        gx = max(Y0[j][i][1] or 0 for j in range(m))
         ret.append((x, gx))
     return ret
 
@@ -335,13 +347,14 @@ def pool_recall(P0, Y0):
     Y0_ = _merge_Y0(Y0)
 
     Z = 0.
-    for n, (x, _) in enumerate(Y0_):
-        Z += (P0[x] - Z)/(n+1)
-
     theta = 0.
-    for n, (x, gx) in enumerate(Y0_):
-        #gx = 1.0 if any(x in P[i] and P[i][x] > 0. for i in range(m)) else 0.
-        theta += (P0[x]*gx - theta)/(n+1)
+    n = 0.
+    for x, gx in Y0_:
+        if gx is not None:
+            theta += (P0[x]*gx - theta)/(n+1)
+            Z += (P0[x] - Z)/(n+1)
+            n += 1
+
     return theta/Z
 
 def joint_recall(P0, P, Y0, Xhs, W=None, Q=None):
