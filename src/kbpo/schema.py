@@ -48,6 +48,7 @@ EvaluationLinkResponse = namedtuple('EvaluationLinkResponse', [
     'doc_id',
     'span',
     'link_name',
+    'correct',
     'weight'
 ])
 
