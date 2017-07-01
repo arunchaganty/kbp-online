@@ -2,6 +2,7 @@
 """
 Utilities to handle conversion and interaction of data in JSON
 """
+import pdb
 import json
 import logging
 from collections import Counter, defaultdict, namedtuple
@@ -23,6 +24,9 @@ from .defs import RELATION_TYPES, INVERTED_RELATIONS, ALL_RELATIONS, ENTITY_SLOT
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 import pandas as pd
+
+def check_wiki_namespace(link):
+    return link[:5] == 'wiki:'
 
 
 def parse_selective_relations_response(question, responses):
@@ -73,24 +77,24 @@ def parse_selective_relations_response(question, responses):
             mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
 
             if subject_type in ENTITY_SLOT_TYPES:
-                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+response['subject']['entity']['gloss'], response['subject']['entity']['canonicalCorrect'], 1.0))
-                if response['subject']['entity']['link'] is not None and (response['subject']['entity']['linkGold'] is None or urllib.parse.unquote(response['subject']['entity']['link']) != urllib.parse.unquote(response['subject']['entity']['linkGold'])): 
+                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+subject_gloss, response['subject']['entity']['canonicalCorrect'], 1.0))
+                if response['subject']['entity']['link'] is not None and check_wiki_namespace(response['subject']['entity']['link']) and (response['subject']['entity']['linkGold'] is None or urllib.parse.unquote(response['subject']['entity']['link']) != urllib.parse.unquote(response['subject']['entity']['linkGold'])): 
                     links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), False, 1.0))
 
                 if response['subject']['entity']['linkGold'] is not None:
                     links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["linkGold"]), True, 1.0))
                 elif response['subject']['entity']['canonicalCorrect']:
-                    links.append(LinkInstance(doc_id, subject_span, 'wiki:NULL', True, 1.0))
+                    links.append(LinkInstance(doc_id, subject_span, 'wiki:', True, 1.0))
 
             if object_type in ENTITY_SLOT_TYPES:
-                links.append(LinkInstance(doc_id, object_span, 'gloss:'+response['object']['entity']['gloss'], response['object']['entity']['canonicalCorrect'], 1.0))
-                if response['object']['entity']['link'] is not None and (response['object']['entity']['linkGold'] is None or urllib.parse.unquote(response['object']['entity']['link']) != urllib.parse.unquote(response['object']['entity']['linkGold'])): 
+                links.append(LinkInstance(doc_id, object_span, 'gloss:'+object_gloss, response['object']['entity']['canonicalCorrect'], 1.0))
+                if response['object']['entity']['link'] is not None and check_wiki_namespace(response['subject']['entity']['link']) and (response['object']['entity']['linkGold'] is None or urllib.parse.unquote(response['object']['entity']['link']) != urllib.parse.unquote(response['object']['entity']['linkGold'])): 
                     links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), False, 1.0))
 
                 if response['object']['entity']['linkGold'] is not None:
                     links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["linkGold"]), True, 1.0))
                 elif response['subject']['entity']['canonicalCorrect']:
-                    links.append(LinkInstance(doc_id, object_span, 'wiki:NULL', True, 1.0))
+                    links.append(LinkInstance(doc_id, object_span, 'wiki:', True, 1.0))
 
             if response["relation"] not in ALL_RELATIONS:
                 logger.error("Unsupported relation %s", response['relation'])
@@ -102,14 +106,21 @@ def parse_selective_relations_response(question, responses):
             #subject_id = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
 
             try:
-                subject_span = db.Int4NumericRange(*response["subject"]["span"])
+                if 'span' in response['subject']:
+                    subject_span = db.Int4NumericRange(*response["subject"]["span"])
+                else:
+                    subject_span = db.Int4NumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
             
             #subject_canonical_id = Provenance(doc_id, response["subject"]["entity"]["doc_char_begin"], response["subject"]["entity"]["doc_char_end"])
             try:
-                subject_canonical_span = db.Int4NumericRange(*response["subject"]["entity"]["span"])
+                if 'span' in response['subject']['entity']:
+                    subject_canonical_span = db.Int4NumericRange(*response["subject"]['entity']["span"])
+                else:
+                    subject_canonical_span = db.Int4NumericRange(response["subject"]['entity']["doc_char_begin"], response["subject"]['entity']["doc_char_end"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
@@ -118,7 +129,10 @@ def parse_selective_relations_response(question, responses):
 
             #object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
             try:
-                object_span = db.Int4NumericRange(*response["object"]["span"])
+                if 'span' in response['object']:
+                    object_span = db.Int4NumericRange(*response["object"]["span"])
+                else:
+                    object_span = db.Int4NumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
@@ -126,7 +140,10 @@ def parse_selective_relations_response(question, responses):
 
             #object_canonical_id = Provenance(doc_id, response["object"]["entity"]["doc_char_begin"], response["object"]["entity"]["doc_char_end"])
             try:
-                object_canonical_span = db.Int4NumericRange(*response["object"]["entity"]["span"])
+                if 'span' in response['object']['entity']:
+                    object_canonical_span = db.Int4NumericRange(*response["object"]['entity']["span"])
+                else:
+                    object_canonical_span = db.Int4NumericRange(response["object"]['entity']["doc_char_begin"], response["object"]['entity']["doc_char_end"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d})", e.args[0], e.args[1])
                 continue
@@ -134,17 +151,17 @@ def parse_selective_relations_response(question, responses):
             object_type = response["object"]["type"]["name"].strip()
             object_gloss = response["object"]["gloss"].strip()
 
-            assert "canonicalCorrect" in response["subject"]["entity"]
+            #assert "canonicalCorrect" in response["subject"]["entity"], response
             if "canonicalCorrect" in response["subject"]["entity"]:
                 mentions.append(MentionInstance(doc_id, subject_span, subject_canonical_span, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] else 0.0))
-                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+response["subject"]["entity"]["gloss"], response['subject']['entity']['canonicalCorrect'] , 1.0))
+                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+subject_gloss, response['subject']['entity']['canonicalCorrect'] == 'Yes' or response['subject']['entity']['canonicalCorrect'] == True, 1.0))
             if "canonicalCorrect" in response["object"]["entity"]:
                 mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
-                links.append(LinkInstance(doc_id, object_span, 'gloss:'+response["object"]["entity"]["gloss"], response['object']['entity']['canonicalCorrect'] , 1.0))
+                links.append(LinkInstance(doc_id, object_span, 'gloss:'+object_gloss, response['object']['entity']['canonicalCorrect'] == 'Yes' or response['object']['entity']['canonicalCorrect'] == True , 1.0))
             if "linkCorrect" in response["subject"]["entity"]:
-                links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), True if response["subject"]["entity"]["linkCorrect"]=='Yes' else False, 1.0))
+                links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), response["subject"]["entity"]["linkCorrect"]=='Yes' or response["subject"]["entity"]["linkCorrect"]== True , 1.0))
             if "linkCorrect" in response["object"]["entity"]:
-                links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), True if response["object"]["entity"]["linkCorrect"]=='Yes' else False,  1.0))
+                links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), response["object"]["entity"]["linkCorrect"]=='Yes' or response["object"]["entity"]["linkCorrect"]==True,  1.0))
 
             if response["relation"] not in ALL_RELATIONS:
                 #To correct for systematic mistakes from the past
@@ -190,7 +207,7 @@ def test_parse_selective_relations_response():
                       LinkInstance(doc_id, subject_span, "wiki:Mukesh_Dhirubhai_Ambani", True, 1.0), 
                       LinkInstance(doc_id, object_span, "gloss:Ram Singh", True, 1.0), 
                       LinkInstance(doc_id, object_span, "wiki:Ram_Singh", False, 1.0), 
-                      LinkInstance(doc_id, object_span, "wiki:NULL", True, 1.0)]))
+                      LinkInstance(doc_id, object_span, "wiki:", True, 1.0)]))
 
     assert links_ == expected_links_
     assert relations_ == sorted(set([RelationInstance(doc_id, subject_span, object_span, "per:siblings", 1.0)]))
@@ -201,14 +218,22 @@ def parse_exhaustive_relations_response(question, responses):
     for response in responses:
         #subject = Provenance(doc_id, response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
         try:
-            subject_span = db.Int4NumericRange(*response["subject"]["span"])
+            if 'span' in response['subject']:
+                subject_span = db.Int4NumericRange(*response["subject"]["span"])
+            else:
+                subject_span = db.Int4NumericRange(response["subject"]["doc_char_begin"], response["subject"]["doc_char_end"])
+
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
 
         #object_ = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
         try:
-            object_span = db.Int4NumericRange(*response["object"]["span"])
+            if 'span' in response['object']:
+                object_span = db.Int4NumericRange(*response["object"]["span"])
+            else:
+                object_span = db.Int4NumericRange(response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
+
         except IndexError as e:
             logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
             continue
@@ -239,7 +264,10 @@ def parse_exhaustive_entities_response(question, response):
         try:
             #id_ = Provenance(doc_id,entity["doc_char_begin"], entity["doc_char_end"]) 
             try:
-                span = db.Int4NumericRange(*entity["span"])
+                if 'span' in entity:
+                    span = db.Int4NumericRange(*entity["span"])
+                else: 
+                    span = db.Int4NumericRange(entity["doc_char_begin"], entity["doc_char_end"])
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
@@ -249,22 +277,30 @@ def parse_exhaustive_entities_response(question, response):
 
             #canonical_id = Provenance(doc_id, entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
             try:
-                canonical_span = db.Int4NumericRange(*entity["entity"]["span"])
+                if 'span' in entity['entity']:
+                    canonical_span = db.Int4NumericRange(*entity["entity"]["span"])
+                else:
+                    canonical_span = db.Int4NumericRange(entity["entity"]["doc_char_begin"], entity["entity"]["doc_char_end"])
+            
+
+
             except IndexError as e:
                 logger.error("Incorrect span for conversion to NumericRange [%d, %d)", e.args[0], e.args[1])
                 continue
+
+            canonical_gloss = entity['entity']["gloss"].strip()
             mention = MentionInstance(doc_id, span, canonical_span, type_, gloss, 1.0)
             mentions.append(mention)
 
             if type_ in ENTITY_SLOT_TYPES:
                 if entity['entity']['link'] is not None:
-                    links.append(LinkInstance(doc_id, span, 'wiki:'+urllib.parse.unquote(entity["entity"]["link"]), 1.0))
+                    links.append(LinkInstance(doc_id, span, 'wiki:'+urllib.parse.unquote(entity["entity"]["link"]), True, 1.0))
                 else:
-                    links.append(LinkInstance(doc_id, span, 'wiki:NULL', 1.0))
-                links.append(LinkInstance(doc_id, span, 'gloss:'+urllib.parse.unquote(entity["entity"]["gloss"]), 1.0))
+                    links.append(LinkInstance(doc_id, span, 'wiki:', True, 1.0))
+                links.append(LinkInstance(doc_id, span, 'gloss:'+canonical_gloss, True, 1.0))
 
             elif type_ == 'DATE':
-                links.append(LinkInstance(doc_id, span, 'date:'+urllib.parse.unquote(entity["entity"]["link"]), 1.0))
+                links.append(LinkInstance(doc_id, span, 'date:'+urllib.parse.unquote(entity["entity"]["link"]), True, 1.0))
 
         except AssertionError as e:
             logger.error("Could not process response {}: {}".format(entity, e))
@@ -289,6 +325,9 @@ def test_parse_exhaustive_entities_response():
     assert links[0].id == Provenance("NYT_ENG_20130911.0085", 101, 106)
     assert links[0].link_name == "China"
 
+def unfsck(string):
+    return string.replace('\\u00a0', ' ').replace('\xa0', ' ')
+
 def _parse_responses(rows):
     """Parse responses for a subset of assignments"""
     evaluation_mentions = []
@@ -301,6 +340,9 @@ def _parse_responses(rows):
 
         question = row.question
         response = row.response
+        response = json.loads(unfsck(json.dumps(response)))
+        question = json.loads(unfsck(json.dumps(question)))
+        #response = json.loads(tmp)
 
         if row.batch_type == "selective_relations":
             mentions, links, relations = parse_selective_relations_response(question, response)
@@ -310,46 +352,65 @@ def _parse_responses(rows):
             mentions, links, relations = parse_exhaustive_entities_response(question, response)
         else:
             raise ValueError("Unexpected batch type: " + row.batch_type)
-
         #raise Exception()
+
 
         # evaluation_mention_response
         for mention in mentions:
-            response = EvaluationMentionResponse(
-                row.assignment_id,
-                row.question_batch_id,
-                row.question_id,
-                mention.doc_id,
-                mention.span,
-                mention.canonical_span,
-                mention.mention_type,
-                mention.gloss,
-                mention.weight,)
+            if '\xa0' in mention.gloss:
+                pdb.set_trace()
+            if mention.span.lower >= mention.span.upper:
+                logger.error("Incorrect mention span, %s", mention)
+            elif mention.canonical_span.lower >= mention.canonical_span.upper:
+                logger.error("Incorrect canonical mention span, %s", mention)
+            else:
+                response = EvaluationMentionResponse(
+                    row.assignment_id,
+                    row.question_batch_id,
+                    row.question_id,
+                    mention.doc_id,
+                    mention.span,
+                    mention.canonical_span,
+                    mention.mention_type,
+                    mention.gloss,
+                    mention.weight,)
 
-            assert response not in evaluation_mentions
-            evaluation_mentions.append(response)
+                assert response not in evaluation_mentions
+                evaluation_mentions.append(response)
+
+            if '\xa0' in mention.gloss:
+                pdb.set_trace()
 
         # evaluation_link_response
         for link in links:
-            evaluation_links.append(EvaluationLinkResponse(
-                row.assignment_id,
-                row.question_batch_id,
-                row.question_id,
-                link.doc_id,
-                link.span,
-                link.link_name,
-                link.weight,))
+            if link.span.lower >= link.span.upper:
+                logger.error("Incorrect link span, %s", link)
+            else:
+                evaluation_links.append(EvaluationLinkResponse(
+                    row.assignment_id,
+                    row.question_batch_id,
+                    row.question_id,
+                    link.doc_id,
+                    link.span,
+                    link.link_name,
+                    link.correct, 
+                    link.weight,))
 
         for relation in relations:
-            evaluation_relations.append(EvaluationRelationResponse(
-                row.assignment_id,
-                row.question_batch_id,
-                row.question_id,
-                relation.doc_id,
-                relation.subject,
-                relation.object,
-                relation.relation,
-                relation.weight,))
+            if relation.subject.lower >= relation.subject.upper:
+                logger.error("Incorrect subject span for relation, %s", relation)
+            elif relation.object.lower >= relation.object.upper:
+                logger.error("Incorrect object span for relation, %s", relation)
+            else:
+                evaluation_relations.append(EvaluationRelationResponse(
+                    row.assignment_id,
+                    row.question_batch_id,
+                    row.question_id,
+                    relation.doc_id,
+                    relation.subject,
+                    relation.object,
+                    relation.relation,
+                    relation.weight,))
 
     assert len(evaluation_mentions) == len(set(evaluation_mentions))
     assert len(evaluation_links) == len(set(evaluation_links))
@@ -373,7 +434,7 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
             db.execute("""DELETE FROM evaluation_link_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
             db.execute("""DELETE FROM evaluation_relation_response WHERE assignment_id = %(assignment_id)s""", cur=cur, assignment_id = assignment_id)
             db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, span, canonical_span, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
-            db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, weight) VALUES %s""", evaluation_links)
+            db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, correct, weight) VALUES %s""", evaluation_links)
             db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject, object, relation, weight) VALUES %s""", evaluation_relations)
 
 def parse_responses():
@@ -395,7 +456,7 @@ WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch
             cur.execute("""TRUNCATE evaluation_link_response;""")
             cur.execute("""TRUNCATE evaluation_relation_response;""")
             db.execute_values(cur, """INSERT INTO evaluation_mention_response(assignment_id, question_batch_id, question_id, doc_id, span, canonical_span, mention_type, gloss, weight) VALUES %s""", evaluation_mentions)
-            db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, weight) VALUES %s""", evaluation_links)
+            db.execute_values(cur, """INSERT INTO evaluation_link_response(assignment_id, question_batch_id, question_id, doc_id, span, link_name, correct, weight) VALUES %s""", evaluation_links)
             db.execute_values(cur, """INSERT INTO evaluation_relation_response(assignment_id, question_batch_id, question_id, doc_id, subject, object, relation, weight) VALUES %s""", evaluation_relations)
 
 def majority_element(lst):
@@ -444,12 +505,11 @@ def _merge_evaluation_mentions(cur, doc_table = None):
         SELECT span_count.*, 0.5 + sqrt(0.25 + 2* (span_count.pair_count)) AS count, d.question_id, d.question_batch_id, d.denominator
         FROM (
             SELECT m1.doc_id, m1.span, mode() WITHIN GROUP (ORDER BY m1.gloss) AS gloss, m1.mention_type, count(*) as pair_count, array_agg(m1.canonical_span) || array_agg(m2.canonical_span) as canonical_spans
-            FROM evaluation_mention_response_flat AS m1 
+            FROM evaluation_mention_response AS m1 
             JOIN """+doc_table+""" as docs ON m1.doc_id = docs.doc_id
             JOIN evaluation_mention_response AS m2 ON m1.doc_id = m2.doc_id 
-                 AND (m1.span <@ m2.span OR m1.span = m2.span) 
+                 AND ((m1.span <> m2.span AND m1.span <@ m2.span) OR ( m1.span = m2.span AND m1.assignment_id < m2.assignment_id ))
                  AND m1.mention_type = m2.mention_type
-                 AND m1.assignment_id < m2.assignment_id 
             WHERE m1.weight = 1 AND m2.weight = 1
             GROUP BY m1.doc_id, m1.span, m1.mention_type) AS span_count
             LEFT JOIN _denominator AS d 
@@ -479,6 +539,15 @@ def _merge_evaluation_mentions(cur, doc_table = None):
         else:
             if span_row.count > span_row.denominator/2.0 and span_row.span.upper - span_row.span.lower >  winning_span.span.upper - winning_span.span.lower:
                 winning_span = span_row
+    #Handle the last winning span
+    if winning_span is not None and winning_span.count > winning_span.denominator/2.0:
+        winning_spans.append(winning_span)
+        for span in spans_window:
+            span_to_winning_span_map[(span.doc_id, span.span)] = (winning_span.doc_id, winning_span.span)
+    else:
+        for span in spans_window:
+            span_to_winning_span_map[(span.doc_id, span.span)] = None
+    
 
     _temp = winning_spans
     winning_spans = []
@@ -498,6 +567,7 @@ def _merge_evaluation_mentions(cur, doc_table = None):
     cur.execute(b""" 
             INSERT INTO evaluation_mention (doc_id, span, question_batch_id, question_id, canonical_span, mention_type, gloss, weight) VALUES"""
      + args_str) 
+    #Use canonical spans to insert links into evaluation_link
                 
 def _merge_evaluation_links(cur, doc_table):
     """
@@ -525,6 +595,16 @@ def _merge_evaluation_links(cur, doc_table):
             ON d.doc_id = c.doc_id AND d.span = c.span AND d.link_name = c.link_name
         WHERE c.count/d.denominator > 0.5;
         """, cur = cur)
+    db.execute("""
+        INSERT INTO evaluation_link(doc_id, span, question_batch_id, question_id, link_name, correct, weight)
+        SELECT m.doc_id, m.span, m.question_batch_id, m.question_id, 'gloss:' || cm.gloss, True, cm.weight 
+        FROM evaluation_mention as cm 
+        JOIN evaluation_mention as m 
+            ON cm.span = m.canonical_span AND cm.doc_id = m.doc_id
+        JOIN """+doc_table+""" as docs ON m.doc_id = docs.doc_id
+        ON CONFLICT (doc_id, span, link_name) DO NOTHING;
+        """, cur= cur)
+
     
 def _merge_evaluation_relations(cur, doc_table):
     """
@@ -607,6 +687,7 @@ def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = Non
                 print('created doc_list')
 
 
+            cur.execute("""DROP TABLE IF EXISTS _docids_for_merging;""")
             if mode == 'doc_list':
                 assert doc_list is not None, "doc_list need to be supplied"
                 print('creating temp table')
@@ -1078,9 +1159,10 @@ def get_doc_id(hit_id):
 
 if __name__ == '__main__':
     #sanitize_mention_response_table()
-    #merge_evaluation_table('mention', mode='all')
     #parse_responses()
-    #merge_evaluation_table('link', mode='all')
+    #merge_evaluation_table('mention', mode='all')
+    merge_evaluation_table('link', mode='all')
+    #merge_evaluation_table('relation', mode='all')
     #test_sanitize_mention_response()
     #_IAA_mention_response(12, 3)
     #_IAA_mention_response(6, 5)
@@ -1089,5 +1171,9 @@ if __name__ == '__main__':
     #update_evaluation_relation()
     #merge_evaluation_table('relation', mode='hit', hit_id = '3GMLHYZ0LERIOM7FXJ458R5SMC7YU0')
     #print(get_question_id('3D1TUISJWIUWYMSAT1I30Z92D90IUK'))
-    test_parse_selective_relations_response()
+    #test_parse_selective_relations_response()
+    #parse_response('3C44YUNSI2J5KQ2LA4N0NG17PMQDPL')
+    #parse_response('3MRNMEIQW60FT5NNICUT6ZSNKCPLDV')
+    #parse_response('3X65QVEQI1H5ODH9IGZIMTA5ZCDLCV')
+    #merge_evaluation_table('mention', mode='mturk_batch', mturk_batch_id = 56)
     pass
