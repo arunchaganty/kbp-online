@@ -677,6 +677,7 @@ def merge_evaluation_relations(row):
 #            db.execute_values(cur, """INSERT INTO evaluation_mention(doc_id, mention_id, canonical_id, mention_type, gloss, weight) VALUES %s""", values)
 
 def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = None, mturk_batch_id = None):
+    logger.info("Merging evaluation responses of %s (using mode %s)", table, mode)
     merging_tables = {table_: 'evaluation_'+table_+'_response' for table_ in ['mention', 'link', 'relation']}
     merging_funcs = {'mention': _merge_evaluation_mentions, 'link': _merge_evaluation_links, 'relation': _merge_evaluation_relations}
     pkey_fields = {'mention': ('doc_id', 'span'), 'link': ('doc_id', 'span', 'link_name'), 'relation': ('doc_id', 'subject', 'object')}
@@ -762,21 +763,16 @@ def update_summary():
     update_evaluation_link()
     update_evaluation_relation()
 
-
-    
-
-                
-
-"""
-CREATE TEMP TABLE mention_gloss_true AS (
-    SELECT m.doc_id, m.span, array_agg(w.gloss) 
-    FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m 
-    LEFT JOIN (SELECT doc_id, int4range(dcb, dce) as span, gloss FROM (
-        SELECT doc_id, unnest(doc_char_begin) AS dcb, unnest(doc_char_end) AS dce, unnest(words) as gloss 
-        FROM sentence ORDER BY doc_id) as t) AS w 
-    ON m.doc_id = w.doc_id AND m.span @> w.span group by m.doc_id, m.span
-);
-"""
+    """
+    CREATE TEMP TABLE mention_gloss_true AS (
+        SELECT m.doc_id, m.span, array_agg(w.gloss) 
+        FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m 
+        LEFT JOIN (SELECT doc_id, int4range(dcb, dce) as span, gloss FROM (
+            SELECT doc_id, unnest(doc_char_begin) AS dcb, unnest(doc_char_end) AS dce, unnest(words) as gloss 
+            FROM sentence ORDER BY doc_id) as t) AS w 
+        ON m.doc_id = w.doc_id AND m.span @> w.span group by m.doc_id, m.span
+    );
+    """
 
 
 def sanitize_mention_response(response):
@@ -1163,6 +1159,21 @@ def get_doc_id(hit_id):
                             ON q.id = h.question_id
                         WHERE h.id = %(hit_id)s;
                         """, hit_id = hit_id).doc_id
+
+def merge_evaluation_tables(mode="mturk_batch", mturk_batch_id=None):
+    if mode == "mturk_batch":
+        assert mturk_batch_id is not None
+        merge_evaluation_table('mention', mode, mturk_batch_id = mturk_batch_id)
+        merge_evaluation_table('link', mode, mturk_batch_id = mturk_batch_id)
+        merge_evaluation_table('relation', mode, mturk_batch_id = mturk_batch_id)
+
+        logger.info("Refreshing submission_entries tables with new data")
+        db.execute("""REFRESH MATERIALIZED VIEW evaluation_mention_link""")
+        db.execute("""REFRESH MATERIALIZED VIEW evaluation_entity_relation""")
+        db.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
+        db.execute("""REFRESH MATERIALIZED VIEW submission_entries_debug""")
+    else:
+        raise ValueError("Unsupported mode {}".format(mode))
 
 if __name__ == '__main__':
     #sanitize_mention_response_table()

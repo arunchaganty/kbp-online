@@ -104,7 +104,7 @@ def test_submission_instance():
 
 def test_submission_instance_with_id():
     tag = 'kbp2016'
-    submission = next(get_submissions(tag))
+    submission = get_submissions(tag)[0]
     Ps = submission_instance(tag, submission.id)
     assert len(Ps) == 1 and submission.id in Ps
     P = Ps[submission.id]
@@ -144,7 +144,7 @@ def test_submission_relation():
 
 def test_submission_relation_by_id():
     tag = 'kbp2016'
-    submission = next(get_submissions(tag))
+    submission = get_submissions(tag)[0]
     Ps = submission_relation(tag, submission.id)
     assert len(Ps) == 1 and submission.id in Ps
     P = Ps[submission.id]
@@ -182,6 +182,15 @@ def test_submission_entity():
         Z = sum(Ps[submission.id].values())
         assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
+def test_submission_entity_by_id():
+    tag = 'kbp2016'
+    submission = get_submissions(tag)[0]
+    Ps = submission_entity(tag, submission.id)
+    assert len(Ps) == 1 and submission.id in Ps
+    P = Ps[submission.id]
+    Z = sum(P.values())
+    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
+
 def submission_entity_relation(corpus_tag, submission_id=None):
     if submission_id is not None:
         assert get_submission(submission_id).corpus_tag == corpus_tag, "Submission {} is not on corpus {}".format(submission_id, corpus_tag)
@@ -212,15 +221,14 @@ def test_submission_entity_relation():
         Z = sum(Ps[submission.id].values())
         assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
-# TODO: For some reason this is really slow :?
-#def test_submission_entity_by_id():
-#    tag = 'kbp2016'
-#    submission = next(get_submissions(tag))
-#    Ps = submission_entity(tag, submission.id)
-#    assert len(Ps) == 1 and submission.id in Ps
-#    P = Ps[submission.id]
-#    Z = sum(P.values())
-#    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
+def test_submission_entity_relation_by_id():
+    tag = 'kbp2016'
+    submission = get_submissions(tag)[0]
+    Ps = submission_entity_relation(tag, submission.id)
+    assert len(Ps) == 1 and submission.id in Ps
+    P = Ps[submission.id]
+    Z = sum(P.values())
+    assert abs(Z - 1.0) < 1.e-5, "Distribution for {} is not normalized: Z = {}".format(submission.id, Z)
 
 ## Obtaining samples from database.
 def Y0(corpus_tag, submission_id=None):
@@ -234,13 +242,15 @@ def Y0(corpus_tag, submission_id=None):
         where = ""
 
     ret = defaultdict(list)
+    # NOTE: This is perfectly OK to do, BECAUSE it is the exhaustive
+    # annotation.
     rows = db.select("""
         SELECT s.id AS submission_id, r.doc_id, r.subject, r.object, COALESCE(s_.correct, FALSE) AS gx
         FROM submission s
         JOIN document_sample d ON (true)
         JOIN document_tag t ON (d.doc_id = t.doc_id AND t.tag = %(corpus_tag)s)
         JOIN evaluation_relation r ON (d.doc_id = r.doc_id)
-        LEFT JOIN submission_entries s_ ON (s.id = submission_id AND r.doc_id = s_.doc_id AND r.subject = s_.subject_span AND r.object = s_.object_span)
+        LEFT JOIN submission_entries s_ ON (s.id = submission_id AND r.doc_id = s_.doc_id AND r.subject = s_.subject AND r.object = s_.object)
         WHERE s.corpus_tag = %(corpus_tag)s {where}
         ORDER BY s.id, r.doc_id, r.subject, r.object
         """.format(where=where), corpus_tag=corpus_tag, submission_id=submission_id)
@@ -252,7 +262,7 @@ def test_Y0():
     corpus_tag = 'kbp2016'
     Y0_ = Y0(corpus_tag)
     for Y in Y0_.values():
-        assert len(Y) == 1733
+        assert len(Y) == 926
     for Ys in zip(Y0_.values()):
         assert len(set(y[0] for y in Ys)) == 1
 
@@ -260,7 +270,7 @@ def test_Y0_by_id():
     corpus_tag = 'kbp2016'
     submission_id = 1
     Y = Y0(corpus_tag, submission_id)[submission_id]
-    assert len(Y) == 1733
+    assert len(Y) == 926
 
 def Xh(corpus_tag, distribution_type, submission_id = None):
     if submission_id is not None:
@@ -274,7 +284,7 @@ def Xh(corpus_tag, distribution_type, submission_id = None):
         SELECT b.submission_id, d.doc_id, d.subject, d.object, s.correct AS fx
         FROM sample_batch b
         JOIN submission_sample d ON (b.id = d.batch_id)
-        JOIN submission_entries s ON (d.doc_id = s.doc_id AND d.subject = s.subject_span AND d.object = s.object_span AND b.submission_id = s.submission_id)
+        JOIN submission_entries s ON (d.doc_id = s.doc_id AND d.subject = s.subject AND d.object = s.object AND b.submission_id = s.submission_id)
         WHERE b.distribution_type = %(distribution_type)s {where}
         ORDER BY d.doc_id, d.subject, d.object
           """.format(where=where), submission_id=submission_id, distribution_type=distribution_type)
@@ -290,7 +300,7 @@ def test_Xhs():
     assert len(Xhs) == 3
     # TODO: KNOWN BUG 
     # something is wrong in how we ended up turking output
-    assert len(Xhs[submission_id]) == 366
+    assert len(Xhs[submission_id]) == 255
 
 def test_Xhs_by_id():
     corpus_tag = 'kbp2016'
@@ -299,4 +309,4 @@ def test_Xhs_by_id():
     Xh_ = Xh(corpus_tag, distribution_type, submission_id)[submission_id]
     # TODO: KNOWN BUG 
     # something is wrong in how we ended up turking output
-    assert len(Xh_) == 366
+    assert len(Xh_) == 255

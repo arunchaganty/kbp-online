@@ -1,5 +1,4 @@
 """
-    
 Celery tasks
 """
 import gzip
@@ -7,7 +6,6 @@ import logging
 
 from celery import shared_task
 
-from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 
 from service.settings import MTURK_TARGET
@@ -19,15 +17,15 @@ from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.questions import create_evaluation_batch_for_submission_sample
 from kbpo.turk import connect, create_batch, mturk_batch_payments
-from kbpo.web_data import parse_response, get_hit_id, check_hit_complete, verify_evaluation_mention_response, verify_evaluation_relation_response, merge_evaluation_table, check_batch_complete
+from kbpo.web_data import parse_response,\
+        verify_evaluation_mention_response, verify_evaluation_relation_response,\
+        merge_evaluation_tables, check_batch_complete
 from django.core.mail import send_mail
 
 from .models import Submission, SubmissionState, SubmissionUser, User
 
 logger = logging.getLogger(__name__)
 
-# TODO: create a task for validate_submission and save log output
-# somewhere
 @shared_task
 def validate_submission(submission_id, file_format):
     """
@@ -208,21 +206,19 @@ def process_response(assignment_id):
     Processes an mturk response to fill in evaluation_*_response tables
     """
     logger.info("Running process_response")
-    try: 
+    try:
+        mturk_batch_id = db.get("SELECT batch_id FROM mturk_assignment WHERE id = %(assignment_id)s",
+                                assignment_id=assignment_id).batch_id
+
         parse_response(assignment_id)
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
                    new_state = 'pending-validation', assignment_id = assignment_id)
-    except: 
-        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
-                   new_state = 'pending-extraction', assignment_id = assignment_id)
 
-    #Changed to batch_complete
-    #hit_id = get_hit_id(assignment_id)
-    #hit_complete = check_hit_complete(hit_id)
-    #if hit_complete:
-    #    process_hit.delay(hit_id)
+    except Exception as e:  # Uh oh, these are errors that we should look at.
+        db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
+                   new_state = 'error', message=str(e), assignment_id = assignment_id)
 
-    mturk_batch_id = db.get("SELECT batch_id FROM mturk_assignment WHERE id = %(assignment_id)s", assignment_id=assignment_id).batch_id
+    # Can't catch exception because batches don't have states.            
     batch_complete = check_batch_complete(mturk_batch_id)
     if batch_complete:
         process_mturk_batch.delay(mturk_batch_id)
@@ -234,25 +230,25 @@ def process_mturk_batch(mturk_batch_id):
     then aggregates them to fill evaluation_* tables
     """
     logger.info("Running process_mturk_batch")
-    merge_evaluation_table('mention', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
-    merge_evaluation_table('link', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
-    merge_evaluation_table('relation', mode='mturk_batch', mturk_batch_id = mturk_batch_id)
 
-    #verify_evaluation_relation_response depdends on mejority relation directly
-    #And verify_evaluation_mention_response looks at deviation from median, 
-    #so it depends on majority counts. Hence it doesn't seem like we can actually benifit from
-    #merging only validated responses. The point of validation is then simply to discourage
-    #spammers in the long run and doesn't help much in the correctness of the current batch
-    #The only other alternative is to create a new mturk batch to cover the rejected assignments
-    #TODO: Create a new mturk batch to cover rejected assignments
+    # Actually merge all our tables.
+    merge_evaluation_tables(mode='mturk_batch', mturk_batch_id = mturk_batch_id)
+
+    # verify_evaluation_relation_response depends on majority relation directly
+    # and verify_evaluation_mention_response looks at deviation from median,
+    # so it depends on majority counts. Hence it doesn't seem like we can actually benefit from
+    # merging only validated responses. The point of validation is then simply to discourage
+    # spammers in the long run and doesn't help much in the correctness of the current batch
+    # The only other alternative is to create a new mturk batch to cover the rejected assignments
+    # TODO: Create a new mturk batch to cover rejected assignments
     verify_evaluation_mention_response()
     verify_evaluation_relation_response()
 
     mturk_connection = connect(MTURK_TARGET)
     mturk_batch_payments(mturk_connection, mturk_batch_id)
-    db.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
 
     db.execute("UPDATE mturk_hit SET state = 'done' WHERE batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)
+
     submission_id = db.get("""
      SELECT DISTINCT submission_id 
      FROM mturk_hit 
