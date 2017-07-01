@@ -82,24 +82,26 @@ def test_simple_precision_wr():
     np.random.seed(42)
     population_size, precision, recall = 10000, 0.5, 0.2
     P, X = generate_submission(precision, recall, population_size)
-    n_samples = 100
+    n_samples = 500
     Xh = sample_with_replacement(P, n_samples, X=X)
     precision_ = simple_precision([Xh])[0]
+    print (precision, precision_)
     assert np.allclose(precision, precision_, atol=5e-2)
 
 def test_simple_precision_wor():
     np.random.seed(42)
     population_size, precision, recall = 10000, 0.5, 0.2
     P, X = generate_submission(precision, recall, population_size)
-    n_samples = 100
+    n_samples = 500
     Xh = sample_without_replacement(P, n_samples, X=X)
     precision_ = simple_precision([Xh])[0]
+    print (precision, precision_)
     assert np.allclose(precision, precision_, atol=5e-2)
 
 def test_simple_recall():
     np.random.seed(41)
     population_size, precision, recall = 10000, 0.5, 0.2
-    n_samples = 100
+    n_samples = 500
 
     P, _ = generate_submission(precision, recall, population_size)
     U = true_sample_distribution(population_size)
@@ -109,7 +111,7 @@ def test_simple_recall():
 
 def test_joint_precision_wr():
     np.random.seed(42)
-    n_samples = 100
+    n_samples = 10000
     population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
     Ps, Xs = generate_submission_set(precisions, recalls, population_size)
     Xhs = [sample_with_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
@@ -119,8 +121,8 @@ def test_joint_precision_wr():
 
 def test_joint_precision_wor():
     np.random.seed(42)
-    n_samples = 100
     population_size, precisions, recalls = 1000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    n_samples = 100
     Ps, Xs = generate_submission_set(precisions, recalls, population_size)
     Xhs = [sample_without_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
     precisions_ = joint_precision(Ps, Xhs)
