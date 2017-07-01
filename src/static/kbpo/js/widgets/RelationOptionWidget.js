@@ -27,10 +27,10 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
           self.canonicalLinkWidget = new CheckEntityLinkWidget(elem);
 
           self.wikiLinkModal = new WikiLinkModal(function(elem_) {
-            self.elem.find("#modals").append(elem_);
+            $("#modals").append(elem_);
           });
           self.dateModal = new DateModal(function(elem_) {
-            self.elem.find("#modals").append(elem_);
+            $("#modals").append(elem_);
           });
         });
     };
@@ -96,10 +96,8 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
         linkDone(mention.entity.link);
       } else if (mention.type.name === "DATE") {
         // TODO: launch date modeal
-        self.dateModal.doneListeners.length = 0; // fscking javascript
-        self.dateModal.doneListeners.push(function (link) {linkDone(link);});
+        self.dateModal.cb = function (link) {linkDone(link);};
         self.dateModal.show(mention.gloss, mention.entity.link);
-        linkDone(mention.entity.link);
       } else {
         // Alright, launch the WikiModal!
         entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;

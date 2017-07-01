@@ -23,7 +23,7 @@ define(['jquery', '../util', '../defs'], function ($, util, defs) {
         r.relation = defs.RELATION_MAP[r.relation];
         self.addRelation(r);
       });
-    }
+    };
 
     RelationListWidget.prototype.addRelation = function(mentionPair) {
         var self = this;

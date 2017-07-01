@@ -42,7 +42,7 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
       cb(elem);
     });
   }
-  DateModal.prototype.doneListeners = [];
+  DateModal.prototype.cb = null;
 
   DateModal.prototype.setDocDate = function(docdate){
     var parsedDocdate = moment();
@@ -75,9 +75,12 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
 
   DateModal.prototype.done = function() {
     var self = this;
+    $('#date-widget-modal').modal('hide').off('hidden.bs.modal');
     $('#date-widget-modal').modal('hide').on('hidden.bs.modal', function() {
       var link = self.getSelectedDateString();
-        self.doneListeners.forEach(function(cb_) {cb_(link);});
+      if (self.cb !== null) {
+        self.cb(link);
+      }
     });
   };
 

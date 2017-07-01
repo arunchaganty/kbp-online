@@ -15,7 +15,7 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
     util.getDOMFromTemplate('/static/kbpo/html/EntityInterface.html', function(elem_) {
       self.elem.html(elem_.html());
       self.dateModal = new DateModal(function(elem_) {
-        self.dateModal.doneListeners.push(function(link) {self.processLinkingDone(link);});
+        self.dateModal.cb = function(link) {self.processLinkingDone(link);};
         self.elem.append(elem_);
       });
       self.wikiLinkModal = new WikiLinkModal(function(elem_) {

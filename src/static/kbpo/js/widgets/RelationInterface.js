@@ -134,6 +134,7 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
     var mentionPair, subject, object;
     for (var i = 0; i < mentionPairs.length; i++) {
       mentionPair = mentionPairs[i];
+      mentionPair.id = i;
       if (mentionPair.subject.entity.type === undefined) {
         mentionPair.subject.entity.type = mentionPair.subject.type;
       }
@@ -251,7 +252,7 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
     if (this.currentIndex > this.mentionPairs.length - 1) {
       return this.done();
     } else {
-      $("#relation-row").removeClass("hidden");
+      $("#relation-option-widget").removeClass("hidden");
     }
     var mentionPair = this.mentionPairs[this.currentIndex];
 
@@ -282,7 +283,7 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
   RelationInterface.prototype.done = function() {
     // Hide the relation panel, and show the Done > (submit) button.
     $("#done")[0].disabled = false;
-    $("#relation-row").addClass("hidden");
+    $("#relation-option-widget").addClass("hidden");
   };
 
   return RelationInterface;
