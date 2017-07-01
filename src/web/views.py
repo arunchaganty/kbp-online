@@ -107,7 +107,7 @@ def interface_entity(request, doc_id=None):
     if request.method == 'POST': # handle response.
         response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
         response = json.loads(response)
-        messages.success(request, "Thank you, we've received your response.")
+        messages.success(request, "Thank you for trying out our task! Unfortunately, At this point, we are only using responses through Amazon Mechanical Turk.")
         redirect("home")
 
     if doc_id is None:
@@ -115,47 +115,64 @@ def interface_entity(request, doc_id=None):
         doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
         return redirect("interface_entity", doc_id=doc_id)
     doc = get_object_or_404(Document, id=doc_id)
+    params = {
+        "batch_type": "exhaustive_entities",
+        "doc_id": doc.id,
+        }
 
     return render(request, 'interface_entity.html', {
         'doc_id': doc.id,
+        'params': params,
         'assignment_id': "TEST_ASSIGNMENT",
         'hit_id': "TEST_HIT",
         'worker_id': "TEST_WORKER",
         })
 
-def interface_relation(request, doc_id=None, subject_id=None, object_id=None, submission_id=None):
+def interface_relation(request, doc_id=None, submission_id=None, subject_id=None, object_id=None):
     if request.method == 'POST': # handle response.
         response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
         response = json.loads(response)
-        messages.success(request, "Thank you, we've received your response.")
+        messages.success(request, "Thank you for trying out our task! Unfortunately, At this point, we are only using responses through Amazon Mechanical Turk.")
         return redirect("home")
 
     if doc_id is None:
         #doc_id = DocumentTag.objects.filter(tag="kbp2016").first().doc_id
         doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
-        return redirect("interface_relation", doc_id=doc_id)
-    doc = get_object_or_404(Document, id=doc_id)
+        # TODO: Get a doc for which we have done exhaustive_entities.
 
-    if subject_id is not None or object_id is not None:
+        return redirect("interface_relation", doc_id=doc_id)
+    get_object_or_404(Document, id=doc_id)
+
+    if submission_id is not None or subject_id is not None or object_id is not None:
+        get_object_or_404(Submission, id=submission_id)
         subject_id, object_id = _parse_span(subject_id), _parse_span(object_id)
         if subject_id is None or object_id is None:
             raise Http404("Invalid mention spans: {}:{}".format(subject_id, object_id))
 
-    if subject_id is not None and object_id is not None:
-        # Exhaustive relations
-        mention_pair = "{}-{}:{}-{}".format(subject_id[0], subject_id[1], object_id[0], object_id[1])
-        verify_links = True
-    else:
-        mention_pair = ""
-        verify_links = False
+        subject, object_ = api.get_submission_mention_pair(submission_id, doc_id, subject_id, object_id)
 
+        # Construct a params object for this task.
+        params = {
+            "batch_type": "selective_relations",
+            "submission_id": None,
+            "doc_id": doc_id,
+            "subject": subject,
+            "object": object_,
+            }
+    else:
+        # Construct a params object for this task.
+        params = {
+            "batch_type": "exhaustive_relations",
+            "doc_id": doc_id,
+            }
+
+    # Constructs a params object based on this task.
     return render(request, 'interface_relation.html', {
         'assignment_id': "TEST_ASSIGNMENT",
         'hit_id': "TEST_HIT",
         'worker_id': "TEST_WORKER",
-        'doc_id': doc.id,
-        'mention_pair': mention_pair,
-        'verify_links': verify_links,
+        'doc_id': doc_id,
+        'params': params,
         })
 
 def interface_submission(_, submission_id=None):

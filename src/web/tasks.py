@@ -218,7 +218,7 @@ def process_response(assignment_id):
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
                    new_state = 'error', message=str(e), assignment_id = assignment_id)
 
-    # Can't catch exception because batches don't have states.            
+    # Can't catch exception because batches don't have states.
     batch_complete = check_batch_complete(mturk_batch_id)
     if batch_complete:
         process_mturk_batch.delay(mturk_batch_id)
