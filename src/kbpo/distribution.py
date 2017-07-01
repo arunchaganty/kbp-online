@@ -104,7 +104,7 @@ def test_submission_instance():
 
 def test_submission_instance_with_id():
     tag = 'kbp2016'
-    submission = next(get_submissions(tag))
+    submission = get_submissions(tag)[0]
     Ps = submission_instance(tag, submission.id)
     assert len(Ps) == 1 and submission.id in Ps
     P = Ps[submission.id]
@@ -144,7 +144,7 @@ def test_submission_relation():
 
 def test_submission_relation_by_id():
     tag = 'kbp2016'
-    submission = next(get_submissions(tag))
+    submission = get_submissions(tag)[0]
     Ps = submission_relation(tag, submission.id)
     assert len(Ps) == 1 and submission.id in Ps
     P = Ps[submission.id]
@@ -253,7 +253,7 @@ def test_Y0():
     corpus_tag = 'kbp2016'
     Y0_ = Y0(corpus_tag)
     for Y in Y0_.values():
-        assert len(Y) == 1733
+        assert len(Y) == 926
     for Ys in zip(Y0_.values()):
         assert len(set(y[0] for y in Ys)) == 1
 
@@ -261,7 +261,7 @@ def test_Y0_by_id():
     corpus_tag = 'kbp2016'
     submission_id = 1
     Y = Y0(corpus_tag, submission_id)[submission_id]
-    assert len(Y) == 1733
+    assert len(Y) == 926
 
 def Xh(corpus_tag, distribution_type, submission_id = None):
     if submission_id is not None:
@@ -291,7 +291,7 @@ def test_Xhs():
     assert len(Xhs) == 3
     # TODO: KNOWN BUG 
     # something is wrong in how we ended up turking output
-    assert len(Xhs[submission_id]) == 366
+    assert len(Xhs[submission_id]) == 255
 
 def test_Xhs_by_id():
     corpus_tag = 'kbp2016'
@@ -300,4 +300,4 @@ def test_Xhs_by_id():
     Xh_ = Xh(corpus_tag, distribution_type, submission_id)[submission_id]
     # TODO: KNOWN BUG 
     # something is wrong in how we ended up turking output
-    assert len(Xh_) == 366
+    assert len(Xh_) == 255
