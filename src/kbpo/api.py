@@ -8,6 +8,7 @@ from collections import Counter
 
 from . import db
 from . import defs
+from .util import stuple
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -250,6 +251,58 @@ def test_get_evaluation_mentions():
             'link': 'Hamas',
             },
         }
+
+def get_submission_mention_pair(submission_id, doc_id, subject_id, object_id):
+    row = db.get("""
+        SELECT r.doc_id, r.subject, r.object, 
+               r.subject_type, r.object_type,
+               r.subject_gloss, r.object_gloss,
+               r.subject_canonical_gloss, r.object_canonical_gloss,
+               r.subject_canonical, r.object_canonical,
+               r.subject_entity, r.object_entity
+        FROM submission_entity_relation r
+        WHERE r.submission_id = %(submission_id)s
+          AND r.doc_id = %(doc_id)s
+          AND r.subject = %(subject_id)s
+          AND r.object = %(object_id)s
+        ;
+        """, submission_id=submission_id, doc_id=doc_id, subject_id=db.Int4NumericRange(*subject_id), object_id=db.Int4NumericRange(*object_id))
+
+    subject = {
+        "span": stuple(row.subject),
+        "gloss": row.subject_gloss,
+        "type": row.subject_type,
+        "entity": {
+            "span": stuple(row.subject_canonical),
+            "gloss": row.subject_canonical_gloss,
+            "type": row.subject_type,
+            "link": row.subject_entity,
+            }
+        }
+    object_ = {
+        "span": stuple(row.object),
+        "gloss": row.object_gloss,
+        "type": row.object_type,
+        "entity": {
+            "span": stuple(row.object_canonical),
+            "gloss": row.object_canonical_gloss,
+            "type": row.object_type,
+            "link": row.object_entity,
+            }
+        }
+    # Flip types to be nice to Javascript.
+    if row.subject_type == 'ORG' and row.object_type == 'PER':
+        subject, object_ = object_, subject
+    elif row.subject_type == 'GPE':
+        subject, object_ = object_, subject
+
+    return subject, object_
+
+def test_get_submission_mention_pair():
+    subject, object_ = get_submission_mention_pair(25,'ENG_NW_001278_20130414_F000124GV', (662,688), (615,617))
+
+    assert subject == {'entity': {'link': ':wilmer_barrientos_f096023f', 'span': (586, 603), 'type': 'PER', 'gloss': 'gloss:Wilmer Barrientos'}, 'span': (615, 617), 'type': 'PER', 'gloss': 'he'}
+    assert object_ == {'entity': {'link': ':national_electoral_council__venezuela__5dae2c88', 'span': (662, 688), 'type': 'ORG', 'gloss': 'gloss:National Electoral Council'}, 'span': (662, 688), 'type': 'ORG', 'gloss': 'National Electoral Council'}
 
 def get_evaluation_mention_pairs(doc_id):
     """
@@ -618,6 +671,12 @@ def test_get_corpus_listing():
 def upload_submission(submission_id, mfile):
     with db.CONN:
         with db.CONN.cursor() as cur:
+            # TODO: What about husk sample_batches created this way?
+            db.execute("""DELETE FROM submission_sample WHERE submission_id=%(submission_id)s""", cur=cur, submission_id=submission_id)
+            db.execute("""DELETE FROM submission_relation WHERE submission_id=%(submission_id)s""", cur=cur, submission_id=submission_id)
+            db.execute("""DELETE FROM submission_link WHERE submission_id=%(submission_id)s""", cur=cur, submission_id=submission_id)
+            db.execute("""DELETE FROM submission_mention WHERE submission_id=%(submission_id)s""", cur=cur, submission_id=submission_id)
+
             # Create the submission
             mentions, links, relations = [], [], []
 
@@ -656,6 +715,7 @@ def upload_submission(submission_id, mfile):
             db.execute_values(cur, """INSERT INTO submission_relation (submission_id, doc_id, subject, object, relation, provenances, confidence) VALUES %s """, relations)
 
             # refresh materialized views.
+            cur.execute("""REFRESH MATERIALIZED VIEW submission_mention_link""")
             cur.execute("""REFRESH MATERIALIZED VIEW submission_entity_relation""")
             cur.execute("""REFRESH MATERIALIZED VIEW submission_statistics""")
             cur.execute("""REFRESH MATERIALIZED VIEW submission_relation_counts""")

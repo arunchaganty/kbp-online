@@ -64,3 +64,6 @@ def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
     return path
+
+def stuple(span):
+    return span.lower, span.upper

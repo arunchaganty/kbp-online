@@ -10,14 +10,12 @@ from tqdm import tqdm
 from . import db
 from . import api
 from . import turk
+from .util import stuple
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 QUESTION_VERSION=0.2
-
-def _tuple(span):
-    return span.lower, span.upper
 
 # TODO: allow us to 'override' and add samples to questions that have already been answered.
 def create_questions_for_submission_sample(submission_id, sample_batch_id):
@@ -42,7 +40,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
           AND s.batch_id = %(sample_batch_id)s
         ;
         """, submission_id=submission_id, sample_batch_id=sample_batch_id):
-        question_groups[q.doc_id, _tuple(q.subject), _tuple(q.object)] = q
+        question_groups[q.doc_id, stuple(q.subject), stuple(q.object)] = q
 
     # Go through and remove any of these from possible_questions
     for q in db.select("""
@@ -50,7 +48,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
             FROM evaluation_relation_question r
             WHERE (state <> 'error' OR state <> 'revoked')
             """):
-        key = (q.doc_id, _tuple(q.subject), _tuple(q.object))
+        key = (q.doc_id, stuple(q.subject), stuple(q.object))
         if key not in question_groups: continue
 
         q_ = question_groups[key]
@@ -69,7 +67,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
             subject_entity AS subject_entity, object_entity AS object_entity
             FROM evaluation_entity_relation r
             """):
-        key = (q.doc_id, _tuple(q.subject), _tuple(q.object))
+        key = (q.doc_id, stuple(q.subject), stuple(q.object))
         if key not in question_groups: continue
 
         q_ = question_groups[key]
@@ -90,24 +88,24 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
             "submission_id": submission_id,
             "doc_id": row.doc_id,
             "subject": {
-                "span": _tuple(row.subject),
+                "span": stuple(row.subject),
                 "gloss": row.subject_gloss,
                 "type": row.subject_type,
                 "entity": {
-                    "span": _tuple(row.subject_canonical),
+                    "span": stuple(row.subject_canonical),
                     "gloss": row.subject_canonical_gloss,
                     "type": row.subject_type,
                     "link": row.subject_entity,
                     }
                 },
             "object": {
-                "span": _tuple(row.object),
+                "span": stuple(row.object),
                 "gloss": row.object_gloss,
                 "type": row.object_type,
                 "entity": {
-                    "span": _tuple(row.object_canonical),
+                    "span": stuple(row.object_canonical),
                     "gloss": row.object_canonical_gloss,
-                    "type": row.subject_type,
+                    "type": row.object_type,
                     "link": row.object_entity,
                     }
                 },
