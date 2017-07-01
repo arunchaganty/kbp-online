@@ -126,4 +126,8 @@ CELERY_RESULT_BACKEND = 'rpc'
 #CELERY_IMPORTS = ('web.tasks',)
 
 # NPM setup
-NPM_ROOT_PATH=os.path.join(BASE_DIR, "static")
+NPM_ROOT_PATH = os.path.join(BASE_DIR, "static")
+
+#Email setup
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
