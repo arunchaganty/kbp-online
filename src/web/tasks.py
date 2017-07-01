@@ -20,8 +20,9 @@ from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.questions import create_evaluation_batch_for_submission_sample
 from kbpo.turk import connect, create_batch, mturk_batch_payments
 from kbpo.web_data import parse_response, get_hit_id, check_hit_complete, verify_evaluation_mention_response, verify_evaluation_relation_response, merge_evaluation_table, check_batch_complete
+from django.core.mail import send_mail
 
-from .models import Submission, SubmissionState
+from .models import Submission, SubmissionState, SubmissionUser, User
 
 logger = logging.getLogger(__name__)
 
@@ -284,7 +285,23 @@ def score_submission(submission_id):
             update_score(submission_id, score_type, metric)
         state.status = "done"
         state.save()
+        submissionuser = SubmissionUser.objects.get(submission=submission)
+        user = User.objects.get(submissionuser=submissionuser)
+        user.email_user(
+            subject='KBP Online submission scored',
+            message="""Your submission %(submission_name)s to KBP Online has been scored. 
+            You can view it at kbpo.stanford.edu/submissions/
+            
+            Keep populating, 
+            KBPO team
+            """%{'submission_name':submission.name},
+            from_email='kbp-online-owners@lists.stanford.edu',
+        )
+
+
     except Exception as e:
+        print(e)
         state.status = "error"
         state.message = e
         state.save()
+
