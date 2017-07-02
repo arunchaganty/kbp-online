@@ -62,6 +62,7 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
         if (self.cb !== null) {
             self.cb(link);
         }
+        $('#wiki-linking-modal').modal('hide').off('hidden.bs.modal');
     });
     $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
   };
