@@ -57,14 +57,16 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
 
   WikiLinkModal.prototype.done = function(link) {
     var self = this;
-    $('#wiki-linking-modal').modal('hide').off('hidden.bs.modal');
-    $('#wiki-linking-modal').modal('hide').on('hidden.bs.modal', function() {
+    $('#wiki-linking-modal').off('hidden.bs.modal');
+    $('#wiki-linking-modal').on('hidden.bs.modal', function() {
         if (self.cb !== null) {
             self.cb(link);
         }
-        $('#wiki-linking-modal').modal('hide').off('hidden.bs.modal');
+        $('#wiki-linking-modal').off('hidden.bs.modal');
     });
     $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
+
+    $('#wiki-linking-modal').modal('hide');
   };
 
   WikiLinkModal.prototype.populate = function(mentionText) {
