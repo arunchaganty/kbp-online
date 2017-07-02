@@ -41,26 +41,36 @@ DATABASES['default'] = DATABASES['production']
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '%(asctime)s %(levelname)-8s %(name)-15s %(message)s',
+            'datefmt' : '%Y-%m-%d %H:%M:%S',
+            }
+    },
     'handlers': {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/data/kbpo/web/all.log',
+            'formatter': 'default',
         },
         'django': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/data/kbpo/web/django.log',
+            'formatter': 'default',
         },
         'kbpo': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/data/kbpo/web/kbpo.log',
+            'formatter': 'default',
         },
         'celery': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/data/kbpo/web/celery.log',
+            'formatter': 'default',
         },
     },
     'loggers': {
@@ -71,17 +81,22 @@ LOGGING = {
         },
         'kbpo': {
             'handlers': ['file', 'kbpo'],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'web': {
+            'handlers': ['file', 'kbpo'],
+            'level': 'DEBUG',
             'propagate': True,
         },
         'celery': {
             'handlers': ['file', 'celery'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
         'root': {
             'handlers': ['file'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
     },
