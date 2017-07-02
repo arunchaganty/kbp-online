@@ -2,8 +2,9 @@ from .base_settings import *
 
 # Host
 ALLOWED_HOSTS = ["kbpo.stanford.edu"]
-MTURK_TARGET = 'actual'
-MTURK_FORM_TARGET = 'https://www.mturk.com/mturk/externalSubmit'
+#MTURK_TARGET = 'actual'
+MTURK_TARGET = 'sandbox'
+MTURK_FORM_TARGET = MTURK_FORM_TARGETS[MTURK_TARGET]
 MTURK_HOST = 'https://kbpo.stanford.edu'
 
 # Debug
@@ -44,6 +45,11 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/data/kbpo/web/all.log',
+        },
+        'django': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/data/kbpo/web/django.log',
         },
         'kbpo': {
@@ -59,7 +65,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'django'],
             'level': 'INFO',
             'propagate': True,
         },
