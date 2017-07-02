@@ -4,17 +4,17 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', 'bootstrap'], function($) {
+define(['jquery', 'bootstrap', '/static/js-cookie/src/js.cookie.js'], function($, _, Cookies) {
     function InstructionWidget(name, instructionsFile) {
         this.name = name;
         this.instructionsFile = instructionsFile;
         this.parent_elem = $('body').append('<div/>');
         var self = this;
         $('#instructions').click(self.show.bind(self));
-        this.elem = $('#modals').load('templates/instruction-modal.html', function(){
+        this.elem = $('#modals').load('/static/kbpo/html/InstructionsModal.html', function(){
         self.elem = $('#instruction-widget-modal');
         self.elem.find('.modal-body').load(instructionsFile);
-        self.elem.find('.submit').click(function(){
+        self.elem.find('#instruction-widget-continue').click(function(){
             self.doneListeners.forEach(function(cb) {cb();});
             self.hide();
         });

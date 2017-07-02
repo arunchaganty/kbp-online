@@ -83,6 +83,12 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
     questions = []
     for row in question_groups.values():
         # In some cases, we will need to flip types.
+
+        if row.subject_canonical_gloss.startswith("gloss:"):
+            subject_canonical_gloss = row.subject_canonical_gloss[len("gloss:"):]
+        if row.object_canonical_gloss.startswith("gloss:"):
+            object_canonical_gloss = row.object_canonical_gloss[len("gloss:"):]
+
         question = {
             "batch_type": "selective_relations",
             "submission_id": submission_id,
@@ -93,7 +99,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
                 "type": row.subject_type,
                 "entity": {
                     "span": stuple(row.subject_canonical),
-                    "gloss": row.subject_canonical_gloss,
+                    "gloss": subject_canonical_gloss,
                     "type": row.subject_type,
                     "link": row.subject_entity,
                     }
@@ -104,7 +110,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
                 "type": row.object_type,
                 "entity": {
                     "span": stuple(row.object_canonical),
-                    "gloss": row.object_canonical_gloss,
+                    "gloss": object_canonical_gloss,
                     "type": row.object_type,
                     "link": row.object_entity,
                     }

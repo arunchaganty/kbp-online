@@ -4,7 +4,9 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './AddEntityWidget', './RemoveSpanWidget', './DateModal', './WikiLinkModal'], function ($, defs, util, DocWidget, EntityListWidget, AddEntityWidget, RemoveSpanWidget, DateModal, WikiLinkModal) {
+define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './AddEntityWidget', './RemoveSpanWidget', './DateModal', './WikiLinkModal', './InstructionWidget'], function ($, defs, util, DocWidget, EntityListWidget, AddEntityWidget, RemoveSpanWidget, DateModal, WikiLinkModal, InstructionWidget) {
+
+  VERSION = 0.1;
 
   var EntityInterface = function(docWidget, elem) {
     var self = this;
@@ -26,6 +28,9 @@ define(['jquery', '../defs','../util', './DocWidget', './EntityListWidget', './A
       self.docWidget = docWidget;
       self.docWidget.highlightListeners.push(function(selection) {self.processSpanSelection(selection);});
       self.docWidget.clickListeners.push(function(mention) {self.processMentionClick(mention);});
+
+      self.instructionWidget = new InstructionWidget("kbpo-entities-" + VERSION, "/static/kbpo/html/InstructionsEntities.html");
+
 
       self.listWidget = new EntityListWidget($("#entity-list-widget"), function() {
         self.listWidget.clickListeners.push(function(entity) {self.processEntityClick(entity);});

@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import math
@@ -17,24 +18,35 @@ from . import db
 from . import api
 from django.core.mail import send_mail
 
-
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 MTURK_URL = MTURK_HOST+"/tasks/do"
-_MTURK_PARAMS_FILE = 'kbpo/params/mturk_params.json'
+_MTURK_PARAMS_FILE = os.path.join(os.path.dirname(__file__), 'params/mturk_params.json')
 with open(_MTURK_PARAMS_FILE) as f:
     _MTURK_PARAMS = json.load(f)
+
+_MTURK_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'params/mturk_config.json')
+with open(_MTURK_CONFIG_FILE) as f:
+    _MTURK_CONFIG = json.load(f)
 
 def connect(host_str=MTURK_TARGET, forced=False):
     """
     Connect to mechanical turk to sandbox or actual depending on
     @host_str with prompt for actual unless @forced
     """
+    logger.info("Connecting to MTurk using credentials in %s and config in %s",
+            os.environ.get("AWS_SHARED_CREDENTIALS_FILE"),
+            os.environ.get("AWS_CONFIG_FILE"),)
+
     sandbox_endpoint_url = 'https://mturk-requester-sandbox.us-east-1.amazonaws.com'
     if  host_str == 'sandbox':
-        mtc = boto3.client('mturk', endpoint_url=sandbox_endpoint_url)
+        mtc = boto3.client('mturk', 
+                endpoint_url=sandbox_endpoint_url,
+                aws_access_key_id = _MTURK_CONFIG["aws_access_key_id"],
+                aws_secret_access_key = _MTURK_CONFIG["aws_secret_access_key"],
+                region_name = _MTURK_CONFIG["region"],
+                )
     elif host_str == 'actual':
         proceed = False
         if not forced:

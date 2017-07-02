@@ -108,5 +108,6 @@ node_modules
 # Ignore symlinks.
 src/service/settings.py
 src/kbpo/params/db/default.py
+src/kbpo/params/mturk_config.json
 
 src/media

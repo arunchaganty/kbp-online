@@ -131,3 +131,7 @@ NPM_ROOT_PATH = os.path.join(BASE_DIR, "static")
 #Email setup
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+MTURK_FORM_TARGETS = {
+    'sandbox': 'https://workersandbox.mturk.com/mturk/externalSubmit',
+    'actual' : 'https://www.mturk.com/mturk/externalSubmit',
+    }

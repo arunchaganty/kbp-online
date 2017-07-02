@@ -3,7 +3,7 @@ from .base_settings import *
 # Debug
 DEBUG = True
 MTURK_TARGET = 'sandbox'
-MTURK_FORM_TARGET = 'https://workersandbox.mturk.com/mturk/externalSubmit'
+MTURK_FORM_TARGET = MTURK_FORM_TARGETS[MTURK_TARGET]
 MTURK_HOST = 'https://localhost:8000'
 
 # Database
