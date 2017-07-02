@@ -83,7 +83,6 @@ div#relation-option-preview {
         console.assert(params["doc_id"] === docId);
 
         var docWidget = new DocWidget($("#document"));
-        var instructionWidget = new InstructionWidget('entity_extraction', '/static/instructions/entity_extraction.html');
         var iface = new RelationInterface(docWidget, $('#interface'), $("#relation-option-widget"), verifyLinks);
         document.iface = iface; // Helps with debugging.
 

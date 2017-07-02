@@ -1,10 +1,11 @@
 /*!
+ * set vi:sw=2 ts=2
  * KBPOnline
  * Author: Arun Chaganty, Ashwin Paranjape
  * Licensed under the MIT license
  */
 
-define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget', './RelationListWidget'], function ($, defs, util, DocWidget, RelationOptionWidget, RelationListWidget) {
+define(['jquery', '../defs', '../util', './DocWidget', './InstructionWidget', './RelationOptionWidget', './RelationListWidget'], function ($, defs, util, DocWidget, InstructionWidget, RelationOptionWidget, RelationListWidget) {
 
   VERSION = 0.2;
 
@@ -57,6 +58,10 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationOptionWidget',
       self.root.html(elem_.html());
       self.optionWidget = new RelationOptionWidget(optionElem, docWidget, verifyLinks);
       self.listWidget = new RelationListWidget($("#relation-list-widget"));
+
+      self.instructionWidget = new InstructionWidget("kbpo-relations-" + self.verifyLinks + VERSION, 
+        self.verifyLinks ?  "/static/kbpo/html/InstructionsRelations.html"
+                         : "/static/kbpo/html/InstructionsRelationsExhaustive.html");
 
       self.listWidget.mouseEnterListeners.push(function(p) {self.highlightExistingMentionPair(p);});
       self.listWidget.mouseLeaveListeners.push(function(p) {self.unhighlightExistingMentionPair(p);});
