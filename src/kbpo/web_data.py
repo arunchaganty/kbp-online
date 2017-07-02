@@ -65,7 +65,7 @@ def parse_selective_relations_response(question, responses):
 
             object_type = response["object"]["type"].strip()
             object_gloss = response["object"]["gloss"].strip()
-            subject_canonical_gloss = response['object']['entity']['gloss'].strip()
+            object_canonical_gloss = response['object']['entity']['gloss'].strip()
 
             assert "canonicalCorrect" in response["subject"]["entity"]
             assert "canonicalCorrect" in response["object"]["entity"]
@@ -1181,10 +1181,10 @@ def merge_evaluation_tables(mode="mturk_batch", mturk_batch_id=None):
 
 if __name__ == '__main__':
     #sanitize_mention_response_table()
-    #parse_responses()
-    #merge_evaluation_table('mention', mode='all')
-    #merge_evaluation_table('link', mode='all')
-    #merge_evaluation_table('relation', mode='all')
+    parse_responses()
+    merge_evaluation_table('mention', mode='all')
+    merge_evaluation_table('link', mode='all')
+    merge_evaluation_table('relation', mode='all')
     #test_sanitize_mention_response()
     #_IAA_mention_response(12, 3)
     #_IAA_mention_response(6, 5)
