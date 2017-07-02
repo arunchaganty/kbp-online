@@ -48,6 +48,7 @@ def parse_selective_relations_response(question, responses):
                 continue
             subject_type = response["subject"]["type"].strip()
             subject_gloss = response["subject"]["gloss"].strip()
+            subject_canonical_gloss = response['subject']['entity']['gloss'].strip()
 
             try:
                 object_span = db.Int4NumericRange(*response["object"]["span"])
@@ -64,6 +65,7 @@ def parse_selective_relations_response(question, responses):
 
             object_type = response["object"]["type"].strip()
             object_gloss = response["object"]["gloss"].strip()
+            subject_canonical_gloss = response['object']['entity']['gloss'].strip()
 
             assert "canonicalCorrect" in response["subject"]["entity"]
             assert "canonicalCorrect" in response["object"]["entity"]
@@ -76,8 +78,9 @@ def parse_selective_relations_response(question, responses):
 
             mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
 
+
             if subject_type in ENTITY_SLOT_TYPES:
-                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+subject_gloss, response['subject']['entity']['canonicalCorrect'], 1.0))
+                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+subject_canonical_gloss, response['subject']['entity']['canonicalCorrect'], 1.0))
                 if response['subject']['entity']['link'] is not None and check_wiki_namespace(response['subject']['entity']['link']) and (response['subject']['entity']['linkGold'] is None or urllib.parse.unquote(response['subject']['entity']['link']) != urllib.parse.unquote(response['subject']['entity']['linkGold'])): 
                     links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), False, 1.0))
 
@@ -87,7 +90,7 @@ def parse_selective_relations_response(question, responses):
                     links.append(LinkInstance(doc_id, subject_span, 'wiki:', True, 1.0))
 
             if object_type in ENTITY_SLOT_TYPES:
-                links.append(LinkInstance(doc_id, object_span, 'gloss:'+object_gloss, response['object']['entity']['canonicalCorrect'], 1.0))
+                links.append(LinkInstance(doc_id, object_span, 'gloss:'+object_canonical_gloss, response['object']['entity']['canonicalCorrect'], 1.0))
                 if response['object']['entity']['link'] is not None and check_wiki_namespace(response['subject']['entity']['link']) and (response['object']['entity']['linkGold'] is None or urllib.parse.unquote(response['object']['entity']['link']) != urllib.parse.unquote(response['object']['entity']['linkGold'])): 
                     links.append(LinkInstance(doc_id, object_span, 'wiki:'+urllib.parse.unquote(response["object"]["entity"]["link"]), False, 1.0))
 
@@ -127,6 +130,7 @@ def parse_selective_relations_response(question, responses):
                 continue
             subject_type = response["subject"]["type"]["name"].strip()
             subject_gloss = response["subject"]["gloss"].strip()
+            subject_canonical_gloss = response['subject']['entity']['gloss'].strip()
 
             #object_id = Provenance(doc_id, response["object"]["doc_char_begin"], response["object"]["doc_char_end"])
             try:
@@ -151,14 +155,15 @@ def parse_selective_relations_response(question, responses):
 
             object_type = response["object"]["type"]["name"].strip()
             object_gloss = response["object"]["gloss"].strip()
+            object_canonical_gloss = response['object']['entity']['gloss'].strip()
 
             #assert "canonicalCorrect" in response["subject"]["entity"], response
             if "canonicalCorrect" in response["subject"]["entity"]:
                 mentions.append(MentionInstance(doc_id, subject_span, subject_canonical_span, subject_type, subject_gloss, 1.0 if response["subject"]["entity"]["canonicalCorrect"] else 0.0))
-                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+subject_gloss, response['subject']['entity']['canonicalCorrect'] == 'Yes' or response['subject']['entity']['canonicalCorrect'] == True, 1.0))
+                links.append(LinkInstance(doc_id, subject_span, 'gloss:'+subject_canonical_gloss, response['subject']['entity']['canonicalCorrect'] == 'Yes' or response['subject']['entity']['canonicalCorrect'] == True, 1.0))
             if "canonicalCorrect" in response["object"]["entity"]:
                 mentions.append(MentionInstance(doc_id, object_span, object_canonical_span, object_type, object_gloss, 1.0 if response["object"]["entity"]["canonicalCorrect"] else 0.0))
-                links.append(LinkInstance(doc_id, object_span, 'gloss:'+object_gloss, response['object']['entity']['canonicalCorrect'] == 'Yes' or response['object']['entity']['canonicalCorrect'] == True , 1.0))
+                links.append(LinkInstance(doc_id, object_span, 'gloss:'+object_canonical_gloss, response['object']['entity']['canonicalCorrect'] == 'Yes' or response['object']['entity']['canonicalCorrect'] == True , 1.0))
             if "linkCorrect" in response["subject"]["entity"]:
                 links.append(LinkInstance(doc_id, subject_span, 'wiki:'+urllib.parse.unquote(response["subject"]["entity"]["link"]), response["subject"]["entity"]["linkCorrect"]=='Yes' or response["subject"]["entity"]["linkCorrect"]== True , 1.0))
             if "linkCorrect" in response["object"]["entity"]:
@@ -1054,7 +1059,7 @@ def verify_evaluation_relation_response():
     values = [{'assignment_id':k, 'flag': v, 'message': 'Incorrect relation'} for k, v in assignment2flag.items()]
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, status='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
     
 
 def verify_evaluation_mention_response(question_id = None):
@@ -1086,7 +1091,7 @@ def verify_evaluation_mention_response(question_id = None):
         values.append({'flag' : flag, 'assignment_id' : assignment_id, 'message': 'Too few mentions extracted for this document.'})
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, status='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
 
 def check_batch_complete(mturk_batch_id):
     """Check if all assignments for an mturk_batch have been collected"""
