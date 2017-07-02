@@ -30,6 +30,15 @@ def resample_submission(_, __, queryset):
         tasks.sample_submission.delay(row.id)
 resample_submission.short_description = "Resample submission (warning will create a new sample that may be turked)."
 
+def resample_submission_tiny(_, __, queryset):
+    for row in queryset:
+        row.state.status = 'pending-sampling'
+        row.state.message = ""
+        row.state.save()
+        tasks.sample_submission.delay(row.id, n_samples=5)
+resample_submission_tiny.short_description = "Resample submission a tiny batch (warning will create a new sample that may be turked)."
+
+
 def returk_submission(_, __, queryset):
     for row in queryset:
         # get the latest sample batch
@@ -74,7 +83,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         SubmissionUserInline,
         SubmissionStateInline,
         ]
-    actions = [reupload_submission, resample_submission, returk_submission, rescore_submission]
+    actions = [reupload_submission, resample_submission, resample_submission_tiny, returk_submission, rescore_submission]
 
     def _user(self, obj):
         return obj.user.user
