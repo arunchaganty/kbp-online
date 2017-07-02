@@ -359,6 +359,14 @@ def mturk_batch_payments(conn, mturk_batch_id):
 class MTurkInvalidStatus(Exception):
     pass
 
+def retrieve_assignments_for_hit(hit_id):
+    """Get all the completed assignments for the given @hit_id and insert into the database"""
+    raise NotImplementedError
+
+def retrieve_assignments_for_mturk_batch(mturk_batch_id):
+    """Get all the completed assignments for the given @mturk_batch_id and insert into the database"""
+    raise NotImplementedError
+
 def pending_reject_assignment(assignment_id, message = None):
     send_mail(
         subject='Assignment Pending Rejection',
