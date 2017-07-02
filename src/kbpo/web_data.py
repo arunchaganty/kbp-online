@@ -1060,7 +1060,6 @@ def verify_evaluation_relation_response():
     with db.CONN:
         with db.CONN.cursor() as cur:
             db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, status='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
-    
 
 def verify_evaluation_mention_response(question_id = None):
     """Looks at extracted mention responses and applies basic filtering to approve or reject HITs"""
