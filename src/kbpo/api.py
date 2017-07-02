@@ -601,6 +601,7 @@ def get_leaderboard():
         WITH latest_scores AS (SELECT DISTINCT ON (submission_id)
             submission_id, score, left_interval, right_interval
             FROM submission_score
+            WHERE score_type = 'entity_relation'
             ORDER BY submission_id, updated DESC)
         SELECT 
         sub.id, 
