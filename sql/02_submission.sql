@@ -134,11 +134,13 @@ CREATE MATERIALIZED VIEW submission_entity_relation AS (
         JOIN submission_mention_link n ON (s.submission_id = n.submission_id AND s.doc_id = n.doc_id AND s.object = n.span)
 );
 
-DROP MATERIALIZED VIEW IF EXISTS submission_statistics;
+DROP MATERIALIZED VIEW IF EXISTS submission_statistics CASCADE;
 CREATE MATERIALIZED VIEW submission_statistics AS (
-    SELECT s.submission_id, subject_entity, relation, COUNT(*) 
+    SELECT s.submission_id, subject_entity, relation, 
+        CASE WHEN is_entity_type(ANY(object_type)) THEN object_entity
+        ELSE 'STRING' END AS object_entity, COUNT(*) 
     FROM submission_entity_relation s
-    GROUP BY s.submission_id, subject_entity, relation
+    GROUP BY s.submission_id, subject_entity, relation, object_entity
 );
 
 DROP MATERIALIZED VIEW IF EXISTS submission_relation_counts;
@@ -157,7 +159,7 @@ CREATE MATERIALIZED VIEW submission_entity_counts AS (
 
 DROP MATERIALIZED VIEW IF EXISTS submission_entity_relation_counts;
 CREATE MATERIALIZED VIEW submission_entity_relation_counts AS (
-    SELECT submission_id, subject_entity, COUNT(*)
+    SELECT submission_id, subject_entity, COUNT(DISTINCT object_entity)
     FROM submission_statistics
     GROUP BY submission_id, subject_entity
 );
