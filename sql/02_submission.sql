@@ -137,7 +137,7 @@ CREATE MATERIALIZED VIEW submission_entity_relation AS (
 DROP MATERIALIZED VIEW IF EXISTS submission_statistics CASCADE;
 CREATE MATERIALIZED VIEW submission_statistics AS (
     SELECT s.submission_id, subject_entity, relation, 
-        CASE WHEN is_entity_type(ANY(object_type)) THEN object_entity
+        CASE WHEN is_entity_type(FIRST(object_type)) THEN object_entity
         ELSE 'STRING' END AS object_entity, COUNT(*) 
     FROM submission_entity_relation s
     GROUP BY s.submission_id, subject_entity, relation, object_entity
