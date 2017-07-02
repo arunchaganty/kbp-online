@@ -19,7 +19,7 @@ from kbpo.questions import create_evaluation_batch_for_submission_sample
 from kbpo.turk import connect, create_batch, mturk_batch_payments
 from kbpo.web_data import parse_response,\
         verify_evaluation_mention_response, verify_evaluation_relation_response,\
-        merge_evaluation_tables, check_batch_complete
+        merge_evaluation_tables, check_batch_complete, get_hit_id, check_hit_complete
 from django.core.mail import send_mail
 
 from .models import Submission, SubmissionState, SubmissionUser, User
@@ -213,14 +213,20 @@ def process_response(assignment_id, chain=True):
     try:
         mturk_batch_id = db.get("SELECT batch_id FROM mturk_assignment WHERE id = %(assignment_id)s",
                                 assignment_id=assignment_id).batch_id
-
-        parse_response(assignment_id)
-        db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
-                   new_state = 'pending-validation', assignment_id = assignment_id)
+        hit_id = get_hit_id(assignment_id)
+        hit_complete = check_hit_complete(hit_id)
+        if hit_complete:
+            for assignment_id in db.select("SELECT id FROM mturk_assignment WHERE hit_id = %(hit_id)s", hit_id = hit_id):
+                parse_response(assignment_id)
+                db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
+                           new_state = 'pending-validation', assignment_id = assignment_id)
+            db.execute("UPDATE mturk_hit SET state = 'pending-aggregation' WHERE id = %(hit_id)s", hit_id = hit_id)
 
     except Exception as e:  # Uh oh, these are errors that we should look at.
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
                    new_state = 'error', message=str(e), assignment_id = assignment_id)
+
+
 
     # Can't catch exception because batches don't have states.
     batch_complete = check_batch_complete(mturk_batch_id)
@@ -229,7 +235,7 @@ def process_response(assignment_id, chain=True):
             process_mturk_batch.delay(mturk_batch_id)
 
 @shared_task
-def process_mturk_batch(mturk_batch_id, chain=True):
+def process_mturk_batch(mturk_batch_id, force = False, chain=True):
     """
     First verifies if the reponses for a hit are sane
     then aggregates them to fill evaluation_* tables
