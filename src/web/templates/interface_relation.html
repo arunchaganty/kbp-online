@@ -78,8 +78,7 @@ div#relation-option-preview {
         var params = JSON.parse($("#params").val());
 
         var docId = $("#doc-id").val();
-        var mentionPair = $("#mention-pair").val();
-        var verifyLinks = (mentionPair.length > 0);
+        var verifyLinks = (params["batch_type"] === "selective_relations");
 
         console.assert(params["doc_id"] === docId);
 
@@ -93,7 +92,7 @@ div#relation-option-preview {
           console.info("loaded document ", doc.id);
           docWidget.loadDocument(doc);
 
-          if (mentionPair.length > 0) {
+          if (params["batch_type"] === "selective_relations") {
             mentionPairs = [{"subject": params["subject"], "object": params["object"]}];
             iface.loadMentionPairs(mentionPairs);
             console.info("loaded", mentionPairs.length, "mention pairs");

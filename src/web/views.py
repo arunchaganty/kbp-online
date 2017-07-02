@@ -122,7 +122,7 @@ def interface_entity(request, doc_id=None):
 
     return render(request, 'interface_entity.html', {
         'doc_id': doc.id,
-        'params': params,
+        'params': json.dumps(params),
         'assignment_id': "TEST_ASSIGNMENT",
         'hit_id': "TEST_HIT",
         'worker_id': "TEST_WORKER",
@@ -172,7 +172,7 @@ def interface_relation(request, doc_id=None, submission_id=None, subject_id=None
         'hit_id': "TEST_HIT",
         'worker_id': "TEST_WORKER",
         'doc_id': doc_id,
-        'params': params,
+        'params': json.dumps(params),
         })
 
 def interface_submission(_, submission_id=None):
@@ -191,6 +191,7 @@ def interface_submission(_, submission_id=None):
 
     return redirect(
         "interface_relation",
+        submission_id=submission_id,
         doc_id=reln["doc_id"],
         subject_id="{}-{}".format(*reln["subject"]),
         object_id="{}-{}".format(*reln["object"]),

@@ -268,13 +268,18 @@ def get_submission_mention_pair(submission_id, doc_id, subject_id, object_id):
         ;
         """, submission_id=submission_id, doc_id=doc_id, subject_id=db.Int4NumericRange(*subject_id), object_id=db.Int4NumericRange(*object_id))
 
+    if row.subject_canonical_gloss.startswith("gloss:"):
+        subject_canonical_gloss = row.subject_canonical_gloss[len("gloss:"):]
+    if row.object_canonical_gloss.startswith("gloss:"):
+        object_canonical_gloss = row.object_canonical_gloss[len("gloss:"):]
+
     subject = {
         "span": stuple(row.subject),
         "gloss": row.subject_gloss,
         "type": row.subject_type,
         "entity": {
             "span": stuple(row.subject_canonical),
-            "gloss": row.subject_canonical_gloss,
+            "gloss": subject_canonical_gloss,
             "type": row.subject_type,
             "link": row.subject_entity,
             }
@@ -285,7 +290,7 @@ def get_submission_mention_pair(submission_id, doc_id, subject_id, object_id):
         "type": row.object_type,
         "entity": {
             "span": stuple(row.object_canonical),
-            "gloss": row.object_canonical_gloss,
+            "gloss": object_canonical_gloss,
             "type": row.object_type,
             "link": row.object_entity,
             }
@@ -301,8 +306,18 @@ def get_submission_mention_pair(submission_id, doc_id, subject_id, object_id):
 def test_get_submission_mention_pair():
     subject, object_ = get_submission_mention_pair(25,'ENG_NW_001278_20130414_F000124GV', (662,688), (615,617))
 
-    assert subject == {'entity': {'link': ':wilmer_barrientos_f096023f', 'span': (586, 603), 'type': 'PER', 'gloss': 'gloss:Wilmer Barrientos'}, 'span': (615, 617), 'type': 'PER', 'gloss': 'he'}
-    assert object_ == {'entity': {'link': ':national_electoral_council__venezuela__5dae2c88', 'span': (662, 688), 'type': 'ORG', 'gloss': 'gloss:National Electoral Council'}, 'span': (662, 688), 'type': 'ORG', 'gloss': 'National Electoral Council'}
+    assert subject == {
+        'entity': {
+            'link': ':wilmer_barrientos_f096023f',
+            'span': (586, 603),
+            'type': 'PER',
+            'gloss': 'Wilmer Barrientos'
+            },
+        'span': (615, 617),
+        'type': 'PER',
+        'gloss': 'he'
+        }
+    assert object_ == {'entity': {'link': ':national_electoral_council__venezuela__5dae2c88', 'span': (662, 688), 'type': 'ORG', 'gloss': 'National Electoral Council'}, 'span': (662, 688), 'type': 'ORG', 'gloss': 'National Electoral Council'}
 
 def get_evaluation_mention_pairs(doc_id):
     """

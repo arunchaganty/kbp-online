@@ -95,14 +95,28 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       if (mention.type.name === "TITLE") {
         linkDone(mention.entity.link);
       } else if (mention.type.name === "DATE") {
+          if (mention.entity.link.substring(0,5) == "date:") {
+              linkStr = mention.entity.link.substring(5);
+          } else if (mention.entity.link.substring(0,6) == "gloss:") {
+              linkStr = mention.entity.link.substring(6);
+          } else {
+              linkStr = mention.entity.link;
+          }
         // TODO: launch date modeal
         self.dateModal.cb = function (link) {linkDone(link);};
         self.dateModal.show(mention.gloss, mention.entity.link);
       } else {
+          if (mention.entity.link.substring(0,5) == "wiki:") {
+              linkStr = mention.entity.link.substring(5);
+          } else if (mention.entity.link.substring(0,6) == "gloss:") {
+              linkStr = mention.entity.link.substring(6);
+          } else {
+              linkStr = mention.entity.gloss;
+          }
+
         // Alright, launch the WikiModal!
-        entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
         self.wikiLinkModal.cb = function (link) {linkDone(link);};
-        self.wikiLinkModal.show(entityStr);
+        self.wikiLinkModal.show(linkStr);
       }
     };
 
@@ -118,14 +132,18 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       }
       var canonicalMention = mention.entity.mentions[0];
 
-
       // Preheat entity linking
       if (mention.type.name === "TITLE") {
       } else if (mention.type.name === "DATE") {
       } else {
-        // Preheat the entity linking widget in the background.
-        var entityStr = mention.entity.link.substring(0,5) == "wiki:" ? mention.entity.link.substring(5) : mention.entity.gloss;
-        self.wikiLinkModal.preload(entityStr);
+        if (mention.entity.link.substring(0,5) == "wiki:") {
+            linkStr = mention.entity.link.substring(5);
+        } else if (mention.entity.link.substring(0,6) == "gloss:") {
+            linkStr = mention.entity.link.substring(6);
+        } else {
+            linkStr = mention.entity.gloss;
+        }
+        self.wikiLinkModal.preload(linkStr);
       }
 
       // Check if this is a canonical mention
