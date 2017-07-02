@@ -171,7 +171,7 @@ class MTurkHitAdmin(admin.ModelAdmin):
 admin.site.register(MturkHit, MTurkHitAdmin)
 
 class MTurkAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'hit_id', 'state', 'message')
+    list_display = ('id', 'hit_id', 'verified', 'state', 'message')
     list_filter = ('state', 'batch_id')
 
     # TODO: Approve or Reject.

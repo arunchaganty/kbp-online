@@ -110,6 +110,8 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
               linkStr = mention.entity.link.substring(5);
           } else if (mention.entity.link.substring(0,6) == "gloss:") {
               linkStr = mention.entity.link.substring(6);
+          } else if (mention.entity.gloss.substring(0,6) == "gloss:") {
+              linkStr = mention.entity.gloss.substring(6);
           } else {
               linkStr = mention.entity.gloss;
           }
@@ -140,6 +142,8 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
             linkStr = mention.entity.link.substring(5);
         } else if (mention.entity.link.substring(0,6) == "gloss:") {
             linkStr = mention.entity.link.substring(6);
+        } else if (mention.entity.gloss.substring(0,6) == "gloss:") {
+            linkStr = mention.entity.gloss.substring(6);
         } else {
             linkStr = mention.entity.gloss;
         }
