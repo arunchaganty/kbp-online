@@ -27,7 +27,7 @@ from .models import Submission, SubmissionState, SubmissionUser, User
 logger = logging.getLogger(__name__)
 
 @shared_task
-def validate_submission(submission_id, file_format):
+def validate_submission(submission_id, file_format, chain=True):
     """
     Validates submission.
     """
@@ -73,7 +73,8 @@ def validate_submission(submission_id, file_format):
         # Update state of submission.
         state.status = 'pending-upload'
         state.save()
-        process_submission.delay(submission_id)
+        if chain:
+            process_submission.delay(submission_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
@@ -82,7 +83,7 @@ def validate_submission(submission_id, file_format):
 
 
 @shared_task
-def process_submission(submission_id):
+def process_submission(submission_id, chain=True):
     """
     Handles the uploading of a submission.
     """
@@ -108,7 +109,8 @@ def process_submission(submission_id):
         # Update state of submission.
         state.status = 'pending-sampling'
         state.save()
-        sample_submission.delay(submission_id)
+        if chain:
+            sample_submission.delay(submission_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
@@ -116,7 +118,7 @@ def process_submission(submission_id):
         state.save()
 
 @shared_task
-def sample_submission(submission_id, type_='entity_relation', n_samples = 5):
+def sample_submission(submission_id, type_='entity_relation', n_samples=1000, chain=True):
     #TODO: Get the correct number of samples inside this function
     """
     Takes care of sampling from a submission to create evaluation_question and evaluation_batch.
@@ -140,7 +142,9 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 5):
         #Update the status of submission
         state.status = 'pending-turking'
         state.save()
-        turk_submission.delay(submission_id, sample_batch_id)
+
+        if chain:
+            turk_submission.delay(submission_id, sample_batch_id)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
@@ -148,7 +152,7 @@ def sample_submission(submission_id, type_='entity_relation', n_samples = 5):
         state.save()
 
 @shared_task
-def turk_submission(submission_id, sample_batch_id=None):
+def turk_submission(submission_id, sample_batch_id=None, chain=True):
     """
     Takes care of turking from a submission from _sample.
     """
@@ -193,7 +197,7 @@ def turk_submission(submission_id, sample_batch_id=None):
         state.save()
 
 @shared_task
-def process_responses():
+def process_responses(chain=True):
     """
     Processes all pending-extraction mturk responses to fill in evaluation_*_response tables
     """
@@ -201,7 +205,7 @@ def process_responses():
         process_response(row.id)
 
 @shared_task
-def process_response(assignment_id):
+def process_response(assignment_id, chain=True):
     """
     Processes an mturk response to fill in evaluation_*_response tables
     """
@@ -221,10 +225,11 @@ def process_response(assignment_id):
     # Can't catch exception because batches don't have states.
     batch_complete = check_batch_complete(mturk_batch_id)
     if batch_complete:
-        process_mturk_batch.delay(mturk_batch_id)
+        if chain:
+            process_mturk_batch.delay(mturk_batch_id)
 
 @shared_task
-def process_mturk_batch(mturk_batch_id):
+def process_mturk_batch(mturk_batch_id, chain=True):
     """
     First verifies if the reponses for a hit are sane
     then aggregates them to fill evaluation_* tables
@@ -263,10 +268,12 @@ def process_mturk_batch(mturk_batch_id):
     state = SubmissionState.objects.get(submission_id=submission_id)
     state.status = 'pending-scoring'
     state.save()
-    score_submission.delay(submission_id)
+
+    if chain:
+        score_submission.delay(submission_id)
 
 @shared_task
-def score_submission(submission_id):
+def score_submission(submission_id, chain=True):
     """
     Updates scores of all submissions
     """
@@ -300,4 +307,3 @@ def score_submission(submission_id):
         state.status = "error"
         state.message = e
         state.save()
-
