@@ -1059,7 +1059,7 @@ def verify_evaluation_relation_response():
     values = [{'assignment_id':k, 'flag': v, 'message': 'Incorrect relation'} for k, v in assignment2flag.items()]
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, status='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, state='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
 
 def verify_evaluation_mention_response(question_id = None):
     """Looks at extracted mention responses and applies basic filtering to approve or reject HITs"""
@@ -1090,7 +1090,7 @@ def verify_evaluation_mention_response(question_id = None):
         values.append({'flag' : flag, 'assignment_id' : assignment_id, 'message': 'Too few mentions extracted for this document.'})
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, status='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, state='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
 
 def check_batch_complete(mturk_batch_id):
     """Check if all assignments for an mturk_batch have been collected"""
