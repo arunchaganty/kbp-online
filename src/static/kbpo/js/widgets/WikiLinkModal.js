@@ -73,7 +73,7 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
 
   WikiLinkModal.prototype.setEntity = function(mentionText) {
     $('#wiki-linking-entity').text(mentionText);
-  }
+  };
 
   WikiLinkModal.prototype.populate = function(mentionText) {
     if (mentionText === undefined) {
@@ -85,6 +85,15 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
       var name = url.substr(url.lastIndexOf('/') + 1);
       self.done(name);
     };
+
+    // Clear entries.
+    $('.wiki-entry').not('.wiki-entry-template').not('.none-wiki-entry').remove();
+    var resultDom = $('.wiki-entry-template').clone();
+    resultDom.removeClass('hidden').removeClass('wiki-entry-template');
+    resultDom.children('button').hide();
+    resultDom.children('.list-group-item-heading').prepend("Loading...");
+    resultDom.children('.list-group-item-text').append("Please wait while we populate this list.");
+    resultDom.prependTo($('#wiki-search-results'));
 
     this.fetchResults(mentionText).done(function(searchResults) {
       if (searchResults[1].length === 0){
