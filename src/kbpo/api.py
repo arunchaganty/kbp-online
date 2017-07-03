@@ -438,8 +438,9 @@ def get_submission_relation_list(submission_id, count=1):
             SELECT doc_id, subject, subject_type, relation, object, object_type, provenances, confidence
             FROM submission_entity_relation r
             WHERE r.submission_id = %(submission_id)s
-            ORDER BY doc_id, subject
-            """, submission_id=submission_id):
+            ORDER BY doc_id, subject, object
+            LIMIT %(count)s
+            """, submission_id=submission_id, count=count):
         assert len(row.provenances) > 0, "Invalid submission entry does not have any provenances"
 
         subject, _, relation, object_, _ = defs.standardize_relation(
