@@ -165,20 +165,14 @@ CREATE MATERIALIZED VIEW evaluation_entity_relation AS (
      JOIN evaluation_mention_link n ON r.doc_id = n.doc_id AND r.object = n.span
 );
 
-DROP MATERIALIZED VIEW IF EXISTS submission_entries;
-CREATE MATERIALIZED VIEW submission_entries AS (
-    SELECT DISTINCT ON (r.submission_id, r.doc_id, r.subject, r.object)
+DROP MATERIALIZED VIEW IF EXISTS submission_entries_list CASCADE;
+CREATE MATERIALIZED VIEW submission_entries_list AS (
+    SELECT
     -- Keys
     r.submission_id,
     r.doc_id,
     r.subject,
     r.object,
-
-    -- Document viewing stuff
-    d.title,
-    t.tag AS corpus_tag,
-    s.gloss AS sentence,
-    s.span AS sentence_span,
 
     -- Entity linking stuff
     r.subject_type,
@@ -196,78 +190,64 @@ CREATE MATERIALIZED VIEW submission_entries AS (
     er.relation AS predicate_gold,
 
     -- Labels
-    r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity AS subject_match_correct,
-    r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity AS object_match_correct,
+    r.subject_type = er.subject_type AS subject_type_match,
+    r.object_type = er.object_type AS object_type_match,
 
-    CASE WHEN NOT (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity) THEN NULL ELSE er.subject_entity_correct END AS subject_entity_correct,
-    CASE WHEN NOT (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity) THEN NULL ELSE er.object_entity_correct END AS object_entity_correct,
-        
-    r.relation = er.relation AS predicate_correct,
-    CASE  -- When something is wrong, we know it is wrong!
-        WHEN (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity) AND NOT er.subject_entity_correct THEN FALSE
-        WHEN (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity) AND NOT er.object_entity_correct THEN FALSE
-        WHEN r.relation <> er.relation THEN FALSE
-        WHEN (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity) 
-            AND (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity) 
-            AND er.subject_entity_correct AND er.object_entity_correct AND r.relation = er.relation THEN TRUE
-        ELSE NULL
-    END AS correct
+    r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity AS subject_entity_match,
+    er.subject_entity_correct AS matched_subject_entity_correct,
+    r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity AS object_entity_match,
+    er.object_entity_correct AS matched_object_entity_correct,
+
+    r.relation = er.relation AS predicate_correct
 
     FROM submission_entity_relation r
     -- In the current format of the linking, we have two rows, one for
     -- the entity link, and the other for the entity gloss
     -- match OR the subject's canonical gloss will match. 
     JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
-    JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
-    JOIN document d ON (r.doc_id = d.id)
-    JOIN document_tag t ON (r.doc_id = t.doc_id)
-    ORDER BY r.submission_id, r.doc_id, r.subject, r.object, subject_match_correct DESC, object_match_correct DESC, er.subject_entity_correct, er.object_entity_correct  
 );
 
-DROP MATERIALIZED VIEW IF EXISTS submission_entries_debug;
-CREATE MATERIALIZED VIEW submission_entries_debug AS (
-    SELECT
+DROP MATERIALIZED VIEW IF EXISTS submission_entries;
+CREATE MATERIALIZED VIEW submission_entries AS (
+    WITH _null_columns AS (
+        SELECT *,
+            CASE 
+                WHEN subject_type_match AND subject_entity_match THEN matched_subject_entity_correct 
+                ELSE NULL 
+            END AS subject_entity_correct,
+
+            CASE 
+                WHEN object_type_match AND object_entity_match THEN matched_object_entity_correct 
+                ELSE NULL 
+            END AS object_entity_correct,
+
+            CASE 
+                WHEN subject_type_match AND object_type_match THEN predicate_correct
+                ELSE NULL 
+            END AS matched_predicate_correct
+        FROM submission_entries_list)
+    SELECT DISTINCT ON (r.submission_id, r.doc_id, r.subject, r.object)
+    -- Document viewing stuff
+    d.title,
+    t.tag AS corpus_tag,
+    s.gloss AS sentence,
+    s.span AS sentence_span,
+
     -- Keys
-    r.submission_id,
-    r.doc_id,
-    r.subject,
-    r.object,
-
-    -- Entity linking stuff
-    r.subject_type,
-    r.subject_gloss,
-    r.subject_canonical_gloss,
-    r.subject_entity,
-    er.subject_entity AS subject_gold_entity,
-    r.subject_canonical_gloss  = er.subject_entity OR r.subject_entity = er.subject_entity AS subject_link_correct,
-
-    r.object_type,
-    r.object_gloss,
-    r.object_canonical_gloss AS object_canonical_gloss,
-    r.object_entity,
-    er.object_entity AS object_gold_entity,
-
-    r.object_canonical_gloss  = er.object_entity OR r.object_entity = er.object_entity AS object_link_correct,
-
-    -- Relations
-    r.relation AS predicate_name,
-    er.relation AS predicate_gold,
+    r.*,
 
     -- Labels
-    er.subject_entity_correct,
-    er.object_entity_correct,
-    r.relation = er.relation AS predicate_correct
+    r.matched_subject_entity_correct AND r.matched_object_entity_correct  AND r.matched_predicate_correct AS correct
 
-    FROM submission_entity_relation r
-    -- In the current format of the linking, we have two rows, one for
-    -- the entity link, and the other for the entity gloss
-    -- match OR the subject's canonical gloss will match.
-    JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
+    FROM 
+    _null_columns r
     JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
     JOIN document d ON (r.doc_id = d.id)
     JOIN document_tag t ON (r.doc_id = t.doc_id)
-    ORDER BY r.submission_id, r.doc_id, r.subject, r.object, er.subject_entity_correct, er.object_entity_correct
+    ORDER BY r.submission_id, r.doc_id, r.subject, r.object,
+            subject_type_match DESC, object_type_match DESC,
+            subject_entity_match DESC, object_entity_match DESC,
+            r.subject_entity_correct, r.object_entity_correct  
 );
-
 
 COMMIT;
