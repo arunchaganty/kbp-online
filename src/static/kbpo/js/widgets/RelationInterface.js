@@ -119,10 +119,12 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs', '../util', './DocWid
                     "response": data,
                     "workerTime": workerTime,
                     "comments": comments,
+                },
+                success: function() {
+                  return $("#mturk_form").submit();
                 }
             });
-
-            return true;
+            return false;
         }
       });
     });
