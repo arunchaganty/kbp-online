@@ -1,10 +1,8 @@
 import os
 import json
-import time
 import math
 import logging
 from datetime import datetime
-import pdb
 
 import pytest
 from tqdm import tqdm
@@ -12,11 +10,11 @@ from tqdm import tqdm
 import boto3
 from botocore.exceptions import ClientError
 from boto.mturk.question  import ExternalQuestion
+from django.core.mail import send_mail
 
 from service.settings import MTURK_HOST, MTURK_TARGET, MTURK_FORCED
 from . import db
 from . import api
-from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -45,12 +43,12 @@ def connect(host_str=MTURK_TARGET, forced=MTURK_FORCED):
     logger.info("Connecting to MTurk (%s)", endpoint_url)
 
     if  host_str == 'sandbox':
-        mtc = boto3.client('mturk', 
-                endpoint_url=endpoint_url,
-                aws_access_key_id = _MTURK_CONFIG["aws_access_key_id"],
-                aws_secret_access_key = _MTURK_CONFIG["aws_secret_access_key"],
-                region_name = _MTURK_CONFIG["region"],
-                )
+        mtc = boto3.client('mturk',
+                           endpoint_url=endpoint_url,
+                           aws_access_key_id = _MTURK_CONFIG["aws_access_key_id"],
+                           aws_secret_access_key = _MTURK_CONFIG["aws_secret_access_key"],
+                           region_name = _MTURK_CONFIG["region"],
+                          )
     elif host_str == 'actual':
         proceed = False
         if not forced:
@@ -62,12 +60,12 @@ def connect(host_str=MTURK_TARGET, forced=MTURK_FORCED):
             proceed = True
 
         if proceed:
-            mtc = boto3.client('mturk', 
-                    endpoint_url=endpoint_url,
-                    aws_access_key_id = _MTURK_CONFIG["aws_access_key_id"],
-                    aws_secret_access_key = _MTURK_CONFIG["aws_secret_access_key"],
-                    region_name = _MTURK_CONFIG["region"],
-                    )
+            mtc = boto3.client('mturk',
+                               endpoint_url=endpoint_url,
+                               aws_access_key_id = _MTURK_CONFIG["aws_access_key_id"],
+                               aws_secret_access_key = _MTURK_CONFIG["aws_secret_access_key"],
+                               region_name = _MTURK_CONFIG["region"],
+                              )
         else:
             logger.error("Aborting")
             exit(1)
@@ -391,7 +389,7 @@ def retrieve_assignments_for_mturk_batch(mturk_batch_id):
 def pending_reject_assignment(assignment_id, message = None):
     send_mail(
         subject='Assignment Pending Rejection',
-        message="""Assignment_id %s is pending rejection. 
+        message="""Assignment_id %s is pending rejection.
         To reject assignment, please change state to `verified-rejection`,
         To approve assignment, please change verified to True and state to `pending-payment`
         Message = %s
