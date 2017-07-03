@@ -6,7 +6,7 @@
         "duration": "300", 
         "frame_height": "1200", 
         "max_assignments": "3", 
-        "doc_reward": "0.10", 
+        "doc_reward": "0.15", 
         "lifetime": "86400"
     }
 }

@@ -43,12 +43,14 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
 
   WikiLinkModal.prototype.preload = function(mentionText) {
     this.mentionText = mentionText;
+    this.setEntity(mentionText);
     this.populate(mentionText);
     $('#wiki-search-input').val(mentionText);
   };
   WikiLinkModal.prototype.show = function(mentionText) {
     if(this.mentionText != mentionText){
       this.mentionText = mentionText;
+      this.setEntity(mentionText);
       this.populate(mentionText);
       $('#wiki-search-input').val(mentionText);
     }
@@ -68,6 +70,10 @@ define(['jquery', 'bootstrap', '../util'], function($, _, util) {
 
     $('#wiki-linking-modal').modal('hide');
   };
+
+  WikiLinkModal.prototype.setEntity = function(mentionText) {
+    $('#wiki-linking-entity').text(mentionText);
+  }
 
   WikiLinkModal.prototype.populate = function(mentionText) {
     if (mentionText === undefined) {
