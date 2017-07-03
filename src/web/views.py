@@ -221,6 +221,8 @@ def do_task(request):
         if assignment_id is None:
             raise Http404("AssignmentId not set")
 
+        logger.info("HIT %s accessed with assignment %s (%s)", hit_id, assignment_id, "POST" if request.POST else "GET")
+
         if request.POST:
             response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
             response = json.loads(response)
@@ -269,14 +271,8 @@ def do_task(request):
                 'hidenav' : True,
                 })
         elif params["batch_type"] == "selective_relations":
-            subject, object_ = tuple(params["subject"]), tuple(params["object"])
-            # ordering the mention pair needs types: so fixing in js.
-            #if object_ < subject:
-            #    subject, object_ = object_, subject
-
             return render(request, 'interface_relation.html', {
                 'doc_id': doc.id,
-                'mention_pair': '{}-{}:{}-{}'.format(subject[0], subject[1], object_[0], object_[1]),
                 'params': json.dumps(params),
                 'assignment_id': request.GET["assignmentId"],
                 'hit_id': request.GET["hitId"],
