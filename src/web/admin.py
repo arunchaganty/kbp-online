@@ -157,13 +157,19 @@ def handle_mturk_batch_payments(_, __, queryset):
         turk.mturk_batch_payments(conn, row.id)
 revoke_mturk_batch.short_description = "Pay"
 
+def process_mturk_batch(_, __, queryset):
+    for row in queryset:
+        tasks.process_mturk_batch.delay(row.id)
+
+process_mturk_batch.short_description = "Reprocess"
+
 class MTurkBatchAdmin(admin.ModelAdmin):
     list_display = ('created', 'description', '_status')
 
     # TODO display nicely
     def _status(self, obj):
         return api.get_mturk_batch_status(obj.id)
-    actions = [revoke_mturk_batch, handle_mturk_batch_payments]
+    actions = [revoke_mturk_batch, handle_mturk_batch_payments, process_mturk_batch]
 admin.site.register(MturkBatch, MTurkBatchAdmin)
 
 def revoke_mturk_hit(_, __, queryset):
