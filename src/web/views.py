@@ -220,7 +220,6 @@ def do_task(request):
             raise Http404("AssignmentId not set")
 
         if request.POST:
-            print(request.POST)
             response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
             response = json.loads(response)
 
