@@ -167,14 +167,6 @@ CREATE MATERIALIZED VIEW evaluation_entity_relation AS (
 
 DROP MATERIALIZED VIEW IF EXISTS submission_entries;
 CREATE MATERIALIZED VIEW submission_entries AS (
-    WITH _valid_entries AS (SELECT DISTINCT
-        r.submission_id, r.doc_id, r.subject, r.object
-        FROM submission_entity_relation r
-        -- In the current format of the linking, we have two rows, one for
-        -- the entity link, and the other for the entity gloss
-        -- match OR the subject's canonical gloss will match. 
-        JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
-    )
     SELECT DISTINCT ON (r.submission_id, r.doc_id, r.subject, r.object)
     -- Keys
     r.submission_id,
@@ -204,30 +196,32 @@ CREATE MATERIALIZED VIEW submission_entries AS (
     er.relation AS predicate_gold,
 
     -- Labels
-    er.subject_entity_correct,
-    er.object_entity_correct,
+    r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity AS subject_match_correct,
+    r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity AS object_match_correct,
+
+    CASE WHEN NOT (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity) THEN NULL ELSE er.subject_entity_correct END AS subject_entity_correct,
+    CASE WHEN NOT (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity) THEN NULL ELSE er.object_entity_correct END AS object_entity_correct,
+        
     r.relation = er.relation AS predicate_correct,
     CASE  -- When something is wrong, we know it is wrong!
-        WHEN NOT (COALESCE(er.subject_entity_correct, true) 
-             AND COALESCE(er.object_entity_correct, true)
-             AND r.relation = er.relation) THEN false
-        ELSE -- But if it hasn't been evaluated, unfortunately, we just don't know.
-            er.subject_entity_correct AND er.object_entity_correct AND r.relation = er.relation
+        WHEN (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity) AND NOT er.subject_entity_correct THEN FALSE
+        WHEN (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity) AND NOT er.object_entity_correct THEN FALSE
+        WHEN r.relation <> er.relation THEN FALSE
+        WHEN (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity) 
+            AND (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity) 
+            AND er.subject_entity_correct AND er.object_entity_correct AND r.relation = er.relation THEN TRUE
+        ELSE NULL
     END AS correct
 
     FROM submission_entity_relation r
     -- In the current format of the linking, we have two rows, one for
     -- the entity link, and the other for the entity gloss
     -- match OR the subject's canonical gloss will match. 
-    JOIN _valid_entries v ON (r.submission_id = v.submission_id AND r.doc_id = v.doc_id AND r.subject = v.subject AND r.object = v.object)
-    LEFT JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object 
-      AND (r.subject_entity = er.subject_entity OR r.subject_canonical_gloss = er.subject_entity)
-      AND (r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity)
-    )
+    JOIN evaluation_entity_relation er ON (r.doc_id = er.doc_id AND r.subject = er.subject AND r.object = er.object)
     JOIN sentence s ON (s.doc_id = r.doc_id AND s.span @> r.subject)
     JOIN document d ON (r.doc_id = d.id)
     JOIN document_tag t ON (r.doc_id = t.doc_id)
-    ORDER BY r.submission_id, r.doc_id, r.subject, r.object, er.subject_entity_correct, er.object_entity_correct  
+    ORDER BY r.submission_id, r.doc_id, r.subject, r.object, subject_match_correct DESC, object_match_correct DESC, er.subject_entity_correct, er.object_entity_correct  
 );
 
 DROP MATERIALIZED VIEW IF EXISTS submission_entries_debug;
