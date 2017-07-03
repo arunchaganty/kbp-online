@@ -81,7 +81,13 @@ div#relation-option-preview {
         // THIS ONLY WORKS IN LATEST VERSIONS OF TASKS.
         var params = JSON.parse($("#input-params").val());
         var reward = parseFloat($("#input-reward").val());
+        if (Number.isNaN(reward)) {
+          reward = 0.0;
+        }
         var duration = parseInt($("#input-duration").val());
+        if (Number.isNaN(duration)) {
+          duration = 0;
+        }
 
         var docId = params["doc_id"];
         var verifyLinks = (params["batch_type"] === "selective_relations");
