@@ -15,7 +15,7 @@ from kbpo import api
 from . import tasks
 from .forms import KnowledgeBaseSubmissionForm
 from .models import Submission, SubmissionUser, SubmissionState
-from .models import Document, DocumentTag
+from .models import Document, DocumentTag, MturkHit
 
 logger = logging.getLogger(__name__)
 
@@ -211,75 +211,87 @@ def do_task(request):
             "hitId": hit_id,
             "workerId": "TEST_WORKER",
             }))
-    else:
+
+    try:
         hit_id = request.GET["hitId"]
-        try:
-            params = api.get_task_params(hit_id)
-        except StopIteration:
-            raise Http404("HIT {} does not exist".format(hit_id))
-        assignment_id = request.GET.get("assignmentId")
-        if assignment_id is None:
-            raise Http404("AssignmentId not set")
+        assignment_id = request.GET.get("assignmentId", "ASSIGNMENT_ID_NOT_AVAILABLE")
+        hit = get_object_or_404(MturkHit, id=hit_id)
+        params = api.get_task_params(hit_id)
 
-        logger.info("HIT %s accessed with assignment %s (%s)", hit_id, assignment_id, "POST" if request.POST else "GET")
-
-        if request.POST:
-            response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
-            response = json.loads(response)
-
-            worker_id = request.POST.get("workerId")
-            worker_time = request.POST.get("workerTime")
-            comments = request.POST.get("comments")
-
-            if assignment_id is None:
-                return JsonResponse({"success": False, "reason": "No assignmentId"})
-            elif assignment_id == "ASSIGNMENT_ID_NOT_AVAILABLE":
-                return JsonResponse({"success": False, "reason": "Assignment id not available"})
-
-            api.insert_assignment(
-                assignment_id=assignment_id,
-                hit_id=hit_id,
-                worker_id=worker_id,
-                worker_time=worker_time,
-                comments=comments,
-                response=response)
-            tasks.process_response.delay(assignment_id)
-            # Just in case someone is listening.
-            return JsonResponse({"success": True})
         # Get the corresponding mturk_hit and evaluation_question to
         # render this
         doc = get_object_or_404(Document, id=params["doc_id"])
+    except StopIteration:
+        raise Http404("HIT {} does not exist".format(hit_id))
 
-        if params["batch_type"] == "exhaustive_entities":
-            return render(request, 'interface_entity.html', {
-                'doc_id': doc.id,
-                'params': json.dumps(params),
-                'assignment_id': request.GET["assignmentId"],
-                'hit_id': request.GET["hitId"],
-                'worker_id': request.GET["workerId"],
-                'mturk_form_target': settings.MTURK_FORM_TARGET,
-                'hidenav' : True,
-                })
-        elif params["batch_type"] == "exhaustive_relations":
-            return render(request, 'interface_relation.html', {
-                'doc_id': doc.id,
-                'params': json.dumps(params),
-                'assignment_id': request.GET["assignmentId"],
-                'hit_id': request.GET["hitId"],
-                'worker_id': request.GET["workerId"],
-                'mturk_form_target': settings.MTURK_FORM_TARGET,
-                'hidenav' : True,
-                })
-        elif params["batch_type"] == "selective_relations":
-            return render(request, 'interface_relation.html', {
-                'doc_id': doc.id,
-                'params': json.dumps(params),
-                'assignment_id': request.GET["assignmentId"],
-                'hit_id': request.GET["hitId"],
-                'worker_id': request.GET.get("workerId"),
-                'mturk_form_target': settings.MTURK_FORM_TARGET,
-                'hidenav' : True,
-                })
+    logger.info("HIT %s accessed with assignment %s (%s)", hit_id, assignment_id, "POST" if request.POST else "GET")
+
+    if request.POST:
+        response = request.POST["response"].strip().replace("\xa0", " ") # these null space strings are somehow always introduced
+        response = json.loads(response)
+
+        worker_id = request.POST.get("workerId")
+        worker_time = request.POST.get("workerTime")
+        comments = request.POST.get("comments")
+
+        if assignment_id is None:
+            return JsonResponse({"success": False, "reason": "No assignmentId"})
+        elif assignment_id == "ASSIGNMENT_ID_NOT_AVAILABLE":
+            return JsonResponse({"success": False, "reason": "Assignment id not available"})
+
+        api.insert_assignment(
+            assignment_id=assignment_id,
+            hit_id=hit_id,
+            worker_id=worker_id,
+            worker_time=worker_time,
+            comments=comments,
+            response=response)
+        tasks.process_response.delay(assignment_id)
+        # Just in case someone is listening.
+        return JsonResponse({"success": True})
+
+    if params["batch_type"] == "exhaustive_entities":
+        duration = None
+        reward = None
+        return render(request, 'interface_entity.html', {
+            'doc_id': doc.id,
+            'params': json.dumps(params),
+            'assignment_id': request.GET["assignmentId"],
+            'hit_id': request.GET["hitId"],
+            'worker_id': request.GET["workerId"],
+            'mturk_form_target': settings.MTURK_FORM_TARGET,
+            'hidenav' : True,
+            'duration': duration,
+            'reward': reward,
+            })
+    elif params["batch_type"] == "exhaustive_relations":
+        reward = None
+        return render(request, 'interface_relation.html', {
+            'doc_id': doc.id,
+            'params': json.dumps(params),
+            'assignment_id': request.GET["assignmentId"],
+            'hit_id': request.GET["hitId"],
+            'worker_id': request.GET["workerId"],
+            'mturk_form_target': settings.MTURK_FORM_TARGET,
+            'hidenav' : True,
+            'duration': duration,
+            'reward': reward,
+            })
+    elif params["batch_type"] == "selective_relations":
+        duration = 60 # DEFAULT
+        reward = hit.batch.params.get("price", 0.15)
+
+        return render(request, 'interface_relation.html', {
+            'doc_id': doc.id,
+            'params': json.dumps(params),
+            'assignment_id': request.GET["assignmentId"],
+            'hit_id': request.GET["hitId"],
+            'worker_id': request.GET.get("workerId"),
+            'mturk_form_target': settings.MTURK_FORM_TARGET,
+            'hidenav' : True,
+            'duration': duration,
+            'reward': reward,
+            })
 
 ### API functions
 def api_leaderboard(_):

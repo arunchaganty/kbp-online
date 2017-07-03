@@ -5,7 +5,7 @@
  * Licensed under the MIT license
  */
 
-define(['jquery', '../defs', '../util', './DocWidget', './InstructionWidget', './RelationOptionWidget', './RelationListWidget'], function ($, defs, util, DocWidget, InstructionWidget, RelationOptionWidget, RelationListWidget) {
+define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs', '../util', './DocWidget', './InstructionWidget', './RelationOptionWidget', './RelationListWidget'], function ($, pp, defs, util, DocWidget, InstructionWidget, RelationOptionWidget, RelationListWidget) {
 
   VERSION = 0.2;
 
@@ -190,6 +190,16 @@ define(['jquery', '../defs', '../util', './DocWidget', './InstructionWidget', '.
     this.currentIndex = -1;
     this.viewStack = []; // Used when changing relations.
     this.next();
+  };
+
+  RelationInterface.prototype.setReward = function(reward) {
+    $("#reward").text(pp.sprintf("$%0.02f", reward));
+  };
+
+  RelationInterface.prototype.setDuration = function(time) {
+    var lowerTime = Math.floor(0.8 * time / 60);
+    var upperTime = Math.ceil(1.2 * time / 60);
+    $("#estimated-time").text(pp.sprintf("%d - %d minutes", lowerTime, upperTime));
   };
 
   function centerOnMention(m) {
