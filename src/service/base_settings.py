@@ -135,3 +135,4 @@ MTURK_FORM_TARGETS = {
     'sandbox': 'https://workersandbox.mturk.com/mturk/externalSubmit',
     'actual' : 'https://www.mturk.com/mturk/externalSubmit',
     }
+MTURK_FORCED=False
