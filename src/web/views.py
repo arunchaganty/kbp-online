@@ -126,6 +126,7 @@ def interface_entity(request, doc_id=None):
         'assignment_id': "TEST_ASSIGNMENT",
         'hit_id': "TEST_HIT",
         'worker_id': "TEST_WORKER",
+        'hidenav' : False,
         })
 
 def interface_relation(request, doc_id=None, submission_id=None, subject_id=None, object_id=None):
@@ -173,6 +174,7 @@ def interface_relation(request, doc_id=None, submission_id=None, subject_id=None
         'worker_id': "TEST_WORKER",
         'doc_id': doc_id,
         'params': json.dumps(params),
+        'hidenav' : False,
         })
 
 def interface_submission(_, submission_id=None):
