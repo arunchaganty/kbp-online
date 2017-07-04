@@ -369,15 +369,18 @@ def mturk_batch_payments(conn, mturk_batch_id):
     approved_count, rejected_count = 0, 0
     for row in rows:
         if row.verified and row.state == 'pending-payment':
+            logger.debug("Approving assignment %s", row.id)
             approve_assignment(conn, row.id)
             approved_count += 1
             db.execute("UPDATE mturk_assignment SET state = 'approved' WHERE id = %(assignment_id)s", assignment_id = row.id)
         if not row.verified:
             if row.state == 'verified-rejection':
+                logger.debug("Rejecting assignment %s", row.id)
                 reject_assignment(conn, row.id, row.message)
                 rejected_count += 1
                 db.execute("UPDATE mturk_assignment SET state = 'rejected' WHERE id = %(assignment_id)s", assignment_id = row.id)
             elif row.state == 'pending-payment':
+                logger.debug("Verifying rejection for assignment %s", row.id)
                 pending_reject_assignment(row.id, row.message)
                 db.execute("UPDATE mturk_assignment SET state = 'pending-rejection-verification' WHERE id = %(assignment_id)s", assignment_id = row.id)
 
@@ -405,19 +408,25 @@ def retrieve_assignments_for_hit(conn, hit_id):
     assignment_state_map = {
             'Submitted': 'pending-extraction', 
             'Rejected': 'rejected',
-            'Approved': 'approved'}
+            'Approved': 'approved',
+            'error': 'error'
+            }
 
     hit_response = conn.list_assignments_for_hit(HITId = hit_id)
     assignments = hit_response['Assignments']
     for assignment_response in assignments:
         try:
             parsed_response = parse_mturk_assignment_response(assignment_response)
-        except json.JSONDecodeError as e:
-            logger.error("Improper response for assignment_id %s, response=%s", assignment_response['AssignmentId'], assignment_response)
-            increment_assignments(conn, hit_id)
+            if parsed_response['response'] is None:
+                logger.error("Improper response for assignment_id %s, response=%s", assignment_response['AssignmentId'], assignment_response)
+                parsed_response['state'] = 'error'
+                parsed_response['response'] = '{}'
+                parsed_response['worker_time'] = -1
+                parsed_response['comments'] = ''
+                increment_assignments(conn, hit_id)
         except Exception as e:
-            logger.error(e)
-            increment_assignments(conn, hit_id)
+            logger.exception(e)
+            #increment_assignments(conn, hit_id)
 
         parsed_response['state'] = assignment_state_map[parsed_response['state']]
         api.insert_assignment(
@@ -501,7 +510,9 @@ def parse_mturk_assignment_response(response):
     fields['comments'] = xml_fields['comment']
     fields['created'] = response['SubmitTime']
     fields['state'] = response['AssignmentStatus']
-    fields['response'] = json.loads(xml_fields['response'])
+    fields['response'] = xml_fields['response']
+    if fields['response'] is not None:
+        fields['response'] = json.loads(fields['response'])
     return fields
 
 def test_insert_assignment_from_mturk_response():
