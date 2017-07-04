@@ -198,7 +198,7 @@ CREATE MATERIALIZED VIEW submission_entries_list AS (
     r.object_entity = er.object_entity OR r.object_canonical_gloss = er.object_entity AS object_entity_match,
     er.object_entity_correct AS matched_object_entity_correct,
 
-    r.relation = er.relation AS predicate_correct
+    r.relation = er.relation AS matched_predicate_correct
 
     FROM submission_entity_relation r
     -- In the current format of the linking, we have two rows, one for
@@ -222,9 +222,9 @@ CREATE MATERIALIZED VIEW submission_entries AS (
             END AS object_entity_correct,
 
             CASE 
-                WHEN subject_type_match AND object_type_match THEN predicate_correct
+                WHEN subject_type_match AND object_type_match THEN matched_predicate_correct
                 ELSE NULL 
-            END AS matched_predicate_correct
+            END AS predicate_correct
         FROM submission_entries_list)
     SELECT DISTINCT ON (r.submission_id, r.doc_id, r.subject, r.object)
     -- Document viewing stuff
@@ -237,7 +237,7 @@ CREATE MATERIALIZED VIEW submission_entries AS (
     r.*,
 
     -- Labels
-    r.matched_subject_entity_correct AND r.matched_object_entity_correct  AND r.matched_predicate_correct AS correct
+    r.subject_entity_correct AND r.object_entity_correct  AND r.predicate_correct AS correct
 
     FROM 
     _null_columns r
