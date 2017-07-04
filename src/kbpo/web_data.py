@@ -101,6 +101,9 @@ def parse_selective_relations_response(question, responses):
                 elif response['subject']['entity']['canonicalCorrect']:
                     links.append(LinkInstance(doc_id, object_span, 'wiki:', True, 1.0))
 
+            if response["relation"] == 'per:sibling':
+                response["relation"] = 'per:siblings'
+
             if response["relation"] not in ALL_RELATIONS:
                 logger.error("Unsupported relation %s", response['relation'])
             else:
@@ -371,8 +374,6 @@ def _parse_responses(rows):
 
         # evaluation_mention_response
         for mention in mentions:
-            if '\xa0' in mention.gloss:
-                pdb.set_trace()
             if mention.span.lower >= mention.span.upper:
                 logger.error("Incorrect mention span, %s", mention)
             elif mention.canonical_span.lower >= mention.canonical_span.upper:
@@ -391,9 +392,6 @@ def _parse_responses(rows):
 
                 assert response not in evaluation_mentions
                 evaluation_mentions.append(response)
-
-            if '\xa0' in mention.gloss:
-                pdb.set_trace()
 
         # evaluation_link_response
         for link in links:
@@ -441,6 +439,7 @@ FROM mturk_assignment a,
      evaluation_batch b
 WHERE a.hit_id = h.id AND h.question_id = q.id AND h.question_batch_id = q.batch_id AND b.id = q.batch_id AND a.id = %(assignment_id)s
  AND NOT a.ignored""", assignment_id = assignment_id)
+
     evaluation_mentions, evaluation_links, evaluation_relations = _parse_responses(rows)
     with db.CONN:
         with db.CONN.cursor() as cur:
