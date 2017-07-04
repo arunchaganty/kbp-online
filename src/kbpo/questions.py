@@ -26,7 +26,8 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
     # Group by doc_id, subject, object
     question_groups = {}
     for q in db.select("""
-        SELECT s.doc_id, s.subject, s.object, 
+        SELECT DISTINCT ON (s.doc_id, LEAST(s.subject, s.object), GREATEST(s.subject, s.object)) 
+               s.doc_id, s.subject, s.object, 
                r.subject_type, r.object_type,
                r.subject_gloss, r.object_gloss,
                r.subject_canonical_gloss, r.object_canonical_gloss,
