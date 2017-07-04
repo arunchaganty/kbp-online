@@ -31,6 +31,8 @@ def validate_submission(submission_id, file_format, chain=True):
     """
     Validates submission.
     """
+    logger.info("Validating submission %s (%s)", submission_id, file_format)
+
     assert Submission.objects.filter(id=submission_id).count() > 0, "Submission {} does not exist!".format(submission_id)
     assert SubmissionState.objects.filter(submission_id=submission_id).count() > 0, "SubmissionState {} does not exist!".format(submission_id)
 
@@ -44,8 +46,6 @@ def validate_submission(submission_id, file_format, chain=True):
         reader = TacKbReader()
     else:
         raise ValueError("Invalid file format: {}".format(file_format))
-
-    logger.info("Validating submission %s", submission_id)
 
     if state.status != 'pending-validation':
         logger.warning("Trying to validate submission %s, but state is %s", submission.id, state.status)
