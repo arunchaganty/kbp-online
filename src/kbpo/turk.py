@@ -2,7 +2,7 @@ import os
 import json
 import math
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from tqdm import tqdm
@@ -357,23 +357,41 @@ def test_create_revoke_batch():
     revoke_batch(conn, mturk_batch_id)
 
 def mturk_batch_payments(conn, mturk_batch_id):
+    logger.info("Paying turkers for batch %s", mturk_batch_id)
+
     rows = list(db.select("""
         SELECT id, verified, state, message
         FROM mturk_assignment
         WHERE batch_id = %(mturk_batch_id)s
         """, mturk_batch_id = mturk_batch_id))
+    approved_count, rejected_count = 0, 0
     for row in rows:
-        if row.verified == True and row.state == 'pending-payment':
+        if row.verified and row.state == 'pending-payment':
             approve_assignment(conn, row.id)
+            approved_count += 1
             db.execute("UPDATE mturk_assignment SET state = 'approved' WHERE id = %(assignment_id)s", assignment_id = row.id)
-        if row.verified == False:
+        if not row.verified:
             if row.state == 'verified-rejection':
                 reject_assignment(conn, row.id, row.message)
+                rejected_count += 1
                 db.execute("UPDATE mturk_assignment SET state = 'rejected' WHERE id = %(assignment_id)s", assignment_id = row.id)
             elif row.state == 'pending-payment':
                 pending_reject_assignment(row.id, row.message)
                 db.execute("UPDATE mturk_assignment SET state = 'pending-rejection-verification' WHERE id = %(assignment_id)s", assignment_id = row.id)
 
+    logger.info("Paid %d turkers and rejected %d turkers for batch %s", approved_count, rejected_count, mturk_batch_id)
+
+def increment_assignments(conn, hit_id, count=1): 
+    logger.info("Incrementing %s assignments for HIT %s", count, hit_id)
+    conn.create_additional_assignments_for_hit(
+        HITId=hit_id,
+        NumberOfAdditionalAssignments=count,
+        ) # TODO: maybe use UniqueRequestToken
+    conn.update_expiration_for_hit(
+            HITId=hit_id,
+            ExpireAt=datetime.now() + timedelta(days=1)
+            )
+    return True
 
 class MTurkInvalidStatus(Exception):
     pass
