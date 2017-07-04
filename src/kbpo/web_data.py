@@ -1137,7 +1137,8 @@ def check_hit_complete(hit_id):
     if row is None:
         return False;
     return row.hit_complete
-def test_check_hit_compelte():
+
+def test_check_hit_complete():
     assert check_batch_complete(10) == True
 
 def test_check_hit_complete():
