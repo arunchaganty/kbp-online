@@ -1,6 +1,7 @@
 from .base_settings import *
 
 # Debug
+ALLOWED_HOSTS = ["localhost"]
 DEBUG = True
 MTURK_TARGET = 'sandbox'
 MTURK_FORM_TARGET = MTURK_FORM_TARGETS[MTURK_TARGET]
