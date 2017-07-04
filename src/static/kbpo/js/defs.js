@@ -63,7 +63,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "short": "lived at",
           "image": "", 
           "icon": "fa-home",
-          "template": "{subject} lived at {object}.",
+          "template": "{subject} lives/lived at {object}.",
           "examples": ["{Mike} lived in [Hawaii] because he grew up or studied there.",
                        "{Mia} lived in [Hawaii] because she is a Hawaiian senator.",
                        "{Mike} does NOT live in [Hawaii] because he visited for a business trip."
@@ -119,7 +119,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "per:holds_shares_in",
           "short": "holds shares in",
-          "template": "{subject} holds shares in {object}.",
+          "template": "{subject} holds/held shares in {object}.",
           "image": "shareholders.png", 
           "examples": [
             "{Eric Schmidt} a the leading shareholder in [Google].",
@@ -130,7 +130,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "per:schools_attended",
           "short": "studied at",
-          "template": "{subject} studied at {object}.",
+          "template": "{subject} is studying/studied at {object}.",
           "examples": [
             "{Eric Schmidt}, an [UC Berkeley]-graduate ...",
           ],
@@ -143,7 +143,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "short": "works for",
           "image": "employee.svg", 
           "icon": "fa-black-tie", 
-          "template": "{subject} works for {object}.",
+          "template": "{subject} works/worked for {object}.",
           "examples": ["{Mike} is for [Shell] if he is Shell's spokesperson.",
                        "{Mia} works for [America] if she is an American ambassador.",
                        "{Mia} does NOT work for the [Fox News] if she was interviewed on Fox News.",
@@ -175,7 +175,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "per:spouse",
           "short": "spouse",
-          "template": "{subject} is the spouse of {object}.",
+          "template": "{subject} is/was the spouse of {object}.",
           "image": "spouse.svg", 
           "examples": [
                        "{Barack Obama} thanked his wife, [Michelle].",
@@ -212,7 +212,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
                        "Official [spokesperson] {Shayne Williams}",
                        "[Wife] is NOT a title."
           ],
-          "template": "{subject} is a {object}.",
+          "template": "{subject} is/was a {object}.",
           "subject-types": ["PER"],
           "object-types": ["TITLE"]
       // },{
@@ -227,7 +227,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:place_of_headquarters",
           "short": "headquartered at",
-          "template": "{subject} is headquartered at {object}.",
+          "template": "{subject} is/was headquartered at {object}.",
           "examples": [
             "[Singapore]-based {Flextronics}...",
             "A company is NOT headquartered in a city if it only has an office there.",
@@ -272,7 +272,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:member_of",
           "short": "member of",
-          "template": "{subject} is a member of {object}, though {subject} can operate independently of {object}.",
+          "template": "{subject} is/was a member of {object}, though {subject} can operate independently of {object}.",
           "image": "members.jpg", 
           "examples": ["{Golden State Warriors} is a member of the [NBA]."],
           "icon": "fa-users",
@@ -281,7 +281,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:members",
           "short": "has member",
-          "template": "{subject} has {object} as a member, though {object} can operate independently of {subject}.",
+          "template": "{subject} has/had {object} as a member, though {object} can operate independently of {subject}.",
           "image": "members.jpg", 
           "examples": ["The {United Nations} has the [United States] as a member",
                        "The {American Humane Society} has [Clover Farms] as a member"],
@@ -291,7 +291,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:subsidiaries",
           "short": "parent of",
-          "template": "{subject} owns {object} and {object} can not exist without {subject}.",
+          "template": "{subject} owns/owned {object} and {object} can not exist without {subject}.",
           "image": "", 
           "examples": [
               "{Fox Entertainment Group} is the parent of [Fox News].",
@@ -302,7 +302,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:parents",
           "short": "subsidiary of",
-          "template": "{subject} is a subsidiary of {object} and {subject} can not exist without {object}.",
+          "template": "{subject} is/was a subsidiary of {object} and {subject} can not exist without {object}.",
           "image": "", 
           "examples": ["The {Department of Homeland Security} is a subsidiary of the [U.S.]."],
           "icon": "fa-sitemap",
@@ -311,7 +311,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:shareholders",
           "short": "shareholder",
-          "template": "{object} is a shareholder of {subject}.",
+          "template": "{object} is/was a shareholder of {subject}.",
           "image": "shareholders.png", 
           "examples": [],
           "icon": "fa-line-chart",
@@ -320,7 +320,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
       },{
           "name": "org:holds_shares_in",
           "short": "holds shares in",
-          "template": "{subject} holds shares in {object}.",
+          "template": "{subject} holds/held shares in {object}.",
           "image": "shareholders.png", 
           "examples": [],
           "icon": "fa-line-chart",

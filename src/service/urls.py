@@ -28,8 +28,9 @@ urlpatterns = [
     url(r'^accounts/', include('registration.backends.simple.urls')),
     url(r'', include('web.urls')),
 ]
-
 if settings.DEBUG and hasattr(staticfiles, 'views'):
     urlpatterns += [
         url(r'^static/(?P<path>.*)$', staticfiles.views.serve),
     ]
+handler404 = 'web.views.handle404'
+handler500 = 'web.views.handle500'
