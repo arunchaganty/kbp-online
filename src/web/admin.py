@@ -186,11 +186,17 @@ def revoke_mturk_hit(_, __, queryset):
         turk.revoke_hit(conn, row.id)
 revoke_mturk_hit.short_description = "Revoke"
 
+def increment_assignments(_, __, queryset):
+    conn = turk.connect()
+    for row in queryset:
+        turk.increment_assignments(conn, row.id)
+increment_assignments.short_description = "Increment assignments"
+
 class MTurkHitAdmin(admin.ModelAdmin):
     list_display = ('id', 'batch', 'question_batch', 'state', 'message')
     list_filter = ('state', 'batch_id')
 
-    actions = [revoke_mturk_hit,]
+    actions = [revoke_mturk_hit, increment_assignments]
 admin.site.register(MturkHit, MTurkHitAdmin)
 
 class MTurkAssignmentAdmin(admin.ModelAdmin):
