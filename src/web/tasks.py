@@ -233,7 +233,7 @@ def process_response(assignment_id, chain=True):
         hit_id = get_hit_id(assignment_id)
         hit_complete = check_hit_complete(hit_id)
         if hit_complete:
-            for assignment_id in db.select("SELECT id FROM mturk_assignment WHERE hit_id = %(hit_id)s", hit_id = hit_id):
+            for assignment_id in db.select("SELECT id FROM mturk_assignment WHERE hit_id = %(hit_id)s AND state = 'pending-extraction'", hit_id = hit_id):
                 parse_response(assignment_id)
                 db.execute("UPDATE mturk_assignment SET state = %(new_state)s WHERE id = %(assignment_id)s",
                            new_state = 'pending-validation', assignment_id = assignment_id)
