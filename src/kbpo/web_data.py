@@ -1094,22 +1094,27 @@ def verify_evaluation_mention_response(question_id = None):
 
 def check_batch_complete(mturk_batch_id):
     """Check if all assignments for an mturk_batch have been collected"""
-    rows = db.select("""
-    SELECT count(*) = (b.params->>'max_assignments')::int AS hit_complete 
-    FROM mturk_assignment AS a 
-    LEFT JOIN mturk_hit AS h 
-        ON a.hit_id = h.id 
-    LEFT JOIN mturk_batch as b 
-        ON a.batch_id = b.id 
-    WHERE a.batch_id = %(mturk_batch_id)s 
-      AND (a.state = 'pending-validation'
-          OR a.state = 'pending-payment'
-          OR a.state = 'done')
-    GROUP BY a.hit_id, b.params->>'max_assignments';
-    """, 
-    mturk_batch_id = mturk_batch_id)
-    #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
-    hit_completed = [x.hit_complete for x in rows]
+
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            rows = db.select("""
+            SELECT a.hit_id, count( a.state <> 'error') = (b.params->>'max_assignments')::int AS hit_complete , count(a.state = 'error') as hit_errors
+
+            FROM mturk_assignment AS a 
+            LEFT JOIN mturk_hit AS h 
+                ON a.hit_id = h.id 
+            LEFT JOIN mturk_batch as b 
+                ON a.batch_id = b.id 
+            WHERE a.batch_id = %(mturk_batch_id)s 
+            GROUP BY a.hit_id, b.params->>'max_assignments';
+            """, 
+            mturk_batch_id = mturk_batch_id, cur = cur)
+            #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
+            #for row in rows:
+            #    if row.hit_errors >= 1:
+            #        db.execute("UPDATE mturk_assignment SET ignored=true WHERE hit_id = %(hit_id)s", hit_id = row.hit_id)
+            #hit_completed = [x.hit_complete for x in rows if x.hit_errors == 0]
+            hit_completed = [x.hit_complete for x in rows]
     return len(hit_completed) > 0 and all(hit_completed)
 
 def check_hit_complete(hit_id):
@@ -1122,13 +1127,13 @@ def check_hit_complete(hit_id):
     LEFT JOIN mturk_batch as b 
         ON a.batch_id = b.id 
     WHERE a.hit_id = %(hit_id)s 
-      AND (a.state = 'pending-validation'
-          OR a.state = 'pending-payment'
-          OR a.state = 'done')
+      AND a.state <> 'error'
     GROUP BY a.hit_id, b.params->>'max_assignments';
     """, 
     hit_id = hit_id)
     #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
+    if row is None:
+        return False;
     return row.hit_complete
 def test_check_hit_compelte():
     assert check_batch_complete(10) == True

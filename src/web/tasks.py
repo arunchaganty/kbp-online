@@ -16,7 +16,7 @@ from kbpo.parser import MFileReader, TacKbReader
 from kbpo.evaluation_api import get_updated_scores, update_score
 from kbpo.sampling import sample_submission as _sample_submission
 from kbpo.questions import create_evaluation_batch_for_submission_sample
-from kbpo.turk import connect, create_batch, mturk_batch_payments
+from kbpo.turk import connect, create_batch, mturk_batch_payments, retrieve_assignments_for_mturk_batch
 from kbpo.web_data import parse_response,\
         verify_evaluation_mention_response, verify_evaluation_relation_response,\
         merge_evaluation_tables, check_batch_complete, get_hit_id, check_hit_complete
@@ -197,12 +197,29 @@ def turk_submission(submission_id, sample_batch_id=None, chain=True):
         state.save()
 
 @shared_task
+def backfill_mturk_batch(mturk_batch_id, only_incomplete_hits=True, chain=True):
+    """Gets all the missing hits for an mturk batch"""
+    mturk_connection = connect(MTURK_TARGET)
+    retrieve_assignments_for_mturk_batch(mturk_connection, mturk_batch_id, only_incomplete_hits)
+    if chain:
+        process_responses.delay()
+
+@shared_task
 def process_responses(chain=True):
     """
     Processes all pending-extraction mturk responses to fill in evaluation_*_response tables
     """
-    for row in db.select("""SELECT id FROM mturk_assignment WHERE state = 'pending-extraction'"""):
-        process_response(row.id)
+    logger.info("Running process_responses")
+    batches = set()
+    for row in db.select("""SELECT batch_id, id FROM mturk_assignment WHERE state = 'pending-extraction'"""):
+        process_response(row.id, chain=False)
+        batches.add(row.batch_id)
+    # Can't catch exception because batches don't have states.
+    for mturk_batch_id in batches:
+        if chain:
+            batch_complete = check_batch_complete(mturk_batch_id)
+            if batch_complete:
+                process_mturk_batch.delay(mturk_batch_id, forced=True)
 
 @shared_task
 def process_response(assignment_id, chain=True):
@@ -229,13 +246,13 @@ def process_response(assignment_id, chain=True):
 
 
     # Can't catch exception because batches don't have states.
-    batch_complete = check_batch_complete(mturk_batch_id)
-    if batch_complete:
-        if chain:
-            process_mturk_batch.delay(mturk_batch_id)
+    if chain:
+        batch_complete = check_batch_complete(mturk_batch_id)
+        if batch_complete:
+            process_mturk_batch.delay(mturk_batch_id, forced=True)
 
 @shared_task
-def process_mturk_batch(mturk_batch_id, force = False, chain=True):
+def process_mturk_batch(mturk_batch_id, forced = False, chain=True):
     """
     First verifies if the reponses for a hit are sane
     then aggregates them to fill evaluation_* tables
@@ -255,7 +272,7 @@ def process_mturk_batch(mturk_batch_id, force = False, chain=True):
     verify_evaluation_mention_response()
     verify_evaluation_relation_response()
 
-    mturk_connection = connect(MTURK_TARGET)
+    mturk_connection = connect(MTURK_TARGET, forced=forced)
     mturk_batch_payments(mturk_connection, mturk_batch_id)
 
     db.execute("UPDATE mturk_hit SET state = 'done' WHERE batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)

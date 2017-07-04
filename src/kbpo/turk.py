@@ -11,10 +11,12 @@ import boto3
 from botocore.exceptions import ClientError
 from boto.mturk.question  import ExternalQuestion
 from django.core.mail import send_mail
+import xml.etree.ElementTree as ET
 
 from service.settings import MTURK_HOST, MTURK_TARGET, MTURK_FORCED
 from . import db
 from . import api
+from . import web_data
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -378,13 +380,49 @@ def mturk_batch_payments(conn, mturk_batch_id):
 class MTurkInvalidStatus(Exception):
     pass
 
-def retrieve_assignments_for_hit(hit_id):
+def retrieve_assignments_for_hit(conn, hit_id):
     """Get all the completed assignments for the given @hit_id and insert into the database"""
-    raise NotImplementedError
+    #Maps to internal assignment state
+    print("Backfilling assignments for hit id %s", hit_id)
+    assignment_state_map = {
+            'Submitted': 'pending-extraction', 
+            'Rejected': 'rejected',
+            'Approved': 'approved'}
 
-def retrieve_assignments_for_mturk_batch(mturk_batch_id):
+    hit_response = conn.list_assignments_for_hit(HITId = hit_id)
+    assignments = hit_response['Assignments']
+    for assignment_response in assignments:
+        try:
+            parsed_response = parse_mturk_assignment_response(assignment_response)
+        except json.JSONDecodeError as e:
+            logger.error("Improper response for assignment_id %s, response=%s", assignment_response['AssignmentId'], assignment_response)
+            increment_assignments(conn, hit_id)
+        except Exception as e:
+            logger.error(e)
+            increment_assignments(conn, hit_id)
+
+        parsed_response['state'] = assignment_state_map[parsed_response['state']]
+        api.insert_assignment(
+                assignment_id=parsed_response['assignment_id'],
+                hit_id=parsed_response['hit_id'],
+                worker_id=parsed_response['worker_id'],
+                worker_time=parsed_response['worker_time'],
+                comments=parsed_response['comments'],
+                response=parsed_response['response'],
+                state=parsed_response['state'],
+                created=parsed_response['created'],
+                )
+
+def retrieve_assignments_for_mturk_batch(conn, mturk_batch_id, only_incomplete_hits=True):
     """Get all the completed assignments for the given @mturk_batch_id and insert into the database"""
-    raise NotImplementedError
+    print("Backfilling assignments for mturk batch id %s", mturk_batch_id)
+    all_hits = not only_incomplete_hits
+    for row in db.select("SELECT id FROM mturk_hit WHERE batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id):
+        hit_incomplete = not web_data.check_hit_complete(row.id)
+        if all_hits or hit_incomplete:
+            retrieve_assignments_for_hit(conn, row.id)
+
+
 
 def pending_reject_assignment(assignment_id, message = None):
     send_mail(
@@ -423,6 +461,34 @@ def approve_assignment(conn, assignment_id):
 
     conn.approve_assignment(AssignmentId = assignment_id)
     return True
+
+def parse_mturk_assignment_response(response):
+    """Insert an assignment based on mturk_response"""
+    xml_answer = response['Answer']
+    answers = ET.fromstring(xml_answer)
+    xml_fields = {}
+    for answer in answers.findall('./'):
+        if 'Answer' in answer.tag:
+            field = None
+            for child in answer.findall('./'):
+                if 'QuestionIdentifier' in child.tag:
+                    field = child.text
+                if 'FreeText' in child.tag:
+                    xml_fields[field] = child.text
+    fields = {}
+    fields['assignment_id'] = response['AssignmentId']
+    fields['hit_id'] = response['HITId']
+    fields['worker_id'] = response['WorkerId']
+    fields['worker_time'] = xml_fields['workerTime']
+    fields['comments'] = xml_fields['comment']
+    fields['created'] = response['SubmitTime']
+    fields['state'] = response['AssignmentStatus']
+    fields['response'] = json.loads(xml_fields['response'])
+    return fields
+
+def test_insert_assignment_from_mturk_response():
+    sample_response = {'Answer': '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<QuestionFormAnswers xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionFormAnswers.xsd">\n<Answer>\n<QuestionIdentifier>csrfmiddlewaretoken</QuestionIdentifier>\n<FreeText>BdcX1JGw8D7v25lyqSe7EQV7JXeJEVULNhshEoaSR8zN1Q95sZkAI9UF8vFwt7mm</FreeText>\n</Answer>\n<Answer>\n<QuestionIdentifier>mentionPair</QuestionIdentifier>\n<FreeText>span-gloss:span-gloss</FreeText>\n</Answer>\n<Answer>\n<QuestionIdentifier>workerId</QuestionIdentifier>\n<FreeText>A17AH7B74XRKX1</FreeText>\n</Answer>\n<Answer>\n<QuestionIdentifier>workerTime</QuestionIdentifier>\n<FreeText>90.555</FreeText>\n</Answer>\n<Answer>\n<QuestionIdentifier>submit</QuestionIdentifier>\n<FreeText/>\n</Answer>\n<Answer>\n<QuestionIdentifier>response</QuestionIdentifier>\n<FreeText>[{"version":0.2,"doc_id":"ENG_NW_001278_20130416_F00012SFY","subject":{"gloss":"Buddha","type":"PER","span":[745,751],"entity":{"gloss":"Buddha","type":"PER","link":":gautama_buddha_9d231f42","span":[745,751],"canonicalCorrect":true,"linkGold":"Gautama_Buddha"}},"relation":"per:place_of_birth","object":{"gloss":"Nepal","type":"GPE","span":[764,769],"entity":{"gloss":"Nepal","type":"GPE","link":":nepal_a23e9cdd","span":[1773,1778],"canonicalCorrect":true,"linkGold":"Nepal"}}}]</FreeText>\n</Answer>\n<Answer>\n<QuestionIdentifier>docId</QuestionIdentifier>\n<FreeText>ENG_NW_001278_20130416_F00012SFY</FreeText>\n</Answer>\n<Answer>\n<QuestionIdentifier>comment</QuestionIdentifier>\n<FreeText/>\n</Answer>\n<Answer>\n<QuestionIdentifier>params</QuestionIdentifier>\n<FreeText>{"batch_type": "selective_relations", "object": {"span": [764, 769], "gloss": "Nepal", "type": "GPE", "entity": {"span": [1773, 1778], "link": ":nepal_a23e9cdd", "gloss": "Nepal", "type": "GPE"}}, "submission_id": 27, "doc_id": "ENG_NW_001278_20130416_F00012SFY", "subject": {"span": [745, 751], "gloss": "Buddha", "type": "PER", "entity": {"span": [745, 751], "link": ":gautama_buddha_9d231f42", "gloss": "Buddha", "type": "PER"}}}</FreeText>\n</Answer>\n</QuestionFormAnswers>\n'}
+    return insert_assignment_from_mturk_response(sample_response)
 
 if __name__ == '__main__':
     pending_reject_assignment('test_assignment_id', 'Test_message')

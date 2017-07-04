@@ -5,10 +5,12 @@ Interfacing with database API
 import logging
 from datetime import date, datetime
 from collections import Counter
+import json
 
 from . import db
 from . import defs
 from .util import stuple
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -458,24 +460,40 @@ def get_submission_relation_list(submission_id, count=1):
         if len(ret) == count: break
     return ret
 
+
+                    
+
 def insert_assignment(
         assignment_id, hit_id, worker_id,
         worker_time, comments, response,
-        state="pending-validation", created=datetime.now()):
-    batch_id = db.get("""SELECT batch_id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id)
-
-    db.execute("""
-        INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, state)
-        VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(state)s)""",
-               assignment_id=assignment_id,
-               hit_id=hit_id,
-               batch_id=batch_id,
-               worker_id= worker_id,
-               created= created,
-               worker_time=int(float(worker_time)),
-               response=db.Json(response),
-               comments=comments,
-               state=state)
+        state="pending-extraction", created=datetime.now()):
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            batch_id = db.get("""SELECT batch_id FROM mturk_hit WHERE id = %(hit_id)s;""", hit_id=hit_id, cur=cur)
+            existing_response = db.select("SELECT * FROM mturk_assignment WHERE id = %(assignment_id)s;", assignment_id=assignment_id, cur=cur)
+            if len(existing_response) >= 1:
+                assert len(existing_response) == 1, "More than 1 assignment stored for an assignment_id"
+                existing_response = existing_response[0]
+                existing_response_json = json.dumps(existing_response.response, sort_keys=True)
+                response_json = json.dumps(response, sort_keys=True)
+                assert existing_response_json == response_json, "Existing response %s doesn't match with the one being inserted %s"%(existing_response_json, response_json)
+                if state == 'submitted':
+                    state = existing_response.state
+                else:
+                    #states could be approved or rejected
+                    pass
+            db.execute("""
+                INSERT INTO mturk_assignment (id, hit_id, batch_id, worker_id, created, worker_time, response, comments, state)
+                VALUES (%(assignment_id)s, %(hit_id)s, %(batch_id)s, %(worker_id)s, %(created)s, %(worker_time)s, %(response)s, %(comments)s, %(state)s) ON CONFLICT (id)  DO UPDATE SET state=%(state)s""",
+                       assignment_id=assignment_id,
+                       hit_id=hit_id,
+                       batch_id=batch_id,
+                       worker_id= worker_id,
+                       created= created,
+                       worker_time=int(float(worker_time)),
+                       response=db.Json(response),
+                       comments=comments,
+                       state=state)
     return assignment_id
 
 def get_hits(limit=None):
@@ -792,3 +810,4 @@ def get_mturk_batch_status(batch_id):
         GROUP BY state
         """, batch_id=batch_id)
     return Counter({state: count for state, count in stats})
+
