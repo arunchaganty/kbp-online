@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 def home(request):
     return render(request, 'home.html')
 
+def handle404(request):
+    messages.error(request, "Sorry, we could not find any page for the url you requested, {}".format(request.url)) 
+    return redirect("home")
+
+def handle500(request):
+    messages.error(request, "Woops! Something went wrong on our side. If this problem persists, please let us know at kbp-online-admin@lists.stanford.edu")
+    return redirect("home")
+
 @login_required
 def submissions_remove(request, submission_id):
     # TODO: Remove from submission_* too.
