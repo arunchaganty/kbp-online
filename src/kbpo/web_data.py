@@ -1098,7 +1098,9 @@ def check_batch_complete(mturk_batch_id):
     with db.CONN:
         with db.CONN.cursor() as cur:
             rows = db.select("""
-            SELECT a.hit_id, count( a.state <> 'error') = (b.params->>'max_assignments')::int AS hit_complete , count(a.state = 'error') as hit_errors
+            SELECT a.hit_id,
+                SUM(CASE WHEN a.state <> 'error' THEN 1 ELSE 0 END) = (b.params->>'max_assignments')::int AS hit_complete,
+                SUM(CASE WHEN a.state = 'error' THEN 1 ELSE 0 END) AS hit_errors
 
             FROM mturk_assignment AS a 
             LEFT JOIN mturk_hit AS h 
