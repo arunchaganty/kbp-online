@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 def home(request):
     return render(request, 'home.html')
 
-def handle404(request):
-    messages.error(request, "Sorry, we could not find any page for the url you requested, {}".format(request.url)) 
+def handle404(request, exception):
+    messages.error(request, "Sorry, we could not find any page for the url you requested, {}".format(request.path)) 
     return redirect("home")
 
 def handle500(request):
