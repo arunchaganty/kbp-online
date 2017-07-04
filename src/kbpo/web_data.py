@@ -13,6 +13,7 @@ import itertools
 
 import datetime
 from tqdm import tqdm
+from .logging_handlers import TqdmLoggingHandler
 import urllib.parse
 from .fleiss import computeKappa
 urllib.parse.unquote('Hern%C3%A1n_Barcos')
@@ -23,6 +24,7 @@ from .schema import Provenance, MentionInstance, LinkInstance, RelationInstance,
 from .defs import RELATION_TYPES, INVERTED_RELATIONS, ALL_RELATIONS, ENTITY_SLOT_TYPES
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+logger.addHandler (TqdmLoggingHandler ())
 import pandas as pd
 
 def check_wiki_namespace(link):
@@ -345,7 +347,7 @@ def _parse_responses(rows):
     evaluation_mentions = []
     evaluation_links = []
     evaluation_relations = []
-    for row in tqdm(rows): # Q: Should there be a fixed type?
+    for row in tqdm(rows, desc="Parse responses"): # Q: Should there be a fixed type?
         if len(row.response) == 0:
             logger.warning("Empty response : %s", row)
             continue
@@ -533,7 +535,7 @@ def _merge_evaluation_mentions(cur, doc_table = None):
     span_to_winning_span_map = {}
     spans_window = []
     winning_span = None
-    for span_row in tqdm(db.select("SELECT * from span_counts ORDER BY doc_id, span, count;")):
+    for span_row in tqdm(db.select("SELECT * from span_counts ORDER BY doc_id, span, count;"), desc='Merge evaluation mentions'):
         spans_window.append(span_row)
         if winning_span is None:
             winning_span = span_row
@@ -594,6 +596,7 @@ def _merge_evaluation_links(cur, doc_table):
         This would not have held if the denominator was calculated separately for separate questions. 
         However, we calculate denominator over all questions which have these link names as the answers (yay)
     """
+    logger.info("_merge_evaluation_links: Merging evaluation links")
     db.execute("""DELETE FROM evaluation_link AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""", cur=cur)
     db.execute(
         """
@@ -607,6 +610,7 @@ def _merge_evaluation_links(cur, doc_table):
             ON d.doc_id = c.doc_id AND d.span = c.span AND d.link_name = c.link_name
         WHERE c.count/d.denominator > 0.5;
         """, cur = cur)
+    logger.info("_merge_evaluation_links: Adding links from canonical mention")
     db.execute("""
         INSERT INTO evaluation_link(doc_id, span, question_batch_id, question_id, link_name, correct, weight)
         SELECT m.doc_id, m.span, m.question_batch_id, m.question_id, 'gloss:' || cm.gloss, True, cm.weight 
@@ -623,6 +627,7 @@ def _merge_evaluation_relations(cur, doc_table):
     Merge evaluation_relation_responses to get modal relation
         Compute winner by majority
     """
+    logger.info("_merge_evaluation_relations: Merging evaluation relations")
     db.execute("""DELETE FROM evaluation_relation AS m USING """+doc_table+""" AS docs WHERE m.doc_id = docs.doc_id;""", cur=cur)
     db.execute(
         """
@@ -637,24 +642,25 @@ def _merge_evaluation_relations(cur, doc_table):
         WHERE c.count/d.denominator > 0.5;
         """, cur = cur)
 
-def merge_evaluation_links(row):
-    assert len(row) > 0.
-    link_name = majority_element(row.link_names)
-    weight = sum(weight for weight, link_name_ in zip(row.weights, row.link_names) if link_name_ == link_name)/len(row.weights)
-
-    return row.doc_id, row.mention_id, link_name, weight
-
-def merge_evaluation_relations(row):
-    assert len(row) > 0.
-    # Choose the most frequent char_begin and char_end.
-    relation = majority_element(row.relations)
-    n_assignments = max(max([int(params['max_assignments']) for params in row.params]), len(row.weights))
-
-    #param = majority_element(row.params)
-    weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/n_assignments
-
-    return {'question_id': row.question_id, 'question_batch_id': row.question_batch_id, 'doc_id': row.doc_id, 'subject': row.subject, 'object': row.object, 'relation': relation, 'weight': weight}
-
+#Deprecated
+#def merge_evaluation_links(row):
+#    assert len(row) > 0.
+#    link_name = majority_element(row.link_names)
+#    weight = sum(weight for weight, link_name_ in zip(row.weights, row.link_names) if link_name_ == link_name)/len(row.weights)
+#
+#    return row.doc_id, row.mention_id, link_name, weight
+#
+#def merge_evaluation_relations(row):
+#    assert len(row) > 0.
+#    # Choose the most frequent char_begin and char_end.
+#    relation = majority_element(row.relations)
+#    n_assignments = max(max([int(params['max_assignments']) for params in row.params]), len(row.weights))
+#
+#    #param = majority_element(row.params)
+#    weight = sum(weight for weight, relation_ in zip(row.weights, row.relations) if relation_ == relation)/n_assignments
+#
+#    return {'question_id': row.question_id, 'question_batch_id': row.question_batch_id, 'doc_id': row.doc_id, 'subject': row.subject, 'object': row.object, 'relation': relation, 'weight': weight}
+#
 ## TODO: Fix to handle overlapping mentions, etc. -- basically this approach is broken.
 #def update_evaluation_mention():
 #    with db.CONN:
@@ -692,7 +698,7 @@ def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = Non
             if mode == 'mturk_batch':
                 assert mturk_batch_id is not None, 'mturk_batch_id needs to be supplied'
                 mode = 'doc_list'
-                doc_list = [(get_doc_id(x.id),) for x in db.select("SELECT id FROM mturk_hit where batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)]
+                doc_list = list(set([(get_doc_id(x.id),) for x in db.select("SELECT DISTINCT id FROM mturk_hit where batch_id = %(mturk_batch_id)s", mturk_batch_id = mturk_batch_id)]))
             if mode == 'hit':
                 assert hit_id is not None, "hit_id need to be supplied"
                 mode = 'doc_list'
@@ -709,7 +715,7 @@ def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = Non
                 cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
 
             elif mode == 'all':
-                cur.execute("CREATE TEMPORARY TABLE _docids_for_merging AS (SELECT distinct doc_id FROM {});".format(merging_tables[table]))
+                cur.execute("CREATE TEMPORARY TABLE _docids_for_merging AS (SELECT DISTINCT doc_id FROM {});".format(merging_tables[table]))
                 cur.execute("CREATE INDEX docid_idx ON _docids_for_merging(doc_id);")
 
             elif mode == 'update':
@@ -734,50 +740,51 @@ def merge_evaluation_table(table, mode = 'update', hit_id = None, doc_list = Non
             cur.execute("""DROP TABLE _docids_for_merging;""")
 
 
-def _update_evaluation_link():
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            cur.execute("""TRUNCATE evaluation_link;""")
-            # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""
-            WITH _response_count AS (SELECT doc_id, COUNT(DISTINCT assignment_id) FROM evaluation_mention_response GROUP BY doc_id)
-            SELECT doc_id, mention_id, array_agg(link_name) AS link_names, array_agg(weight) AS weights 
-            FROM evaluation_link_response GROUP BY doc_id, mention_id""")
-            # Take the majority vote on this mention iff count > 1.
-            values = [merge_evaluation_links(row) for row in tqdm(cur, total=cur.rowcount)]
-            logger.info("%d rows of evaluation_link_response merged into %d rows", cur.rowcount, len(values))
-            db.execute_values(cur, """INSERT INTO evaluation_link(doc_id, mention_id, link_name, weight) VALUES %s""", values)
-
-def update_evaluation_relation():
-    with db.CONN:
-        with db.CONN.cursor() as cur:
-            cur.execute("""TRUNCATE evaluation_relation;""")
-            # For evaluation_mention, we want to aggregate both types and canonical_ids.
-            cur.execute("""SELECT array_agg(question_id) as question_id , array_agg(question_batch_id) as question_batch_id, doc_id, subject, object, array_agg(relation) AS relations, array_agg(weight) as weights, array_agg(params) as params FROM evaluation_relation_response as r, mturk_assignment as a, mturk_batch as b WHERE r.assignment_id = a.id AND a.batch_id = b.id GROUP BY doc_id, subject, object""")
-            # Take the majority vote on this mention iff count > 1.
-            values = [merge_evaluation_relations(row) for row in tqdm(cur, total=cur.rowcount)]
-            print(values[0:2])
-            logger.info("%d rows of evaluation_relation_response merged into %d rows", cur.rowcount, len(values))
-            db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject, object, relation, weight) VALUES %s""", values, template = "(%(question_id)s, %(question_batch_id)s, %(doc_id)s, %(subject)s, %(object)s, %(relation)s, %(weight)s)")
-
-def update_summary():
-    """
-    Updates the evaluation_mention, evaluation_link and evaluation_relation tables.
-    """
-    update_evaluation_mention()
-    update_evaluation_link()
-    update_evaluation_relation()
-
-    """
-    CREATE TEMP TABLE mention_gloss_true AS (
-        SELECT m.doc_id, m.span, array_agg(w.gloss) 
-        FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m 
-        LEFT JOIN (SELECT doc_id, int4range(dcb, dce) as span, gloss FROM (
-            SELECT doc_id, unnest(doc_char_begin) AS dcb, unnest(doc_char_end) AS dce, unnest(words) as gloss 
-            FROM sentence ORDER BY doc_id) as t) AS w 
-        ON m.doc_id = w.doc_id AND m.span @> w.span group by m.doc_id, m.span
-    );
-    """
+#Deprecated
+#def _update_evaluation_link():
+#    with db.CONN:
+#        with db.CONN.cursor() as cur:
+#            cur.execute("""TRUNCATE evaluation_link;""")
+#            # For evaluation_mention, we want to aggregate both types and canonical_ids.
+#            cur.execute("""
+#            WITH _response_count AS (SELECT doc_id, COUNT(DISTINCT assignment_id) FROM evaluation_mention_response GROUP BY doc_id)
+#            SELECT doc_id, mention_id, array_agg(link_name) AS link_names, array_agg(weight) AS weights 
+#            FROM evaluation_link_response GROUP BY doc_id, mention_id""")
+#            # Take the majority vote on this mention iff count > 1.
+#            values = [merge_evaluation_links(row) for row in tqdm(cur, total=cur.rowcount)]
+#            logger.info("%d rows of evaluation_link_response merged into %d rows", cur.rowcount, len(values))
+#            db.execute_values(cur, """INSERT INTO evaluation_link(doc_id, mention_id, link_name, weight) VALUES %s""", values)
+#
+#def update_evaluation_relation():
+#    with db.CONN:
+#        with db.CONN.cursor() as cur:
+#            cur.execute("""TRUNCATE evaluation_relation;""")
+#            # For evaluation_mention, we want to aggregate both types and canonical_ids.
+#            cur.execute("""SELECT array_agg(question_id) as question_id , array_agg(question_batch_id) as question_batch_id, doc_id, subject, object, array_agg(relation) AS relations, array_agg(weight) as weights, array_agg(params) as params FROM evaluation_relation_response as r, mturk_assignment as a, mturk_batch as b WHERE r.assignment_id = a.id AND a.batch_id = b.id GROUP BY doc_id, subject, object""")
+#            # Take the majority vote on this mention iff count > 1.
+#            values = [merge_evaluation_relations(row) for row in tqdm(cur, total=cur.rowcount)]
+#            print(values[0:2])
+#            logger.info("%d rows of evaluation_relation_response merged into %d rows", cur.rowcount, len(values))
+#            db.execute_values(cur, """INSERT INTO evaluation_relation(question_id, question_batch_id, doc_id, subject, object, relation, weight) VALUES %s""", values, template = "(%(question_id)s, %(question_batch_id)s, %(doc_id)s, %(subject)s, %(object)s, %(relation)s, %(weight)s)")
+#
+#def update_summary():
+#    """
+#    Updates the evaluation_mention, evaluation_link and evaluation_relation tables.
+#    """
+#    update_evaluation_mention()
+#    update_evaluation_link()
+#    update_evaluation_relation()
+#
+#    """
+#    CREATE TEMP TABLE mention_gloss_true AS (
+#        SELECT m.doc_id, m.span, array_agg(w.gloss) 
+#        FROM (SELECT distinct doc_id, span  FROM evaluation_mention_response) as m 
+#        LEFT JOIN (SELECT doc_id, int4range(dcb, dce) as span, gloss FROM (
+#            SELECT doc_id, unnest(doc_char_begin) AS dcb, unnest(doc_char_end) AS dce, unnest(words) as gloss 
+#            FROM sentence ORDER BY doc_id) as t) AS w 
+#        ON m.doc_id = w.doc_id AND m.span @> w.span group by m.doc_id, m.span
+#    );
+#    """
 
 
 def sanitize_mention_response(response):
@@ -1032,6 +1039,7 @@ def sanitize_mention_response_table():
 
 def verify_evaluation_relation_response():
     """Flag workers and their assignments based on consistent disagreement with the consensus"""
+    logger.info("verify_evaluation_relation_response")
     worker_agreement_with_majority = db.select("""
     SELECT worker_id, array_agg(assignment_id) as assignment_ids, count(*) AS total, count(case when relation <> majority_relation then 1 end) AS disagree, count(case when relation = majority_relation then 1 end) AS agree
     FROM (
@@ -1056,10 +1064,17 @@ def verify_evaluation_relation_response():
             assignment2flag[assignment_id] = flag
 
 
-    values = [{'assignment_id':k, 'flag': v, 'message': 'Incorrect relation'} for k, v in assignment2flag.items()]
+    values = [{'assignment_id':k, 'flag': v, 'message': 'Incorrect relation' if flag == False else None} for k, v in assignment2flag.items()]
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, state='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+            db.execute_values(cur, b"""
+            UPDATE mturk_assignment AS m 
+            SET verified = c.flag, 
+                state='pending-payment' ,
+                message = c.message
+            FROM (values %s ) AS c(assignment_id, flag, message) 
+            WHERE c.assignment_id = id AND state='pending-verification';
+            """, values, template = "(%(assignment_id)s, %(flag)s, %(message)s)")
 
 def verify_evaluation_mention_response(question_id = None):
     """Looks at extracted mention responses and applies basic filtering to approve or reject HITs"""
@@ -1087,10 +1102,18 @@ def verify_evaluation_mention_response(question_id = None):
 
     for assignment_id, z in tqdm(assignment2z.items()):
         flag = z > 0.50
-        values.append({'flag' : flag, 'assignment_id' : assignment_id, 'message': 'Too few mentions extracted for this document.'})
+        values.append({'flag' : flag, 'assignment_id' : assignment_id, 'message':'Too few mentions extracted for this document.' if flag == False else None})
     with db.CONN:
         with db.CONN.cursor() as cur:
-            db.execute_values(cur, b"""UPDATE mturk_assignment AS m SET verified = c.flag, state='pending-payment' FROM (values %s ) AS c(assignment_id, flag) where c.assignment_id = id;""", values, template = "(%(assignment_id)s, %(flag)s)")
+            db.execute_values(cur, b"""
+            UPDATE mturk_assignment AS m
+            SET verified = c.flag, 
+                state='pending-payment',
+                message=c.message
+            FROM (values %s ) 
+            AS c(assignment_id, flag, message) 
+            WHERE c.assignment_id = id AND state='pending-verification';""", 
+            values, template = "(%(assignment_id)s, %(flag)s, %(message)s)")
 
 def check_batch_complete(mturk_batch_id):
     """Check if all assignments for an mturk_batch have been collected"""
