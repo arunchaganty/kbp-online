@@ -110,7 +110,7 @@ def process_submission(submission_id, chain=True):
         state.status = 'pending-sampling'
         state.save()
         if chain:
-            sample_submission.delay(submission_id)
+            sample_submission.delay(submission_id, n_samples=500)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
@@ -118,7 +118,7 @@ def process_submission(submission_id, chain=True):
         state.save()
 
 @shared_task
-def sample_submission(submission_id, type_='entity_relation', n_samples=1000, chain=True):
+def sample_submission(submission_id, type_='entity_relation', n_samples=500, chain=True):
     #TODO: Get the correct number of samples inside this function
     """
     Takes care of sampling from a submission to create evaluation_question and evaluation_batch.

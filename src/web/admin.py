@@ -27,8 +27,8 @@ def resample_submission(_, __, queryset):
         row.state.status = 'pending-sampling'
         row.state.message = ""
         row.state.save()
-        tasks.sample_submission.delay(row.id)
-resample_submission.short_description = "Resample submission (warning will create a new sample that may be turked)."
+        tasks.sample_submission.delay(row.id, n_samples=500)
+resample_submission.short_description = "Resample submission (500 samples) (warning will create a new sample that may be turked)."
 
 def resample_submission_medium(_, __, queryset):
     for row in queryset:
