@@ -104,7 +104,7 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
           }
         // TODO: launch date modeal
         self.dateModal.cb = function (link) {linkDone(link);};
-        self.dateModal.show(mention.gloss, mention.entity.link);
+        self.dateModal.show(mention.gloss, linkStr);
       } else {
           if (mention.entity.link.substring(0,5) == "wiki:") {
               linkStr = mention.entity.link.substring(5);

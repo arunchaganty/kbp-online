@@ -58,7 +58,7 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
 
   DateModal.prototype.show = function(mentionGloss, suggestion){
     var parsedSuggestion;
-    if(suggestion !== undefined && suggestion.match('X') === null){
+    if(suggestion !== undefined && suggestion.match('X') === null) {
       // using .utc handles the edge condition where 'Tuesday' is
       // taken to be 00:00 (timezone), but when rendered, gets
       // reweinded.
@@ -67,8 +67,21 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
       if (_parsedSuggestion._isValid){
         parsedSuggestion = _parsedSuggestion;
       }
+      this.refresh(parsedSuggestion.year(), parsedSuggestion.month(), parsedSuggestion.date(), parsedSuggestion.week());
+    } else if (suggestion.match(/([0-9X]{4})-([0-9X]{2})-([0-9X]{2})/) !== null) {
+      var grps = suggestion.match(/([0-9X]{4})-([0-9X]{2})-([0-9X]{2})/);
+
+      var year = grps[1].match("X") ? null : grps[1];
+      var month = grps[2].match("X") ? null : grps[2];
+      var day = grps[2].match("X") ? null : grps[2];
+
+      this.refresh(year, month, day);
+    } else if (this.docdate) {
+      this.refresh(this.docdate.year(), this.docdate.month(), this.docdate.date(), this.docdate.week());
+    } else {
+      var now = moment();
+      this.refresh(now.year(), now.month(), now.date(), now.week());
     }
-    this.refresh(parsedSuggestion);
     this.elem.find('#date-gloss').text(mentionGloss);
     $('#date-widget-modal').modal('show');
   };
@@ -157,10 +170,11 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
     return dateStr;
   };
 
-  DateModal.prototype.refresh = function(date){
+  DateModal.prototype.refresh = function(year, month, day, week) {
     this.elem.find('.date-now').removeClass('date-now');
     //this.elem.find(':selected').each(function(elem){$(elem).prop("selected", false);});
 
+    // Reset the month widgets
     this.monthSelect.find('option').remove();
     this.weekSelect.find('option')./*not('[value=NA]').*/remove();
     this.yearSelect.find('option')./*not('[value=NA]').*/remove();
@@ -171,32 +185,42 @@ define(['jquery', 'moment/moment', 'bootstrap', '../util'], function($, moment, 
 
     var months = moment.monthsShort();
     var i;
-    for(i=1; i<=12;i++){ 
+    for (i=1; i<=12; i++) { 
       this.monthSelect.append($("<option />").val(i).text(months[i-1]));
     }
-    for(i=1; i<=53;i++){
+    for (i=1; i<=53;i++) {
       this.weekSelect.append($("<option />").val(i).text(i));
     }
-    for(i=2017; i>=1900;i--){
+    for (i=2017; i>=1900;i--) {
       this.yearSelect.append($("<option />").val(i).text(i));
     }
     this.monthSelect.change($.proxy(this.refreshDays, this));
     this.yearSelect.change($.proxy(this.refreshDays, this));
-    if (date === undefined){
-      if (this.docdate === undefined){
-        date=moment();
-      }
-      else{
-        date = this.docdate;
-      }
-    }   
 
-    this.monthSelect.find('option[value='+(date.month()+1)+']').attr("selected", true);
-    this.weekSelect.find('option[value='+date.week()+']').attr("selected", true);
-    this.yearSelect.find('option[value='+date.year()+']').attr("selected", true);
+    if (year === null) {
+      this.yearSelect.find('option[value=NA]').attr("selected", true);
+    } else {
+      this.yearSelect.find('option[value='+year+']').attr("selected", true);
+    }
+    if (month === null) {
+      this.monthSelect.find('option[value=NA]').attr("selected", true);
+    } else {
+      this.monthSelect.find('option[value='+month+']').attr("selected", true);
+    }
+    if (week === null) {
+      this.weekSelect.find('option[value=NA]').attr("selected", true);
+    } else {
+      this.weekSelect.find('option[value='+week+']').attr("selected", true);
+    }
     this.refreshDays();
-    this.daySelect.find('option[value='+date.date()+']').attr("selected", true);
-    if(this.docdate !== undefined){
+
+    if (day === null) {
+      this.daySelect.find('option[value=NA]').attr("selected", true);
+    } else {
+      this.daySelect.find('option[value='+day+']').attr("selected", true);
+    }
+
+    if(this.docdate !== undefined) {
       this.monthSelect.find('option[value='+(this.docdate.month()+1)+']').addClass('date-now');
       this.weekSelect.find('option[value='+(this.docdate.week())+']').addClass('date-now');
       this.yearSelect.find('option[value='+(this.docdate.year())+']').addClass('date-now');
