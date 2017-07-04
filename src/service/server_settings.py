@@ -39,76 +39,26 @@ DATABASES = {
 DATABASES['default'] = DATABASES['production']
 
 # Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'default': {
-            'format': '%(asctime)s %(levelname)-8s %(name)-15s %(message)s',
-            'datefmt' : '%Y-%m-%d %H:%M:%S',
-            }
-    },
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/data/kbpo/web/all.log',
-            'formatter': 'default',
-        },
-        'django': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/data/kbpo/web/django.log',
-            'formatter': 'default',
-        },
-        'kbpo': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/data/kbpo/web/kbpo.log',
-            'formatter': 'default',
-        },
-        'celery': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/data/kbpo/web/celery.log',
-            'formatter': 'default',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file', 'django'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'kbpo': {
-            'handlers': ['file', 'kbpo'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'web': {
-            'handlers': ['file', 'kbpo'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'celery': {
-            'handlers': ['file', 'celery'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'root': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
-}
+LOGGING['handlers']['file']['filename'] = '/data/kbpo/web/all.log'
+LOGGING['handlers']['django']['filename'] = '/data/kbpo/web/django.log'
+LOGGING['handlers']['kbpo']['filename'] = '/data/kbpo/web/kbpo.log'
+LOGGING['handlers']['celery']['filename'] = '/data/kbpo/web/celery.log'
+
+# Logging
+LOGGING["handlers"]["email"] = {
+    'level': 'ERROR',
+    'class': 'logging.handlers.SMTPHandler',
+    'mailhost': 'localhost',
+    'fromaddr': 'admin@kbpo.stanford.edu',
+    'toaddrs': ['chaganty@stanford.edu', 'ashwinpp@stanford.edu', 'kbp-online-admin@lists.stanford.edu'],
+    'subject': 'ERROR with kbpo-local',
+    }
+LOGGING["root"]["handlers"] += ["email"]
 
 # Host for sending e-mail.
 EMAIL_HOST = 'localhost'
-
 # Port for sending e-mail.
-EMAIL_PORT = 1025
-
+EMAIL_PORT = 25
 # Optional SMTP authentication information for EMAIL_HOST.
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''

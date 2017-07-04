@@ -29,30 +29,21 @@ DATABASES = {
 DATABASES['default'] = DATABASES['test']
 
 # Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
+LOGGING["handlers"]["email"] = {
+    'level': 'ERROR',
+    'class': 'logging.handlers.SMTPHandler',
+    'mailhost': 'localhost',
+    'fromaddr': 'admin@kbpo.stanford.edu',
+    'toaddrs': ['chaganty@stanford.edu', 'ashwinpp@stanford.edu', 'kbp-online-admin@lists.stanford.edu'],
+    'subject': 'ERROR with kbpo-local',
+    }
+LOGGING["root"]["handlers"] += ["email"]
 
 # Host for sending e-mail.
 EMAIL_HOST = 'localhost'
 
 # Port for sending e-mail.
-EMAIL_PORT = 1025
+EMAIL_PORT = 25
 
 # Optional SMTP authentication information for EMAIL_HOST.
 EMAIL_HOST_USER = ''
