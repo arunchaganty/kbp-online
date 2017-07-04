@@ -155,7 +155,7 @@ LOGGING = {
             'formatter': 'default',
         },
         'django': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'logs/django.log',
             'formatter': 'default',
@@ -167,7 +167,7 @@ LOGGING = {
             'formatter': 'default',
         },
         'celery': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'logs/celery.log',
             'formatter': 'default',
