@@ -90,10 +90,10 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs', '../util', './DocWid
           });
         });
 
-        var assignmentId = $("input[name='assignmentId'").val();
-        var hitId = $("input[name='hitId'").val();
-        var workerId = $("input[name='workerId'").val();
-        var csrftoken =  $("input[name='csrfmiddlewaretoken'").val();
+        var assignmentId = $("input[name='assignmentId']").val();
+        var hitId = $("input[name='hitId']").val();
+        var workerId = $("input[name='workerId']").val();
+        var csrftoken =  $("input[name='csrfmiddlewaretoken']").val();
         var data = JSON.stringify(relations);
         relations.forEach(checkResponse);
         var workerTime = (new Date().getTime() - self.startTime) / 1000;
