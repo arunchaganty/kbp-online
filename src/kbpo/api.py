@@ -557,7 +557,7 @@ def get_submission_entries(submission_id):
         """, submission_id=submission_id)):
 
         # Only keep non-inverted relations.
-        if row.predicate_name not in defs.RELATIONS and row.predicate_name in defs.INVERTED_RELATIONS:
+        if row.predicate_name not in defs.CANONICAL_RELATIONS and row.predicate_name in defs.INVERTED_RELATIONS:
             continue # skip because the inverted relation will come along.
 
         key = row.doc_id, stuple(row.subject), stuple(row.object)
