@@ -8,6 +8,8 @@ import logging
 import re
 import psycopg2
 from psycopg2.extras import execute_values, NumericRange, register_composite, Json
+
+# TODO: use django settings instead?
 from .params.db.default import _PARAMS
 
 logger = logging.getLogger(__name__)
