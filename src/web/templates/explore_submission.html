@@ -61,6 +61,29 @@
           function renderWikiLink(txt) {
             return txt.replace(/_/g, " ");
           }
+          function parseLink(str, gloss) {
+              // Get the canonical link and render it appropriately.
+              var linkStr, linkHref;
+              if (str.substring(0,5) == "wiki:") {
+                linkStr = renderWikiLink(str.substring(5));
+                linkHref = "https://en.wikipedia.org/wiki/" + str.substring(5);
+              } else if (str.substring(0,5) == "date:") {
+                linkStr = str.substring(5);
+                linkHref = "#";
+              } else if (str.substring(0,6) == "gloss:") {
+                linkStr = str.substring(6);
+                linkHref = "#";
+              } else if (str.substring(0,1) == ":") {
+                linkStr = (gloss.substring(0,6) == "gloss:") ? gloss.substring(6) : gloss;
+                linkHref = "#";
+              } else {
+                console.warn("Unexpected link string without appropriate namespace: " + str);
+                linkStr = str;
+                linkHref = "#";
+              }
+
+              return {"gloss": linkStr, "href": linkHref};
+          }
 
           var MARKER = {
             checkmark: "<span class='fa fa-fw fa-check'></span>",
@@ -72,24 +95,23 @@
           function renderMention(mention) {
             var ret = "";
             // Correct?
-            if (mention.isCorrect) {
-              ret += MARKER.checkmark;
-            } else if (mention.canonicalCorrect) {
-              console.assert(!mention.linkCorrect);
-              console.assert(mention.linkName !== mention.linkNameGold);
-              ret += pp.sprintf("<a href='https://en.wikipedia.org/wiki/%s' data-toggle='tooltip' title='%s'>%s</a>",
-                  mention.linkNameGold, renderWikiLink(mention.linkNameGold), MARKER.linkBroken); // Include link actual person.
+            link = parseLink(mention.entity.linkGold);
+            if (mention.entity.linkCorrect) {
+              marker = MARKER.checkmark;
             } else {
-              ret += MARKER.cross;
+              console.assert(mention.entity.link !== mention.entity.linkGold);
+              marker = MARKER.linkBroken;
             }
+            ret += pp.sprintf("<a href='%s' data-toggle='tooltip' title='%s'>%s</a>",
+                link.href, link.gloss, marker); // Include link actual person.
+
+            link = parseLink(mention.entity.link, mention.entity.gloss);
             // Type
-            ret += pp.sprintf(" <span class='fa fa-fw %s'></span> ", defs.TYPES[mention.mentionType].icon);
+            ret += pp.sprintf(" <span class='fa fa-fw %s'></span> ", defs.TYPES[mention.type].icon);
             // Link
-            if (mention.mentionType == "PER" || mention.mentionType == "ORG" || mention.mentionType == "GPE") {
-              ret += pp.sprintf("<a href='https://en.wikipedia.org/wiki/%s'>%s</a>", mention.linkName, renderWikiLink(mention.linkName));
-            } else {
-              ret += mention.canonicalGloss
-            }
+            ret += pp.sprintf("<a href='%s' data-toggle='tooltip' title='%s'>%s</a>",
+                link.href, "for " + mention.gloss, link.gloss); // Include link actual person.
+
             // If there is a correct link.
             return ret;
           }
@@ -147,7 +169,6 @@
           }
 
           function renderRow(row) {
-            row.isCorrect = row.predicate.isCorrect && row.subject.isCorrect && row.object.isCorrect;
             var tr = $("<tr>");
             tr.append($("<td>")
                 .attr("class", row.isCorrect ? "success" : "danger")
@@ -155,13 +176,13 @@
               .append($("<td>")
                 .html(renderSentence(row)))
               .append($("<td>")
-                .attr("class", row.subject.isCorrect ? "success" : "danger")
+                .attr("class", row.subject.entity.linkCorrect ? "success" : "danger")
                 .html(renderMention(row.subject)))
               .append($("<td>")
                 .attr("class", row.predicate.isCorrect ? "success" : "danger")
                 .html(renderPredicate(row.predicate)))
               .append($("<td>")
-                .attr("class", row.object.isCorrect ? "success" : "danger")
+                .attr("class", row.object.entity.linkCorrect ? "success" : "danger")
                 .html(renderMention(row.object)))
                 ;
             return tr;

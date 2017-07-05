@@ -53,7 +53,7 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
         if key not in question_groups: continue
 
         q_ = question_groups[key]
-        # If you find a match, then break out of this loop
+        # Purge any questions that have already been asked.
         if (q.subject_canonical_gloss in q_.subject_canonical_gloss or q.subject_entity == q_.subject_entity) and \
                 (q.object_canonical_gloss == q_.object_canonical_gloss or q.object_entity == q_.object_entity):
             del question_groups[key]

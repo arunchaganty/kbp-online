@@ -527,25 +527,33 @@ def get_submission_entries(submission_id):
                corpus_tag,
                sentence,
                sentence_span,
-               subject_span,
+               subject,
                subject_type,
                subject_gloss,
-               subject_link,
-               subject_link_gold,
-               subject_link_correct,
-               subject_correct,
-               object_span,
+               subject_canonical_gloss,
+               object,
                object_type,
                object_gloss,
-               object_link,
-               object_link_gold,
-               object_link_correct,
-               object_correct,
+               object_canonical_gloss,
+
+               subject_entity,
+               subject_entity_gold,
+               subject_entity_correct,
+
+               object_entity,
+               object_entity_gold,
+               object_entity_correct,
+
                predicate_name,
-               predicate_gold
+               predicate_gold,
+               predicate_correct,
+               correct
+
         FROM submission_entries
         WHERE submission_id = %(submission_id)s
-        ORDER BY doc_id, subject_span, object_span
+          AND subject_type_match AND object_type_match
+          AND subject_entity_match AND object_entity_match
+        ORDER BY doc_id, subject, object
         """, submission_id=submission_id)):
         entry = {
             "id": i,
@@ -554,30 +562,37 @@ def get_submission_entries(submission_id):
             "title": row.title,
             "sentence": row.sentence,
             "subject": {
-                "span": [row.subject_span.lower - row.sentence_span.lower, row.subject_span.upper  - row.sentence_span.lower],
-                "mentionType": row.subject_type,
-                "canonicalGloss": row.subject_gloss,
-                "canonicalCorrect": row.subject_correct,
-                "linkName": row.subject_link,
-                "linkNameGold": row.subject_link_gold,
-                "linkCorrect": row.subject_link_correct,
-                "isCorrect": row.subject_correct and row.subject_link_correct,
+                # Relative to sentences
+                "span": [row.subject.lower - row.sentence_span.lower, row.subject.upper  - row.sentence_span.lower],
+                "type": row.subject_type,
+                "gloss": row.subject_gloss,
+                "entity": {
+                    "type": row.subject_type,
+                    "gloss": row.subject_canonical_gloss,
+                    "link": row.subject_entity,
+                    "linkGold": row.subject_entity_gold,
+                    "linkCorrect": row.subject_entity_correct,
+                    },
                 },
             "object": {
-                "span": [row.object_span.lower - row.sentence_span.lower, row.object_span.upper - row.sentence_span.lower],
-                "mentionType": row.object_type,
-                "canonicalGloss": row.object_gloss,
-                "canonicalCorrect": row.object_correct,
-                "linkName": row.object_link,
-                "linkNameGold": row.object_link_gold,
-                "linkCorrect": row.object_link_correct,
-                "isCorrect": row.object_correct and row.object_link_correct,
+                # Relative to sentences
+                "span": [row.object.lower - row.sentence_span.lower, row.object.upper  - row.sentence_span.lower],
+                "type": row.object_type,
+                "gloss": row.object_gloss,
+                "entity": {
+                    "type": row.object_type,
+                    "gloss": row.object_canonical_gloss,
+                    "link": row.object_entity,
+                    "linkGold": row.object_entity_gold,
+                    "linkCorrect": row.object_entity_correct,
+                    },
                 },
             "predicate": {
                 "name": row.predicate_name,
                 "gold": row.predicate_gold,
-                "isCorrect": row.predicate_name == row.predicate_gold,
-                }
+                "isCorrect": row.predicate_correct,
+                },
+            "isCorrect": row.correct,
             }
         entries.append(entry)
     return entries
@@ -585,32 +600,43 @@ def get_submission_entries(submission_id):
 def test_get_submission_entries():
     submission_id=1
     entries = get_submission_entries(submission_id)
-    assert len(entries) == 1104
+    assert len(entries) == 1450
     entry = entries[0]
     assert entry == {
-        "id": 0,
-        "sentence": "Argentine striker Barcos re-signs with Palmeiras",
-        "subject": {
-            "span": [119, 125],
-            "mentionType": "PER",
-            "canonicalGloss": "Barcos",
-            "linkName": "Hernán_Barcos",
-            "linkNameGold": "Hern%C3%A1n_Barcos",
-            "isCorrect": False,
+        'id': 0,
+        'corpus_tag': 'kbp2016',
+        'doc_id': 'ENG_NW_001278_20130111_F00013FIO',
+        'title': 'Argentine striker Barcos re-signs with Palmeiras',
+        'sentence': 'Argentine striker Barcos re-signs with Palmeiras',
+        'subject': {
+            'gloss': 'Barcos',
+            'entity': {
+                'linkCorrect': True,
+                'gloss': 'gloss:Barcos',
+                'link': 'Hernán_Barcos',
+                'linkGold': 'gloss:Barcos',
+                'type': 'PER'
+                },
+            'span': [18, 24],
+            'type': 'PER'
             },
-        "object": {
-            "span": [111, 118],
-            "mentionType": "TITLE",
-            "canonicalGloss": "striker",
-            "linkName": "Striker",
-            "linkNameGold": None,
-            "isCorrect": True,
+        'object': {
+            'gloss': 'striker',
+            'entity': {
+                'linkCorrect': True,
+                'gloss': 'gloss:striker',
+                'link': 'gloss:striker',
+                'linkGold': 'gloss:striker',
+                'type': 'TITLE'},
+            'span': [10, 17],
+            'type': 'TITLE'
             },
-        "predicate": {
-            "name": "per:title",
-            "gold": "per:title",
-            "isCorrect": True,
-            }
+        'predicate': {
+            'name': 'per:title',
+            'isCorrect': True,
+            'gold': 'per:title'
+            },
+        'isCorrect': True,
         }
 
 def get_leaderboard():

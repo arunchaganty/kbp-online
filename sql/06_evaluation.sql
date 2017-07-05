@@ -81,7 +81,7 @@ CREATE TABLE  evaluation_link (
   weight REAL DEFAULT 1.0, -- Aggregated score/weight
   correct BOOLEAN,
 
-  PRIMARY KEY (doc_id, span),
+  PRIMARY KEY (doc_id, span, link_name),
   CONSTRAINT valid_weight CHECK (weight >= 0.0 AND weight <= 1.0)
 ); -- DISTRIBUTED BY (doc_id);
 COMMENT ON TABLE evaluation_link IS 'Table containing mentions within a document, aggregated from all the responses';
@@ -144,6 +144,7 @@ CREATE MATERIALIZED VIEW evaluation_mention_link AS (
     l.correct AS link_correct
    FROM evaluation_mention m 
    LEFT JOIN evaluation_link l ON m.doc_id = l.doc_id AND (m.span = l.span)
+   WHERE NOT (m.mention_type = 'TITLE' AND substring(l.link_name, 0, 6) = 'wiki:') -- ignore wiki links with titles.
 );
 
 DROP MATERIALIZED VIEW IF EXISTS evaluation_entity_relation;
