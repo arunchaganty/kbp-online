@@ -1,7 +1,7 @@
 from .base_settings import *
 
 # Host
-ALLOWED_HOSTS = ["kbpo.stanford.edu"]
+ALLOWED_HOSTS = ["kbpo.stanford.edu", "171.64.67.11"]
 MTURK_TARGET = 'actual'
 #MTURK_TARGET = 'sandbox'
 MTURK_FORM_TARGET = MTURK_FORM_TARGETS[MTURK_TARGET]
