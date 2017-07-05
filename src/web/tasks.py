@@ -240,6 +240,7 @@ def process_response(assignment_id, chain=True):
             db.execute("UPDATE mturk_hit SET state = 'pending-aggregation' WHERE id = %(hit_id)s", hit_id = hit_id)
 
     except Exception as e:  # Uh oh, these are errors that we should look at.
+        logger.exception(e)
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
                    new_state = 'error', message=str(e), assignment_id = assignment_id)
 
@@ -324,9 +325,8 @@ def score_submission(submission_id, chain=True):
             from_email='kbp-online-owners@lists.stanford.edu',
         )
 
-
     except Exception as e:
-        print(e)
+        logger.exception(e)
         state.status = "error"
         state.message = e
         state.save()
