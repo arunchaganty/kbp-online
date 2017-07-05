@@ -27,8 +27,8 @@ def resample_submission(_, __, queryset):
         row.state.status = 'pending-sampling'
         row.state.message = ""
         row.state.save()
-        tasks.sample_submission.delay(row.id)
-resample_submission.short_description = "Resample submission (warning will create a new sample that may be turked)."
+        tasks.sample_submission.delay(row.id, n_samples=500)
+resample_submission.short_description = "Resample submission (500 samples) (warning will create a new sample that may be turked)."
 
 def resample_submission_medium(_, __, queryset):
     for row in queryset:
@@ -99,7 +99,7 @@ class SubmissionAdmin(admin.ModelAdmin):
     def _status(self, obj):
         return obj.state.status
 
-    list_display = ('name', 'corpus_tag', '_user', '_status')
+    list_display = ('name', 'corpus_tag', 'active', '_user', '_status')
 admin.site.register(Submission, SubmissionAdmin)
 
 # ==== Evaluation
@@ -200,7 +200,7 @@ class MTurkHitAdmin(admin.ModelAdmin):
 admin.site.register(MturkHit, MTurkHitAdmin)
 
 class MTurkAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'worker_id', 'hit_id', 'verified', 'state', 'message')
+    list_display = ('id', 'worker_id', 'worker_time', 'hit_id', 'verified', 'state', 'message')
     list_filter = ('state', 'batch_id')
 
     # TODO: Approve or Reject.

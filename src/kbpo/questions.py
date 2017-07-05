@@ -87,8 +87,13 @@ def create_questions_for_submission_sample(submission_id, sample_batch_id):
 
         if row.subject_canonical_gloss.startswith("gloss:"):
             subject_canonical_gloss = row.subject_canonical_gloss[len("gloss:"):]
+        else:
+            subject_canonical_gloss = row.subject_canonical_gloss
+
         if row.object_canonical_gloss.startswith("gloss:"):
             object_canonical_gloss = row.object_canonical_gloss[len("gloss:"):]
+        else:
+            object_canonical_gloss = row.object_canonical_gloss
 
         question = {
             "batch_type": "selective_relations",

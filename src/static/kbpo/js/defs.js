@@ -184,7 +184,7 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
           "subject-types": ["PER"],
           "object-types": ["PER"]
       },{
-          "name": "per:sibling",
+          "name": "per:siblings",
           "short": "sibling of",
           "template": "{subject} is the sibling of {object}.",
           "image": "sibling.png", 

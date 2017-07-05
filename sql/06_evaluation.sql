@@ -154,6 +154,8 @@ CREATE MATERIALIZED VIEW evaluation_entity_relation AS (
     r.object,
     m.mention_type AS subject_type,
     n.mention_type AS object_type,
+    m.gloss AS subject_gloss,
+    n.gloss AS  object_gloss,
     m.entity AS subject_entity,
     n.entity AS object_entity,
     m.link_correct AS subject_entity_correct, -- could be null
@@ -179,11 +181,13 @@ CREATE MATERIALIZED VIEW submission_entries_list AS (
     r.subject_gloss,
     r.subject_canonical_gloss,
     r.subject_entity,
+    er.subject_entity AS subject_entity_gold,
 
     r.object_type,
     r.object_gloss,
     r.object_canonical_gloss,
     r.object_entity,
+    er.object_entity AS object_entity_gold,
 
     -- Relations
     r.relation AS predicate_name,

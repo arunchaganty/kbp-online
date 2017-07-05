@@ -51,7 +51,7 @@ LOGGING["handlers"]["email"] = {
     'mailhost': 'localhost',
     'fromaddr': 'admin@kbpo.stanford.edu',
     'toaddrs': ['chaganty@stanford.edu', 'ashwinpp@stanford.edu', 'kbp-online-admin@lists.stanford.edu'],
-    'subject': 'ERROR with kbpo-local',
+    'subject': 'ERROR on kbpo.stanford.edu',
     }
 LOGGING["root"]["handlers"] += ["email"]
 

@@ -93,28 +93,32 @@ define(['jquery', '../defs', '../util', './CheckEntityLinkWidget', './WikiLinkMo
       };
 
       if (mention.type.name === "TITLE") {
-        linkDone(mention.entity.link);
+        if (mention.entity.link.substring(0,6) == "gloss:") {
+            linkStr = mention.entity.link.substring(6);
+        } else {
+            linkStr = mention.entity.link;
+        }
+        linkDone(linkStr);
       } else if (mention.type.name === "DATE") {
-          if (mention.entity.link.substring(0,5) == "date:") {
-              linkStr = mention.entity.link.substring(5);
-          } else if (mention.entity.link.substring(0,6) == "gloss:") {
-              linkStr = mention.entity.link.substring(6);
-          } else {
-              linkStr = mention.entity.link;
-          }
-        // TODO: launch date modeal
+        if (mention.entity.link.substring(0,5) == "date:") {
+            linkStr = mention.entity.link.substring(5);
+        } else if (mention.entity.link.substring(0,6) == "gloss:") {
+            linkStr = mention.entity.link.substring(6);
+        } else {
+            linkStr = mention.entity.link;
+        }
         self.dateModal.cb = function (link) {linkDone(link);};
-        self.dateModal.show(mention.gloss, mention.entity.link);
+        self.dateModal.show(mention.gloss, linkStr);
       } else {
-          if (mention.entity.link.substring(0,5) == "wiki:") {
-              linkStr = mention.entity.link.substring(5);
-          } else if (mention.entity.link.substring(0,6) == "gloss:") {
-              linkStr = mention.entity.link.substring(6);
-          } else if (mention.entity.gloss.substring(0,6) == "gloss:") {
-              linkStr = mention.entity.gloss.substring(6);
-          } else {
-              linkStr = mention.entity.gloss;
-          }
+        if (mention.entity.link.substring(0,5) == "wiki:") {
+            linkStr = mention.entity.link.substring(5);
+        } else if (mention.entity.link.substring(0,6) == "gloss:") {
+            linkStr = mention.entity.link.substring(6);
+        } else if (mention.entity.gloss.substring(0,6) == "gloss:") {
+            linkStr = mention.entity.gloss.substring(6);
+        } else {
+            linkStr = mention.entity.gloss;
+        }
 
         // Alright, launch the WikiModal!
         self.wikiLinkModal.cb = function (link) {linkDone(link);};

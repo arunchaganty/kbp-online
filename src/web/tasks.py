@@ -110,7 +110,7 @@ def process_submission(submission_id, chain=True):
         state.status = 'pending-sampling'
         state.save()
         if chain:
-            sample_submission.delay(submission_id)
+            sample_submission.delay(submission_id, n_samples=500)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
@@ -118,7 +118,7 @@ def process_submission(submission_id, chain=True):
         state.save()
 
 @shared_task
-def sample_submission(submission_id, type_='entity_relation', n_samples=1000, chain=True):
+def sample_submission(submission_id, type_='entity_relation', n_samples=500, chain=True):
     #TODO: Get the correct number of samples inside this function
     """
     Takes care of sampling from a submission to create evaluation_question and evaluation_batch.
@@ -240,6 +240,7 @@ def process_response(assignment_id, chain=True):
             db.execute("UPDATE mturk_hit SET state = 'pending-aggregation' WHERE id = %(hit_id)s", hit_id = hit_id)
 
     except Exception as e:  # Uh oh, these are errors that we should look at.
+        logger.exception(e)
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
                    new_state = 'error', message=str(e), assignment_id = assignment_id)
 
@@ -250,6 +251,8 @@ def process_response(assignment_id, chain=True):
         batch_complete = check_batch_complete(mturk_batch_id)
         if batch_complete:
             process_mturk_batch.delay(mturk_batch_id, forced=True)
+        else:
+            logger.debug("%d Batch incomplete", mturk_batch_id)
 
 @shared_task
 def process_mturk_batch(mturk_batch_id, forced = False, chain=True):
@@ -324,9 +327,8 @@ def score_submission(submission_id, chain=True):
             from_email='kbp-online-owners@lists.stanford.edu',
         )
 
-
     except Exception as e:
-        print(e)
+        logger.exception(e)
         state.status = "error"
         state.message = e
         state.save()
