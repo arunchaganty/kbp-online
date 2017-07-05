@@ -103,7 +103,7 @@ RELATION_MAP = {
     "no_relation":"no_relation",
     }
 ALL_RELATIONS = list(RELATION_MAP.values())
-RELATIONS = [
+CANONICAL_RELATIONS = [
     #"per:alternate_names",
     "per:place_of_birth",
     "per:place_of_residence",
@@ -131,8 +131,6 @@ RELATIONS = [
     "org:parents",
     "org:shareholders",
     "org:holds_shares_in",
-    "org:employees_or_members",
-    "org:students",
     "no_relation",
     ]
 
@@ -243,9 +241,9 @@ def get_inverted_relation(reln, object_type):
             return reln_
 
 def standardize_relation(subject, subject_type, reln, object_, object_type):
-    if reln in RELATIONS:
+    if reln in CANONICAL_RELATIONS:
         return subject, subject_type, reln, object_, object_type
-    elif reln not in RELATIONS and reln in INVERTED_RELATIONS:
+    elif reln not in CANONICAL_RELATIONS and reln in INVERTED_RELATIONS:
         reln_ = get_inverted_relation(reln, object_type)
         return object_, object_type, reln_, subject, subject_type
     else:

@@ -15,7 +15,7 @@ import matplotlib.patches as pltp
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
-from kbpo.defs import RELATIONS, ALL_RELATIONS
+from kbpo.defs import CANONICAL_RELATIONS, ALL_RELATIONS
 
 # Consider stacked histogram?
 def do_plot_entity_histogram(args):
@@ -75,15 +75,15 @@ def do_plot_relation_histogram(args):
     objs = [json.load(fstream) for fstream in args.input]
 
     # project data onto axis.
-    X = RELATIONS
+    X = CANONICAL_RELATIONS
     Y = []
 
-    xlabels = [r.replace("_", r"\_") for r in RELATIONS]
+    xlabels = [r.replace("_", r"\_") for r in CANONICAL_RELATIONS]
     ylabels = []
     for obj in objs:
         freq = obj["relation_frequency"]
         ylabels.append(obj['mode'])
-        Y.append([freq.get(r, 0) for r in RELATIONS])
+        Y.append([freq.get(r, 0) for r in CANONICAL_RELATIONS])
     colors = [pltc.to_hex(tuple(plt.cm.viridis.colors[int(i/len(ylabels) * 256)])) for i in range(len(ylabels))]
 
     inds = np.arange(len(X))

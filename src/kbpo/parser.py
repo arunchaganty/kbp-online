@@ -20,7 +20,7 @@ from tempfile import TemporaryFile
 
 from tqdm import tqdm
 
-from .defs import TYPES, RELATION_MAP, RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS, RELATION_TYPES
+from .defs import TYPES, RELATION_MAP, CANONICAL_RELATIONS, ALL_RELATIONS, INVERTED_RELATIONS, STRING_VALUED_RELATIONS, RELATION_TYPES
 from .defs import get_inverted_relation
 from .schema import Provenance
 
@@ -268,7 +268,8 @@ class MFileReader(object):
     def _verify_relation_types(self):
         purge = set()
         for (m, n), r in self._relations.items():
-            if r not in RELATIONS and r in INVERTED_RELATIONS:
+            # canonicalize ther relation
+            if r not in CANONICAL_RELATIONS and r in INVERTED_RELATIONS:
                 m_, r_, n_ = n, get_inverted_relation(r, self._types[n]), m
             else:
                 m_, r_, n_ = m, r, n
