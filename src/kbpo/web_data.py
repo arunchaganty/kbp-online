@@ -1247,8 +1247,8 @@ def merge_evaluation_tables(mode="mturk_batch", mturk_batch_id=None):
         logger.info("Refreshing submission_entries tables with new data")
         db.execute("""REFRESH MATERIALIZED VIEW evaluation_mention_link""")
         db.execute("""REFRESH MATERIALIZED VIEW evaluation_entity_relation""")
+        db.execute("""REFRESH MATERIALIZED VIEW submission_entries_list""")
         db.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
-        #db.execute("""REFRESH MATERIALIZED VIEW submission_entries_debug""")
     else:
         raise ValueError("Unsupported mode {}".format(mode))
 
