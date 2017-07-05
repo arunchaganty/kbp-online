@@ -11,7 +11,6 @@ from . import db
 from . import defs
 from .util import stuple
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -520,6 +519,7 @@ def get_submission_entries(submission_id):
     """
     Get entries from a submission that have been evaluated by Turk.
     """
+    distinct = set()
     entries = []
     for i, row in enumerate(db.select("""
         SELECT doc_id,
@@ -555,6 +555,16 @@ def get_submission_entries(submission_id):
           AND subject_entity_match AND object_entity_match
         ORDER BY doc_id, subject, object
         """, submission_id=submission_id)):
+
+        # Only keep non-inverted relations.
+        if row.predicate_name not in defs.RELATIONS and row.predicate_name in defs.INVERTED_RELATIONS:
+            continue # skip because the inverted relation will come along.
+
+        key = row.doc_id, stuple(row.subject), stuple(row.object)
+        if key in distinct:
+            continue
+        distinct.add(key)
+
         entry = {
             "id": i,
             "doc_id": row.doc_id,
