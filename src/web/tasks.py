@@ -251,6 +251,8 @@ def process_response(assignment_id, chain=True):
         batch_complete = check_batch_complete(mturk_batch_id)
         if batch_complete:
             process_mturk_batch.delay(mturk_batch_id, forced=True)
+        else:
+            logger.debug("%d Batch incomplete", mturk_batch_id)
 
 @shared_task
 def process_mturk_batch(mturk_batch_id, forced = False, chain=True):

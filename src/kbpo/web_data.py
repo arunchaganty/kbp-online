@@ -1121,8 +1121,10 @@ def check_batch_complete(mturk_batch_id):
         with db.CONN.cursor() as cur:
             rows = db.select("""
             SELECT a.hit_id,
-                SUM(CASE WHEN a.state <> 'error' THEN 1 ELSE 0 END) = (b.params->>'max_assignments')::int AS hit_complete,
-                SUM(CASE WHEN a.state = 'error' THEN 1 ELSE 0 END) AS hit_errors
+                SUM(CASE WHEN a.state <> 'error' and NOT a.ignored THEN 1 ELSE 0 END) assignments_for_aggregation,
+                (b.params->>'max_assignments')::int AS max_assignments, 
+                SUM(CASE WHEN a.state <> 'error' AND NOT a.ignored  THEN 1 ELSE 0 END) = (b.params->>'max_assignments')::int AS hit_complete,
+                SUM(CASE WHEN a.state = 'error' AND NOT a.ignored THEN 1 ELSE 0 END) AS hit_errors
 
             FROM mturk_assignment AS a 
             LEFT JOIN mturk_hit AS h 
@@ -1138,13 +1140,49 @@ def check_batch_complete(mturk_batch_id):
             #    if row.hit_errors >= 1:
             #        db.execute("UPDATE mturk_assignment SET ignored=true WHERE hit_id = %(hit_id)s", hit_id = row.hit_id)
             #hit_completed = [x.hit_complete for x in rows if x.hit_errors == 0]
+            ignored = False
+            for row in rows:
+                if row.assignments_for_aggregation > row.max_assignments:
+                    ignored = True
+                    ignore_extra_assignments(row.hit_id)
+
+            #Recursive call to make sure the assignments to be ignored are indeed ignored
+            if ignored:
+                return check_batch_complete(mturk_batch_id)
+
             hit_completed = [x.hit_complete for x in rows]
+            logger.debug("Batch id %s: Incomplete hits %s", mturk_batch_id, [x.hit_id for x in rows if not x.hit_complete])
     return len(hit_completed) > 0 and all(hit_completed)
+
+def ignore_extra_assignments(hit_id):
+    """Set flag to ignore if extra hits come up"""
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            rows = db.select("""
+            SELECT a.id, (b.params->>'max_assignments')::int as max_assignments
+            FROM mturk_assignment AS a 
+            LEFT JOIN mturk_hit AS h 
+                ON a.hit_id = h.id 
+            LEFT JOIN mturk_batch as b 
+                ON a.batch_id = b.id 
+            WHERE a.hit_id = %(hit_id)s 
+              AND a.state <> 'error' 
+              AND NOT a.ignored
+            ORDER BY a.created desc;
+            """, hit_id = hit_id, cur = cur)
+            for row in rows[rows[0].max_assignments:]:
+                db.execute("""UPDATE mturk_assignment 
+                                SET ignored=true, message='Extraneous assignments are ignored'
+                              WHERE id = %(assignment_id)s
+                        """, assignment_id = row.id, cur = cur)
+
 
 def check_hit_complete(hit_id):
     """Check if all assignments for a hit have been collected"""
     row = db.get("""
-    SELECT count(*) = (b.params->>'max_assignments')::int AS hit_complete 
+    SELECT count(*) AS count, 
+           (b.params->>'max_assignments')::int AS max_assignments,
+           count(*) = (b.params->>'max_assignments')::int AS hit_complete 
     FROM mturk_assignment AS a 
     LEFT JOIN mturk_hit AS h 
         ON a.hit_id = h.id 
@@ -1152,10 +1190,15 @@ def check_hit_complete(hit_id):
         ON a.batch_id = b.id 
     WHERE a.hit_id = %(hit_id)s 
       AND a.state <> 'error'
+      AND NOT a.ignored
     GROUP BY a.hit_id, b.params->>'max_assignments';
     """, 
     hit_id = hit_id)
     #TODO: Throw useful error message if the assigment doesn't exist or has incorrect hit/batch_id
+    if row.count > row.max_assignments:
+        #Extraneous assignments
+        ignore_extra_assignments(hit_id)
+        return check_hit_complete(hit_id)
     if row is None:
         return False;
     return row.hit_complete
@@ -1205,7 +1248,7 @@ def merge_evaluation_tables(mode="mturk_batch", mturk_batch_id=None):
         db.execute("""REFRESH MATERIALIZED VIEW evaluation_mention_link""")
         db.execute("""REFRESH MATERIALIZED VIEW evaluation_entity_relation""")
         db.execute("""REFRESH MATERIALIZED VIEW submission_entries""")
-        db.execute("""REFRESH MATERIALIZED VIEW submission_entries_debug""")
+        #db.execute("""REFRESH MATERIALIZED VIEW submission_entries_debug""")
     else:
         raise ValueError("Unsupported mode {}".format(mode))
 
