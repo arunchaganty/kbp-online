@@ -47,10 +47,11 @@ LOGGING['handlers']['celery']['filename'] = '/data/kbpo/web/celery.log'
 # Logging
 LOGGING["handlers"]["email"] = {
     'level': 'ERROR',
-    'class': 'logging.handlers.SMTPHandler',
-    'mailhost': 'localhost',
-    'fromaddr': 'admin@kbpo.stanford.edu',
+    'class': 'web.logging.CustomSMTPHandler',
+    'mailhost': (EMAIL_HOST, EMAIL_PORT),
+    'fromaddr': DEFAULT_FROM_EMAIL,
     'toaddrs': ['chaganty@stanford.edu', 'ashwinpp@stanford.edu', 'kbp-online-admin@lists.stanford.edu'],
     'subject': 'ERROR on kbpo.stanford.edu',
+    'secure': (),
     }
 LOGGING["root"]["handlers"] += ["email"]
