@@ -18,7 +18,7 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
   };
   DocWidget.prototype.getMention = function(span) {
     return this.mentions[span[0] + "-" + span[1]];
-  }
+  };
 
   // Load a document specified in json @doc.
   DocWidget.prototype.loadDocument = function(doc) {

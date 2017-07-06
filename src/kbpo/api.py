@@ -355,11 +355,15 @@ def get_evaluation_relations(doc_id):
     """
     relations = []
     for row in db.select("""
-            SELECT r.subject, r.relation, r.object
-            FROM evaluation_relation r
+            SELECT DISTINCT ON (subject, object)
+            r.subject, r.subject_type, r.relation, r.object, r.object_type
+            FROM evaluation_entity_relation r
             WHERE r.doc_id = %(doc_id)s
             ORDER BY r.subject, r.object, r.relation
             """, doc_id=doc_id):
+        if not defs.is_canonical_relation(row.relation, row.subject_type, row.object_type):
+            continue
+
         relation = {
             "subject": (row.subject.lower, row.subject.upper),
             "relation": row.relation,
