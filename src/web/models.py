@@ -5,7 +5,7 @@ from .kbpo_models import EvaluationBatch, EvaluationQuestion, MturkBatch, MturkH
 
 # Defining a user for submissions.
 class User(AbstractUser):
-    affiliation = models.CharField(max_length=256, help_text="Your affiliation (university or company name)")
+    affiliation = models.CharField(max_length=256, help_text="Your affiliation (university or company name) which will be displayed on the leaderboard.")
     EMAIL_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'affiliation', 'email',]
 

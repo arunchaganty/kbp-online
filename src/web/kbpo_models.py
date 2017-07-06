@@ -112,9 +112,9 @@ class Submission(models.Model):
     id = models.AutoField(primary_key=True)
     updated = models.DateTimeField(auto_now=True)
 
-    name = models.TextField()
+    name = models.TextField(help_text='A short descriptive name for your system, which will be displayed on the leaderboard.')
     corpus_tag = models.TextField(verbose_name='Document corpus')
-    details = models.TextField()
+    details = models.TextField(help_text='A short descriptoin for your system.')
     active = models.BooleanField(default=True)
 
     objects = models.Manager()
