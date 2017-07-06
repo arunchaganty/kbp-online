@@ -32,7 +32,7 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
             'corpus_tag': forms.Select(choices=(('kbp2016','KBP 2016 corpus'),)),
             }
 
-    MAX_SIZE = 20 * 1024 * 1024 # 20 MB
+    MAX_SIZE = 50 * 1024 * 1024 # 50 MB
     CHUNK_SIZE = 1024*1024
 
     def clean_knowledge_base(self):
@@ -40,7 +40,7 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         data = self.cleaned_data['knowledge_base']
 
         if 'gzip' not in data.content_type:
-            raise forms.ValidationError("Received a file with Content-Type: {}; please ensure the file is properly gzipped". format(data.content_type))
+            raise forms.ValidationError("Received a file with unsupported Content-Type ({}); please ensure the file is properly gzipped". format(data.content_type))
 
         if data.size > self.MAX_SIZE: # 20MB file.
             raise forms.ValidationError("Submitted file is larger than our current file size limit of {}MB. Please ensure that you are submitted the correct file, if not contact us at {}".format(int(self.MAX_SIZE / 1024 / 1024), ""))
@@ -52,7 +52,6 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
                 buf = f.read(self.CHUNK_SIZE)
                 while len(buf) > 0:
                     buf = f.read(self.CHUNK_SIZE)
-
         except OSError as e:
             raise forms.ValidationError("Could not read the submitted file: {}".format(e))
 
