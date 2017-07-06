@@ -659,6 +659,8 @@ def get_leaderboard():
             WHERE score_type = 'entity_relation'
             ORDER BY submission_id, updated DESC)
         SELECT 
+        u.id AS user_id,
+        u.affiliation AS user_affiliation,
         sub.id, 
         sub.updated, 
         sub.name, 
@@ -669,8 +671,12 @@ def get_leaderboard():
         sc.right_interval 
         FROM latest_scores AS sc 
         JOIN submission AS sub ON (sub.id = sc.submission_id AND sub.active)
+        JOIN web_submissionuser subuser ON (subuser.submission_id = sub.id)
+        JOIN web_user u ON (subuser.user_id = u.id)
         ORDER BY (sc.score).f1 DESC;"""):
         entry = {
+            'user_id': row.user_id,
+            'user_affiliation': row.user_affiliation,
             'id': row.id,
             'name': row.name,
             'details': row.details,

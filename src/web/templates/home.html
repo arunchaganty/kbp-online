@@ -64,6 +64,28 @@
           </tr>
         </thead>
         <tbody id="submissions">
+          <tr id="submissions-template" class="hidden" >
+            <td class="text-center">
+              <p> {i} </p>
+              <small>
+              <span class="label label-default">{timestamp}</span>
+              </small>
+            </td>
+            <td>
+              <p> <span class="label label-primary">{affiliation}</span> <a href="/explore/submissions/{id}/">{name}</a> <br/>
+              <small>{details}</small>
+              </p>
+            </td>
+            <td>
+              <a href='#' data-toggle='tooltip' title='{p_range}%'>{p}%</a>
+            </td>
+            <td>
+              <a href='#' data-toggle='tooltip' title='{r_range}%'>{r}%</a>
+            </td>
+            <td>
+              <a href='#' data-toggle='tooltip' title='{f1_range}%'>{f1}%</a>
+            </td>
+          </tr>
         </tbody>
       </table>
   <script src="/static/requirejs/require.js"></script>
@@ -89,35 +111,28 @@
             return dt1.format('MMM YYYY')
           }
           function renderRow(row, i) {
-            var tr = $("<tr>");
-            tr.append($("<td>")
-                  .addClass('text-center')
-                  .append($("<p>")
-                      .html(i+1))
-                  .append($("<span>")
-                      .addClass('label label-default')
-                      .html(renderMonthYear(row.timestamp))))
-              .append($("<td>")
-                  .append($("<a>")
-                      .attr('href', '/explore/submission/'+row.id)
-                      .append($("<p>")
-                          .html(row.name))
-                      .append($("<p>")
-                          .html(row.details)))
-                  )
-              .append($("<td>")
-                .html(pp.sprintf(
-                  "<a href='#' data-toggle='tooltip' title='%0.1f - %0.1f%%'>%0.1f%%</a>",
-                  100 * row["P-range"][0],  100 * row["P-range"][1], 100 * row["P"])))
-              .append($("<td>")
-                .html(pp.sprintf(
-                  "<a href='#' data-toggle='tooltip' title='%0.1f - %0.1f%%'>%0.1f%%</a>",
-                  100 * row["R-range"][0],  100 * row["R-range"][1], 100 * row["R"])))
-              .append($("<td>")
-                .html(pp.sprintf(
-                  "<a href='#' data-toggle='tooltip' title='%0.1f - %0.1f%%'>%0.1f%%</a>",
-                  100 * row["F1-range"][0],  100 * row["F1-range"][1], 100 * row["F1"])))
-                ;
+            var tr = $("#submissions-template").clone();
+            tr.html(tr.html()
+                .replace("{i}", i+1)
+                .replace("{timestamp}", renderMonthYear(row.timestamp))
+                .replace("{affiliation}", row.user_affiliation)
+                .replace("{id}", row.id)
+                .replace("{name}", row.name)
+                .replace("{details}", row.details)
+                .replace("{p}", 
+                  pp.sprintf("%0.1f", 100 * row["P"]))
+                .replace("{r}", 
+                  pp.sprintf("%0.1f", 100 * row["R"]))
+                .replace("{f1}", 
+                  pp.sprintf("%0.1f", 100 * row["F1"]))
+                .replace("{p_range}", 
+                  pp.sprintf("%0.1f - %0.1f", 100 * row["P-range"][0],  100 * row["P-range"][1]))
+                .replace("{r_range}", 
+                  pp.sprintf("%0.1f - %0.1f", 100 * row["R-range"][0],  100 * row["R-range"][1]))
+                .replace("{f1_range}", 
+                  pp.sprintf("%0.1f - %0.1f", 100 * row["F1-range"][0],  100 * row["F1-range"][1]))
+                );
+            tr.removeClass("hidden");
             return tr;
           }
           $.getJSON("/api/leaderboard/", function(rows) {
