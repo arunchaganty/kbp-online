@@ -39,4 +39,5 @@ LOGGING["handlers"]["email"] = {
     'subject': 'ERROR with kbpo-local',
     'secure': (),
     }
-LOGGING["root"]["handlers"] += ["email"]
+# No need to spam us during development.
+#LOGGING["root"]["handlers"] += ["email"]
