@@ -20,7 +20,6 @@
       <th>Name</th>
       <th>Timestamp</th>
       <th>Status</th>
-      <th>Download</th>
       <th>Remove</th>
     </thead>
     <tbody>
@@ -30,13 +29,8 @@
         <td>{{submission.submission.name}} <br />
           <i>{{submission.submission.corpus_name}}</i> <br/>
           <small>{{submission.submission.details}}</small>
-        </td>
-        <td>{{submission.submission.updated}}</td>
-        <td>
-          {{submission.submission.state}}
-        </td>
-        <td>
-          <ul class="list-unstyled">
+
+          <ul class="list-inline">
           {% if submission.submission.original_file %}
           <li>
             <a href="/submissions/{{submission.submission.id}}/download/kb/">{%bootstrap_icon 'arrow-down'%} uploaded kb</a>
@@ -53,6 +47,10 @@
           </li>
           {% endif %}
           </ul>
+        </td>
+        <td>{{submission.submission.updated}}</td>
+        <td>
+          {{submission.submission.state}}
         </td>
         <td class="text-center">
           <a href="/submissions/{{submission.submission.id}}/remove/">
