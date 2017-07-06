@@ -111,6 +111,7 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
   // Create a mention from a set of spans.
   DocWidget.prototype.addMention = function(mention) {
     var self = this;
+    if ($(mention.tokens[0].parentNode).hasClass("mention")) return;
     $(mention.tokens)
       .wrapAll($("<span class='mention' />")
       .attr("id", "mention-"+mention.id));
