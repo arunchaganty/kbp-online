@@ -13,6 +13,18 @@
     <h1> KBP Online </h1>
 
     <p class="lead">KBP Online is an on-demand evaluation service that can evaluate your knowledge base population (KBP) system quickly and accurately.</p>
+
+    {% if user.is_authenticated %}
+    <p class="text-center">
+    <a href="/submissions/" role="button" class="btn btn-success"> {% bootstrap_icon "upload" %} Upload your submission</a>
+    </p>
+    {% else %}
+    <p class="text-center">
+    <a href="/accounts/register/" role="button" class="btn btn-primary">{% bootstrap_icon "user" %} Register</a>
+    <a href="/accounts/login/" role="button" class="btn btn-success"> {% bootstrap_icon "log-in" %} Login and submit</a>
+    </p>
+    {% endif %}
+
     
     <h4> What is KBP?</h4>
     <p> Knowledge base population is the task of automatically extracting relations between entities from a large corpus of unstructured text and populating a knowledge base.
