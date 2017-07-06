@@ -234,6 +234,22 @@ def _create_mention_types(types):
 
 VALID_MENTION_TYPES = _create_mention_types(RELATION_TYPES)
 
+def is_canonical_relation(reln, subject_type, object_type):
+    if reln not in CANONICAL_RELATIONS:
+        return False
+    # At this point no GPEs are allowed.
+    assert subject_type != 'GPE'
+    # ok, we can flip this.
+    return subject_type == 'PER' or object_type != 'PER'
+
+def test_is_canonical_relation():
+    assert is_canonical_relation("per:parents", "PER", "PER")
+    assert is_canonical_relation("per:employee_or_member_of", "PER", "ORG")
+    assert not is_canonical_relation("gpe:subsidiaries", "GPE", "ORG")
+    assert not is_canonical_relation("gpe:member_of", "GPE", "ORG")
+    assert is_canonical_relation("org:founded_by", "ORG", "ORG")
+    assert not is_canonical_relation("org:founded_by", "ORG", "PER")
+
 def get_inverted_relation(reln, object_type):
     assert reln in INVERTED_RELATIONS
     for reln_ in INVERTED_RELATIONS[reln]:
