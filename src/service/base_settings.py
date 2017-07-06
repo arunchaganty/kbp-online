@@ -131,7 +131,17 @@ NPM_ROOT_PATH = os.path.join(BASE_DIR, "static")
 #Email setup
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 DEFAULT_FROM_EMAIL="no-reply@kbpo.stanford.edu"
+# Host for sending e-mail.
+EMAIL_HOST = 'localhost'
+# Port for sending e-mail.
+EMAIL_PORT = 25
+# Optional SMTP authentication information for EMAIL_HOST.
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = True
 
+
+# MTurk setup.
 MTURK_FORM_TARGETS = {
     'sandbox': 'https://workersandbox.mturk.com/mturk/externalSubmit',
     'actual' : 'https://www.mturk.com/mturk/externalSubmit',
