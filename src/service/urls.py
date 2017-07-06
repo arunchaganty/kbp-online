@@ -13,25 +13,29 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.shortcuts import redirect
 from django.conf.urls import include, url
-from django.contrib import admin, staticfiles
+from django.contrib import admin, staticfiles, messages
 from registration.backends.hmac.views import RegistrationView
 
 from web.forms import UserForm
 from . import settings
 
-class RedirectRegistrationView(RegistrationView):
-    def get_success_url(self, request, user):
-        return "/accounts/login/"
+def activation_complete(request):
+    messages.success(request, "Congratulations, your account is now activated! Login and submit!")
+    return redirect("auth_login")
+
+def registration_complete(request):
+    messages.success(request, "Thanks for registering! Please check your email to activate your account.")
+    return redirect("home")
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserForm, success_url='/submissions/'),
         name='registration_register',
        ),
-    url(r'^accounts/register/complete$', RegistrationView.as_view(form_class=UserForm, success_url='/submissions/'),
-        name='registration_register_complete',
-       ),
+    url(r'^accounts/register/complete/$', registration_complete, name='registration_complete',),
+    url(r'^accounts/activate/complete/$', activation_complete, name='registration_activation_complete',),
     url(r'^accounts/', include('registration.backends.hmac.urls')),
     url(r'', include('web.urls')),
 ]

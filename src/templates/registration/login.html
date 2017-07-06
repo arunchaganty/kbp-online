@@ -6,6 +6,7 @@
 <div class="col-md-4"></div>
 <div id="content-main" class="col-md-4">
   <h1>Login</h1>
+  {% bootstrap_messages %}
   <form method="post" action="">
     {% csrf_token %}
     {% bootstrap_form form %}
