@@ -120,7 +120,8 @@ def interface_entity(request, doc_id=None):
 
     if doc_id is None:
         #doc_id = DocumentTag.objects.filter(tag="kbp2016").first().doc_id
-        doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
+        doc_id = 'ENG_NW_001278_20130111_F00013FIO'
+        #doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
         return redirect("interface_entity", doc_id=doc_id)
     doc = get_object_or_404(Document, id=doc_id)
     params = {
@@ -146,8 +147,8 @@ def interface_relation(request, doc_id=None, submission_id=None, subject_id=None
 
     if doc_id is None:
         #doc_id = DocumentTag.objects.filter(tag="kbp2016").first().doc_id
-        doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
-        # TODO: Get a doc for which we have done exhaustive_entities.
+        #doc_id = DocumentTag.objects.filter(tag="kbp2016").order_by('?').first().doc_id
+        doc_id = 'ENG_NW_001278_20130111_F00013FIO'
 
         return redirect("interface_relation", doc_id=doc_id)
     get_object_or_404(Document, id=doc_id)
@@ -377,7 +378,6 @@ def api_evaluation_relations(_, doc_id):
     mentions = api.get_evaluation_mentions(doc.id)
     mentions = {m["span"]: m for m in mentions}
 
-    # TODO: CANONICALIZE!!!
     relations = api.get_evaluation_relations(doc.id)
     # Construct mention pairs using the above information.
     ret = [{"subject": mentions[r["subject"]],

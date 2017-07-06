@@ -70,7 +70,7 @@ define(['jquery', '../defs', '../util', './DocWidget', './RelationListWidget'], 
       this.docWidget.centerOnMention(this.docWidget.getMention(p.subject.span));
     else
       this.docWidget.centerOnMention(this.docWidget.getMention(p.object.span));
-  }
+  };
 
   // Draw mention pair
   ExploreDocumentInterface.prototype.select = function(mentionPair) {
