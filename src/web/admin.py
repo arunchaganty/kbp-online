@@ -11,7 +11,20 @@ from .models import User, Submission, SubmissionUser, SubmissionState
 from .models import EvaluationBatch, EvaluationQuestion, MturkBatch, MturkHit, MturkAssignment
 from . import tasks
 
-admin.site.register(User, UserAdmin)
+class WebUserAdmin(UserAdmin):
+    list_display =  UserAdmin.list_display + ('affiliation', 'is_active',)
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'affiliation')}),
+        ('Permissions', {'fields': (
+            'is_active',
+            'is_staff',
+            'is_superuser',
+            'groups',
+            'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}))
+
+admin.site.register(User, WebUserAdmin)
 
 # ==== Submission
 def reupload_submission(_, __, queryset):
@@ -85,8 +98,8 @@ class SubmissionStateInline(admin.TabularInline):
     form = SubmissionStateInlineForm
 
 class SubmissionAdmin(admin.ModelAdmin):
-    fields = (('name', 'corpus_tag'), 'details')
-    readonly_fields = ('name', 'corpus_tag', 'details')
+    fields = (('name', 'corpus_tag'), 'details', 'active')
+    readonly_fields = ('corpus_tag',)
     inlines = [
         SubmissionUserInline,
         SubmissionStateInline,
