@@ -117,7 +117,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Auth setup
 AUTH_USER_MODEL = 'web.User'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/submissions/'
 LOGOUT_REDIRECT_URL = '/'
 
 # Celery setup

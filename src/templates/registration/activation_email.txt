@@ -1,6 +1,6 @@
 Welcome {{user}}!
    Thank you for registering your user on {{site.domain}}. To get started, please click the link below:
-   {{site.domain}}/accounts/activate/{{activation_key}}/
+   https://{{site.domain}}/accounts/activate/{{activation_key}}/
 
 Note: The link and access key provided in this email will expire in {{expiration_days}} days.
 

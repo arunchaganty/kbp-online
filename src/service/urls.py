@@ -20,10 +20,17 @@ from registration.backends.hmac.views import RegistrationView
 from web.forms import UserForm
 from . import settings
 
+class RedirectRegistrationView(RegistrationView):
+    def get_success_url(self, request, user):
+        return "/accounts/login/"
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserForm),
+    url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserForm, success_url='/submissions/'),
         name='registration_register',
+       ),
+    url(r'^accounts/register/complete$', RegistrationView.as_view(form_class=UserForm, success_url='/submissions/'),
+        name='registration_register_complete',
        ),
     url(r'^accounts/', include('registration.backends.hmac.urls')),
     url(r'', include('web.urls')),
