@@ -54,7 +54,7 @@ ROOT_URLCONF = 'service.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -130,6 +130,7 @@ NPM_ROOT_PATH = os.path.join(BASE_DIR, "static")
 
 #Email setup
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+DEFAULT_FROM_EMAIL="no-reply@kbpo.stanford.edu"
 
 MTURK_FORM_TARGETS = {
     'sandbox': 'https://workersandbox.mturk.com/mturk/externalSubmit',
@@ -200,3 +201,5 @@ LOGGING = {
         'level': 'DEBUG',
     },
 }
+
+ACCOUNT_ACTIVATION_DAYS=7

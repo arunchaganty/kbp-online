@@ -377,6 +377,7 @@ def api_evaluation_relations(_, doc_id):
     mentions = api.get_evaluation_mentions(doc.id)
     mentions = {m["span"]: m for m in mentions}
 
+    # TODO: CANONICALIZE!!!
     relations = api.get_evaluation_relations(doc.id)
     # Construct mention pairs using the above information.
     ret = [{"subject": mentions[r["subject"]],
