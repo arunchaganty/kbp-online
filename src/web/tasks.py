@@ -306,6 +306,7 @@ def score_submission(submission_id, chain=True):
     try:
         submission = Submission.objects.get(id=submission_id)
         state = SubmissionState.objects.get(submission_id=submission_id)
+        user = SubmissionUser.objects.get(submission=submission)
     except ObjectDoesNotExist:
         return
 
@@ -314,19 +315,20 @@ def score_submission(submission_id, chain=True):
             update_score(submission_id, score_type, metric)
         state.status = "done"
         state.save()
-        submissionuser = SubmissionUser.objects.get(submission=submission)
-        user = User.objects.get(submissionuser=submissionuser)
+
+        user = User.objects.get(user=user)
         user.email_user(
             subject='KBP Online submission scored',
-            message="""Your submission %(submission_name)s to KBP Online has been scored. 
+            message="""Your submission {submission_name}s to KBP Online has been scored. 
             You can view it at kbpo.stanford.edu/submissions/
             
             Keep populating, 
             KBPO team
-            """%{'submission_name':submission.name},
+            """.format('submission_name'=submission.name),
             from_email='kbp-online-owners@lists.stanford.edu',
         )
-
+    except ConnectionRefusedError:
+        logger.warning("Could not send email to %s because email server not set up", user.email)
     except Exception as e:
         logger.exception(e)
         state.status = "error"
