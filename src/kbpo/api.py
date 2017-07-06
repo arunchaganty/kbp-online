@@ -668,7 +668,7 @@ def get_leaderboard():
         sc.left_interval,
         sc.right_interval 
         FROM latest_scores AS sc 
-        JOIN submission AS sub ON sub.id = sc.submission_id 
+        JOIN submission AS sub ON (sub.id = sc.submission_id AND sub.active)
         ORDER BY (sc.score).f1 DESC;"""):
         entry = {
             'id': row.id,
