@@ -324,7 +324,7 @@ def score_submission(submission_id, chain=True):
             
             Keep populating, 
             KBPO team
-            """.format('submission_name'=submission.name),
+            """.format(submission_name='submission.name'),
             from_email='kbp-online-owners@lists.stanford.edu',
         )
     except ConnectionRefusedError:
