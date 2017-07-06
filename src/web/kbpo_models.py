@@ -114,7 +114,7 @@ class Submission(models.Model):
 
     name = models.TextField(help_text='A short descriptive name for your system, which will be displayed on the leaderboard.')
     corpus_tag = models.TextField(verbose_name='Document corpus')
-    details = models.TextField(help_text='A short descriptoin for your system.')
+    details = models.TextField(help_text='A short description for your system.')
     active = models.BooleanField(default=True)
 
     objects = models.Manager()
