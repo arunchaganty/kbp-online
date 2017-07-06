@@ -559,6 +559,8 @@ def get_submission_entries(submission_id):
         # Only keep non-inverted relations.
         if not defs.is_canonical_relation(row.predicate_name, row.subject_type, row.object_type):
             continue # skip because the inverted relation will come along.
+        if not defs.is_canonical_relation(row.predicate_gold, row.subject_type, row.object_type):
+            continue # skip because the inverted relation will come along.
 
         key = row.doc_id, stuple(row.subject), stuple(row.object)
         if key in distinct:
