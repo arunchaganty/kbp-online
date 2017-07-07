@@ -163,7 +163,7 @@
           $.getJSON("/api/leaderboard/", function(rows) {
             console.info("Loading " + rows['submissions'].length + " submissions.");
             for(var i = 0; i < rows['submissions'].length; i++) {
-              $("#submissions").prepend(renderRow(rows['submissions'][i], i));
+              $("#submissions").append(renderRow(rows['submissions'][i], i));
             }
             $("#submissions").find("#loading").addClass("hidden");
             $('[data-toggle="tooltip"]').tooltip();
