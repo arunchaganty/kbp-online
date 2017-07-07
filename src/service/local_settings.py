@@ -35,7 +35,7 @@ LOGGING["handlers"]["email"] = {
     'class': 'web.logging.CustomSMTPHandler',
     'mailhost': (EMAIL_HOST, EMAIL_PORT),
     'fromaddr': DEFAULT_FROM_EMAIL,
-    'toaddrs': ['chaganty@stanford.edu', 'ashwinpp@stanford.edu', 'kbp-online-admin@lists.stanford.edu'],
+    'toaddrs': ADMINS,
     'subject': 'ERROR with kbpo-local',
     'secure': (),
     }
