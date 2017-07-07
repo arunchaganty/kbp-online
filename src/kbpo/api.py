@@ -567,12 +567,12 @@ def get_submission_entries(submission_id):
             continue # skip because the inverted relation will come along.
 
         key = row.doc_id, stuple(row.subject), stuple(row.object)
+        key = key[0], min(key[1], key[2]), max(key[1], key[2])
         if key in distinct:
             continue
         distinct.add(key)
 
         entry = {
-            "id": i,
             "doc_id": row.doc_id,
             "corpus_tag": row.corpus_tag,
             "title": row.title,
@@ -619,7 +619,6 @@ def test_get_submission_entries():
     assert len(entries) == 1450
     entry = entries[0]
     assert entry == {
-        'id': 0,
         'corpus_tag': 'kbp2016',
         'doc_id': 'ENG_NW_001278_20130111_F00013FIO',
         'title': 'Argentine striker Barcos re-signs with Palmeiras',

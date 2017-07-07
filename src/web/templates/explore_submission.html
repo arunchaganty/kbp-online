@@ -169,7 +169,7 @@
               ret += MARKER.cross;
             }
 
-            ret += (row.id + 1);
+            ret += (row.id);
             return ret;
           }
 
@@ -198,6 +198,7 @@
           // Call AJAX api to load entries.
           $.getJSON("/api/submission/" + submissionId + "/", function(rows) {
             for(var i = 0; i < rows.length; i++) {
+              rows[i].id = i+1;
               $("#predictions").append(renderRow(rows[i]));
             }
             $('[data-toggle="tooltip"]').tooltip();
