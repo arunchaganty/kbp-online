@@ -111,9 +111,8 @@ def process_submission(submission_id, chain=True):
         # Update state of submission.
         state.status = 'pending-sampling'
         state.save()
-        # TODO: temporarily disabling for a test.
-        #if chain:
-        #    sample_submission.delay(submission_id, n_samples=500)
+        if chain:
+            sample_submission.delay(submission_id, n_samples=500)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
