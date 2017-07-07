@@ -38,6 +38,11 @@
       </tr>
     </thead>
     <tbody id="predictions">
+      <tr id="loading">
+        <td colspan="5" class="text-center">
+        <img src="{% static 'img/loading.gif' %}" alt="loading..." />
+        </td>
+      </tr>
     </tbody>
   </table>
 
@@ -193,9 +198,10 @@
           // Call AJAX api to load entries.
           $.getJSON("/api/submission/" + submissionId + "/", function(rows) {
             for(var i = 0; i < rows.length; i++) {
-              $("#predictions").append(renderRow(rows[i]));
+              $("#predictions").prepend(renderRow(rows[i]));
             }
             $('[data-toggle="tooltip"]').tooltip();
+            $("#predictions").find("#loading").addClass("hidden");
           });
         }
     );
