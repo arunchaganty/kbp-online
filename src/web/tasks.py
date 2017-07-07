@@ -1,6 +1,7 @@
 """
 Celery tasks
 """
+import sys
 import gzip
 import logging
 import traceback
@@ -79,8 +80,7 @@ def validate_submission(submission_id, file_format, chain=True):
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        type_, value_, traceback_ = sys.exc_info()
-        state.message = traceback.format_tb(traceback_)
+        state.message = traceback.format_exc()
         state.save()
 
 
@@ -117,8 +117,7 @@ def process_submission(submission_id, chain=True):
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        type_, value_, traceback_ = sys.exc_info()
-        state.message = traceback.format_tb(traceback_)
+        state.message = traceback.format_exc()
         state.save()
 
 @shared_task
@@ -152,8 +151,7 @@ def sample_submission(submission_id, type_='entity_relation', n_samples=500, cha
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        type_, value_, traceback_ = sys.exc_info()
-        state.message = traceback.format_tb(traceback_)
+        state.message = traceback.format_exc()
         state.save()
 
 @shared_task
@@ -198,8 +196,7 @@ def turk_submission(submission_id, sample_batch_id=None, chain=True):
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        type_, value_, traceback_ = sys.exc_info()
-        state.message = traceback.format_tb(traceback_)
+        state.message = traceback.format_exc()
         state.save()
 
 @shared_task
@@ -247,8 +244,7 @@ def process_response(assignment_id, chain=True):
 
     except Exception as e:  # Uh oh, these are errors that we should look at.
         logger.exception(e)
-        type_, value_, traceback_ = sys.exc_info()
-        message = traceback.format_tb(traceback_)
+        message = traceback.format_exc()
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
                    new_state = 'error', message=message, assignment_id = assignment_id)
 
@@ -339,5 +335,5 @@ def score_submission(submission_id, chain=True):
     except Exception as e:
         logger.exception(e)
         state.status = "error"
-        state.message = e
+        state.message = traceback.format_exc()
         state.save()

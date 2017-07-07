@@ -50,7 +50,7 @@ LOGGING["handlers"]["email"] = {
     'class': 'web.logging.CustomSMTPHandler',
     'mailhost': (EMAIL_HOST, EMAIL_PORT),
     'fromaddr': DEFAULT_FROM_EMAIL,
-    'toaddrs': ADMINS,
+    'toaddrs': ["admin@kbpo.stanford.edu"],
     'subject': 'ERROR on kbpo.stanford.edu',
     'secure': (),
     }
