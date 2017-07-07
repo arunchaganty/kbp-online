@@ -46,18 +46,26 @@
     <h4>How do I get started?</h4>
     <p>
     All you'll need to do is to <a href="/register/">{% bootstrap_icon "user" %} create an account</a> and <a href="/submissions/">{% bootstrap_icon "upload" %} submit</a> your knowledge base!
-    We'll automatically sample from your predicted relations and have them annotated via <a href="https://mturk.amazon.com/">Amazon Mechanical Turk</a> (you can check out the interfaces we use through the <a href="/interface/entity/">{% bootstrap_icon "eye-open" %} annotate</a> menu above).
+    We'll automatically sample from your predicted relations and have them annotated via <a target="_blank" href="https://mturk.com/">Amazon Mechanical Turk</a> (you can check out the interfaces we use through the <a target="_blank" href="/interface/entity/">{% bootstrap_icon "eye-open" %} annotate</a> menu above).
     </p>
 
     <p>
     As your predictions are annotated, your submission will be updated on the leader board to the right.
     You can <a href="/explore/corpus/kbp2016/">{% bootstrap_icon "globe" %} explore</a> annotations made on the corpus and analyze your system's errors too. 
     </p>
+
+    <p>
+    If you have any questions, contact us at <b><a href="mailto:admin@kbpo.stanford.edu">admin@kbpo.stanford.edu</a></b>.
+    </p>
   </div>
 </div>
 <div class="col-md-7"> 
     <h1>Leaderboard</h1>
-    <h3><small>Click any of the submissions below to explore its annotated predictions.</small></h3>
+    <h3><small>
+        <b>Precision</b> is evaluated by annotating a sample of each systems' output for correctness to guarantee unbiasedness. 
+        <b>Recall</b> is evaluated by <a target="_blank" href="/interface/relation/"><i>exhaustively</i> annotating</a> a set of documents to measure <i>true recall</i>; as a result, our recall numbers may be less than those in the TAC KBP pooled evaluation.
+        Click any of the submissions below to <b>explore</b> its annotated predictions.
+      </small></h3>
       <table class="table table-hover">
         <colgroup>
         <col style="width:5%; text-align:center;" />
@@ -84,7 +92,7 @@
               </small>
             </td>
             <td>
-              <p> <span class="label label-primary">{affiliation}</span> <a href="/explore/submission/{id}/">{name}</a> <br/>
+              <p> <span class="label label-primary">{affiliation}</span> <a target="_blank" href="/explore/submission/{id}/">{name}</a> <br/>
               <small>{details}</small>
               </p>
             </td>
@@ -194,7 +202,7 @@ It's a simple three step process:
 <p>
 If you have any technical problems with the website, please <a href="https://github.com/arunchaganty/kbp-online/issues">create a GitHub issue</a> so that we can track it.
 
-For any other questions or issues contact us at <a href="mailto:kbp-online-owners@lists.stanford.edu">kbp-online-owners@lists.stanford.edu</a>.
+For any other questions or issues contact us at <a href="mailto:admin@kbpo.stanford.edu">admin@kbpo.stanford.edu</a>.
 </p>
 
 {% endblock %}

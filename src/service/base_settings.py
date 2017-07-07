@@ -132,6 +132,8 @@ CELERY_WORKER_CONCURRENCY = 1
 NPM_ROOT_PATH = os.path.join(BASE_DIR, "static")
 
 #Email setup
+ADMINS=[("Administrators", "admin@kbpo.stanford.edu")]
+SERVER_EMAIL="admin@kbpo.stanford.edu"
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 DEFAULT_FROM_EMAIL="no-reply@kbpo.stanford.edu"
 # Host for sending e-mail.

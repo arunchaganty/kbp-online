@@ -13,7 +13,7 @@ from boto.mturk.question  import ExternalQuestion
 from django.core.mail import send_mail
 import xml.etree.ElementTree as ET
 
-from service.settings import MTURK_HOST, MTURK_TARGET, MTURK_FORCED
+from service.settings import MTURK_HOST, MTURK_TARGET, MTURK_FORCED, ADMINS
 from . import db
 from . import api
 from . import web_data
@@ -459,8 +459,7 @@ def pending_reject_assignment(assignment_id, message = None):
         To approve assignment, please change verified to True and state to `pending-payment`
         Message = %s
         """% (assignment_id, message),
-        from_email='kbp-online-owners@lists.stanford.edu',
-        recipient_list=['kbp-online-owners@lists.stanford.edu'],
+        recipient_list=ADMINS,
     )
 
 def reject_assignment(conn, assignment_id, message = None):

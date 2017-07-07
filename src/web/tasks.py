@@ -319,13 +319,12 @@ def score_submission(submission_id, chain=True):
         user = User.objects.get(user=user)
         user.email_user(
             subject='KBP Online submission scored',
-            message="""Your submission {submission_name}s to KBP Online has been scored. 
-            You can view it at kbpo.stanford.edu/submissions/
+            message="""Your submission {submission_name}s to KBP Online has been scored.
+            You can view it at https://kbpo.stanford.edu/submissions/
             
             Keep populating, 
             KBPO team
             """.format(submission_name='submission.name'),
-            from_email='kbp-online-owners@lists.stanford.edu',
         )
     except ConnectionRefusedError:
         logger.warning("Could not send email to %s because email server not set up", user.email)

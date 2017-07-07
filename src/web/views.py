@@ -28,7 +28,7 @@ def handle404(request, exception):
     return redirect("home")
 
 def handle500(request):
-    messages.error(request, "Woops! Something went wrong on our side. If this problem persists, please let us know at kbp-online-admin@lists.stanford.edu")
+    messages.error(request, "Whoops! Something went wrong on our side. If this problem persists, please let us know at admin@kbpo.stanford.edu")
     return redirect("home")
 
 @login_required
