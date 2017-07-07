@@ -27,6 +27,15 @@ class WebUserAdmin(UserAdmin):
 admin.site.register(User, WebUserAdmin)
 
 # ==== Submission
+def revalidate_submission(_, __, queryset):
+    for row in queryset:
+        row.state.status = 'pending-validation'
+        row.state.message = ""
+        row.state.save()
+        # TODO: better way of handling this.
+        tasks.validate_submission.delay(row.id, 'tackb2016')
+revalidate_submission.short_description = "Revalidate submission."
+
 def reupload_submission(_, __, queryset):
     for row in queryset:
         row.state.status = 'pending-upload'
@@ -104,7 +113,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         SubmissionUserInline,
         SubmissionStateInline,
         ]
-    actions = [reupload_submission, resample_submission, resample_submission_medium, resample_submission_tiny, returk_submission, rescore_submission]
+    actions = [revalidate_submission, reupload_submission, resample_submission, resample_submission_medium, resample_submission_tiny, returk_submission, rescore_submission]
 
     def _user(self, obj):
         return obj.user.user

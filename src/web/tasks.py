@@ -3,6 +3,7 @@ Celery tasks
 """
 import gzip
 import logging
+import traceback
 
 from celery import shared_task
 
@@ -54,12 +55,12 @@ def validate_submission(submission_id, file_format, chain=True):
     try:
         doc_ids = {r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag)}
 
-        with gzip.open(submission.log_filename, "wt") as log_file:
+        with gzip.open(submission.log_filename, "wt", encoding="utf-8") as log_file:
             _logger = logging.Logger("validation")
             _logger.setLevel(logging.INFO)
             _logger.addHandler(logging.StreamHandler(log_file))
 
-            with gzip.open(submission.original_filename, 'rt') as f:
+            with gzip.open(submission.original_filename, 'rt', encoding="utf-8") as f:
                 # Check that it has the right format, aka validate it.
                 mfile = reader.parse(f, doc_ids=doc_ids, logger=_logger)
         # TODO: We never stop the submission even if there are errors (maybe this should be reconsidered?)
@@ -67,7 +68,7 @@ def validate_submission(submission_id, file_format, chain=True):
         assert len(mfile.relations) > 0, "Uploaded submission file does not define any relations"
 
         # Save parsed file.
-        with gzip.open(submission.uploaded_filename, 'wt') as f:
+        with gzip.open(submission.uploaded_filename, 'wt', encoding="utf-8") as f:
             mfile.write(f)
 
         # Update state of submission.
@@ -78,7 +79,8 @@ def validate_submission(submission_id, file_format, chain=True):
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        state.message = str(e)
+        type_, value_, traceback_ = sys.exc_info()
+        state.message = traceback.format_tb(traceback_)
         state.save()
 
 
@@ -102,19 +104,21 @@ def process_submission(submission_id, chain=True):
     try:
         reader = MFileReader()
         doc_ids = set(r.doc_id for r in db.select("SELECT doc_id FROM document_tag WHERE tag = %(tag)s", tag=submission.corpus_tag))
-        with gzip.open(submission.uploaded_filename, 'rt') as f:
+        with gzip.open(submission.uploaded_filename, 'rt', encoding="utf-8") as f:
             mfile = reader.parse(f, doc_ids=doc_ids, logger=logger)
         api.upload_submission(submission_id, mfile)
 
         # Update state of submission.
         state.status = 'pending-sampling'
         state.save()
-        if chain:
-            sample_submission.delay(submission_id, n_samples=500)
+        # TODO: temporarily disabling for a test.
+        #if chain:
+        #    sample_submission.delay(submission_id, n_samples=500)
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        state.message = str(e)
+        type_, value_, traceback_ = sys.exc_info()
+        state.message = traceback.format_tb(traceback_)
         state.save()
 
 @shared_task
@@ -148,7 +152,8 @@ def sample_submission(submission_id, type_='entity_relation', n_samples=500, cha
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        state.message = str(e)
+        type_, value_, traceback_ = sys.exc_info()
+        state.message = traceback.format_tb(traceback_)
         state.save()
 
 @shared_task
@@ -193,7 +198,8 @@ def turk_submission(submission_id, sample_batch_id=None, chain=True):
     except Exception as e:
         logger.exception(e)
         state.status = 'error'
-        state.message = str(e)
+        type_, value_, traceback_ = sys.exc_info()
+        state.message = traceback.format_tb(traceback_)
         state.save()
 
 @shared_task
@@ -241,8 +247,10 @@ def process_response(assignment_id, chain=True):
 
     except Exception as e:  # Uh oh, these are errors that we should look at.
         logger.exception(e)
+        type_, value_, traceback_ = sys.exc_info()
+        message = traceback.format_tb(traceback_)
         db.execute("UPDATE mturk_assignment SET state = %(new_state)s, message = %(message)s WHERE id = %(assignment_id)s",
-                   new_state = 'error', message=str(e), assignment_id = assignment_id)
+                   new_state = 'error', message=message, assignment_id = assignment_id)
 
 
 

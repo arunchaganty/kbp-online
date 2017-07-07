@@ -48,7 +48,7 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
         try:
             # Check that the file is gzipped.
             # Try to read the whole file as a way to ensure that it is a valid zip file.
-            with gzip.open(data.temporary_file_path(), 'rt') as f:
+            with gzip.open(data.temporary_file_path(), 'rt', encoding='utf-8') as f:
                 buf = f.read(self.CHUNK_SIZE)
                 while len(buf) > 0:
                     buf = f.read(self.CHUNK_SIZE)
@@ -63,7 +63,7 @@ class KnowledgeBaseSubmissionForm(forms.ModelForm):
 
         try:
             data = self.cleaned_data['knowledge_base']
-            with gzip.open(data.temporary_file_path(), 'rt') as f, gzip.open(instance.original_filename, 'wt') as g:
+            with gzip.open(data.temporary_file_path(), 'rt', encoding='utf-8') as f, gzip.open(instance.original_filename, 'wt', encoding='utf-8') as g:
                 buf = f.read(self.CHUNK_SIZE)
                 while len(buf) > 0:
                     g.write(buf)
