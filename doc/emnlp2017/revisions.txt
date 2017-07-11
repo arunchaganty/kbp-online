@@ -8,15 +8,6 @@
     extraction, entity detection, linking and coreference. The data
     conforms to the TAC-KBP schema with a few simplifications and will
     be available through our website.
-* How was LDC data collected?
-  - [/] The method used by LDC to collect the evaluation data is described
-    in Xuansong et al. (LREC 2012) -- we will be sure to reference it.
-    We will provide detailed comparisons with the existing evaluation in
-    the appendix.
-
-* How could other practitioners implement IS method themselves.
-* connect the actual technical method in Sec 4 to the motivating statements about it from the introduction.
-
 * The p_i distributions: it is not clear what these mean on a SUBSTANTIVE basis.  We care about evaluation metrics that have already been defined, right?
   - Both the official TAC-KBP evaluation and our own use macro-averaged
     precision and recall as metrics. However, in the official
@@ -43,10 +34,6 @@
     are disjoint, B’s samples can have no effect in computing A’s
     _precision_. On the other hand, if A and B are identical but B has
     10x samples, using B’s samples more would reduce variance.
-* Math note: I think each \hat{X}_j (for system j) has to be a multiset, not a
-set.  Line 356 says it contains "n_j i.i.d. samples".  Therefore it must not be
-sampling without replacement, since that's not i.i.d.; but if it's sampling
-with replacement, then the same item can be selected multiple times.
 
 * On biasing evaluation based on previous system outputs -- I think there might
 be some work by Barbara Plank on this for syntactic annotations?
@@ -55,6 +42,10 @@ be some work by Barbara Plank on this for syntactic annotations?
 several of the lemmas make claims like "X approximately equals Y".  That's not
 a mathematically precise statement.  For example, Lemma 3 is really saying "X
 has a first order Taylor approximation of Y", which is reasonable enough.
+* How could other practitioners implement IS method themselves.
+  connect the actual technical method in Sec 4 to the motivating statements about it from the introduction.
+
+
 
 * [/] It was hard to tell what the CIs meant.  Are these CIs that a practitioner would calculate (and therefore their coverage and biases should be evaluated)?  Or were these a measure of variability in what the evaluation method's point estimates would be, when simulating a data generation and evaluation process?  Figure 5 was a little hard to read with the CIs.  "approximately" in L684-686: why not just calculate widths of the actual CIs (difference in percentiles)?  The authors' arguments are about bias and variance; might as well make them quantitatively instead of relying on a hard to read figure for a purely visual presentation.
   - The CIs plotted in Figure 5 are over 500 different simulations of the experiment described in section 6.1. The intervals change from 0.135 to 0.063 (precision) and from 0.141 to 0.081 (recall).
@@ -65,3 +56,12 @@ results in 5.3.
     relation types. We apologize for an error in the reported figures;
     they should be 0.613 and 0.615 (both considered substantial
     agreement) for 3 and 5 raters respectively. 
+* How was LDC data collected?
+  - [/] The method used by LDC to collect the evaluation data is described
+    in Xuansong et al. (LREC 2012) -- we will be sure to reference it.
+    We will provide detailed comparisons with the existing evaluation in
+    the appendix.
+* [/] Math note: I think each \hat{X}_j (for system j) has to be a multiset, not a
+set.  Line 356 says it contains "n_j i.i.d. samples".  Therefore it must not be
+sampling without replacement, since that's not i.i.d.; but if it's sampling
+with replacement, then the same item can be selected multiple times.
