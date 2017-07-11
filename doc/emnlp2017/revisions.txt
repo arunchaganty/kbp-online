@@ -20,12 +20,7 @@
     entities by sampling entities from each system’s output. In effect,
     p_i makes explicit the decision process of the annotator who chooses
     query entities.
-* Lines 425-428 (first sentence of paragraph): not clear why this is true.
-  - Our observations on w_ij follow from the variance expression in
-    Theorem 1 (appendix B). Intuitively, if system A and B’s predictions
-    are disjoint, B’s samples can have no effect in computing A’s
-    _precision_. On the other hand, if A and B are identical but B has
-    10x samples, using B’s samples more would reduce variance.
+* Prove heuristic choices are optimal at extremes. 
 
 * On biasing evaluation based on previous system outputs -- I think there might
 be some work by Barbara Plank on this for syntactic annotations?
@@ -66,3 +61,10 @@ with replacement, then the same item can be selected multiple times.
     added, requiring new samples to be drawn each time. Our approach
     allows us to reuse samples drawn from individual systems using
     numerical integration.
+
+* [/] Lines 425-428 (first sentence of paragraph): not clear why this is true.
+  - Our observations on w_ij follow from the variance expression in
+    Theorem 1 (appendix B). Intuitively, if system A and B’s predictions
+    are disjoint, B’s samples can have no effect in computing A’s
+    _precision_. On the other hand, if A and B are identical but B has
+    10x samples, using B’s samples more would reduce variance.

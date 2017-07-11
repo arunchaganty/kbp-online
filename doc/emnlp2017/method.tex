@@ -110,12 +110,14 @@ where each $\Xh_j$ consists of $n_j$ i.i.d.~samples drawn from $p_j$.
 %This last condition is easy to guarantee by setting $w_{ii} > 0$.
 %Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_{ij}$.\footnote{%
 
-To set the mixing weights $w_{ij}$, we can first formally verify that
-if $X_i$ and $X_j$ are disjoint, then $w_{ij} = 0$ minimizes the variance of $\pi_i$,
-and if $X_i = X_j$, then $w_{ij} \propto n_{j}$.
+It is a hard problem to determine what the optimal mixing weights $w_{ij}$ should be.
+However, we can formally verify that 
+  if $X_i$ and $X_j$ are disjoint, then $w_{ij} = 0$ minimizes the variance of $\pi_i$,
+  and if $X_i = X_j$, then $w_{ij} \propto n_{j}$ is optimal.\footnote{%
+  See \refapp{sampling} for proofs.}
 %$\pih_i^{(j)}$ will have high variance if $q_i(x) \ll p_i(x)$
 %In particular, we can show that the ideal choice \pl{in what sense?} of $w_{ij}$ for
-This motivates the following scheme which interpolates between the two extremes:
+This motivates the following heuristic choice which interpolates between these two extremes:
 $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 %=======
 %The variance depends on $f(x)$, but the general intuition is that $\pih_i^{(j)}$ will have high variance if 
