@@ -1,6 +1,3 @@
-* On biasing evaluation based on previous system outputs -- I think there might
-be some work by Barbara Plank on this for syntactic annotations?
-
 * Proofs in the appendix -- I did not check them in detail, though I noticed
 several of the lemmas make claims like "X approximately equals Y".  That's not
 a mathematically precise statement.  For example, Lemma 3 is really saying "X
@@ -17,6 +14,9 @@ has a first order Taylor approximation of Y", which is reasonable enough.
   - It is a feature of our approach that annotation costs decrease over
     time. We are currently piloting the service at no cost to
     researchers.
+* [?] On biasing evaluation based on previous system outputs -- I think there might
+be some work by Barbara Plank on this for syntactic annotations?
+
 --------
 
 
