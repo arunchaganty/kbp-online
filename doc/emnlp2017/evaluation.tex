@@ -51,10 +51,10 @@ On average, the pooled evaluation dataset contains between 5,000 and 6,000 label
 Next, we evaluated a set of 9 randomly chosen teams with our proposed simple and joint estimators using a total of 5,000 samples:
 about 150 of these samples are drawn from $\sY$, i.e.\ the complete TAC KBP 2015 evaluation data, and roughly another 150 samples from each of the systems being evaluated.
 
-We repeat the above experiment 500 times and compare the estimated precision and recall with their true values in \reffig{simulation}.
+We repeat the above simulated experiment 500 times and compare the estimated precision and recall with their true values in \reffig{simulation}.
 The simulations once again highlight that the pooled methodology is biased, while the simple and joint estimators are not.
-Furthermore, the joint estimators significantly reduce variance when compared with the simple estimators,
-approximately reducing the size of the 90\% confidence intervals by a factor of 2 for precision and a factor of 3 for recall.
+Furthermore, the joint estimators significantly reduce variance when compared with the simple estimators:
+the median 90\% confidence intervals reduce from 0.135 to 0.063 for precision and from 0.141 to 0.081 for recall.
 
 \subsection{A mock evaluation for TAC KBP 2016}
 We have implemented the on-demand evaluation framework described here as an evaluation service to which researchers can submit their own system predictions.
