@@ -5,9 +5,6 @@ has a first order Taylor approximation of Y", which is reasonable enough.
 
 * Prove heuristic choices are optimal at extremes. 
 
-* How could other practitioners implement IS method themselves.
-  connect the actual technical method in Sec 4 to the motivating statements about it from the introduction.
-
 --------
 
 * [?] Question about platform dynamics: who pays for what?
@@ -16,6 +13,9 @@ has a first order Taylor approximation of Y", which is reasonable enough.
     researchers.
 * [?] On biasing evaluation based on previous system outputs -- I think there might
 be some work by Barbara Plank on this for syntactic annotations?
+
+* [?] How could other practitioners implement IS method themselves.
+  connect the actual technical method in Sec 4 to the motivating statements about it from the introduction.
 
 --------
 
