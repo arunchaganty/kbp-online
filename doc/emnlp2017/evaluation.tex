@@ -31,7 +31,7 @@ We then demonstrate that on-demand evaluation can serve as a practical replaceme
   Unbiased estimates lie on the $y = x$ line.
   Both the simple and joint estimators are unbiased, and the joint estimator is able to significantly reduce variance.
   \textbf{(c):} 
-Precision ($P$), recall ($R$) and \fone{} scores from a pilot run of our evaluation service for a rule-based system (R), a logistic classifier (L) and a neural network classifier (N) run on the TAC KBP 2016 document corpus. 
+Precision ($P$), recall ($R$) and \fone{} scores from a pilot run of our evaluation service for ensembles of a rule-based system (R), a logistic classifier (L) and a neural network classifier (N) run on the TAC KBP 2016 document corpus. 
   }
 
 %\begin{figure}[t]
@@ -58,11 +58,19 @@ approximately reducing the size of the 90\% confidence intervals by a factor of 
 
 \subsection{A mock evaluation for TAC KBP 2016}
 We have implemented the on-demand evaluation framework described here as an evaluation service to which researchers can submit their own system predictions.
-As a pilot of the service, we evaluated three distinct relation extraction systems (a rule-based system, a logistic classifier, and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
-Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities and the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking. 
+As a pilot of the service, we evaluated three relation extraction systems that also participated in the official 2016 TAC KBP competition.
+Each system uses Stanford CoreNLP~\citep{manning2014stanford} to identify entities, the Illinois Wikifier~\citep{ratinov2011local} to perform entity linking and a combination of a rule-based system (P), a logistic classifier (L), and a neural network classifier (N) for relation extraction.
+%distinct relation extraction systems (a rule-based system, a logistic classifier, and a neural network classifier) on 15,000 Newswire documents from 2016 TAC KBP evaluation.
+We used 15,000 Newswire documents from the 2016 TAC KBP evaluation as our document corpus.
+In total, 100 documents were exhaustively annotated for about \$2,000 and 500 instances from each system were labeled for about \$150 each.
+Evaluating all three system only took about 2 hours. 
 
-In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 sampled to estimate macro-averaged entity scores.
-\reffig{evaluation-results} reports the scores obtained through on-demand evaluation of these systems.
+%In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 sampled to estimate macro-averaged entity scores.
+\reffig{evaluation-results} reports scores obtained through on-demand evaluation of these systems as well as their corresponding official TAC evaluation scores.
+While the relative ordering of systems between the two evaluations is the same, we note that precision and recall as measured through on-demand evaluation are respectively higher and lower than the official scores.
+This is to be expected because on-demand evaluation measures precision using each systems output as opposed to an externally defined set of query entities.
+Likewise, recall is measured using exhaustive annotations of relations within the corpus instead of annotations from pooled output in the official evaluation.  
+
 %We note that the rule-based system does better on \fone{} because it has significantly higher precision that the other systems, while the RNN system has the highest recall among the three systems.
 %We also include TAC KBP evaluation scores for the official submissions that most closely represent these systems.
 %The TAC KBP submissions are actually a combination of systems and include filtering and post-processing as required under the evaluation guidelines, e.g.\ submitting a unique instance for each relation.
