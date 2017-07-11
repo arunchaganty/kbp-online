@@ -11,13 +11,23 @@ In this section, we'll present practical implementations of each of these operat
 \subsection{Sampling from system predictions}
 % 1. what is the point of this distribution?
 % - prevent over sampling instances.
+\ac{@PL:\@ I think that the role of $p_i$ is really very subtle, but very important. I hope the below paragraph highlights the paradigm shift in how one has to think about on-demand evaluation.}
+Both the official TAC-KBP evaluation and the on-demand evaluation we propose use micro-averaged precision and recall as metrics. However, in the official evaluation, these metrics are computed over a fixed set of query entities chosen by LDC annotators, resulting in two problems: (a) defining query entities requires human intervention and (b) typically a large source of variability in evaluation scores comes from not having enough query entities (see e.g.\ \citep{webber2010measurement}). In our methodology, we replace manually chosen query entities by sampling entities from each system’s output. In effect, $p_i$ makes explicit the decision process of the annotator who chooses query entities.
+
+\ac{@PL:\@ This paragraph goes into details, but I felt that it was useful to illustrate how we tailored a distribution to meet our evaluation goals.}
+Identifying a reasonable distribution $p_i$ is an important implementation decision that depends on what one wishes to evaluate.
+Our goal for the on-demand evaluation service we have implemented is to ensure that KBP systems are fairly evaluated on diverse subjects and predicates.
+At the same time, we would like to ensure that entities with multiple relations are represented to measure completeness of knowledge base entries.
 Recall that a KBP system predicts a set of relation instances of the form (\entity{subject}, \relation{predicate}, \entity{object}, \textsc{provenance}).
-In practice, it is common for a system's predictions
-to be be dominated by a few common predicates (e.g.\ professional titles) or
-subject entities (e.g.\ ``United States of America'').
-Thus, if we let $p_i$ be the uniform distribution over this set,
-our evaluation metrics would be skewed towards a particular predicate or entity.
-In \refapp{implementation} we describe two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities.
+Simply choosing $p_i$ to be the uniform distribution over this set causes our evaluation metrics to be be dominated by a few common predicates (e.g.\ professional titles) or subject entities (e.g.\ ``United States of America'').
+Instead, we propose the following distribution which we reasonably approximates our goals:\footnote{
+See \refapp{implementation} for an analysis of this distribution and other potential choices.} 
+\begin{align*}
+  p_i^{*}(x) &\eqdef \frac{\operatorname{\#uniq-relns}_i(x)}{\operatorname{\#pred-insts}_i(x) \operatorname{\#subj-insts}_i(x)},
+\end{align*}
+where $\operatorname{\#uniq-relns}_i(x)$ measures the number of unique relations (\entity{subject}, \relation{predicate}, \entity{object} triples) with the same \entity{subject} as $x$ in the system's output $X_i$, 
+$\operatorname{\#pred-insts}_i(x)$ measures the number of instances with the same \relation{predicate} as $x$ in $X_i$ and 
+$\operatorname{\#subj-insts}_i(x)$ measures the number of instances with the same \relation{subject} as $x$ in $X_i$.
 
 %%The choice of distribution over this set determines how much we put weight on rare predicates and subject entities in our evaluation metric. % in our precision score. % PL: for recall 
 %We therefore propose two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities, respectively:

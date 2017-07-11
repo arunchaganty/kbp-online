@@ -8,20 +8,6 @@
     extraction, entity detection, linking and coreference. The data
     conforms to the TAC-KBP schema with a few simplifications and will
     be available through our website.
-* The p_i distributions: it is not clear what these mean on a SUBSTANTIVE basis.  We care about evaluation metrics that have already been defined, right?
-  - Both the official TAC-KBP evaluation and our own use macro-averaged
-    precision and recall as metrics. However, in the official
-    evaluation, these metrics are computed over a fixed set of query
-    entities chosen by LDC annotators, resulting in two problems: (a)
-    defining query entities requires human intervention and (b)
-    typically a large source of variability in evaluation scores comes
-    from not having enough query entities (see e.g. Webber, W.E.
-    (2010)). In our methodology, we replace manually chosen query
-    entities by sampling entities from each system’s output. In effect,
-    p_i makes explicit the decision process of the annotator who chooses
-    query entities.
-* Prove heuristic choices are optimal at extremes. 
-
 * On biasing evaluation based on previous system outputs -- I think there might
 be some work by Barbara Plank on this for syntactic annotations?
 
@@ -29,6 +15,8 @@ be some work by Barbara Plank on this for syntactic annotations?
 several of the lemmas make claims like "X approximately equals Y".  That's not
 a mathematically precise statement.  For example, Lemma 3 is really saying "X
 has a first order Taylor approximation of Y", which is reasonable enough.
+
+* Prove heuristic choices are optimal at extremes. 
 
 * How could other practitioners implement IS method themselves.
   connect the actual technical method in Sec 4 to the motivating statements about it from the introduction.
@@ -68,3 +56,15 @@ with replacement, then the same item can be selected multiple times.
     are disjoint, B’s samples can have no effect in computing A’s
     _precision_. On the other hand, if A and B are identical but B has
     10x samples, using B’s samples more would reduce variance.
+* [/] The p_i distributions: it is not clear what these mean on a SUBSTANTIVE basis.  We care about evaluation metrics that have already been defined, right?
+  - Both the official TAC-KBP evaluation and our own use macro-averaged
+    precision and recall as metrics. However, in the official
+    evaluation, these metrics are computed over a fixed set of query
+    entities chosen by LDC annotators, resulting in two problems: (a)
+    defining query entities requires human intervention and (b)
+    typically a large source of variability in evaluation scores comes
+    from not having enough query entities (see e.g. Webber, W.E.
+    (2010)). In our methodology, we replace manually chosen query
+    entities by sampling entities from each system’s output. In effect,
+    p_i makes explicit the decision process of the annotator who chooses
+    query entities.
