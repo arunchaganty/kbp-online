@@ -72,16 +72,18 @@ Intuitively, if two systems have very similar predictions $X_i$ and $X_j$, we sh
 However, it might also be the case that $X_i$ and $X_j$ only overlap on a small region, in which case the samples from $X_j$ do not accurately represent instances in $X_i$ and could lead to a biased estimate.
 We address this problem by using importance sampling \citep{owen2013monte}, a standard statistical technique for estimating properties of one distribution using samples from another distribution.
 
-In importance sampling, if we sample $x \sim q_i$, then $\frac{p_i(x)}{q_i(x)} f(x)$ is an unbiased estimate of $\pi_i$.
+In importance sampling, if we sample $\Xh_i \sim q_i$, then $\sum_{x \in \Xh_i} \frac{p_i(x)}{q_i(x)} f(x)$ is an unbiased estimate of $\pi_i$.
 We would like the proposal distribution $q_i$ to both leverage samples from all $m$ systems and be tailored towards system $i$.
 To this end, we first define a distribution over systems $j$, represented by probabilities $w_{ij}$.
 Then, define $q_i$ as sampling a $j$ and drawing $x \sim p_j$;
 formally $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$.
-There are two refinements:
-First, we numerically integrate over all $m$ systems rather than sampling one.
-Second, the $n_j$ samples from each $p_j$ are reused for each $i$;
-the weights $w_{ij}$ ``mix'' these samples to reduce variance.
-Formally, define the \emph{joint precision estimator}:\footnote{We provide rigorous proofs for the
+
+We note that $q_i(x)$ not only significantly differs between systems, but also changes as new systems are added to the evaluation pool.
+Unfortunately, the standard importance sampling procedure requires us to draw and use samples from each distribution $q_i(x)$ independently and thus can not effectively reuse samples drawn from different distributions.
+To this end, we introduce a practical refinement to the importance sampling procedure:
+we independently draw $n_j$ samples according to $p_j(x)$ from each of the $m$ systems independently 
+and then numerically integrate over these samples using the weights $w_{ij}$ to ``mix'' them appropriately to produce and unbiased estimate of $\pi_i$ while reducing variance.
+Formally, we define the \emph{joint precision estimator}:\footnote{We provide rigorous proofs for the
 unbiasedness of the proposed estimators in \refapp{sampling} of the
 supplementary material.}
 \begin{align}

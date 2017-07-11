@@ -20,14 +20,6 @@
     entities by sampling entities from each system’s output. In effect,
     p_i makes explicit the decision process of the annotator who chooses
     query entities.
-* Clarifying our refinements to IS [R3]
-  - Lines 408-430: Our refinements modify the IS procedure and not the
-    proposal distribution. The standard IS approach requires us to only
-    use samples from the distribution q_i(x); unfortunately, q_i(x)
-    differs for each system i and changes whenever a new system is
-    added, requiring new samples to be drawn each time. Our approach
-    allows us to reuse samples drawn from individual systems using
-    numerical integration.
 * Lines 425-428 (first sentence of paragraph): not clear why this is true.
   - Our observations on w_ij follow from the variance expression in
     Theorem 1 (appendix B). Intuitively, if system A and B’s predictions
@@ -42,10 +34,11 @@ be some work by Barbara Plank on this for syntactic annotations?
 several of the lemmas make claims like "X approximately equals Y".  That's not
 a mathematically precise statement.  For example, Lemma 3 is really saying "X
 has a first order Taylor approximation of Y", which is reasonable enough.
+
 * How could other practitioners implement IS method themselves.
   connect the actual technical method in Sec 4 to the motivating statements about it from the introduction.
 
-
+--------
 
 * [/] It was hard to tell what the CIs meant.  Are these CIs that a practitioner would calculate (and therefore their coverage and biases should be evaluated)?  Or were these a measure of variability in what the evaluation method's point estimates would be, when simulating a data generation and evaluation process?  Figure 5 was a little hard to read with the CIs.  "approximately" in L684-686: why not just calculate widths of the actual CIs (difference in percentiles)?  The authors' arguments are about bias and variance; might as well make them quantitatively instead of relying on a hard to read figure for a purely visual presentation.
   - The CIs plotted in Figure 5 are over 500 different simulations of the experiment described in section 6.1. The intervals change from 0.135 to 0.063 (precision) and from 0.141 to 0.081 (recall).
@@ -65,3 +58,11 @@ results in 5.3.
 set.  Line 356 says it contains "n_j i.i.d. samples".  Therefore it must not be
 sampling without replacement, since that's not i.i.d.; but if it's sampling
 with replacement, then the same item can be selected multiple times.
+* [/] Clarifying our refinements to IS [R3]
+  - Lines 408-430: Our refinements modify the IS procedure and not the
+    proposal distribution. The standard IS approach requires us to only
+    use samples from the distribution q_i(x); unfortunately, q_i(x)
+    differs for each system i and changes whenever a new system is
+    added, requiring new samples to be drawn each time. Our approach
+    allows us to reuse samples drawn from individual systems using
+    numerical integration.
