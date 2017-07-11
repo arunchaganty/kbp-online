@@ -1,0 +1,240 @@
+---------------------------------------------------------------------------
+Meta Reviewer's Detailed comments
+---------------------------------------------------------------------------
+
+The reviewers find this to be an important paper and well suited to EMNLP. At the same time, they highlighted some concerns to be addressed; the authors' response did address some of these but not all.
+============================================================================
+                            REVIEWER #1
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+                         Appropriateness: 3
+                                 Clarity: 4
+                             Originality: 4
+                 Soundness / Correctness: 4
+                   Meaningful Comparison: 4
+                               Substance: 4
+               Impact of Ideas / Results: 4
+         Impact of Accompanying Software: 1
+Impact of Accompanying Dataset / Resource: 1
+                          Recommendation: 4
+                     Reviewer Confidence: 4
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+This paper proposes an importance-sampling based evaluation schema which claims
+to eliminate the bias induced by the previous pool-based evaluation schema.
+Specifically, the joint estimators of precision and recall for a particular
+system leverages labels from other participating systems. The experiment shows
+that the schema can reduce the variance in the 2015 TAC BKP evaluation. The
+method is impressive, and the paper is well-written. My major concern is that
+the issue is more related to statistical evaluation than to NLP. Therefore the
+paper is more appropriate to be published in evaluation-based conferences.
+
+============================================================================
+                            REVIEWER #2
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+                         Appropriateness: 4
+                                 Clarity: 5
+                             Originality: 5
+                 Soundness / Correctness: 5
+                   Meaningful Comparison: 5
+                               Substance: 4
+               Impact of Ideas / Results: 4
+         Impact of Accompanying Software: 5
+Impact of Accompanying Dataset / Resource: 3
+                          Recommendation: 4
+                     Reviewer Confidence: 4
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+This paper touches a key aspect of research in knowledge base population, which
+is the problem of evaluating them. Good evaluation is difficult, because it
+would be (too) expensive to create evaluation data properly, and even then it
+wouldn't be perfect. This argumentation is shared by the authors. This has led
+to an arguable approach of pooling old systems against a new system, which,
+however, poses the problem commonly known as "lots of old wise men find idea of
+new guy really bad". Interestingly, they measure (using crowd sourcing) and
+find out that indeed the pooling effect disadvantages new systems by 2%, which
+means that a new system having an improvement of 1% might look worse than
+"state of the art" of the pool.
+
+They describe a way how to escape this without having to resort to the too
+costly solution by tightly integrating crowd sourcing into the pooling approach
+without completely dissolving it. The idea is to detect when the pooling is
+about to be too sure about itself and involve crowd sourcing on demand in these
+cases. This brings the cost of really fairly evaluating a new system down to
+reasonable (actually very cheap compared to all other costs of developing such
+a system) regions and make this service available to the community. It seems
+like each participant will have to pay their own evaluation, however. This, by
+the way, introduces another problem that is not sufficiently explained in the
+paper - whether there is going to be some kind of saturation eventually, where
+the more systems are evaluated against this setup, the less the cost of
+evaluating new systems is going to be.
+
+Nevertheless, the main issue of the pooling approach is that if there are many
+very similar systems to each other then a completely different system would
+look especially bad because it would disagree more stronger with the existing
+systems in the pool. This main issue is directly addressed by this approach,
+and in all honesty, I cannot think of any other cheaper or simpler solution to
+that, apart from going to further downstream based evaluations, of course,
+which have their own share of issues.
+
+It would also be good to better package or quantify the data produced by the
+crowd workers. From the paper it didn't really become clear to me whether and
+which schema is going to be adopted here.
+
+I would like to encourage the authors to extend their system to other
+notoriously badly evaluated areas in NLP as well, such as for example the text
+summarization area, or machine translation. To me it seems that it would be a
+good fit.
+
+I find this work important and "out of the box" in the way that the authors
+really not only try to do the community a favor, but manage to present a
+solution that could really become a new standard how do perform such
+evaluations.
+
+I didn't find any serious issues within the paper.
+
+One question arose on line 202: subjects were tasked to manually search a
+corpus within a time budge - it would be important to detail this further,
+specifying which means (i.e. search engines) were available to the subjects in
+order to understand which biases were introduced at this stage).
+
+============================================================================
+                            REVIEWER #3
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+                         Appropriateness: 5
+                                 Clarity: 4
+                             Originality: 4
+                 Soundness / Correctness: 4
+                   Meaningful Comparison: 5
+                               Substance: 4
+               Impact of Ideas / Results: 4
+         Impact of Accompanying Software: 1
+Impact of Accompanying Dataset / Resource: 1
+                          Recommendation: 3
+                     Reviewer Confidence: 4
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+This work presents an interesting approach to evaluating knowledge base
+population algorithms -- applying importance sampling to intelligently select
+instances for human evaluation, guided by the objective of measuring precision
+and recall.  The work also establishes that a popular status quo evaluation
+method, to only use human annotations conducted on previous systems, of course
+is biased towards their outputs, and against novel new systems.  Their new
+method appears to suffer less such bias.
+
+The research goals are terrific and the core idea is great.  The proposed
+approach is interesting.  Unfortunately, I found some of it difficult to
+follow, especially section 4.  Overall, given the interestingness and potential
+usefulness of the approach, the paper will be strong if the authors can correct
+some of the confusing parts.
+
+The authors would make the best contribution by making it clear how other
+practitioners could implement the IS method themselves -- and how to usefully
+design it and apply it to different problems.  I sometimes had trouble when
+reading the exposition to think how I could use the specific approach myself,
+though the overall idea seems very good.  In particular, it was difficult to
+connect the actual technical method in Sec 4 to the motivating statements about
+it from the introduction.
+
+On some of the specifics --
+
+The p_i distributions: it is not clear what these mean on a SUBSTANTIVE basis.
+We care about evaluation metrics that have already been defined, right?  Is 5.1
+saying that definitions of macroaveraged or microaveraged precision can be
+implemented in terms of a correctly designed p_i distribution?        Or something
+else?  Or are the authors proposing new evaluation metrics?
+
+Lines 408 through 430 were difficult.  For example, the sentence (L412)
+starting with "There are two refinements" especially didn't make sense to me:
+both of the two conditions it states seem to have already been represented in
+the stochastic process described in the previous sentence.  It's not clear if
+these are modifications to the stochastic process defining q, or if they are
+modifications to the standard IS procedure; I think the latter, but why not
+write it more simply to be clear?
+
+Lines 425-428 (first sentence of paragraph): not clear why this is true.
+
+Math note: I think each \hat{X}_j (for system j) has to be a multiset, not a
+set.  Line 356 says it contains "n_j i.i.d. samples".  Therefore it must not be
+sampling without replacement, since that's not i.i.d.; but if it's sampling
+with replacement, then the same item can be selected multiple times.
+
+5.2: what does interannotator agreement rate mean here, and why does it differ
+with different numbers of annotators?  Same question for multiple worker
+results in 5.3.
+
+Section 6
+
+It was hard to tell what the CIs meant.  Are these CIs that a practitioner
+would calculate (and therefore their coverage and biases should be evaluated)?
+Or were these a measure of variability in what the evaluation method's point
+estimates would be, when simulating a data generation and evaluation process?
+
+Figure 5 was a little hard to read with the CIs.
+
+"approximately" in L684-686: why not just calculate widths of the actual CIs
+(difference in percentiles)?  The authors' arguments are about bias and
+variance; might as well make them quantitatively instead of relying on a hard
+to read figure for a purely visual presentation.
+
+-- Miscellaneous --
+
+On biasing evaluation based on previous system outputs -- I think there might
+be some work by Barbara Plank on this for syntactic annotations?
+
+Proofs in the appendix -- I did not check them in detail, though I noticed
+several of the lemmas make claims like "X approximately equals Y".  That's not
+a mathematically precise statement.  For example, Lemma 3 is really saying "X
+has a first order Taylor approximation of Y", which is reasonable enough.
+
+
+Rebuttal
+----
+
+We thank the reviewers for their detailed feedback and suggestions. Reviewers found the paper “important and out of the box”; R1 wondered about its relevance to EMNLP and R3 found certain portions unclear. We accept the main thrust of R3's comments that we still need to do a better job of communicating the math of our proposal and its motivations to the reader in the paper text. We really appreciate their feedback, which will help us improve a revised version. We address specific concerns below:
+Relevance to EMNLP [R1]
+There has been a long history of evaluation work at EMNLP: e.g., Chiang et al., (2008), Berg-Kirkpatrick et al. (2012), Graham and Baldwin (2014) and Schnabel et al. (2015). Evaluation drives progress and we identify a severe shortcoming in existing evaluation and propose a way to fix it: the right audience for this work is empirical NLP scientists.
+Contribution of data produced [R1,R3]
+We would like to highlight that our framework also produces a growing dataset of annotations that are useful for relation extraction, entity detection, linking and coreference. The data conforms to the TAC-KBP schema with a few simplifications and will be available through our website.
+Role of sampling distributions p_i in evaluation metrics [R3]
+Both the official TAC-KBP evaluation and our own use macro-averaged precision and recall as metrics. However, in the official evaluation, these metrics are computed over a fixed set of query entities chosen by LDC annotators, resulting in two problems: (a) defining query entities requires human intervention and (b) typically a large source of variability in evaluation scores comes from not having enough query entities (see e.g. Webber, W.E. (2010)). In our methodology, we replace manually chosen query entities by sampling entities from each system’s output. In effect, p_i makes explicit the decision process of the annotator who chooses query entities.
+Clarifying our refinements to IS [R3]
+Lines 408-430: Our refinements modify the IS procedure and not the proposal distribution. The standard IS approach requires us to only use samples from the distribution q_i(x); unfortunately, q_i(x) differs for each system i and changes whenever a new system is added, requiring new samples to be drawn each time. Our approach allows us to reuse samples drawn from individual systems using numerical integration.
+Lines 425-430: Our observations on w_ij follow from the variance expression in Theorem 1 (appendix B). Intuitively, if system A and B’s predictions are disjoint, B’s samples can have no effect in computing A’s _precision_. On the other hand, if A and B are identical but B has 10x samples, using B’s samples more would reduce variance.
+Experimental results [R3]
+The CIs plotted in Figure 5 are over 500 different simulations of the experiment described in section 6.1. The intervals change from 0.135 to 0.063 (precision) and from 0.141 to 0.081 (recall).
+The inter-annotator rates are Fleiss’s kappa scores averaged over relation types. We apologize for an error in the reported figures; they should be 0.613 and 0.615 (both considered substantial agreement) for 3 and 5 raters respectively. 
+Logistics of payment [R2]
+It is a feature of our approach that annotation costs decrease over time. We are currently piloting the service at no cost to researchers.
+Excluded
+The method used by LDC to collect the evaluation data is described in Xuansong et al. (LREC 2012) -- we will be sure to reference it.
+We will provide detailed comparisons with the existing evaluation in the appendix.
