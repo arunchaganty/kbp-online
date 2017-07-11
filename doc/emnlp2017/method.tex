@@ -91,25 +91,6 @@ supplementary material.}
 \end{align}
 where each $\Xh_j$ consists of $n_j$ i.i.d.~samples drawn from $p_j$.
 
-%Unfortunately, because $X$ and therefore $q$ changes every time a new set of predictions is submitted, samples drawn earlier are no longer valid.
-%At the same time, using a single proposal distribution when estimating different $\pi_i$ could be suboptimal.
-% - For example, the proposal distribution could be the weighted mixture over all $X_i$: 
-% $q(x) = \frac{1}{m} \sum_{i=1}^m w_i p_i(x)$, for some $w_i > 0, \sum_{i}^m w_i = 1$.
-% - However, when a new $X_{m+1}$ is being evaluated, the estimator cannot make use of the samples previously obtained because they would have come from a different proposal distribution.
-% - Furthermore, we would prefer reweighting samples when estimated for each $\pi_i$ differently.
-
-% We handle these two desiderata using the following joint precision estimator:
-%\ac{Other readers have noted that it might be good to give intuition about this estimator. I'm not sure how to do so given space constraints.}
-%We overcome this obstacle by proposing the following joint precision estimator that simulates the behavior of a proposal distribution without actually drawing samples from it:
-%\pl{I think a more helpful description would talk about the high-level intuition - and with a figure!  something about suppose you're trying to evaluate $i$,
-%how much of other systems should you pull; well, let $w_{ij}$ measure that, and now define $q_i$, and gradually build up rather than defining $\hat \pi_i$ directly}
-%\begin{align}
-  %\pih_i^{(j)} &= \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
-%\end{align}
-%where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture parameters such that $\sum_{j=1}^m w_{ij} = 1$ and $q_i(x) > 0$ wherever $p_i(x) > 0$.
-%This last condition is easy to guarantee by setting $w_{ii} > 0$.
-%Intuitively, $q_i(x)$ behaves like the marginal distribution over $\sX$ if we drew samples the mixture of $p_j(x)$, with mixture weights $w_{ij}$.\footnote{%
-
 It is a hard problem to determine what the optimal mixing weights $w_{ij}$ should be.
 However, we can formally verify that 
   if $X_i$ and $X_j$ are disjoint, then $w_{ij} = 0$ minimizes the variance of $\pi_i$,

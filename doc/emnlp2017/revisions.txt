@@ -1,8 +1,3 @@
-* Proofs in the appendix -- I did not check them in detail, though I noticed
-several of the lemmas make claims like "X approximately equals Y".  That's not
-a mathematically precise statement.  For example, Lemma 3 is really saying "X
-has a first order Taylor approximation of Y", which is reasonable enough.
-
 * Prove heuristic choices are optimal at extremes. 
 
 --------
@@ -71,3 +66,8 @@ with replacement, then the same item can be selected multiple times.
     extraction, entity detection, linking and coreference. The data
     conforms to the TAC-KBP schema with a few simplifications and will
     be available through our website.
+* [/] Proofs in the appendix -- I did not check them in detail, though I noticed
+several of the lemmas make claims like "X approximately equals Y".  That's not
+a mathematically precise statement.  For example, Lemma 3 is really saying "X
+has a first order Taylor approximation of Y", which is reasonable enough.
+

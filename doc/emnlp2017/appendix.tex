@@ -12,7 +12,7 @@ Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
   $X_1, \ldots X_m \subseteq \sX$ be known subsets that correspond to the predicted output from $m$ systems,
   and $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
 Furthermore, 
-  let $\Xh_i$ be a set of $n_i$ independent samples drawn from $X_i$ with the distribution $p_i$,
+  let $\Xh_i$ be a mulit-set of $n_i$ independent samples drawn from $X_i$ with the distribution $p_i$,
   $\Yh_i$ be the intersection of these sets with $\sY$, and
   $\Yh_0$ be a sample drawn from $\sY$ according to an unknown distribution $p'(x)$.
 
@@ -22,7 +22,7 @@ We would like to evaluate precision, $\pi_i$, and recall, $\rho_i$:
   \rho_i &\eqdef \E_{x \sim \sY}[g_i(x)],
 \end{align*}
 
-In this section, we'll provide proofs that show that the estimators proposed are indeed unbiased, and we will characterize their variance.
+In this section, we'll provide proofs that show that the joint estimators proposed in \refsec{method} are indeed unbiased, and we will characterize their variance.
 
 \subsection{Estimating precision}
 
@@ -62,10 +62,11 @@ where $q_i(x) = \sum_{j=1}^m w_{ij} p_j(x)$ and $w_{ij} \ge 0$ are mixture param
 
   Now let's compute the variance.
   \begin{align*}
-    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} \right]
+    \Var{\pih_i} 
+    &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} \right]
     - \sum_{j=1}^m \frac{w_j^2}{n_j} {\E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]}^2 \\
-    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} - \frac{\pi_{ij} p_i(x) f(x)}{q_i(x)} \right] \\
-    \Var{\pih_i} &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
+    &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2}{{q_i(x)}^2} - \frac{\pi_{ij} p_i(x) f(x)}{q_i(x)} \right] \\
+    &= \sum_{j=1}^m \frac{w_j^2}{n_j} \E_{p_j}\left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right],
   \end{align*}
   where $\pi_{ij} \eqdef \E_{p_j}\left[\frac{p_i(x)f(x)}{q_i(x)} \right]$.
 \end{proof}
@@ -80,7 +81,8 @@ In \refsec{method}, we used the fact that the recall of system $i$, $\rho_i$, ca
 where $x$ is sampled under the distribution $p'(x \given x \in Y)$ and $p'(x)$ respectively and
   $g(x) \eqdef \I[x \in \Union_{i=1}^m X_i] = \max_{j \in [1,m]} g_j(x)$ is the indicator function for $x$ belonging to the pool.
 
-Ideally, to estimate the pooled recall, $\nu_i$, we need to take expectations with respect to $x \sim Y$, but have samples drawn from individual $X_i$.
+Ideally, to estimate the pooled recall, $\nu_i$, we need to take expectations with respect to $x \sim Y$.
+However, we only have samples drawn from individual $X_i$.
 To correct for this bias, we'll use a self-normalizing estimator for $\nu_i$:
 \begin{align*}
   \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x) g_i(x)}{q(x)}}{\sum_{j=1}^m \frac{w_j}{n_j} \sum_{x \in \Yh_j} \frac{u(x)}{q(x)}},
@@ -124,7 +126,7 @@ Let's start by showing that $\nu_i$ is unbiased.
   Thus,
   \begin{align*}
     \E_{X}[\nuh_i] 
-    &= \E_{x \sim \sY \given Y}[g_i(x)].
+    &= \E_{x \sim \sY \given Y}[g_i(x)] \\
     &= \nu_i.
   \end{align*}
   $\nuh_i$ is an unbiased estimator of $\nu_i$.
