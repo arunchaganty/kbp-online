@@ -246,40 +246,6 @@ def test_compute_weights_identical():
         [3.8, 19., 38.],
         ]))
 
-# Proposal distribution generator
-def construct_proposal_distribution(W, P):
-    r"""
-    Returns $q_i(x) = \sum_{j=1}^{m} w_{ij} p_{j}(x)$ and
-    """
-    m = len(P)
-
-    Q = [Counter() for i in range(m)]
-    for i in range(m):
-        for x, v in P[i].items():
-            for j in range(m):
-                Q[j][x] += W[j][i] * v
-    return Q
-
-def test_construct_proposal_distribution():
-    P = [
-        {'a': 1.0, 'b': 0.0, 'c': 0.0},
-        {'a': 0.0, 'b': 1.0, 'c': 0.0},
-        {'a': 0.0, 'b': 0.0, 'c': 1.0},
-        ]
-    W = np.array([
-        [0, 1., 0],
-        [0.5, 0.3, 0.2],
-        [0.2, 0.5, 0.2],
-        ])
-    Q = np.array([
-        {'a': 0.0, 'b': 1.0, 'c': 0.0},
-        {'a': 0.5, 'b': 0.3, 'c': 0.2},
-        {'a': 0.2, 'b': 0.5, 'c': 0.2},
-        ])
-    Q_ = construct_proposal_distribution(W, P)
-    for q, q_ in zip(Q, Q_):
-        assert counter_utils.equals(q, q_)
-
 def update_weights(Ps, Xhs, W, Z, method="heuristic"):
     """
     Updates the weights of W using the newly added P and Xhs.
@@ -306,8 +272,9 @@ def update_weights(Ps, Xhs, W, Z, method="heuristic"):
     assert np.allclose(W_.sum(1), np.ones(m+1))
     return W_, Z
 
-def test_update_weights_disjoint():
-    cases = [([
+def test_update_weights():
+    cases = [(
+        [
             {'a': 1.0, 'b': 0.0, 'c': 0.0},
             {'a': 0.0, 'b': 1.0, 'c': 0.0},
             {'a': 0.0, 'b': 0.0, 'c': 1.0},
@@ -343,6 +310,113 @@ def test_update_weights_disjoint():
 
             assert np.allclose(W, W_)
             assert np.allclose(Z, Z_)
+
+# Proposal distribution generator
+def construct_proposal_distribution(W, P):
+    r"""
+    Returns $q_i(x) = \sum_{j=1}^{m} w_{ij} p_{j}(x)$ and
+    """
+    m = len(P)
+
+    Q = [Counter() for i in range(m)]
+    for i in range(m):
+        for x, v in P[i].items():
+            for j in range(m):
+                Q[j][x] += W[j][i] * v
+    return Q
+
+def test_construct_proposal_distribution():
+    P = [
+        {'a': 1.0, 'b': 0.0, 'c': 0.0},
+        {'a': 0.0, 'b': 1.0, 'c': 0.0},
+        {'a': 0.0, 'b': 0.0, 'c': 1.0},
+        ]
+    W = np.array([
+        [0, 1., 0],
+        [0.5, 0.3, 0.2],
+        [0.2, 0.5, 0.2],
+        ])
+    Q = np.array([
+        {'a': 0.0, 'b': 1.0, 'c': 0.0},
+        {'a': 0.5, 'b': 0.3, 'c': 0.2},
+        {'a': 0.2, 'b': 0.5, 'c': 0.2},
+        ])
+    Q_ = construct_proposal_distribution(W, P)
+    for q, q_ in zip(Q, Q_):
+        assert counter_utils.fequals(q, q_)
+
+def update_proposal_distribution(W, Z, P, Q_, Z_):
+    """
+    Updates a proposal distribution using
+    old proposal Q_ and Z_,
+    new weights W and Z
+    and P
+    """
+    m = len(Q_)
+    assert len(W) == m + 1
+    assert len(Z) == m + 1
+    assert len(P) == m + 1
+    assert len(Z_) == m
+
+    Q = Q_[:] + [Counter(),]
+    # Update old elements
+    for i in range(m):
+        # Scale up every element of Q and add a new bit for m.
+        for x, v in Q[i].items():
+            Q[i][x] = v * Z_[i]/Z[i]
+
+        # Insert P[<m] for Q[m]
+        for x, v in P[i].items():
+            Q[m][x] += W[m][i] * v
+
+    # And now add elements from P[m] everywhere
+    for x, v in P[m].items():
+        for j in range(m+1):
+            Q[j][x] += W[j][m] * v
+
+    return Q
+
+def test_update_proposal_distribution():
+    cases = [(
+        [
+            {'a': 1.0, 'b': 0.0, 'c': 0.0},
+            {'a': 0.0, 'b': 1.0, 'c': 0.0},
+            {'a': 0.0, 'b': 0.0, 'c': 1.0},
+        ],[
+            [('a',0.) for _ in range(10)],
+            [('b',0.) for _ in range(50)],
+            [('c',0.) for _ in range(100)],
+        ]),([
+            {'a': 0.3, 'b': 0.2, 'c': 0.5},
+            {'a': 0.3, 'b': 0.2, 'c': 0.5},
+            {'a': 0.3, 'b': 0.2, 'c': 0.5},
+        ],[
+            [('a',0.) for _ in range(10)],
+            [('b',0.) for _ in range(50)],
+            [('c',0.) for _ in range(100)],
+        ]),([
+            {'a': 0.3, 'b': 0.5, 'c': 0.2},
+            {'a': 0.2, 'b': 0.2, 'c': 0.6},
+            {'a': 0.1, 'b': 0.6, 'c': 0.3},
+        ],[
+            [('a',0.) for _ in range(10)],
+            [('b',0.) for _ in range(50)],
+            [('c',0.) for _ in range(100)],
+        ]),]
+
+    for P, Xhs in cases:
+        W_, Z_ = compute_weights(P[:1], Xhs[:1], "heuristic")
+        Q_ = construct_proposal_distribution(W_, P[:1])
+        for i in range(2,4):
+            P_, Xhs_ = P[:i], Xhs[:i]
+            W, Z = update_weights(P_, Xhs_, W_, Z_, "heuristic")
+            Q_ = update_proposal_distribution(W, Z, P_, Q_, Z_)
+            Q = construct_proposal_distribution(W, P_)
+
+            for q, q_ in zip(Q, Q_):
+                assert counter_utils.fequals(q, q_)
+            W_, Z_, Q_ = W, Z, Q
+
 
 def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
     r"""

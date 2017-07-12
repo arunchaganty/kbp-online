@@ -24,6 +24,15 @@ def equals(cntr, cntr_):
             return False
     return True
 
+def fequals(cntr, cntr_, eps=1e-5):
+    keys = set(cntr.keys()).union(set(cntr_.keys()))
+    for key in keys:
+        if key not in cntr or key not in cntr_:
+            return False
+        elif abs(cntr[key] - cntr_[key]) > eps:
+            return False
+    return True
+
 def test_equals():
     assert equals(Counter([1,1,3,4]),Counter([1,3,1,4]))
     assert not equals(Counter([1,1,3,4]),Counter([1,3,3,4]))
