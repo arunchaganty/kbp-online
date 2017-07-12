@@ -9,7 +9,7 @@ import os
 import csv
 import sys
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -110,7 +110,7 @@ def _test_input():
         ]
     output = [
         OutputEntry('s1', 's1','r1', 'test', [Provenance('d1',1,2)], 'o0', 'type', [], 1.0), # '0'),
-        #OutputEntry('s1', 's1','r1', 'test', [Provenance('d1',1,2)], 'o1', 'type', [], 1.0), # '1'),
+        OutputEntry('s1', 's1','r1', 'test', [Provenance('d1',1,2)], 'o1', 'type', [], 1.0), # '1'),
         OutputEntry('s1', 's1','r1', 'test', [Provenance('d1',1,2)], 'o2', 'type', [], 1.0), # '2'),
         OutputEntry('s2', 's2','r1', 'test', [Provenance('d1',1,2)], 'o0', 'type', [], 1.0), # '0'),
         OutputEntry('s2', 's2','r1', 'test', [Provenance('d2',1,2)], 'o3', 'type', [], 1.0), # '3'),
@@ -142,8 +142,8 @@ def test_transform_output_sample():
     # Draw samples.
     n_samples = 1000
     U_ = normalize(Counter({x: 1.0 for x in U})) # uniform distribution is what we really can sample from.
-    Y0 = sample_with_replacement(normalize(U_), Y, n_samples)
-    Xhs = [sample_with_replacement(P, X, n_samples) for P, X in zip(Ps, Xs)]
+    Y0 = sample_with_replacement(normalize(U_), n_samples, Y)
+    Xhs = [sample_with_replacement(P, n_samples, X) for P, X in zip(Ps, Xs)]
 
     ps, rs, f1s = simple_score(U, Ps, Y0, Xhs)
     p_, r_, f1_ = ps[0], rs[0], f1s[0]
@@ -156,33 +156,28 @@ def teamid(runid):
     """
     return runid.split("_", 1)[-1][:-1]
 
-def create_fudge_distribution(Y):
+def shuffle(Rs, Ps, Xs, by_team=False):
     """
-    Create a fudge distribution to make recall problems go away.
     """
-    Gr = Counter()
-    for x, fx in Y:
-        if fx == 0.: continue
-        # break up x to create a key.
-        s,_,o = x # ignore provenance
-        Gr[s,o] += 1
-    U = Counter()
-    for x, fx in Y:
-        if fx == 0.:
-            U[x] = 1.
-        else:
-            s,_,o = x # ignore provenance
-            U[x] = 1./Gr[s,o]
-    return U
+    if by_team:
+        # First compress the list of systems by team id.
+        Ts = sorted(set(teamid(r) for r in Rs[1:]))
+        np.random.shuffle(Ts)
+        Rs_, Ps_, Xs_ = zip(*[(r, p, x) for t in Ts for r, p, x in zip(Rs, Ps, Xs) if teamid(r) == t])
+    else:
+        ixs = np.arange(len(Rs))
+        np.random.shuffle(ixs)
+        Rs_, Ps_, Xs_ = zip(*[(Rs[i], Ps[i], Xs[i]) for i in ixs])
+    return Rs_, Ps_, Xs_
 
-def create_pool(Rs, Ps, Xs, replace_labels=False):
+def create_pool(Rs, Ps, Xs, replace_labels=False, pool_fraction=0.5):
     """
     Set Y to be the union of the output from all the pooled systems.
     Then rescore the outputs from _unpooled systems_.
     """
     # First compress the list of systems by team id.
     Ts = sorted(set(teamid(r) for r in Rs[1:]))
-    pool_size = int(len(Ts)/2)
+    pool_size = int(len(Ts) * pool_fraction)
     np.random.shuffle(Ts)
     Ts = Ts[:pool_size]
     pool = Rs[0:1] + [R for R in Rs if teamid(R) in Ts]
@@ -193,9 +188,16 @@ def create_pool(Rs, Ps, Xs, replace_labels=False):
     if replace_labels:
         Yx = set(x for x, _ in Y_)
         Xs_ = [[(x, 1.0 if x in Yx else 0.0) for x, _ in X] for X in Xs_]
-    U_ = create_fudge_distribution(Y_)
 
-    return Rs_, U_, Y_, Ps_, Xs_
+    return Rs_, Y_, Ps_, Xs_
+
+def project_Y(Y0, Xs):
+    Xs_ = [{x for x, _ in X} for X in Xs]
+    ret = [[] for _ in Xs]
+    for x, _ in Y0:
+        for i, _ in enumerate(Xs):
+            ret[i].append((x, x in Xs_[i]))
+    return ret
 
 def do_simulate(args):
     # Load the data.
@@ -210,16 +212,13 @@ def do_simulate(args):
     precisions, recalls, f1s = weighted_score(U, Ps, Y, Xs)
     true_scores = {run_id: [p, r, f1] for run_id, p, r, f1 in zip(Rs, precisions, recalls, f1s)}
 
-    # TODO: Pick the top 40 teams for the experiment?
-    # TODO: Randomly subsample queries to evaluate against?
-
     logger.info("Evaluating estimated scores...")
     estimated_scores = {run_id: [] for run_id in Rs}
     # For n epochs:
     for _ in tqdm(range(args.num_epochs)):
         # Evaluate scores based on the chosen elements.
         # When creating the pool,
-        Rs_, U_, Y_, Ps_, Xs_ = create_pool(Rs, Ps, Xs, args.mode == "pooled") # Last argument changes truth values of elements.
+        Rs_, Y_, Ps_, Xs_ = create_pool(Rs, Ps, Xs, args.mode == "pooled") # Last argument changes truth values of elements.
 
         if args.mode == "pooled":
             n_samples = len(Y_)
@@ -228,10 +227,12 @@ def do_simulate(args):
             # Draw n_samples from respective distributions
             n_samples = 5000
             per_samples = int(n_samples / (len(Rs_) + 1)) # evenly distributed to estimate precision and recall.
-            Y0 = sample_without_replacement(normalize({x: 1.0 for x in U}), Y, per_samples)
+            # duplicate because new interface for scoring allows each "system" to have a different label for a given x (because of entity linking)
+            Y0 = sample_with_replacement(normalize({x: 1.0 for x in U}), per_samples, X=Y)
+            Y0 = project_Y(Y0, Xs_)
             # This can increase variance because the sets X can be very
             # small.
-            Xhs = [sample_with_replacement(P, X, per_samples) for P, X in zip(Ps_, Xs_)]
+            Xhs = [sample_with_replacement(P, per_samples, X) for P, X in zip(Ps_, Xs_)]
             if args.mode == "simple":
                 ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
             elif args.mode == "joint":
@@ -268,6 +269,76 @@ def do_simulate(args):
                          p_ - p_l, r_ - r_l, f1_ - f1_l,
                          p_r - p_, r_r - r_, f1_r - f1_])
 
+def do_simulate_n(args):
+    """
+    Run a simulation to predict the number of samples required for
+    a certain number of systems.
+    """
+
+    # Load the data.
+    # Handle the LDC -- that shouldn't be part of the output.
+    Q, gold, outputs = load_data(args)
+
+    logger.info("Transforming data...")
+    Rs, U, Y, Ps, Xs = transform_output(Q, gold, outputs)
+
+    logger.info("Evaluating true scores...")
+    # Measure the true precision and recall values on the entire data.
+    precisions, recalls, f1s = weighted_score(U, Ps, Y, Xs)
+    true_scores = {run_id: [p, r, f1] for run_id, p, r, f1 in zip(Rs, precisions, recalls, f1s)}
+
+    logger.info("Evaluating estimated scores...")
+    estimated_scores = defaultdict(list)
+    # For n epochs:
+    for _ in tqdm(range(args.num_epochs)):
+        # Choose a random sequence of systems.
+        Rs_, Ps_, Xs_ = shuffle(Rs, Ps, Xs) # Pooled changes truth values of elements.
+
+        Y0 = sample_without_replacement(normalize({x: 1.0 for x in U}), 500, X=Y)
+        Y0 = project_Y(Y0, Xs_)
+        # Draw n_samples from respective distributions
+        Xhs = []
+        N = 0
+        for i, (R, P, X) in enumerate(zip(Rs_, Ps_, Xs_)):
+            n_samples = 500
+            N += n_samples
+            Xh = sample_with_replacement(P, n_samples, X)
+            Xhs.append(Xh)
+
+            if args.mode == "simple":
+                ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
+            elif args.mode == "joint":
+                #W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
+                W = compute_weights(Ps_[:i+1], Xhs, "heuristic") # To save computation time (else it's cubic in n!).
+                Q = construct_proposal_distribution(W, Ps_)
+                #pdb.set_trace()
+                ps, rs, f1s = joint_score(U, Ps_, Y0, Xhs, W=W, Q=Q)
+
+            errs = []
+            for run_id, p_, r_, f1_ in zip(Rs_, ps, rs, f1s):
+                p, r, f1 = true_scores[run_id]
+                # Just add all of these into a list for metrics later.
+                errs.append([p-p_, r-r_, f1-f1_])
+            errs = list(np.mean(errs, axis=0))
+            estimated_scores[i].append([N,] + errs)
+
+    logger.info("Printing output...")
+    writer = csv.writer(args.output, delimiter="\t")
+    writer.writerow(["t", "n",
+                     "delta_p", "delta_r", "delta_f1",
+                     "p_lrange", "r_lrange", "f1_lrange",
+                     "p_rrange", "r_rrange", "f1_rrange",])
+    for i in sorted(estimated_scores.keys()):
+        metrics = np.array(estimated_scores[i])
+        n_samples, dp, dr, df1 = np.mean(metrics, 0)
+        _, dp_l, dr_l, df1_l = np.percentile(metrics, 5, 0)
+        _, dp_r, dr_r, df1_r = np.percentile(metrics, 95, 0)
+        writer.writerow([i, n_samples,
+                         dp, dr, df1,
+                         dp_l, dr_l, df1_l,
+                         dp_r, dr_r, df1_r,])
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -279,7 +350,14 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mode', choices=["pooled", "simple", "joint"], default="pooled", help="How scores should be estimated")
     parser.add_argument('-o', '--output', type=argparse.FileType('w'), default=sys.stdout, help="Outputs a list of results for every system (true, predicted, stdev)")
     parser.add_argument('-n', '--num-epochs', type=int, default=1000, help="Number of epochs to average over")
-    parser.set_defaults(func=do_simulate)
+    parser.set_defaults(func=None)
+
+    subparsers = parser.subparsers()
+    command_parser = subparsers.add_parser('bias', help='Simulate bias')
+    command_parser.set_defaults(func=do_simulate)
+
+    command_parser = subparsers.add_parser('n', help='Simulate n sample')
+    command_parser.set_defaults(func=do_simulate_n)
 
     ARGS = parser.parse_args()
     if ARGS.func is None:
