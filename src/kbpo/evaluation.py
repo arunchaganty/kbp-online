@@ -408,3 +408,40 @@ def joint_score_with_intervals(P0, Ps, Y0, Xhs, W=None, Q=None, num_epochs=100, 
             p_r, r_r, f1_r,))
 
     return ret
+
+def estimate_variance(Ps, Xs, Xhs, W, Q):
+    r"""
+    Estimates variance using the following formula:
+    var_i = \sum_{j=1}^n w_j^2/n_j E_j[ p_i^2 f^2/q_i^2 - \pi_{ij} p_i f_i / q_i]
+    """
+    assert len(Xs) == len(Xhs) + 1
+    P, X = Ps[-1], Xs[-1]
+
+    # Precompute pi_ij
+    pi_i = []
+    for j in range(m):
+        if W[i][j] == 0.: continue # just ignore this set.
+        pi_ij = 0.
+        n_j = 0
+        for x, fx in Xhs[j]:
+            if fx is not None:
+                pi_ij += (P[i][x]/Q[i][x]*fx - pi_ij)/(n_j+1)
+                n_j += 1
+        pi_i.append(pi_ij)
+
+    var = 0.
+    for j in range(m):
+        if W[i][j] == 0.: continue # just ignore this set.
+        var_ij = 0.
+        n_j = 0
+        for x, fx in Xhs[j]:
+            if fx is not None:
+                var_ij += (P[i][x]*P[i][x]/(Q[i][x]*Q[i][x])*fx - pi_ij * P[i][x] * fx/Q[i][x])/(n_j+1)
+                n_j += 1
+        var += W[i][j]/len(Xhs[j]) * var_ij
+    return var
+
+def estimate_n_samples(Ps, Xs, Ns, W=None, Q=None):
+    r"""
+    Finds the number of samples to draw to estimate pi_i within eps.
+    """
