@@ -352,7 +352,7 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--num-epochs', type=int, default=1000, help="Number of epochs to average over")
     parser.set_defaults(func=None)
 
-    subparsers = parser.subparsers()
+    subparsers = parser.add_subparsers()
     command_parser = subparsers.add_parser('bias', help='Simulate bias')
     command_parser.set_defaults(func=do_simulate)
 
