@@ -431,7 +431,7 @@ def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
     m = len(P)
 
     if W is None:
-        W = compute_weights(P, Xhs, method)
+        W, _ = compute_weights(P, Xhs, method)
     if Q is None:
         Q = construct_proposal_distribution(W, P)
 
@@ -460,7 +460,7 @@ def pooled_recall(P0, P, Xhs, W=None, Q=None, method="heuristic"):
     """
     m = len(P)
     if W is None:
-        W = compute_weights(P, Xhs, method)
+        W, _ = compute_weights(P, Xhs, method)
     if Q is None:
         Q = construct_proposal_distribution(W, P)
 
@@ -549,7 +549,7 @@ def joint_score_with_intervals(P0, Ps, Y0, Xhs, W=None, Q=None, num_epochs=100, 
 
     logger.info("Precomputing weights")
     if W is None:
-        W = compute_weights(Ps, Xhs, "heuristic")
+        W, _ = compute_weights(Ps, Xhs, "heuristic")
     if Q is None:
         Q = construct_proposal_distribution(W, Ps)
 
@@ -593,7 +593,7 @@ def compute_variance(Ps, Xhs, Ws=None, Qs=None):
     m = len(Ps)
 
     if Ws is None:
-        Ws = compute_weights(Ps, Xhs, "heuristic")
+        Ws, _ = compute_weights(Ps, Xhs, "heuristic")
     if Qs is None:
         Qs = construct_proposal_distribution(Ws, Ps)
 
@@ -615,22 +615,22 @@ def compute_variance(Ps, Xhs, Ws=None, Qs=None):
         ret.append(var)
     return ret
 
-def estimate_variance(Ps, Xhs, n_i, Ws=None, Qs=None):
+def estimate_variance(Ps, Xhs, Ws=None, Qs=None):
     r"""
     Estimates variance using the following formula:
     var_i = \sum_{j!=i}^n w_j^2/n_j E_j[ p_i^2 f^2/q_i^2 - \pi_{ij} p_i f_i / q_i] + w_i^2/n_i E_i[ p_i^2/q_i^2]
     """
-    assert len(Ps) == len(Xhs) + 1
-    i = m = len(Ps) - 1
+    assert len(Ps) == len(Xhs)
+    m = len(Ps) - 1
 
     if Ws is None:
-        Ws = compute_weights(Ps, Xhs + [[(None,1)] * n_i], "heuristic")
+        Ws, _ = compute_weights(Ps, Xhs, "heuristic")
     if Qs is None:
         Qs = construct_proposal_distribution(Ws, Ps)
 
     # Precompute pi_ij
     pi_i = []
-    P, Q, W = Ps[i], Qs[i], Ws[i]
+    P, Q, W = Ps[m], Qs[m], Ws[m]
     for j in range(m):
         pi_ij = _avg(Xhs[j], lambda x, fx: P[x]/Q[x]*fx)
         pi_i.append(pi_ij)
@@ -643,24 +643,39 @@ def estimate_variance(Ps, Xhs, n_i, Ws=None, Qs=None):
 
     # residual is bounded by E_i[p_i^2 f^2 / q^2] (even if it's a terrible bound).
     var_ii = _sum(P.items(), lambda x, px:  px*(px/Q[x])**2)
-    var += W[i]**2/n_i * var_ii
+    var += W[m]**2/len(Xhs[m])* var_ii
 
     return var
 
-def estimate_n_samples(Ps, Xhs, target=500, eps=5e-4):
+def estimate_n_samples(Ps, Xhs, Ws=None, Zs=None, Qs=None, target=500, eps=5e-4):
     r"""
     Finds the number of samples to draw to estimate pi_i within eps.
     @target is the targetted effective samples
     """
-    assert len(Ps) == len(Xhs) + 1
-    P = Ps[-1]
+    m = len(Xhs)
+    assert len(Ps) == m + 1
     logger.debug("Estimating n samples, using %d systems", len(Xhs))
 
+    if Ws is None or Zs is None:
+        # Produce Ws
+        Ws, Zs = compute_weights(Ps[:-1], Xhs, "heuristic")
+    if Qs is None:
+        Qs = construct_proposal_distribution(Ws, Ps[:-1])
+    assert len(Ws) == m
+    assert len(Zs) == m
+    assert len(Qs) == m
+
+    # Adds Xhs
+    Xhs = Xhs[:] + [[(None, 1) for _ in range(target)]]
+
     # Compute the target variance
-    target_variance = estimate_variance([P], [], target)
+    target_variance = estimate_variance(Ps[m:], Xhs[m:])
     logger.debug("Target variance is %.3e with %d samples", target_variance, target)
 
-    min_variance = estimate_variance(Ps, Xhs, target)
+    Ws_new, Zs_new = update_weights(Ps, Xhs, Ws, Zs)
+    Qs_new = update_proposal_distribution(Ws_new, Zs_new, Ps, Qs, Zs)
+
+    min_variance = estimate_variance(Ps, Xhs, Ws=Ws_new, Qs=Qs_new)
     logger.debug("Min variance is %.3e with %d samples", min_variance, target)
     assert min_variance <= target_variance
     if min_variance == target_variance:
@@ -670,7 +685,11 @@ def estimate_n_samples(Ps, Xhs, target=500, eps=5e-4):
     lower, upper = 1, target
     while lower < upper-1:
         pivot = int((lower + upper)/2)
-        var = estimate_variance(Ps, Xhs, pivot)
+        Xhs[-1] = [(None, 1) for _ in range(pivot)]
+        Ws_new, Zs_new = update_weights(Ps, Xhs, Ws, Zs)
+        Qs_new = update_proposal_distribution(Ws_new, Zs_new, Ps, Qs, Zs)
+
+        var = estimate_variance(Ps, Xhs, Ws=Ws_new, Qs=Qs_new)
         logger.debug("Pivot variance is %.3e wtih %d samples", var, pivot)
 
         if var - target_variance < -eps: # lower variance than target

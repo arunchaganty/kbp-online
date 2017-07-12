@@ -265,8 +265,8 @@ def test_estimate_variance():
             variance_ = 1.0
             for l in range(m):
                 Ps_ = Ps_i[:l] + [Ps_i[-1],]
-                Xhs_ = Xhs_i[:l]
-                variance = estimate_variance(Ps_, Xhs_, n_i)
+                Xhs_ = Xhs_i[:l] + [[(None, 1) for _ in range(n_i)]]
+                variance = estimate_variance(Ps_, Xhs_)
                 logger.info("%d %d %d %.2e", i, l, n_i, variance)
                 assert variance < variance_, "Variance should decrease as more systems are added."
                 variance_ = variance
@@ -283,7 +283,7 @@ def test_estimate_n():
         # Move i to the end.
         Ps_i = Ps[:i] + Ps[i+1:] + [Ps[i],]
         Xhs_i = Xhs[:i] + Xhs[i+1:] + [Xhs[i],]
-        for l in range(m):
+        for l in range(1, m):
             Ps_ = Ps_i[:l] + [Ps_i[-1],]
             Xhs_ = Xhs_i[:l]
             n = estimate_n_samples(Ps_, Xhs_)
