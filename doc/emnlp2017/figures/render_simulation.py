@@ -3,6 +3,7 @@
 """
 Experiment 2: pooling bias
 """
+import pdb
 import csv
 import sys
 from collections import namedtuple
@@ -42,11 +43,10 @@ def do_command(args):
         "joint": "s",
         }
 
-    colors = ["#9A2617", "#829356", "#093145"]
     colors = {
-        "pool": colors[0],
-        "simple": colors[1],
-        "joint": colors[2],
+        "pool":"#9A2617",
+        "simple": "#829356",
+        "joint": "#093145",
         }
 
     inputs = {
@@ -56,11 +56,9 @@ def do_command(args):
         }
     outputs = {
         "p": args.output_precision,
-        "r": args.output_recall, 
+        "r": args.output_recall,
         "f1": args.output_f1,
         }
-
-
 
     #run_ids = [row.run_id for row in inputs["pool"]]
     P, R, F1 = read_series(inputs["pool"], "p", "r", "f1") # This is the same for all the series.
@@ -78,41 +76,41 @@ def do_command(args):
         for k in ["pool", "simple", "joint"]:
             X, dX, dX_L, dX_R = [data[k][j] for j in range(i, len(data[k]), 3)] # skip by 3.
             # order input.
-            ixs = np.argsort(X)
-            X, dX, dX_L, dX_R = X[ixs], dX[ixs], dX_L[ixs], dX_R[ixs]
+            #ixs = np.argsort(-X)
+            #X, dX, dX_L, dX_R = X[ixs], dX[ixs], dX_L[ixs], dX_R[ixs]
+            # Show in %s
+            X, dX, dX_L, dX_R = 100 * X, 100 * dX, 100 * dX_L, 100 * dX_R
+            Xs = 1 + np.arange(len(X))
 
             print("Median confidence interval for {} {} is {:.4f}".format(series, k, np.median(dX_L + dX_R)))
 
+            # dX_L and dX_R are positive relative to dX, undo that weird transformation.
+            #pdb.set_trace()
+            dX_L = dX - dX_L
+            dX_R = dX_R + dX
+
             # Fit the mean curve, L curve and R curve.
-            mean = np.poly1d(np.polyfit(X, X-dX, 1))
-            LB = np.poly1d(np.polyfit(X, mean(X)-dX_L, 2))
-            UB = np.poly1d(np.polyfit(X, mean(X)+dX_R, 2))
+            mean = np.poly1d(np.polyfit(Xs, dX, 1))
+            LB = np.poly1d(np.polyfit(Xs, dX_L - dX + mean(Xs), 1)) # shift mean
+            UB = np.poly1d(np.polyfit(Xs, dX_R - dX + mean(Xs), 1))
+            #dX_L, dX_R = dX_L - dX + mean(Xs), dX_R - dX + mean(Xs)
+            dX_L, dX_R = LB(Xs), UB(Xs)
 
-            ax.plot(X, mean(X), color=colors[k], label=lbls[k], linestyle='--', zorder=4)
-            size = (dX_L + dX_R)/2
-            #ax.add_collection(EllipseCollection(widths=size, heights=size, angles=0, units='xy',
-            #                                       facecolors=colors[k], alpha=0.3,
-            #                                       offsets=list(zip(X, X-dX)), transOffset=ax.transData))
-            ax.scatter(X, X - dX, color=colors[k], marker=markers[k], alpha=0.6, zorder=2) # Faint dots.
-            #ax.errorbar(X, X - dX, yerr=[dX_L, dX_R], linestyle='', capsize=10, color=colors[k], marker=markers[k], alpha=0.9, zorder=2) # Faint dots.
-            ax.fill_between(X, LB(X), UB(X), color=colors[k], alpha=0.2, zorder=1)
-            ax.plot(X, UB(X), color=colors[k], linestyle=':', alpha=0.8, zorder=3)
-            ax.plot(X, LB(X), color=colors[k], linestyle=':', alpha=0.8, zorder=3)
+            ax.plot(Xs, -mean(Xs), color=colors[k], label=lbls[k], linestyle='--', zorder=4)
 
-            #ax.fill_between(X, mean(X)-dX_L, mean(X)+dX_R, color=colors[k], alpha=0.3, zorder=1)
-            #ax.plot(X, mean(X)-dX_L, color=colors[k], linestyle=':', alpha=0.8, zorder=3)
-            #ax.plot(X, mean(X)+dX_R, color=colors[k], linestyle=':', alpha=0.8, zorder=3)
-        lims = [
-            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
-        ]
+            ax.scatter(Xs, -dX, color=colors[k], marker=markers[k], alpha=0.6, zorder=2) # Faint dots.
+
+            # Plot with errorbars -- this is really hard to see.
+            #ax.errorbar(Xs, -dX, yerr=[dX_L, dX_R], linestyle='', capsize=10, color=colors[k], marker=markers[k], alpha=0.9, zorder=2) # Faint dots.
+            #ax.errorbar(Xs, -dX, yerr=[LB(Xs), UB(Xs)], linestyle='', capsize=10, color=colors[k], marker=markers[k], alpha=0.9, zorder=2) # Faint dots.
+            ax.fill_between(Xs, -dX_L, -dX_R, color=colors[k], alpha=0.2, zorder=1)
+            ax.plot(Xs, -dX_L, color=colors[k], linestyle=':', alpha=0.8, zorder=3)
+            ax.plot(Xs, -dX_R, color=colors[k], linestyle=':', alpha=0.8, zorder=3)
+
         # now plot both limits against eachother
-        ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
-        ax.set_xlabel("True {}".format(lbls[series]))
-        ax.set_ylabel("Estimated {}".format(lbls[series]))
-        ax.set_aspect('equal')
-        ax.set_xlim(lims)
-        ax.set_ylim(lims)
+        ax.plot(Xs, [0]*len(Xs), 'k-', alpha=0.75, zorder=0)
+        ax.set_xlabel("System Rank")
+        ax.set_ylabel("{} Bias".format(lbls[series]))
         ax.legend()
         fig.set_tight_layout(True)
         plt.savefig(outputs[series])
