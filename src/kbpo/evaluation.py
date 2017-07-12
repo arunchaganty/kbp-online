@@ -16,6 +16,40 @@ from .schema import Score
 
 logger = logging.getLogger(__name__)
 
+def _avg(it, fn):
+    ret, n = 0., 0.
+    for x, fx in it:
+        if fx is not None:
+            ret += (fn(x, fx) -  ret)/(n+1)
+            n += 1
+    return ret
+
+def _avg2(it, fn):
+    ret, n = [0., 0.], 0.
+    for x, fx in it:
+        if fx is not None:
+            ret_ = fn(x, fx)
+            ret[0] += (ret_[0] -  ret[0])/(n+1)
+            ret[1] += (ret_[1] -  ret[1])/(n+1)
+            n += 1
+    return ret
+
+def _sum(it, fn):
+    ret = 0.
+    for x, fx in it:
+        if fx is not None:
+            ret += fn(x, fx)
+    return ret
+
+def _sum2(it, fn):
+    ret = [0., 0.]
+    for x, fx in it:
+        if fx is not None:
+            ret_ = fn(x, fx)
+            ret[0] += ret_[0]
+            ret[1] += ret_[1]
+    return ret
+
 # Simplest possible estimation procedures that assume access to the
 # distribution (P) or (P0).
 def weighted_precision(P, Xs):
@@ -25,9 +59,7 @@ def weighted_precision(P, Xs):
     m = len(Xs)
     pis = []
     for i in range(m):
-        pi_i = 0.
-        for x, fx in Xs[i]:
-            pi_i += P[i][x] * fx
+        pi_i = _sum(Xs[i], lambda x, fx:  P[i][x] * fx)
         pis.append(pi_i)
     return pis
 
@@ -64,12 +96,7 @@ def simple_precision(Xhs):
     m = len(Xhs)
     pis = []
     for i in range(m):
-        pi_i = 0.
-        n_i = 0
-        for (_, fx) in Xhs[i]:
-            if fx is not None: # skip null input.
-                pi_i += (fx - pi_i)/(n_i+1)
-                n_i += 1
+        pi_i = _avg(Xhs[i], lambda _, fx: fx)
         pis.append(pi_i)
     return pis
 
@@ -409,39 +436,100 @@ def joint_score_with_intervals(P0, Ps, Y0, Xhs, W=None, Q=None, num_epochs=100, 
 
     return ret
 
-def estimate_variance(Ps, Xs, Xhs, W, Q):
+def compute_variance(Ps, Xhs, Ws=None, Qs=None):
     r"""
-    Estimates variance using the following formula:
+    Computes variance using the following formula:
     var_i = \sum_{j=1}^n w_j^2/n_j E_j[ p_i^2 f^2/q_i^2 - \pi_{ij} p_i f_i / q_i]
     """
-    assert len(Xs) == len(Xhs) + 1
-    P, X = Ps[-1], Xs[-1]
+    assert len(Ps) == len(Xhs)
+    m = len(Ps)
+
+    if Ws is None:
+        Ws = compute_weights(Ps, Xhs, "heuristic")
+    if Qs is None:
+        Qs = construct_proposal_distribution(Ws, Ps)
+
+    # Precompute pi_ij
+    ret = []
+    for i in range(m):
+        P, Q, W = Ps[i], Qs[i], Ws[i]
+        pi_i = []
+        for j in range(m):
+            if W[j] == 0.: continue # just ignore this set.
+            pi_ij = _avg(Xhs[j], lambda x, fx: P[x]/Q[x]*fx)
+            pi_i.append(pi_ij)
+
+        var = 0.
+        for j in range(m):
+            if W[j] == 0.: continue # just ignore this set.
+            var_ij = _avg(Xhs[j], lambda x, fx: (P[x]/Q[x]*fx)**2 - pi_i[j] * (P[x]/Q[x]*fx))
+            var += W[j]**2/len(Xhs[j]) * var_ij
+        ret.append(var)
+    return ret
+
+def estimate_variance(Ps, Xhs, n_i, Ws=None, Qs=None):
+    r"""
+    Estimates variance using the following formula:
+    var_i = \sum_{j!=i}^n w_j^2/n_j E_j[ p_i^2 f^2/q_i^2 - \pi_{ij} p_i f_i / q_i] + w_i^2/n_i E_i[ p_i^2/q_i^2]
+    """
+    assert len(Ps) == len(Xhs) + 1
+    i = m = len(Ps) - 1
+
+    if Ws is None:
+        Ws = compute_weights(Ps, Xhs + [[(None,1)] * n_i], "heuristic")
+    if Qs is None:
+        Qs = construct_proposal_distribution(Ws, Ps)
 
     # Precompute pi_ij
     pi_i = []
+    P, Q, W = Ps[i], Qs[i], Ws[i]
     for j in range(m):
-        if W[i][j] == 0.: continue # just ignore this set.
-        pi_ij = 0.
-        n_j = 0
-        for x, fx in Xhs[j]:
-            if fx is not None:
-                pi_ij += (P[i][x]/Q[i][x]*fx - pi_ij)/(n_j+1)
-                n_j += 1
+        if W[j] == 0.: continue # just ignore this set.
+        pi_ij = _avg(Xhs[j], lambda x, fx: P[x]/Q[x]*fx)
         pi_i.append(pi_ij)
 
     var = 0.
     for j in range(m):
-        if W[i][j] == 0.: continue # just ignore this set.
-        var_ij = 0.
-        n_j = 0
-        for x, fx in Xhs[j]:
-            if fx is not None:
-                var_ij += (P[i][x]*P[i][x]/(Q[i][x]*Q[i][x])*fx - pi_ij * P[i][x] * fx/Q[i][x])/(n_j+1)
-                n_j += 1
-        var += W[i][j]/len(Xhs[j]) * var_ij
+        if W[j] == 0.: continue # just ignore this set.
+        var_ij = _avg(Xhs[j], lambda x, fx: (P[x]/Q[x]*fx)**2 - pi_i[j] * (P[x]/Q[x]*fx))
+        var += W[j]**2/len(Xhs[j]) * var_ij
+
+    # residual is bounded by E_i[p_i^2 f^2 / q^2] (even if it's a terrible bound).
+    var_ii = _sum(P.items(), lambda x, px:  px*(px/Q[x])**2)
+    var += W[i]**2/n_i * var_ii
+
     return var
 
-def estimate_n_samples(Ps, Xs, Ns, W=None, Q=None):
+def estimate_n_samples(Ps, Xhs, target=500, eps=5e-4):
     r"""
     Finds the number of samples to draw to estimate pi_i within eps.
+    @target is the targetted effective samples
     """
+    assert len(Ps) == len(Xhs) + 1
+    P = Ps[-1]
+    logger.debug("Estimating n samples, using %d systems", len(Xhs))
+
+    # Compute the target variance
+    target_variance = estimate_variance([P], [], target)
+    logger.debug("Target variance is %.3e with %d samples", target_variance, target)
+
+    min_variance = estimate_variance(Ps, Xhs, target)
+    logger.debug("Min variance is %.3e with %d samples", min_variance, target)
+    assert min_variance <= target_variance
+    if min_variance == target_variance:
+        return target
+
+    # Now do binary search starting from target.
+    lower, upper = 1, target
+    while lower < upper-1:
+        pivot = int((lower + upper)/2)
+        var = estimate_variance(Ps, Xhs, pivot)
+        logger.debug("Pivot variance is %.3e wtih %d samples", var, pivot)
+
+        if var - target_variance < eps: # lower variance than target
+            upper = pivot
+        elif var - target_variance > eps:
+            lower = pivot
+        else:
+            break
+    return pivot

@@ -9,7 +9,9 @@ import logging
 import numpy as np
 
 from . import counter_utils
-from .evaluation import simple_precision, simple_recall, joint_precision, pooled_recall, pool_recall, joint_recall
+from .evaluation import simple_precision, simple_recall,\
+        joint_precision, pooled_recall, pool_recall, joint_recall,\
+        compute_variance, estimate_variance, estimate_n_samples
 from .sample_util import sample_with_replacement, sample_without_replacement
 
 logger = logging.getLogger(__name__)
@@ -243,3 +245,46 @@ def test_joint_recall_statistical():
         return simple_recall(U, Y0) + joint_recall(U, Ps, Y0, Xhs)
 
     print(stats(_evaluate, _sample, 100))
+
+def test_estimate_variance():
+    np.random.seed(42)
+    n_samples = 500
+    population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
+    Xhs = [sample_with_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
+
+    for i, var in enumerate(compute_variance(Ps, Xhs)):
+        logger.info("Best variance %d: %.3e", i, var)
+
+    m = 3
+    for i in range(m):
+        # Move i to the end.
+        Ps_i = Ps[:i] + Ps[i+1:] + [Ps[i],]
+        Xhs_i = Xhs[:i] + Xhs[i+1:] + [Xhs[i],]
+        for n_i in [100, 300, 500]:
+            variance_ = 1.0
+            for l in range(m):
+                Ps_ = Ps_i[:l] + [Ps_i[-1],]
+                Xhs_ = Xhs_i[:l]
+                variance = estimate_variance(Ps_, Xhs_, n_i)
+                logger.info("%d %d %d %.2e", i, l, n_i, variance)
+                assert variance < variance_, "Variance should decrease as more systems are added."
+                variance_ = variance
+
+def test_estimate_n():
+    np.random.seed(42)
+    n_samples = 500
+    population_size, precisions, recalls = 10000, [0.5, 0.3, 0.7], [0.2, 0.1, 0.3]
+    Ps, Xs = generate_submission_set(precisions, recalls, population_size)
+    Xhs = [sample_with_replacement(P, n_samples, X=X) for P, X in zip(Ps, Xs)]
+
+    m = 3
+    for i in range(m):
+        # Move i to the end.
+        Ps_i = Ps[:i] + Ps[i+1:] + [Ps[i],]
+        Xhs_i = Xhs[:i] + Xhs[i+1:] + [Xhs[i],]
+        for l in range(m):
+            Ps_ = Ps_i[:l] + [Ps_i[-1],]
+            Xhs_ = Xhs_i[:l]
+            n = estimate_n_samples(Ps_, Xhs_)
+            logger.info("%d %d %d", i, l, n)
