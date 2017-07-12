@@ -169,7 +169,7 @@ def compute_weights(P, Xhs, method="heuristic"):
     Ns = np.array([sum(1 for _, fx in Xhs[i] if fx is not None) for i in range(m)])
 
     if method == "uniform":
-        W = np.ones((m,m)) / m
+        W = np.ones((m,m))
     elif method == "heuristic":
         W = np.zeros((m,m))
 
@@ -179,16 +179,18 @@ def compute_weights(P, Xhs, method="heuristic"):
                 W[i,j] = sum(P[i][x] * P[j][x] for x in _P[i].intersection(_P[j]))
                 W[j,i] = W[i,j]
         W = W * Ns
-        W = (W.T/W.sum(1)).T
     elif method == "size":
         W = np.zeros((m,m))
         for i in range(m):
             for j in range(m):
                 W[i,j] = Ns[j]
-        W = (W.T/W.sum(1)).T
     else:
         raise ValueError("Invalid weighting distribution")
-    return W
+
+    Z = W.sum(1)
+    W = (W.T/Z).T
+    assert np.allclose(W.sum(1), np.ones(m))
+    return W, Z
 
 def test_compute_weights_uniform():
     P = [
@@ -201,8 +203,10 @@ def test_compute_weights_uniform():
         [('b',0.) for _ in range(50)],
         [('c',0.) for _ in range(100)],
         ]
-    W = compute_weights(P, Xhs, "uniform")
+    W, Z = compute_weights(P, Xhs, "uniform")
     assert np.allclose(W, np.ones((3,3))/3)
+
+    assert np.allclose((W.T * Z).T, np.ones((3,3)))
 
 def test_compute_weights_disjoint():
     P = [
@@ -215,7 +219,7 @@ def test_compute_weights_disjoint():
         [('b',0.) for _ in range(50)],
         [('c',0.) for _ in range(100)],
         ]
-    W = compute_weights(P, Xhs, "heuristic")
+    W, _ = compute_weights(P, Xhs, "heuristic")
     assert np.allclose(W, np.eye(3))
 
 def test_compute_weights_identical():
@@ -229,11 +233,17 @@ def test_compute_weights_identical():
         [('b',0.) for _ in range(50)],
         [('c',0.) for _ in range(100)],
         ]
-    W = compute_weights(P, Xhs, "heuristic")
+    W, Z = compute_weights(P, Xhs, "heuristic")
     assert np.allclose(W, np.array([
         [10./160., 50./160., 100./160.],
         [10./160., 50./160., 100./160.],
         [10./160., 50./160., 100./160.],
+        ]))
+
+    assert np.allclose((W.T * Z).T, np.array([
+        [3.8, 19., 38.],
+        [3.8, 19., 38.],
+        [3.8, 19., 38.],
         ]))
 
 # Proposal distribution generator
@@ -269,6 +279,70 @@ def test_construct_proposal_distribution():
     Q_ = construct_proposal_distribution(W, P)
     for q, q_ in zip(Q, Q_):
         assert counter_utils.equals(q, q_)
+
+def update_weights(Ps, Xhs, W, Z, method="heuristic"):
+    """
+    Updates the weights of W using the newly added P and Xhs.
+    """
+    assert method == "heuristic"
+    assert len(Ps) == len(W) + 1
+    m = len(W)
+    # Copy over W
+    W_ = np.zeros((m+1, m+1))
+    # Undo normalization transform
+    W_[:m,:m] = (W.T * Z).T
+
+    Ns = np.array([sum(1 for _, fx in Xhs[i] if fx is not None) for i in range(m+1)])
+    _P = [set(Ps[i]) for i in range(m+1)]
+
+    i = m
+    for j in range(m+1):
+        w = sum(Ps[i][x] * Ps[j][x] for x in _P[i].intersection(_P[j]))
+        W_[i,j] = Ns[j] * w
+        W_[j,i] = Ns[i] * w
+
+    Z = W_.sum(1)
+    W_ = (W_.T/Z).T
+    assert np.allclose(W_.sum(1), np.ones(m+1))
+    return W_, Z
+
+def test_update_weights_disjoint():
+    cases = [([
+            {'a': 1.0, 'b': 0.0, 'c': 0.0},
+            {'a': 0.0, 'b': 1.0, 'c': 0.0},
+            {'a': 0.0, 'b': 0.0, 'c': 1.0},
+        ],[
+            [('a',0.) for _ in range(10)],
+            [('b',0.) for _ in range(50)],
+            [('c',0.) for _ in range(100)],
+        ]),([
+            {'a': 0.3, 'b': 0.2, 'c': 0.5},
+            {'a': 0.3, 'b': 0.2, 'c': 0.5},
+            {'a': 0.3, 'b': 0.2, 'c': 0.5},
+        ],[
+            [('a',0.) for _ in range(10)],
+            [('b',0.) for _ in range(50)],
+            [('c',0.) for _ in range(100)],
+        ]),([
+            {'a': 0.3, 'b': 0.5, 'c': 0.2},
+            {'a': 0.2, 'b': 0.2, 'c': 0.6},
+            {'a': 0.1, 'b': 0.6, 'c': 0.3},
+        ],[
+            [('a',0.) for _ in range(10)],
+            [('b',0.) for _ in range(50)],
+            [('c',0.) for _ in range(100)],
+        ]),]
+
+    for P, Xhs in cases:
+        W, Z = compute_weights(P[:1], Xhs[:1], "heuristic")
+        for i in range(2,4):
+            P_, Xhs_ = P[:i], Xhs[:i]
+            W_, Z_ = update_weights(P_, Xhs_, W, Z, "heuristic")
+
+            W, Z = compute_weights(P_, Xhs_, "heuristic")
+
+            assert np.allclose(W, W_)
+            assert np.allclose(Z, Z_)
 
 def joint_precision(P, Xhs, W=None, Q=None, method="heuristic"):
     r"""
@@ -484,7 +558,6 @@ def estimate_variance(Ps, Xhs, n_i, Ws=None, Qs=None):
     pi_i = []
     P, Q, W = Ps[i], Qs[i], Ws[i]
     for j in range(m):
-        if W[j] == 0.: continue # just ignore this set.
         pi_ij = _avg(Xhs[j], lambda x, fx: P[x]/Q[x]*fx)
         pi_i.append(pi_ij)
 
@@ -526,7 +599,7 @@ def estimate_n_samples(Ps, Xhs, target=500, eps=5e-4):
         var = estimate_variance(Ps, Xhs, pivot)
         logger.debug("Pivot variance is %.3e wtih %d samples", var, pivot)
 
-        if var - target_variance < eps: # lower variance than target
+        if var - target_variance < -eps: # lower variance than target
             upper = pivot
         elif var - target_variance > eps:
             lower = pivot
