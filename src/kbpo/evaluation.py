@@ -253,6 +253,9 @@ def update_weights(Ps, Xhs, W, Z, method="heuristic"):
     assert method == "heuristic"
     assert len(Ps) == len(W) + 1
     m = len(W)
+    if m == 0:
+        return np.array([[1.]]), np.array([1.])
+
     # Copy over W
     W_ = np.zeros((m+1, m+1))
     # Undo normalization transform
@@ -654,7 +657,9 @@ def estimate_n_samples(Ps, Xhs, Ws=None, Zs=None, Qs=None, target=500, eps=5e-4)
     """
     m = len(Xhs)
     assert len(Ps) == m + 1
-    logger.debug("Estimating n samples, using %d systems", len(Xhs))
+    logger.debug("Estimating n->%d samples, using %d systems", target, len(Xhs))
+    if len(Xhs) == 0:
+        return target
 
     if Ws is None or Zs is None:
         # Produce Ws
@@ -690,7 +695,7 @@ def estimate_n_samples(Ps, Xhs, Ws=None, Zs=None, Qs=None, target=500, eps=5e-4)
         Qs_new = update_proposal_distribution(Ws_new, Zs_new, Ps, Qs, Zs)
 
         var = estimate_variance(Ps, Xhs, Ws=Ws_new, Qs=Qs_new)
-        logger.debug("Pivot variance is %.3e wtih %d samples", var, pivot)
+        logger.debug("Pivot variance is %.3e with %d samples", var, pivot)
 
         if var - target_variance < -eps: # lower variance than target
             upper = pivot

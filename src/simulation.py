@@ -19,9 +19,8 @@ from kbpo.util import macro, micro
 from kbpo.analysis import k, kn, get_key, project_gold, project_output, compute_entity_scores
 from kbpo.counter_utils import normalize
 from kbpo.sample_util import sample_with_replacement, sample_without_replacement
-from kbpo.evaluation import weighted_score, simple_score, joint_score, compute_weights, construct_proposal_distribution
+from kbpo.evaluation import weighted_score, simple_score, joint_score, compute_weights, construct_proposal_distribution, estimate_n_samples, update_weights, update_proposal_distribution
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -199,6 +198,14 @@ def project_Y(Y0, Xs):
             ret[i].append((x, x in Xs_[i]))
     return ret
 
+def restrict_top(Rs, Ps, Xs, F1s, n=40):
+    ixs = np.argsort(F1s)[:n]
+    Rs_ = [Rs[i] for i in ixs]
+    Ps_ = [Ps[i] for i in ixs]
+    Xs_ = [Xs[i] for i in ixs]
+    F1s_ = [F1s[i] for i in ixs]
+    return Rs_, Ps_, Xs_, F1s_
+
 def do_simulate(args):
     # Load the data.
     # Handle the LDC -- that shouldn't be part of the output.
@@ -237,7 +244,7 @@ def do_simulate(args):
                 ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
             elif args.mode == "joint":
                 #W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
-                W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
+                W, _ = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
                 Q = construct_proposal_distribution(W, Ps_)
                 #pdb.set_trace()
                 ps, rs, f1s = joint_score(U, Ps_, Y0, Xhs, W=W, Q=Q)
@@ -287,60 +294,81 @@ def do_simulate_n(args):
     precisions, recalls, f1s = weighted_score(U, Ps, Y, Xs)
     true_scores = {run_id: [p, r, f1] for run_id, p, r, f1 in zip(Rs, precisions, recalls, f1s)}
 
+    # Restricting to the top 40.
+    F1s = -np.array([true_scores[run_id][-1] for run_id in Rs])
+    Rs, Ps, Xs, _ = restrict_top(Rs, Ps, Xs, F1s)
+
     logger.info("Evaluating estimated scores...")
-    estimated_scores = defaultdict(list)
+#    estimated_scores = defaultdict(list)
+    trajectories = []
+
+    n_samples = 500
     # For n epochs:
-    for _ in tqdm(range(args.num_epochs)):
+    for _ in tqdm(range(args.num_epochs), desc="Sample trajectory"):
         # Choose a random sequence of systems.
         Rs_, Ps_, Xs_ = shuffle(Rs, Ps, Xs) # Pooled changes truth values of elements.
 
         Y0 = sample_without_replacement(normalize({x: 1.0 for x in U}), 500, X=Y)
         Y0 = project_Y(Y0, Xs_)
         # Draw n_samples from respective distributions
-        Xhs = []
+        Rhs, Phs, Xhs = [], [], []
         N = 0
-        for i, (R, P, X) in enumerate(zip(Rs_, Ps_, Xs_)):
-            n_samples = 500
-            N += n_samples
-            Xh = sample_with_replacement(P, n_samples, X)
+        trajectory = []
+
+        W_, Z_, Q_ = [], [], []
+        for i, (R, P, X) in tqdm(enumerate(zip(Rs_, Ps_, Xs_)), desc="Estimating samples"):
+            Rhs.append(R)
+            Phs.append(P)
+
+            if args.mode == "simple":
+                n_samples_ = n_samples
+            elif args.mode == "joint":
+                n_samples_ = estimate_n_samples(Phs, Xhs, Ws=W_, Zs=Z_, Qs=Q_, target=n_samples)
+
+            Xh = sample_with_replacement(P, n_samples_, X)
+            N += len(Xh)
             Xhs.append(Xh)
 
             if args.mode == "simple":
-                ps, rs, f1s = simple_score(U, Ps_, Y0, Xhs)
+                pass
+                #ps, rs, f1s = simple_score(U, Phs, Y0, Xhs)
             elif args.mode == "joint":
-                #W = compute_weights(Ps_, Xhs, "heuristic") # To save computation time (else it's cubic in n!).
-                W = compute_weights(Ps_[:i+1], Xhs, "heuristic") # To save computation time (else it's cubic in n!).
-                Q = construct_proposal_distribution(W, Ps_)
-                #pdb.set_trace()
-                ps, rs, f1s = joint_score(U, Ps_, Y0, Xhs, W=W, Q=Q)
+                W, Z = update_weights(Phs, Xhs, W_, Z_)
+                Q = update_proposal_distribution(W, Z, Phs, Q_, Z_)
+                #ps, rs, f1s = joint_score(U, Phs, Y0, Xhs, W=W, Q=Q)
+                W_, Z_, Q_ = W, Z, Q
 
-            errs = []
-            for run_id, p_, r_, f1_ in zip(Rs_, ps, rs, f1s):
-                p, r, f1 = true_scores[run_id]
-                # Just add all of these into a list for metrics later.
-                errs.append([p-p_, r-r_, f1-f1_])
-            errs = list(np.mean(errs, axis=0))
-            estimated_scores[i].append([N,] + errs)
+            #errs = []
+            #for run_id, p_, r_, f1_ in zip(Rs_, ps, rs, f1s):
+            #    p, r, f1 = true_scores[run_id]
+            #    # Just add all of these into a list for metrics later.
+            #    errs.append([p-p_, r-r_, f1-f1_])
+            #errs = list(np.mean(errs, axis=0))
+            #estimated_scores[i].append([N,] + errs)
+            trajectory.append(N)
+        trajectories.append(trajectory)
+        args.output_trajectory.write(" ".join(map(str, trajectory)) + "\n")
 
-    logger.info("Printing output...")
-    writer = csv.writer(args.output, delimiter="\t")
-    writer.writerow(["t", "n",
-                     "delta_p", "delta_r", "delta_f1",
-                     "p_lrange", "r_lrange", "f1_lrange",
-                     "p_rrange", "r_rrange", "f1_rrange",])
-    for i in sorted(estimated_scores.keys()):
-        metrics = np.array(estimated_scores[i])
-        n_samples, dp, dr, df1 = np.mean(metrics, 0)
-        _, dp_l, dr_l, df1_l = np.percentile(metrics, 5, 0)
-        _, dp_r, dr_r, df1_r = np.percentile(metrics, 95, 0)
-        writer.writerow([i, n_samples,
-                         dp, dr, df1,
-                         dp_l, dr_l, df1_l,
-                         dp_r, dr_r, df1_r,])
-
+#    logger.info("Printing output...")
+#    writer = csv.writer(args.output, delimiter="\t")
+#    writer.writerow(["t", "n",
+#                     "delta_p", "delta_r", "delta_f1",
+#                     "p_lrange", "r_lrange", "f1_lrange",
+#                     "p_rrange", "r_rrange", "f1_rrange",])
+#    for i in sorted(estimated_scores.keys()):
+#        metrics = np.array(estimated_scores[i])
+#        n_samples, dp, dr, df1 = np.mean(metrics, 0)
+#        _, dp_l, dr_l, df1_l = np.percentile(metrics, 5, 0)
+#        _, dp_r, dr_r, df1_r = np.percentile(metrics, 95, 0)
+#        writer.writerow([i, n_samples,
+#                         dp, dr, df1,
+#                         dp_l, dr_l, df1_l,
+#                         dp_r, dr_r, df1_r,])
+#
 
 if __name__ == "__main__":
     import argparse
+    logging.basicConfig(level=logging.INFO)
 
     DD = "data/KBP2015_Cold_Start_Slot-Filling_Evaluation_Results_2016-03-31"
     parser = argparse.ArgumentParser(description='Run a simulated experiment to compare stability of previous year scores with different methodologies')
@@ -357,6 +385,7 @@ if __name__ == "__main__":
     command_parser.set_defaults(func=do_simulate)
 
     command_parser = subparsers.add_parser('n', help='Simulate n sample')
+    command_parser.add_argument('-ot', '--output-trajectory', type=argparse.FileType('w'), default=sys.stdout, help="Outputs a list of trajectories")
     command_parser.set_defaults(func=do_simulate_n)
 
     ARGS = parser.parse_args()

@@ -283,7 +283,7 @@ def test_estimate_n():
         # Move i to the end.
         Ps_i = Ps[:i] + Ps[i+1:] + [Ps[i],]
         Xhs_i = Xhs[:i] + Xhs[i+1:] + [Xhs[i],]
-        for l in range(1, m):
+        for l in range(m):
             Ps_ = Ps_i[:l] + [Ps_i[-1],]
             Xhs_ = Xhs_i[:l]
             n = estimate_n_samples(Ps_, Xhs_)
