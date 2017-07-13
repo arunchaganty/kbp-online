@@ -30,8 +30,8 @@ def load_data(fstream):
 
 def do_command(args):
     lbls = {
-        "simple": "Simple",
-        "joint": "Joint",
+        "simple": "Fixed",
+        "joint": "Adaptive",
         "x": "Number of systems",
         "y": r"Number of samples $\times$ 500",
         }
@@ -67,7 +67,8 @@ def do_command(args):
     print(residual)
 
     f = np.poly1d(coefs)
-    plt.plot(f(np.arange(Y.max() + 5)), np.arange(Y.max() + 5), color=colors['fit'], linestyle='--', zorder=3, label="$x = {:.1f} + {:.1f} y + {:.1f} y^2$".format(*coefs))
+    #plt.plot(f(np.arange(Y.max() + 5)), np.arange(Y.max() + 5), color=colors['fit'], linestyle='--', zorder=3, label="$x = {:.1f} {:+.1f} y {:+.1f} y^2$".format(*coefs))
+    plt.plot(f(np.arange(Y.max() + 5)), np.arange(Y.max() + 5), color=colors['fit'], linestyle='--', zorder=3, label="$x = {:+.1f} y^2 {:+.1f} y {:+.1f} ~(R={:.1f})$".format(*coefs, *residual))
 
     ax.set_xlim((1, X.max()+10))
     ax.set_ylim((1, Y.max()+1))
