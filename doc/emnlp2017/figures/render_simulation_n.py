@@ -33,7 +33,7 @@ def do_command(args):
         "simple": "Simple",
         "joint": "Joint",
         "x": "Number of systems",
-        "y": "Number of samples",
+        "y": r"Number of samples $\times$ 500",
         }
     markers = {
         "simple": "v",
@@ -43,6 +43,7 @@ def do_command(args):
     colors = {
         "simple": "#829356",
         "joint": "#093145",
+        "fit":"#9A2617",
         }
 
     inputs = {
@@ -54,11 +55,22 @@ def do_command(args):
 
     fig, ax = plt.subplots()
     for k in ["simple", "joint"]:
-        for trajectory in inputs[k]:
-            plt.plot(trajectory, color=colors[k], alpha=0.2, zorder=1)
-        plt.plot(inputs[k].mean(0), linestyle='-', color=colors[k], marker=markers[k], label=lbls[k], zorder=2)
+        Y = np.mean(inputs[k], axis=0) / 500
+        X = np.arange(len(Y)) + 1
 
-    ax.set_ylim((0, inputs['joint'].max()))
+        for trajectory in inputs[k]:
+            plt.plot(X, trajectory / 500, color=colors[k], alpha=0.2, zorder=1)
+        plt.plot(X, Y, linestyle='-', color=colors[k], marker=markers[k], label=lbls[k], zorder=2)
+
+    coefs, residual, _, _, _ = np.polyfit(Y, X, 2, full=True)
+    print(coefs)
+    print(residual)
+
+    f = np.poly1d(coefs)
+    plt.plot(f(np.arange(Y.max() + 5)), np.arange(Y.max() + 5), color=colors['fit'], linestyle='--', zorder=3, label="$x = {:.1f} + {:.1f} y + {:.1f} y^2$".format(*coefs))
+
+    ax.set_xlim((1, X.max()+10))
+    ax.set_ylim((1, Y.max()+1))
     ax.set_xlabel(lbls['x'])
     ax.set_ylabel(lbls['y'])
     ax.legend()
