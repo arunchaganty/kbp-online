@@ -106,22 +106,25 @@ $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 %This motivates the choice $w_{ij} \propto n_{j} \sum_{x \in \sX} p_j(x) p_i(x)$.
 
 \paragraph{Estimating recall jointly.}
-During the process of evaluating $f(x)$ on $\Xh_i$, we also are able to identify $\Yh_i \eqdef \Xh_i \intersection \sY$.
-The subset $\Yh = \Union_{i=1}^m \Yh_i$ is much cheaper to obtain than by sampling from $\sY$, but is clearly not representative.
-% PL: should be obvious
-%but this subset can be extremely biased if used to evaluate recall:
-%if there were one system, it would obtain 100\% recall regardless of how bad it was.
-We call the estimate on this incomplete set \emph{pooled recall}, $\nu_i$.
-By considering how much of $\sY$ the pool $X$ covers, i.e.\ the \textit{pool recall} $\theta$, we can estimate recall as simply the product: $\recall_i = \theta \nu_i$.  Letting $g(x) \eqdef \I[x \in X]$,
+The recall of system $i$ can be expressed can be expressed as a product $\recall_i = \theta \nu_i$,
+where $\theta$ is the \emph{recall of the pool}, which measures the fraction of all positive instances predicted by the pool (any system),
+and $\nu_i$ is the \emph{pooled recall of system $i$}, which measures the fraction of the pool's positive instances predicted by system $i$.
+Letting $g(x) \eqdef \I[x \in X]$, we can define these as:
 \begin{align*}
-\nu_i &\eqdef \E_{x \sim p_X}[f(x) g_i(x)] & \theta &\eqdef \E_{x \sim p_Y}[g(x)],
+\nu_i &\eqdef \E_{x \sim p_0}[g_i(x) \mid x \in X] & \theta &\eqdef \E_{x \sim p_0}[g(x)].
 \end{align*}
-where $p_X$ and $p_Y$ are (uniform) distributions over $X$ and $Y$, respectively.
-
+We can estimate $\theta$ analogous to the simple recall estimator $\recallh_i$,
+except we use the pool $g$ instead a system $g_i$.
+For $\nu_i$, the key is to leverage the work from estimating precision.
+we already evaluated $f(x)$ on $\Xh_i$, so we can compute $\Yh_i \eqdef \Xh_i \intersection \sY$
+and form the subset $\Yh = \Union_{i=1}^m \Yh_i$,
+which stands as an approximation of $\sY$.
+%is much cheaper to obtain than by sampling from $\sY$, but is clearly not representative.
+%We call the estimate on this incomplete set \emph{pooled recall}, $\nu_i$.
 %We call the estimate on this incomplete set \emph{pooled recall},
 %$\nu_i \eqdef \E_{x \sim X}[f(x) g_i(x)]$.
 %By considering how much of $\sY$ the pool $X$ covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$, we can estimate recall as simply the product: $\recall_i = \theta \nu_i$.
-Finally, we define estimators for the above:
+We then define estimators as follows:
 \begin{gather*}
   \nuh_i \eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x)}{q_i(x)}} \\
   \recallh_i^{\text{(joint)}} \eqdef \thetah\nuh_i \quad \thetah \eqdef \frac{1}{n_0} \sum_{x \in \Yh_0} g(x).
