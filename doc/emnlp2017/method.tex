@@ -23,7 +23,7 @@ Let $\sX$ be the universe of %candidate predictions (e.g.\, relation instances),
 (relation) instances,
   $\sY \subseteq \sX$ be the unknown subset of correct instances,
   $X_1, \ldots X_m \subseteq \sX$ be the predictions for $m$ systems,
-  and let $Y_1, \ldots, Y_m$ be the intersection of $X_1, \ldots, X_m$ with $\sY$.
+  and let $Y_i = X_i \cap \sY$.
 Let $X = \Union_{i=1}^m X_i$ and $Y = \Union_{i=1}^m Y_i$.
 Let $f(x) \eqdef \I[x \in \sY]$ and $g_i(x) = \I[x \in X_i]$, then the precision, $\pi_i$, and recall, $\recall_i$, of the set of predictions $X_i$ is
 \begin{align*}
