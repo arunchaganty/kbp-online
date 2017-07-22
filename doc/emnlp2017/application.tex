@@ -12,22 +12,24 @@ In this section, we'll present practical implementations of each of these operat
 % 1. what is the point of this distribution?
 % - prevent over sampling instances.
 \ac{@PL:\@ I think that the role of $p_i$ is really very subtle, but very important. I hope the below paragraph highlights the paradigm shift in how one has to think about on-demand evaluation.}
-Both the official TAC-KBP evaluation and the on-demand evaluation we propose use micro-averaged precision and recall as metrics. However, in the official evaluation, these metrics are computed over a fixed set of query entities chosen by LDC annotators, resulting in two problems: (a) defining query entities requires human intervention and (b) typically a large source of variability in evaluation scores comes from not having enough query entities (see e.g.\ \citep{webber2010measurement}). In our methodology, we replace manually chosen query entities by sampling entities from each system’s output. In effect, $p_i$ makes explicit the decision process of the annotator who chooses query entities.
+Both the official TAC-KBP evaluation and the on-demand evaluation we propose use micro-averaged precision and recall as metrics. However, in the official evaluation, these metrics are computed over a fixed set of query entities chosen by LDC annotators, resulting in two problems: (a) defining query entities requires human intervention and (b) typically a large source of variability in evaluation scores comes from not having enough query entities (see e.g.\ \citep{webber2010measurement}). In our methodology, we replace manually chosen query entities by sampling entities from each system’s output according $p_i$. In effect, $p_i$ makes explicit the decision process of the annotator who chooses query entities.
 
 \ac{@PL:\@ This paragraph goes into details, but I felt that it was useful to illustrate how we tailored a distribution to meet our evaluation goals.}
 Identifying a reasonable distribution $p_i$ is an important implementation decision that depends on what one wishes to evaluate.
-Our goal for the on-demand evaluation service we have implemented is to ensure that KBP systems are fairly evaluated on diverse subjects and predicates.
-At the same time, we would like to ensure that entities with multiple relations are represented to measure completeness of knowledge base entries.
-Recall that a KBP system predicts a set of relation instances of the form (\entity{subject}, \relation{predicate}, \entity{object}, \textsc{provenance}).
-Simply choosing $p_i$ to be the uniform distribution over this set causes our evaluation metrics to be be dominated by a few common predicates (e.g.\ professional titles) or subject entities (e.g.\ ``United States of America'').
-Instead, we propose the following distribution which we reasonably approximates our goals:\footnote{
-See \refapp{implementation} for an analysis of this distribution and other potential choices.} 
-\begin{align*}
-  p_i^{*}(x) &\eqdef \frac{\operatorname{\#uniq-relns}_i(x)}{\operatorname{\#pred-insts}_i(x) \operatorname{\#subj-insts}_i(x)},
-\end{align*}
-where $\operatorname{\#uniq-relns}_i(x)$ measures the number of unique relations (\entity{subject}, \relation{predicate}, \entity{object} triples) with the same \entity{subject} as $x$ in the system's output $X_i$, 
-$\operatorname{\#pred-insts}_i(x)$ measures the number of instances with the same \relation{predicate} as $x$ in $X_i$ and 
-$\operatorname{\#subj-insts}_i(x)$ measures the number of instances with the same \relation{subject} as $x$ in $X_i$.
+Our goal for the on-demand evaluation service we have implemented is to ensure that KBP systems are fairly evaluated on diverse subjects and predicates, while at the same time, ensuring that entities with multiple relations are represented to measure completeness of knowledge base entries.
+As a result, we propose a distribution that is inversely proportional to the frequency of the subject and predicate and is proportional to the number of unique relations identified for an entity (to measure knowledge base completeness).
+See \refapp{implementation} in the supplementary material for an analysis of this distribution and a study of other potential choices.
+
+%Recall that a KBP system predicts a set of relation instances of the form (\entity{subject}, \relation{predicate}, \entity{object}, \textsc{provenance}).
+%Simply choosing $p_i$ to be the uniform distribution over this set causes our evaluation metrics to be be dominated by a few common predicates (e.g.\ professional titles) or subject entities (e.g.\ ``United States of America'').
+%Instead, we propose the following distribution which we reasonably approximates our goals:\footnote{
+%See \refapp{implementation} for an analysis of this distribution and a study of other potential choices.} 
+%\begin{align*}
+%  p_i(x) &\eqdef \frac{\operatorname{\#uniq-relns}_i(x)}{\operatorname{\#pred-insts}_i(x) \operatorname{\#subj-insts}_i(x)},
+%\end{align*}
+%where $\operatorname{\#uniq-relns}_i(x)$ measures the number of unique relations (\entity{subject}, \relation{predicate}, \entity{object} triples) with the same \entity{subject} as $x$ in the system's output $X_i$, 
+%$\operatorname{\#pred-insts}_i(x)$ measures the number of instances with the same \relation{predicate} as $x$ in $X_i$ and 
+%$\operatorname{\#subj-insts}_i(x)$ measures the number of instances with the same \relation{subject} as $x$ in $X_i$.
 
 %%The choice of distribution over this set determines how much we put weight on rare predicates and subject entities in our evaluation metric. % in our precision score. % PL: for recall 
 %We therefore propose two instance distributions that evaluate precision and recall scores macro-averaged over predicates and subject entities, respectively:
@@ -38,22 +40,6 @@ $\operatorname{\#subj-insts}_i(x)$ measures the number of instances with the sam
 %where $\operatorname{\#preds}$, $\operatorname{\#nsubjs}$ specifies the number of predicates, subject entities in $X_i$ respectively and $\operatorname{\#insts}$ the number of instances with the given predicate or subject entity.
 %See \refapp{implementation} for more details.
 
-\begin{figure*}[t]
-\centering
-\begin{subfigure}{0.49\textwidth}
-\centering
-  \includegraphics[width=0.8\textwidth]{figures/interface/relation-interface}
-  \caption{\label{fig:relation-interface} Relation extraction.}
-\end{subfigure}
-\hfill
-\begin{subfigure}{0.49\textwidth}
-\centering
-  \includegraphics[width=0.8\textwidth]{figures/interface/extraction-interface}
-  \caption{\label{fig:entity-interface} Entity detection and linking.}
-\end{subfigure}
-\caption{\label{fig:interfaces} Interfaces for exhaustively annotating documents with its relation instances.}
-\end{figure*}
-
 \subsection{Labeling predicted instances}
 We label predicted relation instances by presenting the instance's provenance to crowdworkers
   and asking them to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
@@ -63,6 +49,69 @@ We requested 5 crowdworkers to annotate a small set of 200 relation instances fr
 and measured a substantial inter-annotator agreement with a Fleiss' kappa of 0.61 with 3 crowdworkers and 0.62 with 5. % \pl{why does it go up with more annotators?}.
 
 %\pl{what does it mean to annotate a relation - get all the relation instances for that relation or just one?}.
+\begin{figure*}
+  \centering
+
+  \begin{subfigure}{0.49\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{figures/interface/relation-interface}
+    \caption{\label{fig:relation-interface}}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.49\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{figures/interface/extraction-interface}
+    \caption{\label{fig:entity-interface}}
+  \end{subfigure} \\
+
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/simulation/simulation-p}
+    \caption{}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/simulation/simulation-r}
+    \caption{}
+  \end{subfigure} \\
+
+
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/simulation/simulation-n}
+    \caption{}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \input{evaluation.table}
+    %\includegraphics[width=\columnwidth]{figures/kbp2016/kbp2016_f1}
+    \vfill
+    \caption{\label{fig:evaluation-results}}
+  \end{subfigure}
+
+  \caption{\label{fig:simulation}
+  \textbf{(a, b):} Interfaces for annotating relations and entities respectively.
+  \textbf{(c, d):}
+  A comparison of estimation error for the pooling, simple and joint estimators on the TAC KBP 2015 challenge.
+  Each point in the figure is a mean of 500 repeated trials; dotted lines show the 90\% quartile.
+  %The pooling based method uses between 5,000 and 6,000 labeled instances, while the sampling based methods use 
+  %approximately 150 samples from each system.
+  %Dashed trend lines indicate the mean bias of the estimation method: 
+  %Unbiased estimates lie on the $y = x$ line.
+  Both the simple and joint estimators are unbiased, and the joint estimator is able to significantly reduce variance.
+  \textbf{(e):} 
+  A comparison of the number of samples used to estimate scores under the fixed and adaptive sample selection scheme.
+  In the simulation, the top 40 systems were evaluated in randomized order to achieve a target variance equal to that obtained with 500 samples for a single system.
+  Each faint line shows the number of samples used during a single trial, while solid lines show the mean over 100 trials.
+  The dashed line shows a square-root relationship between the number of systems evaluated and the number of samples required.
+  \ac{Note: fitting with a cubic gives $x = 0.01 y^3 -0.1y^2 + 1.8 y - 1.1$ with $R=1.0$.}
+  Joint estimation combined with adaptive sample selection can reduce the number of labeled annotations required by an order of magnitude.
+  \textbf{(f):} 
+Precision ($P$), recall ($R$) and \fone{} scores from a pilot run of our evaluation service for ensembles of a rule-based system (R), a logistic classifier (L) and a neural network classifier (N) run on the TAC KBP 2016 document corpus. 
+  }
+\end{figure*}
 
 \subsection{Sampling true instances}
 Sampling from the set of true instances $\sY$ is difficult because we can't even enumerate the elements of $\sY$.

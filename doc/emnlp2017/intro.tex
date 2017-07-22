@@ -44,10 +44,10 @@ while minimizing cost by leveraging previous systems' predictions when possible.
 We then compute the new system's score based on the predictions of past systems using importance weighting.
 As more systems are evaluated, the marginal cost of evaluating a new system decreases.
 % Experimental results.
-We simulate our method on evaluation data released through the TAC KBP 2015 Slot Validation track and show that we are able to obtain unbiased estimates of a new systems score's while reducing variance.
 We then show how the on-demand evaluation methodology can be applied to knowledge base population in \refsec{application}.
+Through a simulated experiment on evaluation data released through the TAC KBP 2015 Slot Validation track, we show that we are able to obtain unbiased estimates of a new systems score's while significantly reducing variance.
 
 Finally, our third contribution is an implementation of our framework as a publicly available evaluation service at \url{https://kbpo.stanford.edu} where researchers can have their own KBP systems evaluated.
 Additionally, the data collected through the evaluation process has the potential to be valuable for relation extraction, entity linking and coreference, and will also be made publicly available through the website.
-We pilot this service by evaluating three distinct systems on the 2016 TAC KBP corpus for about \$150 a system (a fraction of the cost of official evaluation).
+each this service by evaluating three distinct systems on the 2016 TAC KBP corpus for about \$150 each (a fraction of the cost of official evaluation).
 We believe the public availability of this service will speed the pace of progress in developing KBP systems.
