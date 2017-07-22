@@ -31,15 +31,16 @@ Note that the same relation can be expressed in multiple sentences across the do
 
 \paragraph{Pooled evaluation.}
 
-% 2. How is KBP evaluated? 
+% 2. How is KBP evaluated?
 The primary source of evaluation data for KBP comes from the annual TAC KBP competition organized by NIST \citep{ji2011kbp}.
-First, let $E$ be a held-out set of evaluation entities.
-For every participating system, we run it on the document corpus to produce a set of relation instances;
+Let $E$ be a held-out set of \emph{evaluation entities}.
+There are two steps performed in parallel:
+First, each participating system is run on the document corpus to produce a set of relation instances;
 those whose subjects are in $E$ are labeled as either positive or negative by annotators.
 %A relational tuple for the relation (\entity{Carrie Fisher}, \relation{child of}, \entity{Debbie Reynolds}) that specifies an ambiguous provenance like ``\mention{Carrie Fisher} and \mention{Debbie Reynolds} arrived together at the awards show'' would be considered incorrect.
-Separately, a team of annotators identify and label correct relation instances for the same evaluation entities $E$ by manually searching the document corpus within a time budget \citep{ellis2012kbp}.
-These two sets of labeled relation instances are combined and released as the evaluation dataset.
-In the example in \reffig{pooling}, systems A and B were used in constructing the pooling dataset, and there are 3 distinct relations in the dataset, between $s_1$ and $o_1$, $o_2$ and $o_3$.
+Second, a team of annotators identify and label correct relation instances for the evaluation entities $E$ by manually searching the document corpus within a time budget \citep{ellis2012kbp}.
+These labeled relation instances from the two steps are combined and released as the evaluation dataset.
+In the example in \reffig{pooling}, systems A and B were used in constructing the pooling dataset, and there are 3 distinct relations in the dataset, between $s_1$ and $o_1$, $o_2$, $o_3$.
 
 A system is evaluated on the precision of its predicted relation instances for the evaluation entities $E$ and on the recall of the corresponding predicted \textit{relations} (not instances) for the same entities (see \reffig{pooling} for a worked example).
 When using the evaluation data during system development, it is common practice to use the more lenient \anydoc{} score that ignores the provenance when checking if a relation instance is true.
