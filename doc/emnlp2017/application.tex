@@ -1,20 +1,20 @@
 \section{On-demand evaluation for KBP}
 \label{sec:application}
-Applying the on-demand evaluation framework to a task requires us to define three operations:
+Applying the on-demand evaluation framework to a task requires us to answer three questions:
 \begin{enumerate}
   \item What is the desired distribution over system predictions $p_i$?
   \item How do we label an instance $x$, i.e.\ check if $x \in \sY$?
   \item How do we sample from the unknown set of true instances $x \sim p_0$?
 \end{enumerate}
-In this section, we'll present practical implementations of each of these operations for knowledge base population.
+In this section, we present practical implementations for knowledge base population.
 
 \subsection{Sampling from system predictions}
 % 1. what is the point of this distribution?
 % - prevent over sampling instances.
-\ac{@PL:\@ I think that the role of $p_i$ is really very subtle, but very important. I hope the below paragraph highlights the paradigm shift in how one has to think about on-demand evaluation.}
-Both the official TAC-KBP evaluation and the on-demand evaluation we propose use micro-averaged precision and recall as metrics. However, in the official evaluation, these metrics are computed over a fixed set of query entities chosen by LDC annotators, resulting in two problems: (a) defining query entities requires human intervention and (b) typically a large source of variability in evaluation scores comes from not having enough query entities (see e.g.\ \citep{webber2010measurement}). In our methodology, we replace manually chosen query entities by sampling entities from each system’s output according $p_i$. In effect, $p_i$ makes explicit the decision process of the annotator who chooses query entities.
+%\ac{@PL:\@ I think that the role of $p_i$ is really very subtle, but very important. I hope the below paragraph highlights the paradigm shift in how one has to think about on-demand evaluation.}
+Both the official TAC-KBP evaluation and the on-demand evaluation we propose use micro-averaged precision and recall as metrics. However, in the official evaluation, these metrics are computed over a fixed set of evaluation entities chosen by LDC annotators, resulting in two problems: (a) defining evaluation entities requires human intervention and (b) typically a large source of variability in evaluation scores comes from not having enough evaluation entities (see e.g.\ \citep{webber2010measurement}). In our methodology, we replace manually chosen evaluation entities by sampling entities from each system’s output according $p_i$. In effect, $p_i$ makes explicit the decision process of the annotator who chooses evaluation entities.
 
-\ac{@PL:\@ This paragraph goes into details, but I felt that it was useful to illustrate how we tailored a distribution to meet our evaluation goals.}
+%\ac{@PL:\@ This paragraph goes into details, but I felt that it was useful to illustrate how we tailored a distribution to meet our evaluation goals.}
 Identifying a reasonable distribution $p_i$ is an important implementation decision that depends on what one wishes to evaluate.
 Our goal for the on-demand evaluation service we have implemented is to ensure that KBP systems are fairly evaluated on diverse subjects and predicates, while at the same time, ensuring that entities with multiple relations are represented to measure completeness of knowledge base entries.
 As a result, we propose a distribution that is inversely proportional to the frequency of the subject and predicate and is proportional to the number of unique relations identified for an entity (to measure knowledge base completeness).
@@ -43,10 +43,10 @@ See \refapp{implementation} in the supplementary material for an analysis of thi
 \subsection{Labeling predicted instances}
 We label predicted relation instances by presenting the instance's provenance to crowdworkers
   and asking them to identify if a relation holds between the identified subject and object mentions (\reffig{relation-interface}). 
-  Crowd workers are also asked to link the subject and object mentions to their canonical mentions within the document and to pages on Wikipedia, if possible, for entity linking.
+  Crowdworkers are also asked to link the subject and object mentions to their canonical mentions within the document and to pages on Wikipedia, if possible, for entity linking.
 On average, we find that crowdworkers are able to perform this task in about 20 seconds, corresponding to about \$0.05 per instance.
 We requested 5 crowdworkers to annotate a small set of 200 relation instances from the 2015 TAC-KBP corpus 
-and measured a substantial inter-annotator agreement with a Fleiss' $\kappa$ of 0.61 with 3 crowdworkers and 0.62 with 5. % \pl{why does it go up with more annotators?}.
+and measured a substantial inter-annotator agreement with a Fleiss' kappa of 0.61 with 3 crowdworkers and 0.62 with 5. % \pl{why does it go up with more annotators?}.
 
 %\pl{what does it mean to annotate a relation - get all the relation instances for that relation or just one?}.
 \begin{figure*}
@@ -105,8 +105,8 @@ and measured a substantial inter-annotator agreement with a Fleiss' $\kappa$ of 
   %In the simulation, the top 40 systems were evaluated in randomized order to achieve a target variance equal to that obtained with 500 samples for a single system.
   Each faint line shows the number of samples used during a single trial, while solid lines show the mean over 100 trials.
   The dashed line shows a square-root relationship between the number of systems evaluated and the number of samples required.
-  \ac{Note: fitting with a cubic gives $x = 0.01 y^3 -0.1y^2 + 1.8 y - 1.1$ with $R=1.0$.}
-  Joint estimation combined with adaptive sample selection can reduce the number of labeled annotations required by an order of magnitude.
+  %\ac{Note: fitting with a cubic gives $x = 0.01 y^3 -0.1y^2 + 1.8 y - 1.1$ with $R=1.0$.}
+  Thus joint estimation combined with adaptive sample selection can reduce the number of labeled annotations required by an order of magnitude.
   \textbf{(f):} 
 Precision ($P$), recall ($R$) and \fone{} scores from a pilot run of our evaluation service for ensembles of a rule-based system (R), a logistic classifier (L) and a neural network classifier (N) run on the TAC KBP 2016 document corpus. 
   }
@@ -115,7 +115,7 @@ Precision ($P$), recall ($R$) and \fone{} scores from a pilot run of our evaluat
 \subsection{Sampling true instances}
 Sampling from the set of true instances $\sY$ is difficult because we can't even enumerate the elements of $\sY$.
 As a proxy, we assume that relations are identically distributed across documents and have crowdworkers annotate a random subset of documents for relations using an interface we developed (\reffig{entity-interface}).
-Crowd workers begin by identifying every mention span in a document.
+Crowdworkers begin by identifying every mention span in a document.
   For each mention, they are asked to identify its type, canonical mention within the document
   and associated Wikipedia page if possible.
 They are then presented with a separate interface to label predicates between pairs of mentions within a sentence that were identified earlier.
@@ -142,5 +142,5 @@ We defer details regarding how documents themselves should be weighted to captur
 %In contrast, the TAC KBP query are almost evenly split between rare and semi-frequent entities.
 %As a heuristic, we adopt the following two-stage sampling procedure:
 %First, 20\% of our exhaustive document collection is sampled uniformly and annotated.
-%We then uniformly sample the entities annotated to create a collection of ``query entities''.
-%Finally, we construct the remaining 80\% of our document collection by searching for documents that contain the query entities according to an exact string match. This process results in far more entities of medium frequency.
+%We then uniformly sample the entities annotated to create a collection of ``evaluation entities''.
+%Finally, we construct the remaining 80\% of our document collection by searching for documents that contain the evaluation entities according to an exact string match. This process results in far more entities of medium frequency.
