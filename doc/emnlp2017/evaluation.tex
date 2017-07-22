@@ -8,19 +8,19 @@ We then demonstrate that on-demand evaluation can serve as a practical replaceme
 %We find that we are able to obtain results of  quality in a cost effective manner.
 
 \subsection{Bias and variance of the on-demand evaluation.}
-Once again, we use all the system predictions from the TAC KBP 2015 evaluation and treat the labeled instances as an exhaustively annotated dataset.
-To evaluate the pooling methodology, we contruct an evaluation dataset using
+Once again, we use the labelled system predictions from the TAC KBP 2015 evaluation and treat them as an exhaustively annotated dataset.
+To evaluate the pooling methodology we construct an evaluation dataset using
 instances found by human annotators and labeled instances pooled from 9
 randomly chosen teams (i.e.\ half the total number of participating teams), and
 use this dataset to evaluate the remaining 9 teams.
-On average, the pooled evaluation dataset contains between 5,000 and 6,000 labeled instances and evaluates 34 different systems (recall that each team may have submitted multiple systems).
-Next, we evaluated a set of 9 randomly chosen teams with our proposed simple and joint estimators using a total of 5,000 samples:
-about 150 of these samples are drawn from $\sY$, i.e.\ the complete TAC KBP 2015 evaluation data, and roughly another 150 samples from each of the systems being evaluated.
+On average, the pooled evaluation dataset contains between 5,000 and 6,000 labeled instances and evaluates 34 different systems (since each team may have submitted multiple systems).
+Next, we evaluated sets of 9 randomly chosen teams with our proposed simple and joint estimators using a total of 5,000 samples:
+about 150 of these samples are drawn from $\sY$, i.e.\ the full TAC KBP 2015 evaluation data, and 150 samples from each of the systems being evaluated.
 
-We repeat the above simulated experiment 500 times and compare the estimated precision and recall with their true values in \reffig{simulation}.
-The simulations once again highlight that the pooled methodology is biased, while the simple and joint estimators are not.
-Furthermore, the joint estimators significantly reduce variance when compared with the simple estimators:
-the median 90\% confidence intervals reduce from 0.135 to 0.063 for precision and from 0.141 to 0.081 for recall.
+We repeat the above simulated experiment 500 times and compare the estimated precision and recall with their true values (\reffig{simulation}).
+The simulations once again highlights that the pooled methodology is biased, while the simple and joint estimators are not.
+Furthermore, the joint estimators significantly reduce variance relative to the simple estimators:
+the median 90\% confidence intervals reduce from 0.14 to 0.06 precision and from 0.14 to 0.08 for recall.
 
 \subsection{Number of samples required by on-demand evaluation.}
 Separately, we evaluate the efficacy of the adaptive sample selection method described in \refsec{joint} through another simulated experiment.
