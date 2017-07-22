@@ -22,7 +22,7 @@ run:
 	go main.pdf
 
 paper.zip:
-	zip -R paper.zip figures refdb/all.bib *.tex *.sty *.tables *.sty *.bst *.bbl *.blg Makefile
+	zip -R paper.zip figures refdb/all.bib *.tex *.sty *.tables *.table *.sty *.bst *.bbl *.blg Makefile
 
 .PHONY: figures clean refdb refdb-update paper.zip
 		
