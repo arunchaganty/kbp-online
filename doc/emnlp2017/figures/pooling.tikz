@@ -30,7 +30,7 @@
     \newcommand{\Question}{\color{blue}?}
 
     \point{sys-ref}{(0,0)};
-    \node[anchor=north west] (sys-h) at ($(sys-ref) + (0, -0.2*\spacing)$) {Annotators};
+    \node[anchor=north west] (sys-h) at ($(sys-ref) + (0, -0.2*\spacing)$) {Humans};
     \node[anchor=north west] (sys-a) at ($(sys-h.south west) + (0, -2*\spacing)$) {System A};
     \node[anchor=north west] (sys-b) at ($(sys-a.south west) + (0, -2*\spacing)$) {System B};
 
