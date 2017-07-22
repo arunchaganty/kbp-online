@@ -1,4 +1,4 @@
-\section{Related Work}
+\section{Related work}
 \label{sec:related}
 
 %Knowledge base population bears several similarities with information retrieval: we are also interested in answering a specific information need, a relation, from a large document corpus.
@@ -11,7 +11,7 @@ The subject of pooling bias has been extensively studied in the information retr
 % zobel also mentions a reinforcing effect, but the dynamics are perhaps more dependent on the IR evaluation setup.
 However, when the topic was later revisited,
 %\citet{buckley2004incomplete} found that pooling bias could significantly change system ranking, and 
-\citet{buckley2007bias} identified that the reason for the small bias was because the submissions to the task were too similar; on repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in AP scores!%
+\citet{buckley2007bias} identified that the reason for the small bias was because the submissions to the task were too similar; upon repeating the experiment using a novel system as part of the TREC Robust track, they identified a 23\% point drop in average precision scores!%
 \footnote{For the interested reader, \citet{webber2010measurement} presents an excellent survey of the literature on pooling bias.}
 %We also use the methodology of \citet{zobel1998reliable} to measure pooling bias in KBP, but find that the pooling bias more significant of a problem in KBP evaluation than it has been in IR evaluation.
 %%However, unlike in the information retrieval setting, we find a very strong effect \pl{what does strong effect mean?}.
@@ -29,8 +29,8 @@ In contrast, our on-demand methodology can produce unbiased evaluation scores fo
 
 %While pooling bias hasn't been studied on KBP before, \cite{surdeanau} does study the effect of incomplete labels on distant supervision.
 % - crowdsourcing kbp and nlp
-There have been several approaches taken to crowd source data pertinent to knowledge base population \citep{vannella2014validating,angeli2014combining,he2015question,liu2016effective}.
-The most extensive annotation effort is probably \citet{pavlick2016gun} work on crowd sourcing a knowledge base for gun-violence related events.
+There have been several approaches taken to crowdsource data pertinent to knowledge base population \citep{vannella2014validating,angeli2014combining,he2015question,liu2016effective}.
+The most extensive annotation effort is probably \citet{pavlick2016gun}, which crowdsources a knowledge base for gun-violence related events.
 In contrast to previous work, our focus is on \textit{evaluating systems}, not collecting a dataset.
 %As a result, we are able to integrate the systems we are evaluating while the data collection process.
 Furthermore, our main contribution is not a large dataset, but an evaluation service that allows anyone to use crowdsourcing predictions made by their system. 
@@ -43,7 +43,7 @@ Over the last ten years of the TAC KBP task, the gap between human and system pe
 % Prevalence of patterns based systems.
 In this paper, we've shown that the current evaluation methodology may be a contributing factor because of its bias against novel system improvements.
 The new on-demand framework proposed in this work addresses this problem by obtaining human assessments of new system output through crowdsourcing.
-The framework is made economically feasible by carefully sampling output to be assessed and correcting for sample bias through importance reweighing.
+The framework is made economically feasible by carefully sampling output to be assessed and correcting for sample bias through importance sampling.
 
 % Presence of this platform allows us to decouple dataset creation from task. -- e.g. can use and evaluate distantly supervised datasets more easily.
 Of course, simply providing better evaluation scores is only part of the solution and it is clear that better datasets are also necessary.

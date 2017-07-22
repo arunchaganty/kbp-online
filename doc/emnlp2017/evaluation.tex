@@ -8,7 +8,7 @@ We then demonstrate that on-demand evaluation can serve as a practical replaceme
 %We find that we are able to obtain results of  quality in a cost effective manner.
 
 \subsection{Bias and variance of the on-demand evaluation.}
-Once again, we use the labelled system predictions from the TAC KBP 2015 evaluation and treat them as an exhaustively annotated dataset.
+Once again, we use the labeled system predictions from the TAC KBP 2015 evaluation and treat them as an exhaustively annotated dataset.
 To evaluate the pooling methodology we construct an evaluation dataset using
 instances found by human annotators and labeled instances pooled from 9
 randomly chosen teams (i.e.\ half the total number of participating teams), and
@@ -22,7 +22,7 @@ The simulations once again highlights that the pooled methodology is biased, whi
 Furthermore, the joint estimators significantly reduce variance relative to the simple estimators:
 the median 90\% confidence intervals reduce from 0.14 to 0.06 precision and from 0.14 to 0.08 for recall.
 
-\subsection{Number of samples required by on-demand evaluation.}
+\subsection{Number of samples required by on-demand evaluation}
 Separately, we evaluate the efficacy of the adaptive sample selection method described in \refsec{joint} through another simulated experiment.
 In each trial of this experiment, we evaluate the top 40 systems in random order.
 As each subsequent system is evaluated, the number of samples to pick from the system is chosen to meet a target variance and added to the current pool of labeled instances.
@@ -43,7 +43,7 @@ Evaluating all three system only took about 2 hours.
 %In total, 100 documents were exhaustively annotated for about \$2,000, and 1,000 instances from each system were labeled for about \$300 each, with 500 sampled to estimate macro-averaged relation scores and 500 sampled to estimate macro-averaged entity scores.
 \reffig{evaluation-results} reports scores obtained through on-demand evaluation of these systems as well as their corresponding official TAC evaluation scores.
 While the relative ordering of systems between the two evaluations is the same, we note that precision and recall as measured through on-demand evaluation are respectively higher and lower than the official scores.
-This is to be expected because on-demand evaluation measures precision using each systems output as opposed to an externally defined set of query entities.
+This is to be expected because on-demand evaluation measures precision using each systems output as opposed to an externally defined set of evaluation entities.
 Likewise, recall is measured using exhaustive annotations of relations within the corpus instead of annotations from pooled output in the official evaluation.  
 
 %We note that the rule-based system does better on \fone{} because it has significantly higher precision that the other systems, while the RNN system has the highest recall among the three systems.
@@ -52,4 +52,5 @@ Likewise, recall is measured using exhaustive annotations of relations within th
 %While it is hard to directly compare the two evaluation scores, we note that the our evaluation evaluates the rule-based system significantly higher: 
 %, which includes submitting a unique instance for each relation, 
 
-\ac{@PL: Should we talk about who pays what on the platform, etc.? A reviewer mentioned this, but I don't think it's appropriate for the paper.}
+%\ac{@PL: Should we talk about who pays what on the platform, etc.? A reviewer mentioned this, but I don't think it's appropriate for the paper.}
+% PL: yeah, leave it out
