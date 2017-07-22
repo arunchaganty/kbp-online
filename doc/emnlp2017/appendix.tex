@@ -5,7 +5,7 @@
 \section{Theoretical proofs for the sampling procedures}
 \label{sec:sampling}
 
-Let's recall the notation from \refsec{method}.
+Let's refresh notation from \refsec{method}.
 
 Let $\sX$ be a universe of possible outputs (e.g.\ relation instances),
   $\sY \subseteq \sX$ be an unknown subset of this universe corresponding to the correct elements in $\sX$ and
@@ -171,3 +171,20 @@ Finally, we turn to studying $\rhoh$:
     \Var \rhoh_i &= \theta \Var\nuh_i + \nu_i \Var\thetah + \Var\thetah \Var\nuh_i.
   \end{align*}
 \end{proof}
+
+\subsection{Picking heuristic $w_{ij}$.}
+\label{sec:heuristic-wij}
+
+\subsection{Picking optimal number of samples for a new system}
+\label{sec:optimal-samples}
+
+In \refsec{joint}, we outlined a method to pick the optimal number of samples to draw and evaluate for a new system:
+  we pick the minimum number of samples $n_m$ required to evaluate system $m$ within a target variance using a conservative estimate of the variance of $\pih_m^{\text{(joint)}}$.
+  In particular, we use the following estimate for variance using the result from \refthm{pih}:
+\begin{align*} 
+  \widehat{\Var}{\pih_m} &= \sum_{j=1}^{m-1} \frac{w_j^2}{n_j} \sum_{x \in \Xh_j} \frac{1}{n_j} \left[\frac{{p_i(x)}^2{f(x)}^2 - \pi_{ij}p_i(x)f(x)q_i(x)}{{q_i(x)}^2} \right] + \frac{w_m^2}{n_m} \sum_{x \in X_m} p_m(x) {\left[ \frac{p_m(x)}{q(x)} \right]}^2,
+\end{align*} 
+where the first $m-1$ terms are an empirical estimate of variance and the last term is an upper bound on the variance.
+We note that the actual output of each system, $X_j$, and the samples drawn from previous systems, $\Xh_{j}$, is known.
+Thus, the only variable in computing $\widehat{\Var}{\pih_m}$ is $n_m$.
+Furthermore, $\widehat{\Var}{\pih_m}$ is a monotonically decreasing in $n_m$, so we can easily solve for the minimum number of samples required to estimate $\pih_m^{\text{(joint)}}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}.

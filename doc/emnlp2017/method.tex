@@ -45,9 +45,9 @@ Our goal is to estimate $\pi_i$ and $\rho_i$ for each system $i = 1, \dots, m$.
 We can estimate each $\pi_i$ and $\rho_i$ independently with simple Monte Carlo integration. % from $p_i$ and $p_0$ respectively.
 Let $\Xh_1, \ldots, \Xh_m$ be multi-sets of $n_1, \ldots, n_j$ i.i.d.~samples from $X_1, \ldots, X_m$ respectively, and let $\Yh_0$ be a multi-set of $n_0$ samples drawn from $\sY$.
 Then, the simple estimators for precision and recall are:
-\begin{align}
-  \pih_i^{\text{(simple)}} &= \frac1{n_i} \sum_{x \in \Xh_i} f(x) & \rhoh_i^{\text{(simple)}} &= \frac1{n_0} \sum_{x \in \Yh_0} g_i(x).
-\end{align}
+\begin{align*}
+  \pih_i^{\text{(simple)}} &= \frac1{n_i}\! \sum_{x \in \Xh_i}\! f(x) & \rhoh_i^{\text{(simple)}} &= \frac1{n_0}\! \sum_{x \in \Yh_0}\! g_i(x).
+\end{align*}
 
 \subsection{Joint estimators\footnote{Proofs for claims made in this section can be found in \refapp{sampling}.}}
 \label{sec:joint}
@@ -85,9 +85,9 @@ To this end, we introduce a practical refinement to the importance sampling proc
 we independently draw $n_j$ samples according to $p_j(x)$ from each of the $m$ systems independently 
 and then numerically integrate over these samples using the weights $w_{ij}$ to ``mix'' them appropriately to produce and unbiased estimate of $\pi_i$ while reducing variance.
 Formally, we define the \emph{joint precision estimator}:
-\begin{align}
+\begin{align*}
   \pih_i^{\text{(joint)}} &\eqdef \sum_{j=1}^m \frac{w_{ij}}{n_{j}} \sum_{x \in \Xh_j} \frac{p_i(x) f(x)}{q_i(x)},
-\end{align}
+\end{align*}
 where each $\Xh_j$ consists of $n_j$ i.i.d.~samples drawn from $p_j$.
 
 It is a hard problem to determine what the optimal mixing weights $w_{ij}$ should be.
@@ -111,20 +111,31 @@ The subset $\Yh = \Union_{i=1}^m \Yh_i$ is much cheaper to obtain than by sampli
 % PL: should be obvious
 %but this subset can be extremely biased if used to evaluate recall:
 %if there were one system, it would obtain 100\% recall regardless of how bad it was.
-We call the estimate on this incomplete set \emph{pooled recall},
-$\nu_i \eqdef \E_{x \sim X}[f(x) g_i(x)]$.
-By considering how much of $\sY$ the pool $X$ covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$, we can estimate recall as simply the product: $\rho_i = \theta \nu_i$.
-
-The joint estimator for recall is then $\rhoh_i^{\text{(joint)}} \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} g(x)$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
+We call the estimate on this incomplete set \emph{pooled recall}, $\nu_i$.
+By considering how much of $\sY$ the pool $X$ covers, i.e.\ the \textit{pool recall} $\theta$, we can estimate recall as simply the product: $\rho_i = \theta \nu_i$.  Let $g(x) \eqdef \I[x \in X]$, then,
 \begin{align*}
-  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x)}{q_i(x)}},
+\nu_i &\eqdef \E_{x \sim X}[f(x) g_i(x)] & \theta &\eqdef \E_{x \sim \sY}[g(x)],
 \end{align*}
+
+%We call the estimate on this incomplete set \emph{pooled recall},
+%$\nu_i \eqdef \E_{x \sim X}[f(x) g_i(x)]$.
+%By considering how much of $\sY$ the pool $X$ covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$, we can estimate recall as simply the product: $\rho_i = \theta \nu_i$.
+Finally, we define estimators for the above:
+\begin{gather*}
+  \nuh_i \eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x)}{q_i(x)}} \\
+\rhoh_i^{\text{(joint)}} \eqdef \thetah\nuh_i \quad \thetah \eqdef \sum_{x \in \Yh_0} g(x).
+\end{gather*}
 where $q_i$ and $w_{ij}$ are the same as before.
+
+%The joint estimator for recall is then $\rhoh_i^{\text{(joint)}} \eqdef \thetah\nuh_i$, where $\thetah$ is $\sum_{x \in \Yh_0} g(x)$ and $\nuh_i$ is a self-normalized importance-weighted estimator:
+%\begin{align*}
+%  \nuh_i &\eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x)}{q_i(x)}},
+%\end{align*}
 %for $\pih_i^{\text{(joint)}}$.
 
 \paragraph{Adaptively choosing the number of samples.}
 Finally, a desired property for on-demand evaluation is to label new instances only when the current evaluation data is insufficient,
 e.g.\ when a new set of predictions $X_m$ contains many instances not covered by other systems.
-We can measure how well the current evaluation set covers the predictions $X_m$ by using an upper bound on the variance of $\pih_m^{\text{(joint)}}$.\footnote{Further details can be found in \refapp{sampling} of the supplementary material.}
+We can measure how well the current evaluation set covers the predictions $X_m$ by using a conservative estimate of the variance of $\pih_m^{\text{(joint)}}$.\footnote{Further details can be found in \refapp{sampling} of the supplementary material.}
 In particular, the variance of $\pih_m^{\text{(joint)}}$ is a monotonically decreasing function in $n_m$, the number of samples drawn from $X_m$.
 We can easily solve for the minimum number of samples required to estimate $\pih_m^{\text{(joint)}}$ within a confidence interval $\epsilon$ by using the bisection method \citep{burden1985bisection}.

@@ -165,6 +165,10 @@ def do_entity_histogram(args):
         for relation, value in dist.most_common():
             print("* {:.3f} {}".format(value, relation))
         print()
+    # -- Plot histogram of relations.
+
+    # -- Plot histogram of entities.
+
 
 if __name__ == "__main__":
     import argparse

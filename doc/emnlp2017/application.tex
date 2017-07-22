@@ -76,7 +76,6 @@ and measured a substantial inter-annotator agreement with a Fleiss' kappa of 0.6
     \caption{}
   \end{subfigure} \\
 
-
   \begin{subfigure}{0.49\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figures/simulation/simulation-n}
@@ -94,7 +93,7 @@ and measured a substantial inter-annotator agreement with a Fleiss' kappa of 0.6
   \caption{\label{fig:simulation}
   \textbf{(a, b):} Interfaces for annotating relations and entities respectively.
   \textbf{(c, d):}
-  A comparison of estimation error for the pooling, simple and joint estimators on the TAC KBP 2015 challenge.
+  A comparison of bias for the pooling, simple and joint estimators on the TAC KBP 2015 challenge.
   Each point in the figure is a mean of 500 repeated trials; dotted lines show the 90\% quartile.
   %The pooling based method uses between 5,000 and 6,000 labeled instances, while the sampling based methods use 
   %approximately 150 samples from each system.
@@ -103,7 +102,7 @@ and measured a substantial inter-annotator agreement with a Fleiss' kappa of 0.6
   Both the simple and joint estimators are unbiased, and the joint estimator is able to significantly reduce variance.
   \textbf{(e):} 
   A comparison of the number of samples used to estimate scores under the fixed and adaptive sample selection scheme.
-  In the simulation, the top 40 systems were evaluated in randomized order to achieve a target variance equal to that obtained with 500 samples for a single system.
+  %In the simulation, the top 40 systems were evaluated in randomized order to achieve a target variance equal to that obtained with 500 samples for a single system.
   Each faint line shows the number of samples used during a single trial, while solid lines show the mean over 100 trials.
   The dashed line shows a square-root relationship between the number of systems evaluated and the number of samples required.
   \ac{Note: fitting with a cubic gives $x = 0.01 y^3 -0.1y^2 + 1.8 y - 1.1$ with $R=1.0$.}
