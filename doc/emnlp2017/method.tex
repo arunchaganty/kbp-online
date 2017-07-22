@@ -116,9 +116,9 @@ Letting $g(x) \eqdef \I[x \in X]$, we can define these as:
 We can estimate $\theta$ analogous to the simple recall estimator $\recallh_i$,
 except we use the pool $g$ instead a system $g_i$.
 For $\nu_i$, the key is to leverage the work from estimating precision.
-we already evaluated $f(x)$ on $\Xh_i$, so we can compute $\Yh_i \eqdef \Xh_i \intersection \sY$
-and form the subset $\Yh = \Union_{i=1}^m \Yh_i$,
-which stands as an approximation of $\sY$.
+We already evaluated $f(x)$ on $\Xh_i$, so we can compute $\Yh_i \eqdef \Xh_i \intersection \sY$
+and form the subset $\Yh = \Union_{i=1}^m \Yh_i$.
+$\Yh$ is an approximation of $\sY$ whose bias we can correct through importance reweighting.
 %is much cheaper to obtain than by sampling from $\sY$, but is clearly not representative.
 %We call the estimate on this incomplete set \emph{pooled recall}, $\nu_i$.
 %We call the estimate on this incomplete set \emph{pooled recall},
@@ -126,7 +126,7 @@ which stands as an approximation of $\sY$.
 %By considering how much of $\sY$ the pool $X$ covers, i.e.\ the pool recall: $\theta \eqdef \E_{x \sim \sY}[g(x)]$ where $g(x) \eqdef \I[x \in X]$, we can estimate recall as simply the product: $\recall_i = \theta \nu_i$.
 We then define estimators as follows:
 \begin{gather*}
-  \nuh_i \eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Xh_j} \frac{p_0(x)}{q_i(x)}} \\
+  \nuh_i \eqdef \frac{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Yh_j} \frac{p_0(x) g_i(x)}{q_i(x)}}{\sum_{j=1}^m \frac{w_{ij}}{n_j} \sum_{x \in \Yh_j} \frac{p_0(x)}{q_i(x)}} \\
   \recallh_i^{\text{(joint)}} \eqdef \thetah\nuh_i \quad \thetah \eqdef \frac{1}{n_0} \sum_{x \in \Yh_0} g(x).
 \end{gather*}
 where $q_i$ and $w_{ij}$ are the same as before.
