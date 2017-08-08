@@ -3,10 +3,14 @@
 """
 Analyzes the sampling behavior of KBPO.
 """
+import csv 
 import sys
 import logging
 
 from collections import namedtuple, defaultdict, Counter
+
+import numpy as np
+from tqdm import tqdm
 
 from kbpo import db
 from kbpo import distribution as D
@@ -69,7 +73,7 @@ def render_example(ex):
     gloss = "{}*{}*{}^{}^{}".format(ex.gloss[:subject[0]], ex.gloss[subject[0]:subject[1]], ex.gloss[subject[1]:object_[0]], ex.gloss[object_[0]:object_[1]], ex.gloss[object_[1]:])
     return "{}:{}-{}\t{}".format(ex.doc_id, ex.span[0], ex.span[1], gloss)
 
-def do_sample(args):
+def do_relation_sample(args):
     if args.distribution == "instance":
         P = D.submission_instance(args.corpus_tag, args.submission_id)
     elif args.distribution == "relation":
@@ -169,17 +173,62 @@ def do_entity_histogram(args):
 
     # -- Plot histogram of entities.
 
+def do_compute_entity_bins(args):
+    with db.CONN:
+        with db.CONN.cursor() as cur:
+            cur.execute("""SELECT link_name, count
+                           FROM suggested_link_frequencies
+                           WHERE tag = %(corpus_tag)s
+                           """.format(link_table=args.link_table, mention_table=args.mention_table), {"corpus_tag": args.corpus_tag})
+            data = np.array([row.count for row in cur])
+
+    low, med, high = np.percentile(data, 50), np.percentile(data, 90), np.percentile(data, 100)
+    print("Frequency bins: low (50%) {}, medium (90%) {} and high (100%) {}".format(low, med, high))
+
+def do_document_sample(args):
+    if args.distribution == "ldc":
+        # TODO: need to get LDC data and correlate it with
+        # suggested_link_frequencies
+        raise NotImplementedError()
+
+
+    if args.distribution == "uniform":
+        P = D.document_uniform(args.corpus_tag)
+        docs = sample_without_replacement(P, args.samples)
+
+    elif args.distribution == "entity":
+        P0 = D.document_uniform(args.corpus_tag)
+        seed_docs = sample_without_replacement(P0, args.samples // 30)
+        P = D.document_entity(args.corpus_tag, seed_docs, mention_table = "suggested_mention")
+        docs = seed_docs + sample_without_replacement(P, args.samples - len(seed_docs))
+    else:
+        raise ValueError("Invalid distribution type: " + args.distribution)
+
+    # TODO: Use docs to identify (a) the frequency of entities found in
+    # these docs and (b) the # of documents across which entities were
+    # found.
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Analyzes the sampling behavior of KBPO')
     parser.add_argument('-ct', '--corpus-tag', type=str, default="kbp2016", help="Corpus to study")
     parser.add_argument('-mt', '--mention-table', type=str, default="suggested_mention", help="Mention table to use")
+    parser.add_argument('-lt', '--link-table', type=str, default="suggested_link", help="Mention table to use")
     parser.add_argument('-st', '--sentence-table', type=str, default="sentence", help="Sentence table")
     parser.set_defaults(func=None)
 
     subparsers = parser.add_subparsers()
-    command_parser = subparsers.add_parser('sample', help='Draws samples from database')
+    command_parser = subparsers.add_parser('compute-entity-bins', help='Constructs an entity histogram from the database')
+    command_parser.set_defaults(func=do_compute_entity_bins)
+
+    command_parser = subparsers.add_parser('document-sample', help='Draws samples from database')
+    command_parser.add_argument('-s', '--submission-id', type=int, help="Submission to analyze (leave blank to analyze all)")
+    command_parser.add_argument('-d', '--distribution', choices=['instance', 'relation', 'entity', 'entity-relation'], default='entity-relation', help="Distribution to sample from")
+    command_parser.add_argument('-n', '--samples', default=20, help="How many samples to draw")
+    command_parser.set_defaults(func=do_document_sample)
+
+
+    command_parser = subparsers.add_parser('relation-sample', help='Draws samples from database')
     command_parser.add_argument('-s', '--submission-id', type=int, help="Submission to analyze (leave blank to analyze all)")
     command_parser.add_argument('-d', '--distribution', choices=['instance', 'relation', 'entity', 'entity-relation'], default='entity-relation', help="Distribution to sample from")
     command_parser.add_argument('-n', '--samples', default=20, help="How many samples to draw")

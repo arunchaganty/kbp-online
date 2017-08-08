@@ -17,6 +17,21 @@ plt.rc('font', family='serif')
 
 from kbpo.defs import CANONICAL_RELATIONS, ALL_RELATIONS
 
+def project_to_bins(data):
+    low, med, high = np.percentile(data, 50), np.percentile(data, 90), np.percentile(data, 100)
+    print("Frequency bins: low (50%) {}, medium (90%) {} and high (100%) {}", low, med, high)
+
+    # Collapse data into bins.
+    freq = [0., 0., 0.]
+    for count, _ in data:
+        if count <= low:
+            freq[0] += 1
+        elif count <= med:
+            freq[1] += 1
+        else:
+            freq[2] += 1
+    return freq
+
 # Consider stacked histogram?
 def do_plot_entity_histogram(args):
     # First load the data.
