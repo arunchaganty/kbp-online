@@ -55,7 +55,7 @@ class Messages(Enum):
 
     # Missing definitions
     MISSING_ENTITY_TYPE = Message("E21", "Missing type", "for entity %(entity)s; ignoring entity")
-    MISSING_PROVENANCE_DEFINITION=("E22", "Could not find definition for provenance", "for %(prov)s; ignoring definition")
+    MISSING_PROVENANCE_DEFINITION=Message("E22", "Could not find definition for provenance", "for %(prov)s; ignoring definition")
     MISSING_PROVENANCE_RELATION = Message("W25", "Missing relation provanance", "; using between-mention span %(prov)s")
     MISSING_PROVENANCE_ARGUMENTS = Message("W26", "Missing subject/object provenance", "could not find provenance for %(entity)s in %(prov)s; ignoring relation")
     MISSING_PROVENANCE_CANONICAL = Message("W27", "Could not find canonical_mention in document", "for %(prov)s; using %(prov)s")
@@ -479,7 +479,7 @@ class TacKbReader(MFileReader):
             if not is_string_relation and object_ not in self._entity_types:
                 self.logger.info(Messages.MISSING_ENTITY_TYPE, entity=entity)
                 purge.add((subject, object_))
-        for entity, doc_id in purge:
+        for subject, object_ in purge:
             del self._entity_relations[subject, object_]
 
     def _verify_cmentions(self):
