@@ -91,7 +91,7 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
     mentions.forEach(function(m) {
       m.tokens = self.getTokens(m.span[0], m.span[1]);
       m.type = defs.TYPES[m.type];
-      self.addMention(m);
+      m = defs.Mention.fromJSON(m, self);
     });
   };
 
