@@ -193,13 +193,19 @@ def process_mturk_batch(_, __, queryset):
 
 process_mturk_batch.short_description = "Reprocess"
 
+def renew_mturk_batch(_, __, queryset):
+    conn = turk.connect()
+    for row in queryset:
+        turk.renew_batch(conn, row.id)
+renew_mturk_batch.short_description = "Renew (1 day)"
+
 class MTurkBatchAdmin(admin.ModelAdmin):
     list_display = ('created', 'description', '_status')
 
     # TODO display nicely
     def _status(self, obj):
         return api.get_mturk_batch_status(obj.id)
-    actions = [revoke_mturk_batch, handle_mturk_batch_payments, process_mturk_batch]
+    actions = [revoke_mturk_batch, handle_mturk_batch_payments, process_mturk_batch, renew_mturk_batch]
 admin.site.register(MturkBatch, MTurkBatchAdmin)
 
 def revoke_mturk_hit(_, __, queryset):
@@ -214,11 +220,17 @@ def increment_assignments(_, __, queryset):
         turk.increment_assignments(conn, row.id)
 increment_assignments.short_description = "Increment assignments"
 
+def renew_mturk_hit(_, __, queryset):
+    conn = turk.connect()
+    for row in queryset:
+        turk.renew_hit(conn, row.id)
+renew_mturk_hit.short_description = "Renew (1 day)"
+
 class MTurkHitAdmin(admin.ModelAdmin):
     list_display = ('id', 'batch', 'question_batch', 'state', 'message')
     list_filter = ('state', 'batch_id')
 
-    actions = [revoke_mturk_hit, increment_assignments]
+    actions = [revoke_mturk_hit, increment_assignments, renew_mturk_hit]
 admin.site.register(MturkHit, MTurkHitAdmin)
 
 class MTurkAssignmentAdmin(admin.ModelAdmin):

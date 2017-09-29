@@ -398,6 +398,22 @@ def increment_assignments(conn, hit_id, count=1):
             )
     return True
 
+def renew_hit(conn, hit_id, time=None):
+    if time is None:
+        time = datetime.now() + timedelta(days=1)
+    logger.info("Updating expiry for HIT %s to %s", hit_id, time)
+
+    conn.update_expiration_for_hit(
+            HITId=hit_id,
+            ExpireAt=time
+            )
+    return True
+
+def renew_batch(conn, mturk_batch_id, time=None):
+    """Renew the Mturk batchs."""
+    for row in db.select("SELECT id FROM mturk_hit WHERE batch_id = %(mturk_batch_id)s AND state = 'pending-annotation'", mturk_batch_id = mturk_batch_id):
+        renew_hit(conn, row.id, time)
+
 class MTurkInvalidStatus(Exception):
     pass
 
