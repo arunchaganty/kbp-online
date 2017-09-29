@@ -406,8 +406,6 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
     // 
     var Mention = function(m) {
         this.id = Mention.count++;
-        this.tokens = m.tokens;
-        this.sentenceIdx = m.tokens[0].sentenceIdx;
         if (typeof m.type == "string") {
           this.type = m.type && TYPES[m.type];
         } else {
@@ -416,26 +414,36 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
         this.gloss = m.gloss;
         this.span = m.span;
 
-        this.entity = m.entity;
+        this.entity = m.entity; // can be undefined.
+
+      // this.tokens = m.tokens;
+      // this.sentenceIdx = m.sentenceIdx || m.tokens[0].sentenceIdx;
     };
     Mention.count = 0;
     Mention.fromTokens = function(tokens) {
-        return new Mention({
-            "tokens": tokens,
-               "sentenceIdx": tokens[0].token.sentenceIdx,
+      let m = new Mention({
                "type": undefined,
                "gloss": Mention.textFromTokens(tokens),
                "span": tokens[0].token.span,
         });
+      m.setTokens(tokens);
+      m.setSentenceIdx(tokens[0].sentenceIdx);
+      return m;
     };
+
     Mention.fromJSON = function(m, doc) {
-      m.tokens = doc.getTokens(m.span[0], m.span[1]);
-      console.assert(m.tokens.length > 0);
+      let mention = new Mention(m);
+      doc.addMention(mention);
 
       if (m.entity !== undefined) {
-        m.entity = Entity.fromJSON(m.entity, doc);
+        // uh, create a new canonical mention and make it an entity.
+        let canonicalMention = new Mention(m.entity);
+        doc.addMention(canonicalMention);
+
+        canonicalMention.link = m.entity.link;
+        mention.entity = new Entity(canonicalMention);
       }
-      return new Mention(m);
+      return mention;
     };
 
     Mention.textFromTokens = function(tokens) {
@@ -449,16 +457,20 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
         return text;
     };
 
-    // Returns the text represented within the spans of text. 
-    Mention.prototype.text = function(){
-        return Mention.textFromTokens(this.tokens);
-    };
-
+    Mention.prototype.setTokens = function(tokens) {
+      this.tokens = tokens;
+    }
+    Mention.prototype.setSentenceIdx = function(sentenceIdx) {
+      this.sentenceIdx = sentenceIdx;
+    }
+    Mention.prototype.setElem = function(elem) {
+      this.elem = elem;
+    }
     // Compute levenshtein distance from input @string
     Mention.prototype.levenshtein = function(string){
         temp = this;
         
-        var first_words = this.text().trim().toLowerCase().split(/\s+/);
+        var first_words = this.gloss.trim().toLowerCase().split(/\s+/);
         var second_words = string.trim().split(/\s+/);
         var min_distance = 1000;
         for(var i=0;i<first_words.length; i++){
@@ -503,24 +515,12 @@ define(['fast-levenshtein/levenshtein'], function(Levenshtein) {
         this.type = canonicalMention.type;
         this.span = canonicalMention.span;
         this.mentions = [];
+        this.link = canonicalMention.link;
 
         this.addMention(canonicalMention);
     }
     Entity.count = 0;
     Entity.map = {};
-
-    // TODO: There is all sorts of double referencing happening here...
-    Entity.fromJSON = function(m, doc) {
-      m.tokens = doc.getTokens(m.span[0], m.span[1]);
-      console.assert(m.tokens.length > 0);
-
-      var link = m.link;
-      m = new Mention(m);
-      var e = new Entity(m);
-      e.link = link;
-      return e;
-    };
-
 
     Entity.prototype.addMention = function(mention) {
       console.info("Adding mention", mention.gloss, "to", this.gloss);

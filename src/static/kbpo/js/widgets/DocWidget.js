@@ -99,31 +99,70 @@ define(['jquery', 'sprintf-js/dist/sprintf.min', '../defs'], function ($, pp, de
   // Provide the DOM elements corresponding to tokens between specified
   // character offsets 
   DocWidget.prototype.getTokens = function(docCharBegin, docCharEnd) {
-    return $('span.token').filter(function(_, t) {
-      if (t.token.span[0] >= docCharBegin && 
-          t.token.span[1] <= docCharEnd) {
-      }
-      return t.token.span[0] >= docCharBegin && 
-        t.token.span[1] <= docCharEnd;
+    return $('span.token').filter(function(_, t) { // any overlaping tokens.
+      return (t.token.span[1] >= docCharBegin && 
+          t.token.span[0] <= docCharEnd);
     }).get(); 
   };
+
+  DocWidget.prototype.wrapMention = function(tokens, mentionId) {
+    $(tokens)
+      .wrapAll($("<span class='mention' />")
+        .attr("id", "mention-"+mentionId));
+    var elem = $(tokens[0].parentNode)[0];
+    console.assert(elem !== undefined);
+
+    return elem;
+  }
 
   // Create a mention from a set of spans.
   DocWidget.prototype.addMention = function(mention) {
     var self = this;
-    if ($(mention.tokens[0].parentNode).hasClass("mention")) return;
-    $(mention.tokens)
-      .wrapAll($("<span class='mention' />")
-      .attr("id", "mention-"+mention.id));
-    var elem = $(mention.tokens[0].parentNode)[0];
-    console.assert(elem !== undefined);
-    // Create links between the mention and DOM elements.
-    elem.mention = mention;
-    mention.elem = elem;
-    mention.tokens.forEach(function(t) {t.mention = mention;});
     this.mentions[mention.span[0] + "-" + mention.span[1]] = mention;
 
-    return this.updateMention(mention);
+    // If you weren't born with tokens, well, now's the time to get
+    // them.
+    if (mention.tokens === undefined) {
+      // Try and get the mention from the span.
+      let tokens = this.getTokens(mention.span[0], mention.span[1]);
+      console.assert(tokens.length > 0);
+      // ensure that these tokens aren't part of an existing mention.
+      let uniqueTokens = []; 
+      for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].mention === undefined) {
+          uniqueTokens.push(tokens[i]); 
+        } else if (uniqueTokens.length > 0) {
+          // Hack to handle "nested" mentions where the existing mention
+          // is contained.
+          break;
+        }
+      }
+      if (uniqueTokens.length === 0) {
+        // HACK ALERT: a mention so created CAN NOT BE REMOVED SAFELY.
+        // YOU HAVE BEEN WARNED.
+        // Ok, now we don't actually have any tokens, but we can steal
+        // them from our parent.
+        let overlappingMention = tokens[0].mention; // guaranteed to exist.
+        // steal
+        mention.setTokens(overlappingMention.tokens);
+        mention.setSentenceIdx(overlappingMention.sentenceIdx);
+        mention.setElem(overlappingMention.elem);
+      } else {
+        mention.setTokens(uniqueTokens);
+        mention.setSentenceIdx(uniqueTokens[0].sentenceIdx);
+      }
+    }
+    // HACK ALERT: This code prevents a mention from being re-added to
+    // the DOM, but also very sneakily allows us to return if
+    // uniqueTokens was 0 above.
+    if (mention.elem === undefined) {
+      console.assert(!$(mention.tokens[0].parentNode).hasClass("mention"));
+      mention.setElem(this.wrapMention(mention.tokens, mention.id));
+      mention.tokens.forEach(function(t) {t.mention = mention;});
+      return this.updateMention(mention);
+    } else {
+      return $(mention.elem); // To make the function interface ok.
+    }
   };
   DocWidget.prototype.updateMention = function(mention) {
     var elem = $(mention.elem);

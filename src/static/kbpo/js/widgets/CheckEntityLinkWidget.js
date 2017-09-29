@@ -69,7 +69,7 @@ define(['jquery'], function ($) {
     CheckEntityLinkWidget.prototype.renderTemplate = function(mention) {
         var template = "In the sentence you just read (shown below) does "+$('#mention-'+mention.id)[0].outerHTML+" refer to the <span class='canonical'>{canonical}</span> highlighted above?" + $('#sentence-'+mention.sentenceIdx).clone().addClass('highlight')[0].outerHTML;
         return template
-            .replace("{mention}", mention.text())
+            .replace("{mention}", mention.gloss)
             .replace("{canonical}", mention.entity.gloss);
     };
 

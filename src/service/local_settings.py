@@ -27,7 +27,8 @@ DATABASES = {
         'PORT': 5433, # Tunnel to kbpo.stanford.edu
     },
 }
-DATABASES['default'] = DATABASES['test']
+#DATABASES['default'] = DATABASES['test']
+DATABASES['default'] = DATABASES['production']
 
 # Logging
 LOGGING["handlers"]["email"] = {
