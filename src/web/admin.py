@@ -199,13 +199,19 @@ def renew_mturk_batch(_, __, queryset):
         turk.renew_batch(conn, row.id)
 renew_mturk_batch.short_description = "Renew (1 day)"
 
+def backfill_mturk_batch(_, __, queryset):
+    conn = turk.connect()
+    for row in queryset:
+        turk.retrieve_assignments_for_mturk_batch(conn, row.id, only_incomplete_hits=True)
+backfill_mturk_batch.short_description = "Backfill pending batches"
+
 class MTurkBatchAdmin(admin.ModelAdmin):
     list_display = ('created', 'description', '_status')
 
     # TODO display nicely
     def _status(self, obj):
         return api.get_mturk_batch_status(obj.id)
-    actions = [revoke_mturk_batch, handle_mturk_batch_payments, process_mturk_batch, renew_mturk_batch]
+    actions = [revoke_mturk_batch, handle_mturk_batch_payments, process_mturk_batch, renew_mturk_batch, backfill_mturk_batch]
 admin.site.register(MturkBatch, MTurkBatchAdmin)
 
 def revoke_mturk_hit(_, __, queryset):

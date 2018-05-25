@@ -309,7 +309,7 @@ def score_submission(submission_id, chain=True):
     try:
         submission = Submission.objects.get(id=submission_id)
         state = SubmissionState.objects.get(submission_id=submission_id)
-        user = SubmissionUser.objects.get(submission=submission)
+        user = SubmissionUser.objects.get(submission=submission).user
     except ObjectDoesNotExist:
         return
 
@@ -319,7 +319,6 @@ def score_submission(submission_id, chain=True):
         state.status = "done"
         state.save()
 
-        user = User.objects.get(user=user)
         user.email_user(
             subject='KBP Online submission scored',
             message="""Your submission {submission_name}s to KBP Online has been scored.
